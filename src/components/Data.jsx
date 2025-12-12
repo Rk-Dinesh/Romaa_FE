@@ -2550,139 +2550,444 @@ export const GSsiteData = [
     amount: 2400.0,
   },
 ];
-export const siteoverheaddata = [
-  {
-    description: "Staff Salaries",
-    details: {
-      headTitle: "Common resources",
-      items: [
+export const siteoverheaddata = {
+  "tenderId": "TNOO5",
+  "tenderName": "Testing",
+  "periodMonths": 0,
+  "jobValueRs": 0,
+  "grand_total_overheads_rs": 0,
+  "sections": [
+    {
+      "sno": 1,
+      "title": "Staff Salaries",
+      "items": [
         {
-          desc: "Project Engineer",
-          nos: 1,
-          months: 6,
-          value: 38000,
-          factor: 1,
-          amount: 35000,
+          "designation": "Project Engineer",
+          "nos": 0,
+          "months": 0,
+          "avg_salary_rs": 0,
+          "amount_rs": 0
         },
         {
-          desc: "Site Engineer",
-          nos: 1,
-          months: 6,
-          value: 38000,
-          factor: 1,
-          amount: 35000,
+          "designation": "Site Engineer",
+          "nos": 0,
+          "months": 0,
+          "avg_salary_rs": 0,
+          "amount_rs": 0
         },
         {
-          desc: "Electrician",
-          nos: 1,
-          months: 6,
-          value: 38000,
-          factor: 1,
-          amount: 35000,
-        },
+          "designation": "Electrician",
+          "nos": 0,
+          "months": 0,
+          "avg_salary_rs": 0,
+          "amount_rs": 0
+        }
       ],
+      "subtotal_rs": 0,
+      "subtotal_lakhs": 0,
+      "total_nos": 0,
+      "total_months": 0
     },
-  },
-  {
-    description: "Department Expenses",
-    details: {
-      headTitle: "Common resources",
-      items: [
+    {
+      "sno": 2,
+      "title": "Departmental Staff",
+      "items": [
         {
-          desc: "Project Engineer",
-          nos: 1,
-          months: 6,
-          value: 38000,
-          factor: 1,
-          amount: 35000,
-        },
-        {
-          desc: "Site Engineer",
-          nos: 1,
-          months: 6,
-          value: 38000,
-          factor: 1,
-          amount: 35000,
-        },
-        {
-          desc: "Electrician",
-          nos: 1,
-          months: 6,
-          value: 38000,
-          factor: 1,
-          amount: 35000,
-        },
+          "description": "Dept",
+          "nos": 0,
+          "months": 0,
+          "value_rs": 0,
+          "amount_rs": 0
+        }
       ],
+      "subtotal_rs": 0,
+      "subtotal_lakhs": 0,
+      "total_nos": 0,
+      "total_months": 0
     },
-  },
-  {
-    description: "Department Staff",
-    details: {
-      headTitle: "Common resources",
-      items: [
+    {
+      "sno": 3,
+      "title": "PF / Pension / Super Annuation",
+      "items": [
         {
-          desc: "Project Engineer",
-          nos: 1,
-          months: 6,
-          value: 38000,
-          factor: 1,
-          amount: 35000,
-        },
-        {
-          desc: "Site Engineer",
-          nos: 1,
-          months: 6,
-          value: 38000,
-          factor: 1,
-          amount: 35000,
-        },
-        {
-          desc: "Electrician",
-          nos: 1,
-          months: 6,
-          value: 38000,
-          factor: 1,
-          amount: 35000,
-        },
+          "description": "Bonus for Departmental workmen",
+          "nos": 0,
+          "months": 0,
+          "value_rs": 0,
+          "amount_rs": 0
+        }
       ],
+      "subtotal_rs": 0,
+      "subtotal_lakhs": 0,
+      "total_nos": 0,
+      "total_months": 0
     },
-  },
-  {
-    description: "Staff Salaries",
-    details: {
-      headTitle: "Common resources",
-      items: [
+    {
+      "sno": 4,
+      "title": "Welfare & Other Expenses",
+      "items": [
         {
-          desc: "Project Engineer",
-          nos: 1,
-          months: 6,
-          value: 38000,
-          factor: 1,
-          amount: 35000,
+          "description": "Guest houses",
+          "nos": 0,
+          "months": 0,
+          "value_rs": 0,
+          "amount_rs": 0
         },
         {
-          desc: "Site Engineer",
-          nos: 1,
-          months: 6,
-          value: 38000,
-          factor: 1,
-          amount: 35000,
+          "description": "Furniture for Staff & GH",
+          "nos": 0,
+          "months": 0,
+          "value_rs": 0,
+          "amount_rs": 0
         },
         {
-          desc: "Electrician",
-          nos: 1,
-          months: 6,
-          value: 38000,
-          factor: 1,
-          amount: 35000,
+          "description": "Air conditioner",
+          "nos": 0,
+          "months": 0,
+          "value_rs": 0,
+          "amount_rs": 0
         },
+        {
+          "description": "Workmen travel Expenses",
+          "nos": 0,
+          "months": 0,
+          "value_rs": 0,
+          "amount_rs": 0
+        },
+        {
+          "description": "GH Helpers",
+          "nos": 0,
+          "months": 0,
+          "value_rs": 0,
+          "amount_rs": 0
+        },
+        {
+          "description": "Staff Mobile Expenses",
+          "nos": 0,
+          "months": 0,
+          "value_rs": 0,
+          "amount_rs": 0
+        },
+        {
+          "description": "Tea / Coffee - Staff",
+          "nos": 0,
+          "months": 0,
+          "value_rs": 0,
+          "amount_rs": 0
+        },
+        {
+          "description": "Tea / Coffee - Clients",
+          "nos": 0,
+          "months": 0,
+          "value_rs": 0,
+          "amount_rs": 0
+        },
+        {
+          "description": "Snacks / Water",
+          "nos": 0,
+          "months": 0,
+          "value_rs": 0,
+          "amount_rs": 0
+        }
       ],
+      "subtotal_rs": 0,
+      "subtotal_lakhs": 0,
+      "total_nos": 0,   
+      "total_months": 0
     },
-  },
-  {
-    description: " Salaries",
-  },
-];
+    {
+      "sno": 5,
+      "title": "Safety PPEs",
+      "items": [
+        {
+          "description": "Helmet, Shoe, Jacket",
+          "months": 0,
+          "value_rs": 0,
+          "amount_rs": 0
+        }
+      ],
+      "subtotal_rs": 0,
+      "subtotal_lakhs": 0,
+      "total_nos": 0,   
+      "total_months": 0
+    },
+    {
+      "sno": 6,
+      "title": "Water & Sewage & Power & Fuel",
+      "items": [
+        {
+          "description": "Curing Tank",
+          "nos": 0,
+          "months": 0,
+          "value_rs": 0,
+          "amount_rs": 0
+        },
+        {
+          "description": "Sintex for Labour water & office",
+          "nos": 0,
+          "months": 0,
+          "value_rs": 0,
+          "amount_rs": 0
+        },
+        {
+          "description": "Lights fixtures",
+          "nos": 0,
+          "months": 0,
+          "value_rs": 0,
+          "amount_rs": 0
+        },
+        {
+          "description": "Cable",
+          "nos": 0,
+          "months": 0,
+          "value_rs": 0,
+          "amount_rs": 0
+        },
+        {
+          "description": "Wire for lighting",
+          "nos": 0,
+          "months": 0,
+          "value_rs": 0,
+          "amount_rs": 0
+        },
+        {
+          "description": "Power Accessories & Maintenance",
+          "nos": 0,
+          "months": 0,
+          "value_rs": 0,
+          "amount_rs": 0
+        }
+      ],
+      "subtotal_rs": 0,
+      "subtotal_lakhs": 0,
+      "total_nos": 0,   
+      "total_months": 0
+    },
+    {
+      "sno": 7,
+      "title": "Packing & Forwarding",
+      "items": [
+        {
+          "description": "Local transport expenses",
+          "nos": 0,
+          "months": 0,
+          "value_rs": 0,
+          "amount_rs": 0
+        }
+      ],
+      "subtotal_rs": 0,
+      "subtotal_lakhs": 0,
+      "total_nos": 0,   
+      "total_months": 0
+    },
+    {
+      "sno": 8,
+      "title": "Postage & Courier Charges",
+      "items": [
+        {
+          "description": "Postage, paper expenses",
+          "nos": 0,
+          "months": 0,
+          "value_rs": 0,
+          "amount_rs": 0
+        },
+        {
+          "description": "Desktops",
+          "nos": 0,
+          "months": 0,
+          "value_rs": 0,
+          "amount_rs": 0
+        },
+        {
+          "description": "Printer",
+          "nos": 0,
+          "months": 0,
+          "value_rs": 0,
+          "amount_rs": 0
+        }
+      ],
+      "subtotal_rs": 0,
+      "subtotal_lakhs": 0,
+      "total_nos": 0,   
+      "total_months": 0
+    },
+    {
+      "sno": 9,
+      "title": "Repairs & Maintenance including cleaning & Sweeping & Security service contracts",
+      "items": [
+        {
+          "description": "Labour",
+          "nos": 0,
+          "months": 0,
+          "value_rs": 0,
+          "amount_rs": 0
+        },
+        {
+          "description": "Security Deployment",
+          "nos": 0,
+          "months": 0,
+          "value_rs": 0,
+          "amount_rs": 0
+        }
+      ],
+      "subtotal_rs": 0,
+      "subtotal_lakhs": 0,
+      "total_nos": 0,   
+      "total_months": 0        
+    },
+    {
+      "sno": 10,
+      "title": "Sundries & Other Expenses",
+      "items": [
+        {
+          "description": "Miscellaneous such as Testing Charges, etc.",
+          "nos": 0,
+          "months": 0,
+          "value_rs": 0,
+          "amount_rs": 0
+        },
+        {
+          "description": "Pooja Expenses",
+          "nos": 0,
+          "months": 0,
+          "value_rs": 0,
+          "amount_rs": 0
+        },
+        {
+          "description": "Mix design",
+          "nos": 0,
+          "months": 0,
+          "value_rs": 0,
+          "amount_rs": 0
+        },
+        {
+          "description": "Lab equipment",
+          "nos": 0,
+          "months": 0,
+          "value_rs": 0,
+          "amount_rs": 0
+        }
+      ],
+      "subtotal_rs": 0,
+      "subtotal_lakhs": 0,
+      "total_nos": 0,   
+      "total_months": 0
+    },
+    {
+      "sno": 11,
+      "title": "Temporary Structures",
+      "items": [
+        {
+          "description": "Project Office, Labour Shed, Store",
+          "nos": 0,
+          "months": 0,
+          "value_rs": 0,
+          "amount_rs": 0
+        },
+        {
+          "description": "Toilet blocks at site",
+          "nos": 0,
+          "months": 0,
+          "value_rs": 0,
+          "amount_rs": 0
+        },
+        {
+          "description": "Yard Development",
+          "nos": 0,
+          "months": 0,
+          "value_rs": 0,
+          "amount_rs": 0
+        }
+      ],
+      "subtotal_rs": 0,
+      "subtotal_lakhs": 0,
+      "total_nos": 0,   
+      "total_months": 0
+    },
+    {
+      "sno": 12,
+      "title": "Rentals & Services Charges",
+      "items": [
+        {
+          "description": "Tools",
+          "nos": 0,
+          "months": 0,
+          "value_rs": 0,
+          "amount_rs": 0
+        }
+      ],
+      "subtotal_rs": 0,
+      "subtotal_lakhs": 0,
+      "total_nos": 0,   
+      "total_months": 0
+    },
+    {
+      "sno": 13,
+      "title": "Water and Electricity expenses",
+      "items": [
+        {
+          "description": "Temporary electricity connection",
+          "nos": 0,
+          "months": 0,
+          "value_rs": 0,
+          "amount_rs": 0
+        },
+        {
+          "description": "Electricity bill - labour camp",
+          "nos": 0,
+          "months": 0,
+          "value_rs": 0,
+          "amount_rs": 0
+        },
+        {
+          "description": "Guest house",
+          "nos": 0,
+          "months": 0,
+          "value_rs": 0,
+          "amount_rs": 0
+        }
+      ],
+      "subtotal_rs": 0,
+      "subtotal_lakhs": 0,
+      "total_nos": 0,   
+      "total_months": 0
+    },
+    {
+      "sno": 14,
+      "title": "Risk & Contingencies",
+      "items": [
+        {
+          "description": "Dewatering",
+          "months": 12,
+          "value_rs": 100000,
+          "amount_rs": 1290000
+        }
+      ],
+      "subtotal_rs": 0,
+      "subtotal_lakhs": 0,
+      "total_nos": 0,   
+      "total_months": 0
+    },
+    {
+      "sno": 15,
+      "title": "NMR",
+      "items": [
+        {
+          "description": "Unskilled",
+          "nos": 0,
+          "months": 0,
+          "value_rs": 0,
+          "amount_rs": 0
+        }
+      ],
+      "subtotal_rs": 0,
+      "subtotal_lakhs": 0,
+      "total_nos": 0,   
+      "total_months": 0
+    }
+  ]
+}
+
 
 export const materialData = [
   {
