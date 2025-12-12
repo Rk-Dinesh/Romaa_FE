@@ -25,6 +25,7 @@ import Loader from "../../../../components/Loader";
 import { set } from "date-fns";
 import TenderDetailedEstimate from "./detailed estimate/TenderDetailedEstimate";
 import GeneralSetup from "./Setup/GeneralSetup";
+import { toast } from "react-toastify";
 
 const tabs = [
   {

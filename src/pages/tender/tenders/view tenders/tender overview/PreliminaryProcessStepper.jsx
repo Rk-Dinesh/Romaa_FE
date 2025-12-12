@@ -44,8 +44,8 @@ const preliminarySiteWorkTemplate = [
 const getStepSchema = () =>
   yup.object().shape({
     notes: yup.string().required("Notes are required"),
-    date: yup.string().required("Date is required"),
-    time: yup.string().required("Time is required"),
+    // date: yup.string().required("Date is required"),
+    // time: yup.string().required("Time is required"),
   });
 
 const PreliminaryProcessStepper = ({onUploadSuccess}) => {
@@ -78,8 +78,8 @@ const PreliminaryProcessStepper = ({onUploadSuccess}) => {
           return {
             ...step,
             notes: savedStep?.notes || "",
-            date: savedStep?.date || "",
-            time: savedStep?.time || "",
+            // date: savedStep?.date || "",
+            // time: savedStep?.time || "",
             completed: savedStep?.completed === true,
           };
         });
@@ -97,8 +97,8 @@ const PreliminaryProcessStepper = ({onUploadSuccess}) => {
 
         reset({
           notes: initialData[startStep].notes,
-          date: initialData[startStep].date,
-          time: initialData[startStep].time,
+          // date: initialData[startStep].date,
+          // time: initialData[startStep].time,
         });
         setFile(null);
       } catch (err) {
@@ -106,16 +106,16 @@ const PreliminaryProcessStepper = ({onUploadSuccess}) => {
         const freshData = preliminarySiteWorkTemplate.map((step) => ({
           ...step,
           notes: "",
-          date: "",
-          time: "",
+          // date: "",
+          // time: "",
           completed: false,
         }));
         setProcessData(freshData);
         setCurrentStep(0);
         reset({
           notes: "",
-          date: "",
-          time: "",
+          // date: "",
+          // time: "",
         });
         setFile(null);
       } finally {
@@ -131,8 +131,8 @@ const PreliminaryProcessStepper = ({onUploadSuccess}) => {
     const step = processData[currentStep];
     reset({
       notes: step.notes,
-      date: step.date,
-      time: step.time,
+      // date: step.date,
+      // time: step.time,
     });
     setFile(null);
   }, [currentStep, processData, reset]);
@@ -142,19 +142,19 @@ const PreliminaryProcessStepper = ({onUploadSuccess}) => {
 
     setLoading(true);
     try {
-      if (!data.date) {
-        alert("Please enter a date before proceeding.");
-        setLoading(false);
-        return;
-      }
+      // if (!data.date) {
+      //   alert("Please enter a date before proceeding.");
+      //   setLoading(false);
+      //   return;
+      // }
 
       if (file) {
         const formData = new FormData();
         formData.append("tender_id", tender_id);
         formData.append("step_key", step.key);
         formData.append("notes", data.notes);
-        formData.append("date", data.date);
-        formData.append("time", data.time);
+        // formData.append("date", data.date);
+        // formData.append("time", data.time);
         formData.append("file", file);
 
         await axios.post(`${API}/tender/preliminaryaws/step`, formData, {
@@ -165,8 +165,8 @@ const PreliminaryProcessStepper = ({onUploadSuccess}) => {
           tender_id,
           step_key: step.key,
           notes: data.notes,
-          date: data.date,
-          time: data.time,
+          // date: data.date,
+          // time: data.time,
         };
         await axios.post(`${API}/tender/preliminary/step`, payload);
       }
@@ -177,8 +177,8 @@ const PreliminaryProcessStepper = ({onUploadSuccess}) => {
             ? {
                 ...s,
                 notes: data.notes,
-                date: data.date,
-                time: data.time,
+                // date: data.date,
+                // time: data.time,
                 completed: true,
               }
             : s
@@ -303,7 +303,7 @@ const PreliminaryProcessStepper = ({onUploadSuccess}) => {
             {errors.notes && <p className="mt-1 text-red-600 text-sm">{errors.notes.message}</p>}
           </div>
 
-          <div className="grid grid-cols-2 gap-6">
+          {/* <div className="grid grid-cols-2 gap-6">
             <div>
               <label htmlFor="date" className="block font-medium mb-1">
                 Date <span className="text-red-600">*</span>
@@ -332,7 +332,7 @@ const PreliminaryProcessStepper = ({onUploadSuccess}) => {
               />
               {errors.time && <p className="mt-1 text-red-600 text-sm">{errors.time.message}</p>}
             </div>
-          </div>
+          </div> */}
 
           <div>
             <label htmlFor="file" className="block font-medium mb-1">

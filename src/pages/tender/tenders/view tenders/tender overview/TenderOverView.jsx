@@ -79,22 +79,21 @@ const TenderOverView = () => {
         { label: "Email ID", value: data.customerDetails?.contact_email },
         {
           label: "Address",
-          value: `${data.customerDetails?.address?.city || ""}, ${
-            data.customerDetails?.address?.state || ""
-          }`,
+          value: `${data.customerDetails?.address?.city || ""}, ${data.customerDetails?.address?.state || ""
+            }`,
         },
       ]);
 
       setTenderDetailsState([
-       
+
         { label: "Tender Name", value: data.tenderDetails?.tender_name },
-         { label: "Tender ID", value: data.tenderDetails?.tender_id },
+        { label: "Tender ID", value: data.tenderDetails?.tender_id },
         {
           label: "Tender Published Date",
           value: data.tenderDetails?.tender_published_date
             ? new Date(
-                data.tenderDetails.tender_published_date
-              ).toLocaleDateString("en-GB")
+              data.tenderDetails.tender_published_date
+            ).toLocaleDateString("en-GB")
             : "",
         },
         {
@@ -103,9 +102,8 @@ const TenderOverView = () => {
         },
         {
           label: "Project Location",
-          value: `${data.tenderDetails?.project_location?.city || ""}, ${
-            data.tenderDetails?.project_location?.state || ""
-          }`,
+          value: `${data.tenderDetails?.project_location?.city || ""}, ${data.tenderDetails?.project_location?.state || ""
+            }`,
         },
         { label: "Contact Person", value: data.tenderDetails?.contact_person },
         { label: "Contact Number", value: data.tenderDetails?.contact_phone },
@@ -128,32 +126,32 @@ const TenderOverView = () => {
     }
   };
 
- const fetchProcessData = async () => {
-  try {
-    const res = await axios.get(`${API}/tender/process/${tender_id}`);
-    const savedData = Array.isArray(res.data?.processData) ? res.data.processData : [];
+  const fetchProcessData = async () => {
+    try {
+      const res = await axios.get(`${API}/tender/process/${tender_id}`);
+      const savedData = Array.isArray(res.data?.processData) ? res.data.processData : [];
 
-    const initialData = tenderProcessDataTemplate.map((step) => {
-      const savedStep = savedData.find((d) => d.key === step.key) || {};
-      return {
-        ...step,
-        notes: savedStep.notes || "",
-        date: savedStep.date || "",
-        time: savedStep.time || "",
-        completed: savedStep.completed === true,
-        file_name: savedStep.file_name || "",
-        file_url: savedStep.file_url || "",
-      };
-    });
+      const initialData = tenderProcessDataTemplate.map((step) => {
+        const savedStep = savedData.find((d) => d.key === step.key) || {};
+        return {
+          ...step,
+          notes: savedStep.notes || "",
+          date: savedStep.date || "",
+          time: savedStep.time || "",
+          completed: savedStep.completed === true,
+          file_name: savedStep.file_name || "",
+          file_url: savedStep.file_url || "",
+        };
+      });
 
-    setTenderProcessState(initialData);
-  } catch (error) {
-    console.error("Error fetching process data:", error);
-  }
-};
+      setTenderProcessState(initialData);
+    } catch (error) {
+      console.error("Error fetching process data:", error);
+    }
+  };
 
 
-   const fetchPreliminaryData = async () => {
+  const fetchPreliminaryData = async () => {
     try {
       const res = await axios.get(`${API}/tender/preliminary/${tender_id}`);
       const savedData = Array.isArray(res.data?.processData) ? res.data.processData : [];
@@ -178,7 +176,7 @@ const TenderOverView = () => {
 
   useEffect(() => {
     if (tender_id) fetchTenderOverview();
-   fetchProcessData();
+    fetchProcessData();
     fetchPreliminaryData();
   }, [tender_id]);
 
@@ -197,7 +195,7 @@ const TenderOverView = () => {
     );
   };
 
-    const handleUploadSuccess = () => {
+  const handleUploadSuccess = () => {
     fetchProcessData();
   };
 
@@ -208,7 +206,7 @@ const TenderOverView = () => {
   return (
     <>
       <div className="font-roboto-flex grid grid-cols-12 h-full gap-3  overflow-y-auto no-scrollbar py-2">
-       
+
         <div className="col-span-6 dark:bg-layout-dark bg-white rounded-lg shadow p-4">
           {" "}
           <div className="flex justify-between items-center px-2 py-2">
@@ -230,54 +228,54 @@ const TenderOverView = () => {
             )}
           </div>
           <div className="grid grid-cols-12 gap-2  text-xs font-semibold px-2 py-2 ">
-            
-           {tenderDetailsState.map((item, idx) => {
-  const isTenderName = item.label === "Tender Name";
 
-  if (isTenderName) {
-    return (
-      <React.Fragment key={idx}>
-        {/* Label – first line */}
-        <p className="col-span-12 font-semibold">{item.label}</p>
+            {tenderDetailsState.map((item, idx) => {
+              const isTenderName = item.label === "Tender Name";
 
-        {/* Value – second line, editable when isEditingTender */}
-        <div className="col-span-12 opacity-70">
-          {isEditingTender ? (
-            <textarea
-              value={item.value}
-              onChange={(e) => handleTenderChange(idx, e.target.value)}
-              className="w-full bg-transparent focus:outline-none text-left resize-none"
-              rows={2} // adjust as needed
-            />
-          ) : (
-            <p className="whitespace-pre-line">
-              {item.value}
-            </p>
-          )}
-        </div>
-      </React.Fragment>
-    );
-  }
+              if (isTenderName) {
+                return (
+                  <React.Fragment key={idx}>
+                    {/* Label – first line */}
+                    <p className="col-span-12 font-semibold">{item.label}</p>
 
-  // default layout for other fields
-  return (
-    <React.Fragment key={idx}>
-      <p className="col-span-6">{item.label}</p>
-      <div className="col-span-6 text-end opacity-50 font-light">
-        {isEditingTender ? (
-          <input
-            type="text"
-            value={item.value}
-            onChange={(e) => handleTenderChange(idx, e.target.value)}
-            className="w-full bg-transparent focus:outline-none text-right"
-          />
-        ) : (
-          item.value
-        )}
-      </div>
-    </React.Fragment>
-  );
-})}
+                    {/* Value – second line, editable when isEditingTender */}
+                    <div className="col-span-12 opacity-70">
+                      {isEditingTender ? (
+                        <textarea
+                          value={item.value}
+                          onChange={(e) => handleTenderChange(idx, e.target.value)}
+                          className="w-full bg-transparent focus:outline-none text-left resize-none"
+                          rows={2} // adjust as needed
+                        />
+                      ) : (
+                        <p className="whitespace-pre-line">
+                          {item.value}
+                        </p>
+                      )}
+                    </div>
+                  </React.Fragment>
+                );
+              }
+
+              // default layout for other fields
+              return (
+                <React.Fragment key={idx}>
+                  <p className="col-span-6">{item.label}</p>
+                  <div className="col-span-6 text-end opacity-50 font-light">
+                    {isEditingTender ? (
+                      <input
+                        type="text"
+                        value={item.value}
+                        onChange={(e) => handleTenderChange(idx, e.target.value)}
+                        className="w-full bg-transparent focus:outline-none text-right"
+                      />
+                    ) : (
+                      item.value
+                    )}
+                  </div>
+                </React.Fragment>
+              );
+            })}
 
           </div>
           {isEditingTender && (
@@ -291,7 +289,7 @@ const TenderOverView = () => {
             </div>
           )}
         </div>
-         <div className="col-span-6 dark:bg-layout-dark bg-white rounded-lg shadow p-4">
+        <div className="col-span-6 dark:bg-layout-dark bg-white rounded-lg shadow p-4">
           <div className="flex justify-between items-center px-2 py-2">
             <p className="font-semibold text-lg">Customer Details</p>
           </div>
@@ -307,9 +305,9 @@ const TenderOverView = () => {
           </div>
         </div>
         <div className="col-span-6 dark:bg-layout-dark bg-white rounded-lg shadow p-4 ">
-          <TenderProcessStepper onUploadSuccess={handleUploadSuccess}/>
+          <TenderProcessStepper onUploadSuccess={handleUploadSuccess} />
         </div>
-         <div className="col-span-6 dark:bg-layout-dark bg-white rounded-lg shadow p-4 ">
+        <div className="col-span-6 dark:bg-layout-dark bg-white rounded-lg shadow p-4 ">
           <PreliminaryProcessStepper onUploadSuccess={handleUploadSuccessPreliminary} />
         </div>
 
@@ -321,42 +319,59 @@ const TenderOverView = () => {
               No tender process data available.
             </p>
           ) : (
-            <div className="grid grid-cols-1 gap-4">
+            <div className="p-6 rounded-lg border border-slate-300 bg-slate-50 dark:border-slate-700 dark:bg-slate-800 shadow-sm">
               {tenderProcessState
-                .filter((step) => step.completed) 
+                .filter((step) => step.completed)
                 .map((step, idx) => (
-                  <div
-                    key={step.key}
-                    className={`p-4 rounded border border-green-500 bg-green-50 dark:bg-green-900`}
-                  >
+                  <div key={step.key} className="mb-4 pb-4 border-b border-slate-200 dark:border-slate-700">
                     <div className="flex justify-between items-center mb-2">
-                      <h4 className="font-semibold">
+                      <h4 className="font-medium text-slate-800 dark:text-slate-200">
                         {idx + 1}. {step.label}
                       </h4>
-                      <span className="text-xs font-semibold px-2 py-1 rounded bg-green-600 text-white">
+                      <span className="text-xs font-semibold px-2 py-1 rounded bg-slate-600 text-white">
                         Completed
                       </span>
                     </div>
-                    <p className="text-sm mb-1">
-                      <strong>Date:</strong>{" "}
-                      {step.date
-                        ? new Date(step.date).toLocaleDateString()
-                        : "-"}
-                    </p>
-                    <p className="text-sm mb-1">
-                      <strong>Time:</strong> {step.time || "-"}
-                    </p>
-                    <p className="text-sm whitespace-pre-wrap">
-                      <strong>Notes:</strong> {step.notes || "-"}
-                    </p>
-                     <p> <strong>File:</strong> {(step.file_name && <a href={step.file_url} target="_blank" rel="noopener noreferrer" className=" dark:text-white text-black hover:underline">{step.file_name}</a>) || "No file"}</p>
+                    {step.notes && (
+                      <p className="text-sm mb-1 whitespace-pre-wrap">
+                        <strong>Notes:</strong> {step.notes}
+                      </p>
+                    )}
+                    <div className="flex gap-6 items-center mb-2">
+                      <p className="text-sm text-slate-700 dark:text-slate-300 mb-1">
+                        <strong>Date:</strong>{" "}
+                        {step.date ? new Date(step.date).toLocaleDateString() : "-"}
+                      </p>
+                      <p className="text-sm text-slate-700 dark:text-slate-300 mb-1">
+                        <strong>Time:</strong> {step.time || "-"}
+                      </p>
+                    </div>
+
+                    {step.file_name && step.file_url ? (
+                      <p className="text-sm mb-1 truncate">
+                        <strong>File:</strong>{" "}
+                        <a
+                          href={step.file_url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="dark:text-white text-black hover:underline truncate"
+                          title={step.file_name}
+                        >
+                          {step.file_name}
+                        </a>
+                      </p>
+                    ) : (
+                      ""
+                    )}
+
                   </div>
                 ))}
             </div>
+
           )}
         </div>
 
-         <div className="col-span-6 dark:bg-layout-dark bg-white rounded-lg shadow p-4 space-y-4">
+        <div className="col-span-6 dark:bg-layout-dark bg-white rounded-lg shadow p-4 space-y-4">
           <p className="font-semibold text-lg mb-4">Preliminary Process Overview</p>
 
           {tenderPreliminary.filter((step) => step.completed).length === 0 ? (
@@ -364,42 +379,51 @@ const TenderOverView = () => {
               No tender process data available.
             </p>
           ) : (
-            <div className="grid grid-cols-1 gap-4">
+            <div className="p-6 rounded-lg border border-slate-300 bg-slate-50 dark:border-slate-700 dark:bg-slate-800 shadow-sm">
               {tenderPreliminary
-                .filter((step) => step.completed) 
+                .filter((step) => step.completed)
                 .map((step, idx) => (
-                  <div
-                    key={step.key}
-                    className={`p-4 rounded border border-green-500 bg-green-50 dark:bg-green-900`}
-                  >
+                  <div key={step.key} className="mb-4 pb-4 border-b border-slate-200 dark:border-slate-700">
                     <div className="flex justify-between items-center mb-2">
-                      <h4 className="font-semibold">
+                      <h4 className="font-medium text-slate-800 dark:text-slate-200">
                         {idx + 1}. {step.label}
                       </h4>
-                      <span className="text-xs font-semibold px-2 py-1 rounded bg-green-600 text-white">
+                      <span className="text-xs font-semibold px-2 py-1 rounded bg-slate-600 text-white">
                         Completed
                       </span>
                     </div>
-                    <p className="text-sm mb-1">
-                      <strong>Date:</strong>{" "}
-                      {step.date
-                        ? new Date(step.date).toLocaleDateString()
-                        : "-"}
-                    </p>
-                    <p className="text-sm mb-1">
-                      <strong>Time:</strong> {step.time || "-"}
-                    </p>
-                    <p className="text-sm whitespace-pre-wrap">
-                      <strong>Notes:</strong> {step.notes || "-"}
-                    </p>
-                     <p> <strong>File:</strong> {(step.file_name && <a href={step.file_url} target="_blank" rel="noopener noreferrer" className="text-white hover:underline">{step.file_name}</a>) || "No file"}</p>
+                    <div className="flex gap-6 items-center mb-2">
+                      <p className="text-sm text-slate-700 dark:text-slate-300 mb-1">
+                        <strong>Date:</strong>{" "}
+                        {step.date ? new Date(step.date).toLocaleDateString() : "-"}
+                      </p>
+                      <p className="text-sm text-slate-700 dark:text-slate-300 mb-1">
+                        <strong>Time:</strong> {step.time || "-"}
+                      </p>
+                    </div>
+                    {step.file_name && step.file_url ? (
+                      <p className="text-sm">
+                        <strong>File:</strong>{" "}
+                        <a
+                          href={step.file_url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-slate-600 hover:underline dark:text-slate-400"
+                        >
+                          {step.file_name}
+                        </a>
+                      </p>
+                    ) : (
+                      ""
+                    )}
                   </div>
                 ))}
             </div>
+
           )}
         </div>
 
-       
+
       </div>
       {addFollowup && (
         <AddFollowUp
