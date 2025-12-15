@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from "react";
 import { ChevronDown, ChevronUp } from "lucide-react";
-import { HiArrowsUpDown } from "react-icons/hi2";
 import { TbFileExport } from "react-icons/tb";
 import UploadRateAnalysis from "./UploadRateAnalysis";
 import axios from "axios";
@@ -8,210 +7,9 @@ import { API } from "../../../../../../constant";
 import { toast } from "react-toastify";
 import { useParams } from "react-router-dom";
 
-const sample = [
-  {
-    itemNo: 1,
-    workItem: "Earthwork",
-    unit: "Cum",
-    output: 855.36,
-    finalRate: 663.35,
-    lines: [
-      {
-        category: "MACHINERIES",
-        sub: [
-          {
-            description: "Hire JCB",
-            unit: "Month",
-            quantity: 2,
-            output: null,
-            rate: 80000,
-            amount: 160000,
-            finalRate: 239.67,
-          },
-          {
-            description: "Tractor",
-            unit: "Month",
-            quantity: 1,
-            output: null,
-            rate: 45000,
-            amount: 45000,
-            finalRate: 239.67,
-          },
-        ],
-      },
-      {
-        category: "FUEL",
-        sub: [
-          {
-            description: "Diesel",
-            unit: "Lit",
-            quantity: 1275,
-            output: null,
-            rate: 96,
-            amount: 122400,
-            finalRate: 143.1,
-          },
-        ],
-      },
-      {
-        category: "SUBCONTRACTOR",
-        sub: [
-          {
-            description: "Blasting",
-            unit: "Points",
-            quantity: 1100,
-            output: null,
-            rate: 180,
-            amount: 198000,
-            finalRate: 231.48,
-          },
-        ],
-      },
-      {
-        category: "MANPOWER",
-        sub: [
-          {
-            description: "Helpers",
-            unit: "Nos",
-            quantity: 60,
-            output: null,
-            rate: 700,
-            amount: 42000,
-            finalRate: 49.1,
-          },
-        ],
-      },
-    ],
-  },
-  {
-    itemNo: 2,
-    workItem: "Refilling",
-    unit: "Cum",
-    output: 684.288,
-    finalRate: 89.58,
-    lines: [
-      {
-        category: "MACHINERIES",
-        sub: [
-          {
-            description: "Hire JCB",
-            unit: "Month",
-            quantity: 0.5,
-            output: null,
-            rate: 80000,
-            amount: 40000,
-            finalRate: 58.45,
-          },
-        ],
-      },
-      {
-        category: "FUEL",
-        sub: [
-          {
-            description: "Diesel",
-            unit: "Lit",
-            quantity: 112.5,
-            output: null,
-            rate: 96,
-            amount: 10800,
-            finalRate: 15.78,
-          },
-        ],
-      },
-      {
-        category: "MANPOWER",
-        sub: [
-          {
-            description: "Helpers",
-            unit: "Nos",
-            quantity: 15,
-            output: null,
-            rate: 700,
-            amount: 10500,
-            finalRate: 15.34,
-          },
-        ],
-      },
-    ],
-  },
-  {
-    itemNo: 3,
-    workItem: "Gravel Filling",
-    unit: "Cum",
-    output: 543.54,
-    finalRate: 301.03,
-    lines: [
-      {
-        category: "MATERIALS",
-        sub: [
-          {
-            description: "Water Load",
-            unit: "Load",
-            quantity: 30,
-            output: null,
-            rate: 700,
-            amount: 21000,
-            finalRate: 38.62,
-          },
-        ],
-      },
-      {
-        category: "MACHINERIES",
-        sub: [
-          {
-            description: "Hire JCB",
-            unit: "Month",
-            quantity: 1,
-            output: null,
-            rate: 80000,
-            amount: 80000,
-            finalRate: 147.4,
-          },
-        ],
-      },
-      {
-        category: "FUEL",
-        sub: [
-          {
-            description: "Diesel",
-            unit: "Lit",
-            quantity: 375,
-            output: null,
-            rate: 96,
-            amount: 36000,
-            finalRate: 66.27,
-          },
-        ],
-      },
-      {
-        category: "MANPOWER",
-        sub: [
-          {
-            description: "Helpers",
-            unit: "Nos",
-            quantity: 60,
-            output: null,
-            rate: 700,
-            amount: 42000,
-            finalRate: 48.74,
-          },
-        ],
-      },
-    ],
-  },
-  {
-    itemNo: 0,
-    workItem: "",
-    unit: null,
-    output: null,
-    finalRate: null,
-    lines: [],
-  },
-];
-
+// Group backend "lines" by category
 const groupLinesByCategory = (lines = []) => {
   const grouped = {};
-
   lines.forEach((line) => {
     if (!grouped[line.category]) {
       grouped[line.category] = [];
@@ -222,7 +20,7 @@ const groupLinesByCategory = (lines = []) => {
       quantity: line.quantity,
       rate: line.rate,
       amount: line.amount,
-      finalRate: line.total_rate || line.finalRate,
+      finalRate: line.total_rate,
     });
   });
 
@@ -232,187 +30,218 @@ const groupLinesByCategory = (lines = []) => {
   }));
 };
 
-
-const RateAnalysis = ({ data = sample }) => {
-  const [expandedRow, setExpandedRow] = useState(null);
-  const toggleRow = (index) => {
-    setExpandedRow(expandedRow === index ? null : index);
-  };
-  const [showUpload, setShowUpload] = useState(false);
-  const [rateAnalysis, setRateAnalysis] = useState([]);
+const RateAnalysis = () => {
   const { tender_id } = useParams();
-  console.log(tender_id);
+  const [rateAnalysis, setRateAnalysis] = useState([]);
+  const [openSections, setOpenSections] = useState(new Set());
+  const [showUpload, setShowUpload] = useState(false);
+  const [loading, setLoading] = useState(false);
+
+  const toggleSection = (index) => {
+    setOpenSections((prev) => {
+      const next = new Set(prev);
+      next.has(index) ? next.delete(index) : next.add(index);
+      return next;
+    });
+  };
 
   const fetchRateAnalysis = async () => {
+    if (!tender_id) return;
     try {
+      setLoading(true);
       const res = await axios.get(
         `${API}/rateanalysis/getbytenderId?tenderId=${tender_id}`
       );
-      const transformed = (res.data.data.work_items || []).map((item) => ({
+      const apiData = res.data?.data;
+
+      const transformed = (apiData?.work_items || []).map((item) => ({
         itemNo: item.itemNo,
-        workItem: item.itemNo, // or map proper name if available
+        workItem: item.workItem,
         unit: item.unit || "-",
-        output: item.output || "-",
+        output: item.working_quantity || "-",
         finalRate: item.final_rate,
-        lines: groupLinesByCategory(item.lines),
+        MY_M_rate: item.MY_M_rate,
+        MY_F_rate: item.MY_F_rate,
+        MP_C_rate: item.MP_C_rate,
+        MP_NMR_rate: item.MP_NMR_rate,
+        MT_CM_rate: item.MT_CM_rate,
+        MT_BL_rate: item.MT_BL_rate,
+        lines: groupLinesByCategory(item.lines || []),
       }));
 
       setRateAnalysis(transformed);
+
+      // Set all sections open by default
+      setOpenSections(new Set(transformed.map((_, i) => i)));
     } catch (err) {
-      toast.error("Failed to fetch Rate Analysis ");
+      toast.error("Failed to fetch Rate Analysis");
+      console.error(err);
     } finally {
+      setLoading(false);
     }
   };
 
   useEffect(() => {
     fetchRateAnalysis();
-  }, []);
+  }, [tender_id]);
 
-  const columns = [
-    { label: "Description" },
-    { label: "Unit" },
-    { label: "Quantity" },
-    { label: "Rate" },
-    { label: "Amount" },
-    { label: "Final Rate" },
-  ];
-  const TableHeader = ({ columns }) => {
-    return (
-      <table className="w-full   text-sm">
-        <thead className=" bg-indigo-200">
-          <tr className="">
-            {columns.map((col, idx) => (
-              <th key={idx} className="p-2 ">
-                {col.label}
-              </th>
-            ))}
-          </tr>
-        </thead>
-      </table>
-    );
-  };
+  const DetailHeaderRow = () => (
+    <div className="grid grid-cols-6 gap-2 text-[11px] font-semibold bg-indigo-100 px-3 py-2 rounded-t-md dark:text-black">
+      <span>Description</span>
+      <span>Unit</span>
+      <span className="text-right">Quantity</span>
+      <span className="text-right">Rate</span>
+      <span className="text-right">Amount</span>
+      <span className="text-right">Rate / Unit</span>
+    </div>
+  );
 
   return (
     <>
-      <p
-        onClick={() => setShowUpload(true)}
-        className=" cursor-pointer flex justify-end  "
-      >
-        <span className="flex  items-center dark:bg-layout-dark bg-white px-2 py-2 rounded-md text-sm">
-          <TbFileExport size={22} />
-          <span className="px-1">Upload RA</span>
-        </span>
-      </p>
+      {/* Upload button */}
+      <div className="flex justify-end mb-2">
+        <button
+          type="button"
+          onClick={() => setShowUpload(true)}
+          className="flex items-center gap-1 dark:bg-layout-dark bg-white px-3 py-2 rounded-md text-sm shadow"
+        >
+          <TbFileExport size={18} />
+          <span>Upload RA</span>
+        </button>
+      </div>
+
       <div className="font-roboto-flex flex flex-col h-full">
-        <div className="mt-4 overflow-y-auto no-scrollbar">
-          <div className="overflow-auto no-scrollbar">
-            <table className="w-full whitespace-nowrap">
+        <div className="mt-2 overflow-y-auto no-scrollbar">
+          <div className="overflow-x-auto no-scrollbar border border-gray-200 dark:border-border-dark-grey rounded-md bg-white dark:bg-layout-dark">
+            <table className="w-full text-sm">
               <thead>
-                <tr className="font-semibold text-sm dark:bg-layout-dark bg-white border-b-4 dark:border-border-dark-grey border-light-blue">
-                  <th className="p-3.5 rounded-l-lg">S.no</th>
-                  <th className="p-3">Work Item</th>
-                  <th className="p-3">Unit</th>
-                  <th className="p-3">Final Rate</th>
-                  <th className="p-3">Output</th>
-                  <th className="pr-2 rounded-r-lg"></th>
+                <tr className="font-semibold text-xs md:text-sm dark:bg-layout-dark bg-gray-50 border-b border-gray-200 dark:border-border-dark-grey">
+                  <th className="p-3 text-left">S.no</th>
+                  <th className="p-3 text-left">Work Item</th>
+                  <th className="p-3 text-center">Unit</th>
+                  <th className="p-3 text-right">Working Qty</th>
+                  <th className="p-3 text-right">Final Rate</th>
+                  <th className="p-3 text-center w-12"></th>
                 </tr>
               </thead>
 
-              <tbody className="text-greyish text-sm font-light">
-                {rateAnalysis && rateAnalysis.length > 0 ? (
+              <tbody className="text-xs md:text-sm text-gray-700 dark:text-gray-100">
+                {loading ? (
+                  <tr>
+                    <td colSpan={6} className="py-4 text-center text-gray-500 text-sm">
+                      Loading rate analysis...
+                    </td>
+                  </tr>
+                ) : rateAnalysis && rateAnalysis.length > 0 ? (
                   rateAnalysis.map((workItem, index) => (
-                    <React.Fragment key={workItem.itemNo}>
-                      <tr
-                        className="border-b-[3px] dark:bg-layout-dark bg-white dark:border-border-dark-grey border-light-blue text-center cursor-pointer"
-                        onClick={() => toggleRow(index)}
-                      >
-                        <td className="rounded-l-lg py-3">{index + 1}</td>
-                        <td>{workItem.workItem}</td>
-                        <td>{workItem.unit || "-"}</td>
-                        <td>{workItem.finalRate || "-"}</td>
-                        <td>{workItem.output || "-"}</td>
-                        <td className="rounded-r-lg">
+                    <React.Fragment key={workItem.itemNo || index}>
+                      {/* Main row */}
+                      <tr className="border-b border-gray-100 dark:border-border-dark-grey">
+                        <td className="p-3">{index + 1}</td>
+                        <td className="p-3">
+                          <div className="font-medium">
+                            {workItem.workItem || workItem.itemNo}
+                          </div>
+                          <div className="text-[11px] text-gray-500">
+                            Item ID: {workItem.itemNo}
+                          </div>
+                        </td>
+                        <td className="p-3 text-center">{workItem.unit || "-"}</td>
+                        <td className="p-3 text-right">{workItem.output ?? "-"}</td>
+                        <td className="p-3 text-right font-semibold">{workItem.finalRate ?? "-"}</td>
+                        <td className="p-3 text-center">
                           <button
-                            onClick={() => toggleRow(index)}
-                            className="cursor-pointer bg-blue-200  text-lg mr-2 rounded-sm p-0.5 text-blue-600"
+                            type="button"
+                            onClick={() => toggleSection(index)}
+                            className="inline-flex items-center justify-center bg-blue-100 text-blue-700 rounded-sm p-1"
                           >
-                            {expandedRow === index ? (
-                              <ChevronUp />
-                            ) : (
-                              <ChevronDown />
-                            )}
+                            {openSections.has(index) ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
                           </button>
                         </td>
                       </tr>
 
-                      {expandedRow === index && (
+                      {/* Detail row (accordion) */}
+                      {openSections.has(index) && (
                         <tr>
-                          <td colSpan="7" className="px-10 py-4 ">
-                            <div className="dark:bg-layout-dark bg-white p-4 text-center rounded-md">
-                              <TableHeader columns={columns} />
+                          <td colSpan={6} className="px-6 pb-4 pt-1">
+                            <div className="rounded-md border border-gray-200 dark:border-border-dark-grey dark:bg-layout-dark bg-white shadow-sm">
                               {workItem.lines && workItem.lines.length > 0 ? (
-                                workItem.lines.map((categoryGroup) => (
-                                  <div
-                                    key={categoryGroup.category}
-                                    className="mb-4 rounded-lg bg-white shadow dark:bg-layout-dark"
-                                  >
-                                    <div className="p-3 font-semibold border-b-2 dark:border-border-dark-grey border-white text-left">
-                                      {categoryGroup.category}
-                                    </div>
+                                <div className="space-y-3 p-3">
+                                  <DetailHeaderRow />
 
-                                    <table className="w-full text-sm">
-                                      {/* <thead className="bg-indigo-200 text-center">
-                                      <tr>
-                                        <th className="p-2">
-                                          Description
-                                        </th>
-                                        <th className=" ">Unit</th>
-                                        <th className="">
-                                          Quantity
-                                        </th>
-                                        <th className=" ">Rate</th>
-                                        <th className=" ">
-                                          Amount
-                                        </th>
+                                  {workItem.lines.map((categoryGroup) => (
+                                    <div
+                                      key={categoryGroup.category}
+                                      className="border border-gray-100 dark:border-border-dark-grey rounded-md overflow-hidden"
+                                    >
+                                      <div className="px-3 py-2 text-xs font-semibold bg-gray-100 dark:bg-gray-800 text-left">
+                                        {(() => {
+                                          switch (categoryGroup.category) {
+                                            case "MY-M":
+                                              return "Machinery (MY-M)";
+                                            case "MY-F":
+                                              return "Fuel (MY-F)";
+                                            case "MP-C":
+                                              return "Contractor (MP-C)";
+                                            case "MP-NMR":
+                                              return "NMR (MP-NMR)";
+                                            case "MT-CM":
+                                              return "Consumable (MT-CM)";
+                                            case "MT-BL":
+                                              return "Bulk (MT-BL)";
+                                            default:
+                                              return categoryGroup.category;
+                                          }
+                                        })()}
+                                      </div>
 
-                                        <th className="">
-                                          Final Rate
-                                        </th>
-                                      </tr>
-                                    </thead> */}
-
-                                      <tbody>
+                                      <div className="divide-y divide-gray-100 dark:divide-border-dark-grey">
                                         {categoryGroup.sub.map((line, idx2) => (
-                                          <tr
+                                          <div
                                             key={idx2}
-                                            className="border-b-2 dark:border-gray-500 border-white bg-gray-300 dark:bg-layout-dark"
+                                            className="grid grid-cols-6 gap-2 px-3 py-1.5 text-[11px] md:text-xs bg-gray-50/60 dark:bg-layout-dark"
                                           >
-                                            <td className="p-2 ">
-                                              {line.description}
-                                            </td>
-                                            <td className="text-left">
-                                              {line.unit || "-"}
-                                            </td>
-                                            <td className="text-left">
-                                              {line.quantity ?? "-"}
-                                            </td>
-                                            <td className="">
-                                              {line.rate ?? "-"}
-                                            </td>
-                                            <td className="">
-                                              {line.amount ?? "-"}
-                                            </td>
-                                            <td className="">
-                                              {line.finalRate ?? "-"}
-                                            </td>
-                                          </tr>
+                                            <span className="text-left">{line.description}</span>
+                                            <span>{line.unit || "-"}</span>
+                                            <span className="text-right">{line.quantity ?? "-"}</span>
+                                            <span className="text-right">{line.rate ?? "-"}</span>
+                                            <span className="text-right">{line.amount ?? "-"}</span>
+                                            <span className="text-right">{line.finalRate ?? "-"}</span>
+                                          </div>
                                         ))}
-                                      </tbody>
-                                    </table>
+                                      </div>
+
+                                      {/* Show total rate for this category */}
+                                      <div className="px-3 py-2 text-xs bg-gray-50 dark:bg-gray-800 dark:text-black font-medium text-right">
+                                        {categoryGroup.category === "MY-M" && (
+                                          <span className="bg-yellow-200 py-1.5 px-3">Total Machinery Rate: {workItem.MY_M_rate || 0}</span>
+                                        )}
+                                        {categoryGroup.category === "MY-F" && (
+                                          <span className="bg-yellow-200 py-1.5 px-3">Total Fuel Rate: {workItem.MY_F_rate || 0}</span>
+                                        )}
+                                        {categoryGroup.category === "MP-C" && (
+                                          <span className="bg-yellow-200 py-1.5 px-3">Total Contractor Rate: {workItem.MP_C_rate || 0}</span>
+                                        )}
+                                        {categoryGroup.category === "MP-NMR" && (
+                                          <span className="bg-yellow-200 py-1.5 px-3">Total NMR Rate: {workItem.MP_NMR_rate || 0}</span>
+                                        )}
+                                        {categoryGroup.category === "MT-CM" && (
+                                          <span className="bg-yellow-200 py-1.5 px-3">Total Consumable Rate: {workItem.MT_CM_rate || 0}</span>
+                                        )}
+                                        {categoryGroup.category === "MT-BL" && (
+                                          <span className="bg-yellow-200 py-1.5 px-3">Total Bulk Rate: {workItem.MT_BL_rate || 0}</span>
+                                        )}
+                                      </div>
+                                    </div>
+                                  ))}
+
+                                  {/* Show final rate for the work item */}
+                                  <div className="px-3 py-2 text-sm font-semibold bg-gray-100 dark:bg-gray-800 border-t border-gray-200 dark:border-border-dark-grey text-right">
+                                    Final Rate: {workItem.finalRate}
                                   </div>
-                                ))
+                                </div>
                               ) : (
-                                <div className="text-red-500 py-4 text-center">
+                                <div className="py-4 text-center text-xs text-red-500">
                                   No detail lines available
                                 </div>
                               )}
@@ -424,8 +253,8 @@ const RateAnalysis = ({ data = sample }) => {
                   ))
                 ) : (
                   <tr>
-                    <td colSpan="5" className="text-red-500 py-4 text-center">
-                      No data available
+                    <td colSpan={6} className="py-4 text-center text-red-500 text-sm">
+                      No rate analysis data available
                     </td>
                   </tr>
                 )}
@@ -434,6 +263,7 @@ const RateAnalysis = ({ data = sample }) => {
           </div>
         </div>
       </div>
+
       {showUpload && (
         <UploadRateAnalysis
           onclose={() => setShowUpload(false)}

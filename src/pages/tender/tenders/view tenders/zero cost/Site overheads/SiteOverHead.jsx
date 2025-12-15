@@ -171,12 +171,6 @@ const renderField = (value, inputProps) => {
           </label>
           <div className="text-sm">{data.tenderName || "-"}</div>
         </div>
-        {/* <div>
-          <label className="block text-xs text-gray-500 mb-1">
-            Period (months)
-          </label>
-          <div className="text-sm">{data.periodMonths || 0}</div>
-        </div> */}
       </div>
 
       {/* Sections */}
