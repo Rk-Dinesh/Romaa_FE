@@ -231,35 +231,48 @@ const handleSave = async () => {
     setLoading(true);
     setIsEditing(false);
 
-    const payload = rateAnalysis.map((item) => ({
-      itemNo: item.itemNo,
-      workItem: item.workItem,
-      unit: item.unit,
-      working_quantity: item.output,
-      category: "MAIN_ITEM", // Assuming all are MAIN_ITEM
-      MT_CM_rate: item.MT_CM_rate || 0,
-      MT_BL_rate: item.MT_BL_rate || 0,
-      MY_M_rate: item.MY_M_rate || 0,
-      MY_F_rate: item.MY_F_rate || 0,
-      MP_C_rate: item.MP_C_rate || 0,
-      MP_NMR_rate: item.MP_NMR_rate || 0,
-      final_rate: item.finalRate || 0,
-      lines: item.lines.flatMap((categoryGroup) =>
-        categoryGroup.sub.map((line) => ({
-          category: categoryGroup.category,
-          description: line.description,
-          unit: line.unit,
-          quantity: line.quantity,
-          rate: line.rate,
-          amount: line.amount,
-          total_rate: line.finalRate || 0,
-        }))
-      ),
-    }));
+const payload = [];
+
+rateAnalysis.forEach((item) => {
+  // Add main item
+  payload.push({
+    itemNo: item.itemNo,
+    workItem: item.workItem, // Include workItem for the main row
+    unit: item.unit,
+    working_quantity: item.output,
+    category: "MAIN_ITEM",
+    // Include all calculated rates (optional, but if your backend uses them, include)
+    MT_CM_rate: item.MT_CM_rate || 0,
+    MT_BL_rate: item.MT_BL_rate || 0,
+    MY_M_rate: item.MY_M_rate || 0,
+    MY_F_rate: item.MY_F_rate || 0,
+    MP_C_rate: item.MP_C_rate || 0,
+    MP_NMR_rate: item.MP_NMR_rate || 0,
+    final_rate: item.finalRate || 0
+  });
+
+  // Add detail lines
+  item.lines.forEach((categoryGroup) => {
+    categoryGroup.sub.forEach((line) => {
+      payload.push({
+        itemNo: item.itemNo,
+        description: line.description,
+        unit: line.unit,
+        quantity: line.quantity,
+        rate: line.rate,
+        amount: line.amount,
+        total_rate: line.finalRate || 0,
+        category: categoryGroup.category
+      });
+    });
+  });
+});
+
+
     console.log(payload);
     
 
-    //await axios.put(`${API}/rateanalysis/update/${tender_id}`, { work_items: payload });
+    await axios.put(`${API}/rateanalysis/updaterateanalysis/${tender_id}`, { work_items: payload });
     toast.success("Rate Analysis updated successfully");
     fetchRateAnalysis();
   } catch (err) {
