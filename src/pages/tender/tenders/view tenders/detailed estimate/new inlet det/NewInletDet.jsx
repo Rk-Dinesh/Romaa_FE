@@ -67,7 +67,7 @@ const NewInletDet = ({ name }) => {
         <Loader />
       ) : (
         <>
-          {/* ✅ BUTTON – STATIC POSITION */}
+          { detailedEstimate.length === 0 &&
           <div className="flex justify-end mb-2">
             <Button
               button_icon={<TbFileExport size={22} />}
@@ -77,6 +77,7 @@ const NewInletDet = ({ name }) => {
               onClick={() => setShowUpload(true)}
             />
           </div>
+          }
 
           {/* ✅ ONLY TABLE SCROLLS */}
           <div className="flex-1 overflow-y-auto no-scrollbar">

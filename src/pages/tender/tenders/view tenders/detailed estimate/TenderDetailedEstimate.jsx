@@ -64,14 +64,14 @@ const TenderDetailedEstimate = () => {
       );
 
       if (res.data.status) {
-        toast.success("Heading added successfully");
+        toast.success("Detailed Estimate added successfully");
         setName("");
         fetchHeadings(); // refresh tab list
       } else {
-        toast.error(res.data.message || "Failed to add heading");
+        toast.error(res.data.message || "Failed to add Detailed Estimate");
       }
     } catch (error) {
-      toast.error(error.response?.data?.message || "Error adding heading");
+      toast.error(error.response?.data?.message || "Error adding Detailed Estimate");
     } finally {
       setLoading(false);
     }

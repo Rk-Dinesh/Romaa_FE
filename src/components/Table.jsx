@@ -13,25 +13,36 @@ import { useNavigate } from "react-router-dom";
 import { IoClose } from "react-icons/io5";
 import Loader from "./Loader";
 
-const truncateWords = (text, wordsPerLine = 7) => {
-  if (!text) return "";
-  const words = text.split(" ");
-  const lines = [];
+// const truncateWords = (text, wordsPerLine = 10) => {
+//   if (!text) return "";
+//   const words = text.split(" ");
+//   const lines = [];
 
-  for (let i = 0; i < words.length; i += wordsPerLine) {
-    lines.push(words.slice(i, i + wordsPerLine).join(" "));
+//   for (let i = 0; i < words.length; i += wordsPerLine) {
+//     lines.push(words.slice(i, i + wordsPerLine).join(" "));
+//   }
+
+//   return (
+//     <>
+//       {lines.map((line, index) => (
+//         <span key={index}>
+//           {line}
+//           {index !== lines.length - 1 && <br />}
+//         </span>
+//       ))}
+//     </>
+//   );
+// };
+
+const truncateWords = (text, wordLimit = 7) => {
+  if (!text) return "";
+  const words = text.trim().split(/\s+/);
+
+  if (words.length <= wordLimit) {
+    return words.join(" ");
   }
 
-  return (
-    <>
-      {lines.map((line, index) => (
-        <span key={index}>
-          {line}
-          {index !== lines.length - 1 && <br />}
-        </span>
-      ))}
-    </>
-  );
+  return `${words.slice(0, wordLimit).join(" ")}...`;
 };
 
 
@@ -73,6 +84,10 @@ const Table = ({
   name = "no data",
   onRowClick,
   pagination=true,
+  freeze,
+  freezeButtonLabel,
+  freezeButtonIcon,
+  onfreeze,
 }) => {
   const navigate = useNavigate();
   const { searchTerm } = useSearch();
@@ -185,6 +200,15 @@ const Table = ({
               bgColor="dark:bg-layout-dark bg-white"
               textColor="dark:text-white text-darkest-blue"
               onClick={() => setShowFilter(true)}
+            />
+          )}
+          {freeze && (
+            <Button
+             button_name={freezeButtonLabel}
+              button_icon={freezeButtonIcon}
+              bgColor="dark:bg-layout-dark bg-white"
+              textColor="dark:text-white text-darkest-blue"
+              onClick={onfreeze}
             />
           )}
           {FilterModal && (filterParams?.fromdate || filterParams?.todate) && (

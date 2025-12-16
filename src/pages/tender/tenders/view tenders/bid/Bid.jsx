@@ -5,11 +5,12 @@ import Table from "../../../../../components/Table";
 import axios from "axios";
 import { API } from "../../../../../constant";
 import { toast } from "react-toastify";
-import { LuUserRoundSearch } from "react-icons/lu";
 import UploadBid from "./UploadBid";
+import { GiArrowFlights } from "react-icons/gi";
 
 const customerColumns = [
   { label: "Item ID", key: "item_id" },
+  { label: "Item Name", key: "item_name" },
   { label: "Item Description", key: "description" },
   { label: "Quantity", key: "quantity" },
   { label: "Units", key: "unit" },
@@ -27,30 +28,15 @@ const Bid = () => {
 
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [currentPage, setCurrentPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(0);
-  const [showModal, setShowModal] = useState(false);
-  const [bidId, setbidId] = useState([])
-
-  const handleUploadSuccess = () => {
-    setShowModal(false);
-    fetchBoqItems();
-  };
+  const [bidfreezed, setbidfreezed] = useState(false)
 
   const fetchBoqItems = async () => {
     if (!tender_id) return;
     setLoading(true);
     try {
-      const res = await axios.get(`${API}/bid/get?tender_id=${tender_id}`, {
-        params: {
-          page: currentPage,
-          limit: 10,
-        },
-      });
-
+      const res = await axios.get(`${API}/bid/get?tender_id=${tender_id}`)
       setItems(res.data.data.items || []);
-      setbidId(res.data.data.bid_id)
-      setTotalPages(res.data.totalPages || 1);
+      setbidfreezed(res.data.data.freezed)
     } catch (err) {
       //toast.error("Failed to fetch Bid items");
     } finally {
@@ -60,16 +46,16 @@ const Bid = () => {
 
   useEffect(() => {
     fetchBoqItems();
-  }, [tender_id, currentPage]);
+  }, [tender_id]);
 
-  const handleDeleteBoqItem = async (item_code) => {
+  const handlefreeze = async () => {
     try {
-      await axios.delete(`${API}/bid/removeitem/${bidId}/${item_code}`);
-      toast.success("Item deleted successfully");
-      fetchBoqItems(); // refresh table
+      await axios.put(`${API}/bid/freeze/${tender_id}`);
+      toast.success("Bid frozen successfully");
+      setbidfreezed(true)
     } catch (error) {
       console.error(error);
-      toast.error("Failed to delete Bid item");
+      toast.error("Failed to freeze Bid");
     }
   };
 
@@ -80,23 +66,17 @@ const Bid = () => {
         columns={customerColumns}
         loading={loading}
         exportModal={false}
-        UploadModal={UploadBid}
-        DeleteModal={DeleteModal}
-        deletetitle="BOQ"
-        totalPages={totalPages}
-        currentPage={currentPage}
-        setCurrentPage={setCurrentPage}
+        freeze={true}
+        freezeButtonIcon={<GiArrowFlights size={18} />}
+        freezeButtonLabel={bidfreezed ? "Freezed" : "Freeze"}
+        onfreeze={bidfreezed ? null : handlefreeze}
+        UploadModal={bidfreezed ? false : UploadBid}
         onUpdated={fetchBoqItems}
         onSuccess={fetchBoqItems}
-        onDelete={handleDeleteBoqItem}
         idKey="item_code"
+        pagination={false}
       />
-      {/* {showModal && (
-        <UploadBoq
-          onClose={() => setShowModal(false)}
-          onUploadSuccess={handleUploadSuccess}
-        />
-      )} */}
+
     </>
   );
 };

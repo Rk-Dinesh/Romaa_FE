@@ -64,14 +64,24 @@ const UploadRateAnalysis = ({ onclose, onSuccess }) => {
           headers: { "Content-Type": "multipart/form-data" },
         });
       }
-      toast.success("File Upload Successfully")
-      if (onSuccess) onSuccess();
-      if (onclose) onclose();
+
+      if (res.data.status) {
+        if (onSuccess) onSuccess();
+        if (onclose) onclose();
+        toast.success("Files uploaded successfully");
+      } else {
+        toast.error(res.data.message || "Failed to upload files");
+
+      }
       setSaving(false);
     } catch (error) {
-      toast.error("File Upload Failed")
-      console.error("Upload error:", error);
-      //  alert("Failed to upload files");
+      if (error.response && error.response.data && error.response.data.message) {
+        toast.error(error.response.data.message);
+        if (onclose) onclose();
+      } else {
+        toast.error("Failed to upload files");
+        if (onclose) onclose();
+      }
     }
   };
 

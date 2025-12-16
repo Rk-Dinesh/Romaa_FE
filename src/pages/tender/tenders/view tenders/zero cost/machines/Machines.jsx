@@ -181,7 +181,7 @@ const Machines = () => {
               {/* {activeTab === 'machinery' ? <FaTruckMonster className="text-gray-400"/> : <FaGasPump className="text-gray-400"/>} */}
               {activeTab === 'machinery' ? ' Machinery ' : ' Fuel '}
            </span>
-           <span className="text-xs text-gray-500">
+           <span className="text-xs text-gray-500 dark:text-white">
               {items.length} Records found
            </span>
         </div>
@@ -194,16 +194,16 @@ const Machines = () => {
         ) : (
             <div className="px-0 pb-0 overflow-x-auto">
               <table className="w-full text-sm">
-                <thead className="bg-gray-100 dark:bg-overall_bg-dark border-b border-gray-200 dark:border-border-dark-grey">
+                <thead className="bg-gray-100 dark:bg-gray-700 border-b border-gray-200 dark:border-border-dark-grey">
                   <tr>
-                     <th className="p-2 text-left font-semibold text-gray-600">SI.No</th>
-                    <th className="p-2 text-left font-semibold text-gray-600">Item Description</th>
-                    <th className="p-2 text-center font-semibold text-gray-600">Unit</th>
-                    <th className="p-2 text-right font-semibold text-gray-600">Qty</th>
-                    <th className="p-2 text-right font-semibold text-gray-600">Rate</th>
-                    <th className="p-2 text-right font-semibold text-gray-600">Tax</th>
-                    <th className="p-2 text-right font-semibold text-gray-600 bg-gray-50">Total Amount</th>
-                    <th className="p-2 text-right font-semibold text-gray-600">Var %</th>
+                     <th className="p-2 text-left font-semibold text-gray-600 dark:text-white">SI.No</th>
+                    <th className="p-2 text-left font-semibold text-gray-600 dark:text-white">Item Description</th>
+                    <th className="p-2 text-center font-semibold text-gray-600 dark:text-white">Unit</th>
+                    <th className="p-2 text-right font-semibold text-gray-600 dark:text-white">Qty</th>
+                    <th className="p-2 text-right font-semibold text-gray-600 dark:text-white">Rate</th>
+                    <th className="p-2 text-right font-semibold text-gray-600 dark:text-white">Tax</th>
+                    <th className="p-2 text-right font-semibold text-gray-600 dark:text-white">Total Amount</th>
+                    <th className="p-2 text-right font-semibold text-gray-600 dark:text-white">Var %</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -238,7 +238,7 @@ const Machines = () => {
                       </td>
 
                       {/* Rate (Editable) */}
-                      <td className="p-2.5 text-right align-middle">
+                      <td className="p-2.5 text-right align-middle ">
                         {renderField(item.unit_rate, {
                            type: "number",
                            onChange: (e) => updateItem(index, 'unit_rate', e.target.value)
@@ -254,7 +254,7 @@ const Machines = () => {
                       </td>
 
                       {/* Total Amount (Calculated) */}
-                      <td className="p-2.5 text-right align-middle font-medium bg-gray-50/50">
+                      <td className="p-2.5 text-right align-middle font-medium ">
                          ₹ {Number(item.total_amount).toLocaleString('en-IN', { maximumFractionDigits: 2 })}
                       </td>
 
@@ -270,7 +270,7 @@ const Machines = () => {
               </table>
               
               {/* Table Footer / Summary */}
-              <div className="p-2 bg-gray-50 border-t border-gray-200 text-xs text-right text-gray-600 font-medium">
+              <div className="p-2 bg-gray-50 border-t border-gray-200 text-xs text-right text-gray-600 font-medium dark:bg-layout-dark dark:text-white">
                   Subtotal: ₹ {totalCost.toLocaleString('en-IN')} | {toLakhs(totalCost).toFixed(2)} L
               </div>
             </div>

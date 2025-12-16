@@ -77,8 +77,8 @@ const BOQ = () => {
         //EditModal={true}
         exportModal={false}
        // UploadModal={UploadBoq}
-        DeleteModal={DeleteModal}
-        deletetitle="BOQ"
+        // DeleteModal={DeleteModal}
+        // deletetitle="BOQ"
        // AddModal={AddBoq}
        // addButtonLabel="Add Boq"
       //  addButtonIcon={<LuUserRoundSearch size={24} />}

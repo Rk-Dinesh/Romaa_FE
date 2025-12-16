@@ -77,6 +77,9 @@ const BOQProject = () => {
               <th rowSpan={2} className="border px-2 py-2 text-center w-16">
                 Unit
               </th>
+              <th rowSpan={2} className="border px-2 py-2 text-center w-16">
+                Rate
+              </th>
               {headings.map((h) => (
                 <th
                   key={`head-${h}`}
@@ -111,6 +114,7 @@ const BOQProject = () => {
                 <td className="border px-2 py-1 text-center">{idx + 1}</td>
                 <td className="border px-2 py-1 font-medium">{item.item_name}</td>
                 <td className="border px-2 py-1 text-center">{item.unit}</td>
+                <td className="border px-2 py-1 text-center">{item.n_rate}</td>
 
                 {/* Dynamic Columns */}
                 {headings.map((h) => {
@@ -143,7 +147,7 @@ const BOQProject = () => {
 
             {/* Footer Row: Totals */}
             <tr className="bg-gray-200 font-bold border-t-2 border-gray-300 text-gray-600">
-              <td colSpan={3} className="border px-2 py-2 text-center">
+              <td colSpan={4} className="border px-2 py-2 text-center">
                 Grand Total
               </td>
               {headings.map((h) => (

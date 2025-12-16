@@ -8,7 +8,6 @@ import { toast } from "react-toastify";
 const sampleCSv = `abstract_id,description,unit,quantity,rate,amount,
 ABS001,Concrete Work,m3,10,2500,25000,
 ABS002,Brick Masonry,m2,5,10,50,
-ABS003,Plastering,m2,15,10,150,
 `; 
 
 const UploadAbstract = ({ onclose, onSuccess, name }) => {
@@ -47,12 +46,10 @@ const UploadAbstract = ({ onclose, onSuccess, name }) => {
     try {
       setSaving(true);
       const formData = new FormData();
-      // Append required fields (replace with actual values or props)
       formData.append("nametype", name);
       formData.append("created_by_user", "user_id_here");
 
       if (files.length === 1) {
-        // Single file upload
         formData.append("file", files[0]);
         const res = await axios.post(
           `${API}/detailedestimate/bulkinsertcustomhead?tender_id=${tender_id}`,
@@ -61,15 +58,27 @@ const UploadAbstract = ({ onclose, onSuccess, name }) => {
             headers: { "Content-Type": "multipart/form-data" },
           }
         );
-      }
-      toast.success("Files uploaded successfully");
-      if (onSuccess) onSuccess();
-      if (onclose) onclose();
 
+        if (res.data.status) {
+          if (onSuccess) onSuccess();
+          if (onclose) onclose();
+          toast.success("Files uploaded successfully");
+        } else {
+          toast.error(res.data.message || "Failed to upload files");
+
+        }
+      }
       setSaving(false);
     } catch (error) {
-      console.error("Upload error:", error);
-      //  alert("Failed to upload files");
+      // Handle both network errors and API error messages
+      if (error.response && error.response.data && error.response.data.message) {
+        toast.error(error.response.data.message);
+        if (onclose) onclose();
+      } else {
+        toast.error("Failed to upload files");
+        if (onclose) onclose();
+      }
+      setSaving(false);
     }
   };
 

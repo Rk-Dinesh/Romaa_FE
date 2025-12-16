@@ -5,9 +5,9 @@ import { API } from "../../../../../constant";
 import { useParams } from "react-router-dom";
 import { toast } from "react-toastify";
 
-const sampleCSv = `item_id,item_name,description,specifications,unit,quantity,base_rate,q_rate,n_rate,base_amount,q_amount,n_amount,remarks,work_section
-ABS001,EARTH WORK,Laying and curing concrete for foundation,"M20 grade, 28-day curing, compressive strength 20 N/mm²",m3,1011,250,230,199.90,252750,232530,202098.9,Use M20 mix,Foundation
-ABS002,Refilling,Brick work in cement mortar 1:6,"First class bricks, modular size 225×112×75mm, 1:6 cement mortar mix",m2,380,60,50,38.95,22800,19000,14801,Proper alignment required,Superstructure
+const sampleCSv = `item_id,item_name,description,specifications,unit,quantity,base_rate,q_rate,n_rate,remarks,work_section
+ABS001,EARTH WORK,Laying and curing concrete for foundation,"M20 grade, 28-day curing, compressive strength 20 N/mm²",m3,1011,250,230,199.90,Use M20 mix,Foundation
+ABS002,Refilling,Brick work in cement mortar 1:6,"First class bricks, modular size 225×112×75mm, 1:6 cement mortar mix",m2,380,60,50,38.95,Proper alignment required,Superstructure
 `;
 
 const UploadBid = ({ onclose, onSuccess }) => {

@@ -3,6 +3,7 @@ import React, { useState, useRef } from "react";
 import { IoClose } from "react-icons/io5";
 import { useParams } from "react-router-dom";
 import { API } from "../../../../../../constant";
+import { toast } from "react-toastify";
 
 const sampleCSv = `abstract_id,particulars,nos,l,b,d_h,content,
 ABS001,u/s cut of wall,"1x2",120,10,1.90,30,
@@ -48,12 +49,10 @@ const UploadDetailedEstimate = ({ onclose, onSuccess, name }) => {
     try {
       setSaving(true);
       const formData = new FormData();
-      // Append required fields (replace with actual values or props)
       formData.append("nametype", name);
       formData.append("created_by_user", "user_id_here");
 
       if (files.length === 1) {
-        // Single file upload
         formData.append("file", files[0]);
         const res = await axios.post(
           `${API}/detailedestimate/bulkinsertcustomhead?tender_id=${tender_id}`,
@@ -62,14 +61,29 @@ const UploadDetailedEstimate = ({ onclose, onSuccess, name }) => {
             headers: { "Content-Type": "multipart/form-data" },
           }
         );
+
+        if (res.data.status) {
+          if (onSuccess) onSuccess();
+          if (onclose) onclose();
+          toast.success("Files uploaded successfully");
+        } else {
+          toast.error(res.data.message || "Failed to upload files");
+
+        }
       }
-        if (onSuccess) onSuccess();
-        if (onclose) onclose();
       setSaving(false);
     } catch (error) {
-      console.error("Upload error:", error);
-      //  alert("Failed to upload files");
+      // Handle both network errors and API error messages
+      if (error.response && error.response.data && error.response.data.message) {
+        toast.error(error.response.data.message);
+        if (onclose) onclose();
+      } else {
+        toast.error("Failed to upload files");
+        if (onclose) onclose();
+      }
+      setSaving(false);
     }
+
   };
 
   const downloadSampleCsv = () => {

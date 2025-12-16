@@ -42,7 +42,7 @@ const NewInletAbs = ({ name }) => {
       loading={loading}
       contentMarginTop="mt-0"
       pagination={false}
-      UploadModal={UploadAbstract}
+      UploadModal={abstract.length > 0 ? null : UploadAbstract}
       endpoint={abstract}
       columns={NewInletAbsColumns}
       // routepoint={"viewnewinletabs"}
