@@ -30,15 +30,14 @@ const processData = (items) => {
 };
 
 // --- Helper: Calculate Single Week Plan ---
-const getWeeklyPlanForLabel = (item, weekStartDay, currentRevisedEndDate, monthStart) => {
-  const startDate = parseISO(item.start_date);
+const getWeeklyPlanForLabel = (item, weekStartDay, currentStartDate, currentRevisedEndDate, monthStart) => {
+  const startDate = parseISO(currentStartDate);
   const endDate = parseISO(currentRevisedEndDate);
   const totalDuration = differenceInCalendarDays(endDate, startDate) + 1;
   if (totalDuration <= 0) return null;
 
   const dailyRate = item.quantity / totalDuration;
 
-  // Define the Week boundaries (1-7, 8-14, 15-21, 22-End)
   const dayNum = getDate(weekStartDay);
   let weekEndDayNum;
   let weekIndex;
@@ -75,6 +74,7 @@ const DailyProjects = () => {
   const [loading, setLoading] = useState(false);
   const [updates, setUpdates] = useState({}); 
   const [revisedDateUpdates, setRevisedDateUpdates] = useState({}); 
+  const [startDateUpdates, setStartDateUpdates] = useState({}); 
 
   const fetchWBS = async () => {
     if (!tenderId) return;
@@ -105,13 +105,70 @@ const DailyProjects = () => {
     setUpdates(prev => ({ ...prev, [`${wbsId}-${dateStr}`]: value }));
   };
 
-  const handleCellDoubleClick = (wbsId, dateStr) => {
-    setRevisedDateUpdates(prev => ({ ...prev, [wbsId]: dateStr }));
-    toast.info(`Project extended to ${format(parseISO(dateStr), "dd MMM")}`);
+  const getRevisedDate = (item) => revisedDateUpdates[item.wbs_id] || item.revised_end_date;
+  const getStartDate = (item) => startDateUpdates[item.wbs_id] || item.start_date;
+
+  // --- SMART DOUBLE CLICK HANDLER ---
+  const handleCellDoubleClick = (item, dateStr) => {
+    const clickedDate = parseISO(dateStr);
+    const currentStart = parseISO(getStartDate(item));
+    const currentRevisedEnd = parseISO(getRevisedDate(item));
+    const originalEnd = parseISO(item.original_end_date);
+
+    // 1. EXTEND: Clicked AFTER current Revised End (e.g. Current=18, Click=20)
+    if (clickedDate > currentRevisedEnd) {
+      setRevisedDateUpdates(prev => ({ ...prev, [item.wbs_id]: dateStr }));
+      toast.info(`End Date extended to ${format(clickedDate, "dd MMM")}`);
+      return;
+    }
+
+    // 2. REVERT TO ORIGINAL END (The specific request): 
+    // Condition: Revised is extended (> Original) AND user clicked exactly ON Original End
+    if (currentRevisedEnd > originalEnd && isSameDay(clickedDate, originalEnd)) {
+       if (window.confirm(`Revert Revised Date back to Original End Date (${format(clickedDate, "dd MMM")})?`)) {
+          setRevisedDateUpdates(prev => ({ ...prev, [item.wbs_id]: dateStr }));
+          toast.info(`Revised Date reset to Original End Date`);
+       }
+       return;
+    }
+
+    // 3. REDUCE REVISED END: Clicked BETWEEN Original End and Revised End (e.g. Orig=15, Rev=18, Click=16)
+    if (clickedDate > originalEnd && clickedDate < currentRevisedEnd) {
+      if (window.confirm(`Reduce Revised End Date to ${format(clickedDate, "dd MMM")}?`)) {
+        setRevisedDateUpdates(prev => ({ ...prev, [item.wbs_id]: dateStr }));
+        toast.info(`End Date reduced to ${format(clickedDate, "dd MMM")}`);
+      }
+      return;
+    }
+
+    // 4. SHIFT START DATE: Clicked strictly BETWEEN Start and Original End (e.g. Start=1, Orig=15, Click=3)
+    if (clickedDate > currentStart && clickedDate < originalEnd) {
+      const diffDays = differenceInCalendarDays(clickedDate, currentStart);
+      
+      if (window.confirm(`Move Start Date to ${format(clickedDate, 'dd MMM')}?\n(This skips ${diffDays} days)`)) {
+        const shouldExtendEnd = window.confirm(
+          `You skipped ${diffDays} days.\n\nClick OK to ADD these days to the Revised End Date.\nClick Cancel to KEEP the current End Date (Shrink Duration).`
+        );
+
+        setStartDateUpdates(prev => ({ ...prev, [item.wbs_id]: dateStr }));
+
+        if (shouldExtendEnd) {
+          const newEndDate = addDays(currentRevisedEnd, diffDays);
+          setRevisedDateUpdates(prev => ({ ...prev, [item.wbs_id]: newEndDate.toISOString() }));
+          toast.success(`Start moved & End extended by ${diffDays} days`);
+        } else {
+          toast.success(`Start moved (Duration reduced)`);
+        }
+      }
+    }
   };
 
   const handleSave = async () => {
-    console.log({ daily: updates, revised: revisedDateUpdates });
+    console.log({ 
+      daily_updates: updates, 
+      revised_end_dates: revisedDateUpdates,
+      new_start_dates: startDateUpdates
+    });
     toast.success("Schedule Updated Successfully");
   };
 
@@ -122,7 +179,6 @@ const DailyProjects = () => {
     return dayRecord ? dayRecord.quantity : "";
   };
 
-  const getRevisedDate = (item) => revisedDateUpdates[item.wbs_id] || item.revised_end_date;
 
   return (
     <div className="flex flex-col h-full bg-white dark:bg-gray-900 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
@@ -135,7 +191,7 @@ const DailyProjects = () => {
           </div>
           <div>
             <h2 className="text-lg font-bold text-gray-800 dark:text-white">Daily Progress</h2>
-            <p className="text-xs text-gray-500 dark:text-gray-400">Double-click to extend schedule</p>
+            <p className="text-xs text-gray-500 dark:text-gray-400">Double-click empty cell space to adjust Start or End</p>
           </div>
         </div>
 
@@ -196,6 +252,7 @@ const DailyProjects = () => {
           <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
             {items.map((item) => {
               const currentRevisedDate = getRevisedDate(item);
+              const currentStartDate = getStartDate(item);
 
               return (
                 <tr key={item.wbs_id} className="group hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
@@ -215,7 +272,7 @@ const DailyProjects = () => {
                   {daysInMonth.map((day) => {
                     const dayStr = day.toISOString();
                     const dayParsed = parseISO(dayStr);
-                    const parsedStart = parseISO(item.start_date);
+                    const parsedStart = parseISO(currentStartDate);
                     const parsedOriginalEnd = parseISO(item.original_end_date);
                     const parsedRevisedEnd = parseISO(currentRevisedDate);
 
@@ -224,8 +281,8 @@ const DailyProjects = () => {
                     const isOriginalEnd = isSameDay(parsedOriginalEnd, dayParsed);
                     const isRevisedEnd = isSameDay(parsedRevisedEnd, dayParsed);
 
-                    // WEEKLY PLAN
-                    const weeklyPlanData = getWeeklyPlanForLabel(item, dayParsed, currentRevisedDate, currentDate);
+                    // WEEKLY PLAN 
+                    const weeklyPlanData = getWeeklyPlanForLabel(item, dayParsed, currentStartDate, currentRevisedDate, currentDate);
 
                     // Styles
                     const dayNum = getDate(day);
@@ -237,7 +294,7 @@ const DailyProjects = () => {
 
                     if (isStart) inputClasses += "border-green-400 bg-green-50 dark:bg-green-900/20 text-green-700 ";
                     else if (isRevisedEnd) inputClasses += "border-purple-400 bg-purple-50 dark:bg-purple-900/20 text-purple-700 ";
-                    else if (isOriginalEnd) inputClasses += "border-red-400 bg-red-50 dark:bg-red-900/20 text-red-700 "; // Added explicit red border for original end
+                    else if (isOriginalEnd) inputClasses += "border-red-400 bg-red-50 dark:bg-red-900/20 text-red-700 ";
                     else if (isActiveRange) inputClasses += "border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 dark:text-white ";
                     else inputClasses += "bg-transparent border-none text-transparent pointer-events-none";
 
@@ -245,25 +302,21 @@ const DailyProjects = () => {
                       <td 
                         key={dayStr} 
                         className={cellClasses}
-                        onDoubleClick={() => handleCellDoubleClick(item.wbs_id, dayStr)}
+                        onDoubleClick={() => handleCellDoubleClick(item, dayStr)} // CLICK ON CELL TRIGGERS LOGIC
                       >
-                         {/* --- Weekly Plan Badge (z-30 to sit on top) --- */}
+                         {/* --- Weekly Plan Badge (z-30) --- */}
                          {weeklyPlanData && (
-                            <div className="absolute top-0 left-0 right-0 z-20 flex justify-center  mt-1 pointer-events-none">
+                            <div className="absolute top-0 left-0 right-0 z-20 flex justify-center mt-1 pointer-events-none">
                               <span className="bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-200 border border-blue-200 dark:border-blue-700 text-[9px] font-bold px-1.5 py-0.5 rounded shadow-sm whitespace-nowrap">
                                 {weeklyPlanData.label}
                               </span>
                             </div>
                          )}
 
-                        {/* --- Markers (S/E/R) (z-20) --- */}
+                        {/* --- Markers (z-20) --- */}
                         {(isStart || isOriginalEnd || isRevisedEnd) && (
                           <div className="absolute bottom-1 right-1 pointer-events-none z-20 flex gap-0.5">
                              {isStart && <span className="text-[7px] w-3 h-3 flex items-center justify-center rounded-full font-bold text-white bg-green-500 shadow-sm" title="Start Date">S</span>}
-                             {/* Show E if it's not the same as R, OR if R matches E (to show it hasn't changed), handled by logic below. 
-                                 If they are same day, showing both might be crowded, but user asked for E tag. 
-                                 If E and R are same, showing R is usually enough, but let's show E if specifically asked. 
-                                 To prevent overlap if same day, flex gap handles it. */}
                              {isOriginalEnd && <span className="text-[7px] w-3 h-3 flex items-center justify-center rounded-full font-bold text-white bg-red-500 shadow-sm" title="Original End Date">E</span>}
                              {isRevisedEnd && <span className="text-[7px] w-3 h-3 flex items-center justify-center rounded-full font-bold text-white bg-purple-500 shadow-sm" title="Revised End Date">R</span>}
                           </div>
@@ -277,6 +330,7 @@ const DailyProjects = () => {
                           className={inputClasses}
                           value={getInputValue(item, dayStr)}
                           onChange={(e) => handleInputChange(item.wbs_id, dayStr, e.target.value)}
+                          onDoubleClick={(e) => e.stopPropagation()} // STOP PROPAGATION HERE
                         />
                       </td>
                     );
