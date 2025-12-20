@@ -1,135 +1,190 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import axios from "axios";
+import { toast } from "react-toastify";
 import { API } from "../../../../../../constant";
 import { useProject } from "../../../../ProjectContext";
-import ScheduleTable from "../ScheduleTable";
+import UploadScheduleModal from "../../UploadScheduleModal";
+import Button from "../../../../../../components/Button";
 import { TbFileExport } from "react-icons/tb";
-import UploadModal from "../../UploadModal";
+
+// --- HELPER FUNCTIONS ---
+const formatNumber = (num) => {
+  if (num === undefined || num === null || num === "") return "-";
+  const n = Number(num);
+  return Number.isNaN(n) ? "-" : n.toString();
+};
+
+const formatDate = (dateString) => {
+  if (!dateString) return "-";
+  return new Date(dateString).toLocaleDateString("en-GB");
+};
 
 const ProjectSchedule = () => {
   const { tenderId } = useProject();
-  const today = new Date();
-  const currentYear = today.getFullYear();
+  const [items, setItems] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
 
-  const [scheduleData, setScheduleData] = useState([]);
-  const [upload, setUpload] = useState(false); // Upload modal state
 
-  // Filters
-  const [selectedYear, setSelectedYear] = useState(""); // empty initially
-  const [startDate, setStartDate] = useState("");
-  const [endDate, setEndDate] = useState("");
-
-  // Example: years from 2020 to current year
-  const years = Array.from({ length: currentYear - 2019 }, (_, i) => 2020 + i);
-
-  // Fetch data function
-  const fetchData = async (filters = {}) => {
+  // --- DATA FETCHING ---
+  const fetchWBS = async () => {
     if (!tenderId) return;
-
+    setLoading(true);
     try {
-      const params = { tenderId };
-
-      // If date range is selected
-      if (filters.startDate && filters.endDate) {
-        params.startDate = filters.startDate;
-        params.endDate = filters.endDate;
-      } else {
-        // No date range, pass year (selected or default to current year)
-        params.year = filters.year || currentYear;
-      }
-
-      const res = await axios.get(`${API}/schedule/getschedule`, { params });
-      setScheduleData(Array.isArray(res.data.data) ? res.data.data : []);
+      const res = await axios.get(`${API}/schedule/get-schedule/${tenderId}`);
+      setItems(res.data.data || []);
     } catch (err) {
       console.error(err);
-      setScheduleData([]);
+      toast.error("Failed to fetch Schedule items");
+    } finally {
+      setLoading(false);
     }
   };
 
-  // Initial load
   useEffect(() => {
-    fetchData(); // API will get current year by default
+    fetchWBS();
   }, [tenderId]);
 
-  // Handlers
-  const handleYearChange = (year) => {
-    setSelectedYear(year);
-    setStartDate("");
-    setEndDate("");
-    fetchData({ year });
+  const handleUploadModalOpen = () => {
+    setIsUploadModalOpen(true);
   };
 
-  const handleDateChange = (start, end) => {
-    setStartDate(start);
-    setEndDate(end);
-    setSelectedYear(""); // reset year when using date range
-    if (start && end) fetchData({ startDate: start, endDate: end });
+  const handleUploadModalClose = () => {
+    setIsUploadModalOpen(false);
   };
+
+  // --- COMMON STYLES ---
+  const baseCellClass = "border-r border-b border-gray-300 dark:border-gray-700 px-3 py-2.5 transition-colors whitespace-nowrap";
+  const headerClass = `${baseCellClass} bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 font-bold`;
+
+  if (loading) {
+    return <div className="p-8 text-center text-gray-500 dark:text-gray-400">Loading Project Schedule...</div>;
+  }
+
 
   return (
-    <div>
-      {/* Upload Button */}
-      <p className="cursor-pointer flex justify-end mb-2">
-        <span
-          onClick={() => setUpload(true)}
-          className="flex items-center dark:bg-layout-dark bg-white px-2 py-2 rounded-md text-sm"
-        >
-          <TbFileExport size={22} />
-          <span className="px-1">Upload</span>
-        </span>
-      </p>
+    <div className="space-y-4">
+      <div className="flex flex-row gap-4 justify-end">
 
-      {/* Horizontal strip style header */}
-      <div className="w-full bg-white dark:bg-layout-dark border-b-2 dark:border-border-dark-grey border-gray-100 rounded-t-lg px-4 py-3 flex items-center gap-4 overflow-x-auto no-scrollbar">
-        {/* Year Dropdown */}
-        <select
-          value={selectedYear}
-          onChange={(e) => handleYearChange(parseInt(e.target.value))}
-          className="bg-layout-dark rounded px-2 py-1 text-sm"
-        >
-          <option value="">Select Year</option>
-          {years.map((year) => (
-            <option key={year} value={year}>
-              {year}
-            </option>
-          ))}
-        </select>
-
-        {/* Start Date */}
-        <input
-          type="date"
-          value={startDate}
-          onChange={(e) => handleDateChange(e.target.value, endDate)}
-          className="border border-border-dark-grey rounded px-2 py-1 text-sm"
+        <Button
+          button_icon={<TbFileExport size={22} />}
+          button_name="Upload"
+          bgColor="dark:bg-layout-dark bg-white"
+          textColor="dark:text-white text-darkest-blue"
+          onClick={handleUploadModalOpen}
         />
-
-        {/* End Date */}
-        <input
-          type="date"
-          value={endDate}
-          onChange={(e) => handleDateChange(startDate, e.target.value)}
-          className="border border-border-dark-grey rounded px-2 py-1 text-sm"
-        />
-
-        {/* Reset Button */}
-        <button
-          onClick={() => {
-            setSelectedYear("");
-            setStartDate("");
-            setEndDate("");
-            fetchData(); // current year by default
-          }}
-          className="bg-darkest-blue px-3 py-1 rounded text-sm"
-        >
-          Reset
-        </button>
       </div>
 
-      {/* Schedule Table */}
-      <ScheduleTable scheduleData={scheduleData} />
 
-      {/* Upload Modal */}
-      {upload && <UploadModal onclose={() => setUpload(false)} />}
+      <div className="overflow-x-auto border-t border-l border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 shadow-sm max-w-full rounded-sm">
+        <table className="border-separate border-spacing-0 text-xs min-w-full">
+          <thead>
+            <tr className="bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 uppercase">
+              <th rowSpan={2} className={`${headerClass} text-center min-w-[80px]`}>
+                SI.No
+              </th>
+              <th rowSpan={2} className={`${headerClass} text-center min-w-[80px]`}>
+                WBS ID
+              </th>
+              <th rowSpan={2} className={`${headerClass} text-left min-w-[220px]`}>
+                Description
+              </th>
+              <th rowSpan={2} className={`${headerClass} text-center min-w-[60px]`}>
+                Unit
+              </th>
+
+              <th colSpan={3} className={`${baseCellClass} text-center bg-blue-50 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300 min-w-[240px]`}>
+                Quantities
+              </th>
+              <th colSpan={3} className={`${baseCellClass} text-center bg-green-50 dark:bg-green-900/30 text-green-800 dark:text-green-300 min-w-[270px]`}>
+                Original Timeline
+              </th>
+              <th colSpan={3} className={`${baseCellClass} text-center bg-yellow-50 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-300 min-w-[240px]`}>
+                Revised & Status
+              </th>
+            </tr>
+
+            <tr className="bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 font-semibold">
+              <th className={`${baseCellClass} text-right bg-blue-50/50 dark:bg-blue-900/20`}>Total</th>
+              <th className={`${baseCellClass} text-right bg-blue-50/50 dark:bg-blue-900/20`}>Executed</th>
+              <th className={`${baseCellClass} text-right bg-blue-50/50 dark:bg-blue-900/20`}>Balance</th>
+
+              <th className={`${baseCellClass} text-center bg-green-50/50 dark:bg-green-900/20`}>Duration</th>
+              <th className={`${baseCellClass} text-center bg-green-50/50 dark:bg-green-900/20`}>Start</th>
+              <th className={`${baseCellClass} text-center bg-green-50/50 dark:bg-green-900/20`}>End</th>
+
+              <th className={`${baseCellClass} text-center bg-yellow-50/50 dark:bg-yellow-900/20`}>Rev. End</th>
+              <th className={`${baseCellClass} text-center bg-yellow-50/50 dark:bg-yellow-900/20`}>Rev. Duration</th>
+              <th className={`${baseCellClass} text-center bg-yellow-50/50 dark:bg-yellow-900/20`}>Lag</th>
+            </tr>
+          </thead>
+
+          <tbody className="text-gray-700 dark:text-gray-300">
+            {items.length > 0 ? (
+              items.map((item, idx) => (
+                <tr key={item.wbs_id || idx} className="hover:bg-gray-50 dark:hover:bg-gray-800 group transition-colors">
+                  <td className={`${baseCellClass} text-center font-medium`}>
+                    {idx + 1}
+                  </td>
+                  <td className={`${baseCellClass} text-center font-medium`}>
+                    {item.wbs_id}
+                  </td>
+                  <td className={`${baseCellClass} truncate max-w-[220px]`} title={item.description}>
+                    {item.description}
+                  </td>
+                  <td className={`${baseCellClass} text-center`}>
+                    {item.unit}
+                  </td>
+
+                  <td className={`${baseCellClass} text-right bg-blue-50/20 dark:bg-blue-900/10`}>
+                    {formatNumber(item.quantity)}
+                  </td>
+                  <td className={`${baseCellClass} text-right bg-blue-50/20 dark:bg-blue-900/10`}>
+                    {formatNumber(item.executed_quantity)}
+                  </td>
+                  <td className={`${baseCellClass} text-right bg-blue-50/20 dark:bg-blue-900/10 font-semibold`}>
+                    {formatNumber(item.balance_quantity)}
+                  </td>
+
+
+                  <td className={`${baseCellClass} text-center bg-green-50/20 dark:bg-green-900/10`}>
+                    {item.duration}
+                  </td>
+                  <td className={`${baseCellClass} text-center bg-green-50/20 dark:bg-green-900/10`}>
+                    {formatDate(item.start_date)}
+                  </td>
+                  <td className={`${baseCellClass} text-center bg-green-50/20 dark:bg-green-900/10`}>
+                    {formatDate(item.end_date)}
+                  </td>
+
+
+                  <td className={`${baseCellClass} text-center bg-yellow-50/20 dark:bg-yellow-900/10 text-orange-600 dark:text-orange-400`}>
+                    {formatDate(item.revised_end_date)}
+                  </td>
+                  <td className={`${baseCellClass} text-center bg-yellow-50/20 dark:bg-yellow-900/10`}>
+                    {item.revised_duration}
+                  </td>
+                  <td className={`${baseCellClass} text-center bg-yellow-50/20 dark:bg-yellow-900/10 font-bold ${Number(item.lag) > 0 ? 'text-red-600 dark:text-red-400' : 'text-green-600 dark:text-green-400'}`}>
+                    {item.lag}
+                  </td>
+                </tr>
+              ))
+            ) : (
+              <tr>
+                <td colSpan={12} className="text-center py-8 text-gray-500 dark:text-gray-400 border-b border-gray-300 dark:border-gray-700">
+                  No schedule items found. Upload a schedule to get started.
+                </td>
+              </tr>
+            )}
+          </tbody>
+        </table>
+      </div>
+
+      {isUploadModalOpen && (
+        <UploadScheduleModal
+          onClose={handleUploadModalClose}
+          onSuccess={fetchWBS} />
+      )}
     </div>
   );
 };
