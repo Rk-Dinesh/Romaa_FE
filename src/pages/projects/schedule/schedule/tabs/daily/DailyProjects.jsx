@@ -15,8 +15,10 @@ const processData = (items) => {
       new Date(a.date).getTime() - new Date(b.date).getTime()
     );
 
-    const originalStart = sortedDaily.length > 0 ? sortedDaily[0].date : new Date().toISOString();
-    const originalEnd = sortedDaily.length > 0 ? sortedDaily[sortedDaily.length - 1].date : new Date().toISOString();
+    // FIX: Prioritize API 'start_date' and 'end_date' fields. 
+    // Fallback to daily array only if those fields are missing.
+    const originalStart = item.start_date || (sortedDaily.length > 0 ? sortedDaily[0].date : new Date().toISOString());
+    const originalEnd = item.end_date || (sortedDaily.length > 0 ? sortedDaily[sortedDaily.length - 1].date : new Date().toISOString());
     const revisedEnd = item.revised_end_date || originalEnd;
 
     return {
@@ -76,7 +78,6 @@ const DailyProjects = () => {
   const [revisedDateUpdates, setRevisedDateUpdates] = useState({}); 
   const [startDateUpdates, setStartDateUpdates] = useState({}); 
   
-  // --- NEW: Edit Mode State ---
   const [isEditing, setIsEditing] = useState(false);
 
   const scrollContainerRef = useRef(null);
@@ -133,9 +134,9 @@ const DailyProjects = () => {
     });
   };
 
-  // --- SMART DOUBLE CLICK HANDLER (Now checks isEditing) ---
+  // --- SMART DOUBLE CLICK HANDLER ---
   const handleCellDoubleClick = (item, dateStr) => {
-    if (!isEditing) return; // Prevent changes if not in edit mode
+    if (!isEditing) return;
 
     const clickedDate = parseISO(dateStr);
     const currentStart = parseISO(getStartDate(item));
@@ -193,19 +194,25 @@ const DailyProjects = () => {
     }
   };
 
-  // --- TOGGLE HANDLER ---
   const handleEditToggle = async () => {
     if (isEditing) {
-        // We are currently editing, so this is the SAVE action
-        console.log({ 
-            daily_updates: updates, 
-            revised_end_dates: revisedDateUpdates,
-            new_start_dates: startDateUpdates
-        });
-        toast.success("Schedule Saved Successfully");
-        setIsEditing(false);
+        console.log({ daily_updates: updates, revised_end_dates: revisedDateUpdates, new_start_dates: startDateUpdates });
+        try {
+            const res = await axios.put(`${API}/schedule/update-daily-schedule/${tenderId}`, {
+                daily_updates: updates,
+                revised_end_dates: revisedDateUpdates,
+                new_start_dates: startDateUpdates
+            });
+            if (res.data && res.data.status) {
+                toast.success("Schedule Updated Successfully");
+                setIsEditing(false);
+                fetchWBS(); 
+            }
+        } catch (err) {
+            console.error(err);
+            toast.error("Failed to Update Schedule");
+        }
     } else {
-        // We are viewing, so this is the START EDIT action
         setIsEditing(true);
         toast.info("Edit Mode Enabled");
     }
@@ -230,8 +237,7 @@ const DailyProjects = () => {
           </div>
           <div>
             <h2 className="text-lg font-bold text-gray-800 dark:text-white flex items-center gap-2">
-                Daily Progress
-                {!isEditing && <Lock size={14} className="text-gray-400" />}
+                Daily Progress {!isEditing && <Lock size={14} className="text-gray-400" />}
             </h2>
             <p className="text-xs text-gray-500 dark:text-gray-400">
                 {isEditing ? "Double-click cells to adjust dates" : "Click 'Edit' to make changes"}
@@ -245,13 +251,7 @@ const DailyProjects = () => {
             <span className="px-4 font-semibold text-sm w-32 text-center text-gray-700 dark:text-gray-200 min-w-[140px]">{format(currentDate, "MMMM yyyy")}</span>
             <button onClick={handleNextMonth} className="p-2 hover:bg-gray-100 dark:hover:bg-gray-600 text-gray-600 dark:text-gray-300"><ChevronRight size={18} /></button>
           </div>
-          
-          {/* --- Edit / Save Button --- */}
-          <button 
-            onClick={handleEditToggle} 
-            disabled={loading} 
-            className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-colors disabled:opacity-50 ${isEditing ? "bg-green-600 hover:bg-green-700 text-white" : "bg-blue-600 hover:bg-blue-700 text-white"}`}
-          >
+          <button onClick={handleEditToggle} disabled={loading} className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-colors disabled:opacity-50 ${isEditing ? "bg-green-600 hover:bg-green-700 text-white" : "bg-blue-600 hover:bg-blue-700 text-white"}`}>
             {loading ? <Loader2 className="animate-spin" size={16} /> : (isEditing ? <Save size={16} /> : <Edit2 size={16} />)} 
             {isEditing ? "Save" : "Edit"}
           </button>
@@ -264,35 +264,26 @@ const DailyProjects = () => {
         <div className="flex items-center gap-2 whitespace-nowrap"><span className="w-3 h-3 rounded-full bg-red-500"></span> Original End (E)</div>
         <div className="flex items-center gap-2 whitespace-nowrap"><span className="w-3 h-3 rounded-full bg-purple-500"></span> Revised End (R)</div>
         <div className="flex items-center gap-2 whitespace-nowrap"><span className="w-12 h-3 rounded bg-blue-100 border border-blue-200 text-[9px] flex items-center justify-center text-blue-600 font-bold">W1: 15</span> Weekly Plan</div>
-        <div className="flex items-center gap-2 whitespace-nowrap"><span className="w-3 h-3 rounded-sm border border-gray-300 bg-white"></span> Non Editable Day</div>
+        <div className="flex items-center gap-2 whitespace-nowrap"><span className="w-3 h-3 rounded-sm border border-gray-300 bg-white"></span> Non Editable</div>
       </div>
 
       {/* --- Matrix --- */}
       <div ref={scrollContainerRef} className="flex-1 overflow-auto relative">
-        {loading && (
-          <div className="absolute inset-0 z-50 bg-white/50 dark:bg-gray-900/50 flex items-center justify-center backdrop-blur-sm">
-            <Loader2 className="animate-spin text-blue-600" size={32} />
-          </div>
-        )}
+        {loading && <div className="absolute inset-0 z-50 bg-white/50 dark:bg-gray-900/50 flex items-center justify-center backdrop-blur-sm"><Loader2 className="animate-spin text-blue-600" size={32} /></div>}
 
         <table className="border-collapse w-full">
           <thead className="bg-gray-50 dark:bg-gray-800 z-40 sticky top-0">
             <tr>
-              <th className="sticky left-0 z-50 bg-gray-50 dark:bg-gray-800 border-r border-b border-gray-200 dark:border-gray-700 p-3 text-left min-w-[280px] shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)]">
-                <span className="text-xs font-bold text-gray-500 uppercase tracking-wider">Item Details</span>
-              </th>
+              <th className="sticky left-0 z-50 bg-gray-50 dark:bg-gray-800 border-r border-b border-gray-200 dark:border-gray-700 p-3 text-left min-w-[280px] shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)]"><span className="text-xs font-bold text-gray-500 uppercase tracking-wider">Item Details</span></th>
               {daysInMonth.map((day) => {
                  const dayNum = getDate(day);
                  const isEvenWeek = (dayNum > 7 && dayNum <= 14) || (dayNum > 21 && dayNum <= 28);
                  const headerBg = isEvenWeek ? "bg-gray-100/50 dark:bg-gray-700/30" : "";
-
                  return (
                   <th key={day.toString()} className={`border-b border-r border-gray-200 dark:border-gray-700 min-w-[60px] p-2 text-center ${headerBg}`}>
                     <div className="flex flex-col items-center">
                       <span className="text-[10px] uppercase text-gray-400 font-medium">{format(day, "EEE")}</span>
-                      <span className={`text-sm font-bold ${isSameDay(day, new Date()) ? "text-blue-600 bg-blue-50 rounded-full w-6 h-6 flex items-center justify-center" : "text-gray-700 dark:text-gray-300"}`}>
-                        {format(day, "d")}
-                      </span>
+                      <span className={`text-sm font-bold ${isSameDay(day, new Date()) ? "text-blue-600 bg-blue-50 rounded-full w-6 h-6 flex items-center justify-center" : "text-gray-700 dark:text-gray-300"}`}>{format(day, "d")}</span>
                     </div>
                   </th>
                 );
@@ -307,8 +298,6 @@ const DailyProjects = () => {
 
               return (
                 <tr key={item.wbs_id} className="group hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
-                  
-                  {/* --- Sticky Column --- */}
                   <td className="sticky left-0 z-30 bg-white dark:bg-gray-900 group-hover:bg-gray-50 dark:group-hover:bg-gray-800 border-r border-gray-200 dark:border-gray-700 p-3 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] align-top">
                     <div className="flex flex-col gap-1">
                       <div className="font-semibold text-sm text-gray-800 dark:text-gray-200 truncate max-w-[280px]" title={item.description}>{item.description}</div>
@@ -319,7 +308,6 @@ const DailyProjects = () => {
                     </div>
                   </td>
 
-                  {/* --- Calendar Grid --- */}
                   {daysInMonth.map((day) => {
                     const dayStr = day.toISOString();
                     const dayParsed = parseISO(dayStr);
@@ -334,13 +322,11 @@ const DailyProjects = () => {
 
                     const weeklyPlanData = getWeeklyPlanForLabel(item, dayParsed, currentStartDate, currentRevisedDate, currentDate);
 
-                    // Styles
                     const dayNum = getDate(day);
                     const isEvenWeek = (dayNum > 7 && dayNum <= 14) || (dayNum > 21 && dayNum <= 28);
                     const bgClass = isEvenWeek ? "bg-gray-50/30 dark:bg-gray-800/20" : "bg-white dark:bg-gray-900";
 
                     let cellClasses = `border-r border-gray-100 dark:border-gray-800 p-1 relative min-h-[50px] align-middle cursor-pointer ${bgClass}`;
-                    // Added: text-right, disabled styling logic
                     let inputClasses = `w-full h-8 text-center text-sm border rounded focus:ring-2 focus:ring-blue-500 focus:outline-none transition-all mt-4 ${!isEditing || !isActiveRange ? "bg-gray-50 text-gray-500 cursor-not-allowed" : "bg-white text-gray-800"}`;
 
                     if (isStart) inputClasses += " border-green-400 bg-green-50 dark:bg-green-900/20 text-green-700 ";
@@ -350,12 +336,7 @@ const DailyProjects = () => {
                     else inputClasses += " bg-transparent border-none text-transparent pointer-events-none";
 
                     return (
-                      <td 
-                        key={dayStr} 
-                        className={cellClasses}
-                        onDoubleClick={() => handleCellDoubleClick(item, dayStr)} 
-                      >
-                         {/* --- Weekly Plan Badge (z-20) --- */}
+                      <td key={dayStr} className={cellClasses} onDoubleClick={() => handleCellDoubleClick(item, dayStr)}>
                          {weeklyPlanData && (
                             <div className="absolute top-0 left-0 right-0 z-20 flex justify-center mt-1 pointer-events-none">
                               <span className="bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-200 border border-blue-200 dark:border-blue-700 text-[9px] font-bold px-1.5 py-0.5 rounded shadow-sm whitespace-nowrap">
@@ -376,7 +357,6 @@ const DailyProjects = () => {
                         <input
                           type="number"
                           step="0.01"
-                          // Disabled if NOT editing OR NOT in active range
                           disabled={!isEditing || !isActiveRange}
                           placeholder={isActiveRange ? "-" : ""}
                           className={inputClasses}

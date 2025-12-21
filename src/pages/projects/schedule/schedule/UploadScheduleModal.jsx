@@ -8,9 +8,9 @@ import { API } from "../../../../constant";
 
 
 const sampleCSv = `wbs_id,description,unit,quantity,start_date,end_date,revised_end_date
-WBS028,Foundation Excavation,m³,70,12/6/2025,12/28/2025,12/31/2025
-WBS029,Concrete Pour,m³,140,12/5/2025,12/13/2025,12/13/2025
-WBS030,Brick Laying,m²,210,12/8/2025,12/12/2025,12/13/2025
+WBS034,Foundation Excavation,m³,70,12/6/2025,12/28/2025,12/28/2025
+WBS035,Concrete Pour,m³,140,12/5/2025,12/13/2025,12/13/2025
+WBS036,Brick Laying,m²,210,12/8/2025,12/12/2025,12/13/2025
 `;
 
 const UploadScheduleModal = ({ onClose, onSuccess }) => {
