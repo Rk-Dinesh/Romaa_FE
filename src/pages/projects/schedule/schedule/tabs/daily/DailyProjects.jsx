@@ -6,6 +6,12 @@ import axios from "axios";
 import { useProject } from "../../../../ProjectContext";
 import { toast } from "react-toastify";
 
+// --- STRICT UTC HELPER ---
+const normalizeToUTC = (dateStr) => {
+  if (!dateStr) return null;
+  return dateStr.substring(0, 10) + "T00:00:00.000Z";
+};
+
 // --- Data Processor ---
 const processData = (items) => {
   if (!Array.isArray(items)) return [];
@@ -16,29 +22,30 @@ const processData = (items) => {
       : [];
 
     // FIX: Set to null if missing. Do NOT fallback to 'new Date()' to avoid fake markers.
-    const originalStart = item.start_date || null;
-    const revisedStart = item.revised_start_date || originalStart;
-    const originalEnd = item.end_date || null;
-    const revisedEnd = item.revised_end_date || originalEnd;
+    const originalStart = normalizeToUTC(item.start_date);
+    const originalEnd = normalizeToUTC(item.end_date);
+    
+    // Revised defaults to Original if missing
+    const revisedStart = normalizeToUTC(item.revised_start_date) || originalStart;
+    const revisedEnd = normalizeToUTC(item.revised_end_date) || originalEnd;
 
     return {
       ...item,
-      start_date: originalStart,
-      original_end_date: originalEnd,
-      revised_start_date: revisedStart,
-      revised_end_date: revisedEnd,
+      original_start_date: originalStart, 
+      original_end_date: originalEnd,     
+      revised_start_date: revisedStart,   
+      revised_end_date: revisedEnd,       
       daily: sortedDaily
     };
   });
 };
 
 // --- Helper: Calculate Single Week Plan Badge ---
-const getWeeklyPlanForLabel = (item, weekStartDay, currentStartDate, currentRevisedEndDate, monthStart) => {
-  // Guard: If dates are null, we cannot calculate a plan
-  if (!currentStartDate || !currentRevisedEndDate) return null;
+const getWeeklyPlanForLabel = (item, weekStartDay, activeStartStr, activeEndStr, monthStart) => {
+  if (!activeStartStr || !activeEndStr) return null;
 
-  const startDate = parseISO(currentStartDate);
-  const endDate = parseISO(currentRevisedEndDate);
+  const startDate = parseISO(activeStartStr);
+  const endDate = parseISO(activeEndStr);
   const totalDuration = differenceInCalendarDays(endDate, startDate) + 1;
   if (totalDuration <= 0) return null;
 
@@ -120,8 +127,8 @@ const DailyProjects = () => {
     setUpdates(prev => ({ ...prev, [`${wbsId}-${dateStr}`]: value }));
   };
 
-  const getRevisedDate = (item) => revisedDateUpdates[item.wbs_id] || item.revised_end_date;
-  const getStartDate = (item) => startDateUpdates[item.wbs_id] || item.start_date;
+  const getRevisedEndDate = (item) => revisedDateUpdates[item.wbs_id] || item.revised_end_date;
+  const getRevisedStartDate = (item) => startDateUpdates[item.wbs_id] || item.revised_start_date;
 
   const clearValuesInRange = (wbsId, rangeStart, rangeEnd) => {
     if (rangeStart > rangeEnd) return; 
@@ -129,88 +136,161 @@ const DailyProjects = () => {
     setUpdates(prev => {
       const newUpdates = { ...prev };
       datesToClear.forEach(date => {
-        const key = `${wbsId}-${date.toISOString()}`;
+        // Ensure keys being cleared also match the UTC Midnight format
+        const key = `${wbsId}-${normalizeToUTC(date.toISOString())}`;
         delete newUpdates[key]; 
       });
       return newUpdates;
     });
   };
 
+  // --- Strict Bounded Logic ---
+// --- Strict Constraints: OS/OE Boundaries & Choice Logic ---
   const handleCellDoubleClick = (item, dateStr) => {
     if (!isEditing) return;
 
+    // 1. Parse Clicked Date
     const clickedDate = parseISO(dateStr);
     const normClicked = startOfDay(clickedDate);
 
-    const currentStartStr = getStartDate(item);
-    const currentRevisedEndStr = getRevisedDate(item);
+    // 2. Get Current Dates (OS, OE, RS, RE)
+    const currentRevisedStartStr = getRevisedStartDate(item);
+    const currentRevisedEndStr = getRevisedEndDate(item);
+    const originalStartStr = item.original_start_date;
+    const originalEndStr = item.original_end_date;
 
-    // Case 0: Initialize Dates (If item has no dates yet)
-    if (!currentStartStr) {
-        if(window.confirm(`Set Start Date to ${format(clickedDate, 'dd MMM')}?`)) {
+    // Initialize (if empty)
+    if (!currentRevisedStartStr) {
+        if(window.confirm(`Set Project Start to ${format(clickedDate, 'dd MMM')}?`)) {
              setStartDateUpdates(prev => ({ ...prev, [item.wbs_id]: dateStr }));
-             // Initialize end date same as start for a 1-day duration initially
              setRevisedDateUpdates(prev => ({ ...prev, [item.wbs_id]: dateStr }));
              toast.success("Project Started");
         }
         return;
     }
 
-    const currentStart = parseISO(currentStartStr);
-    const currentRevisedEnd = parseISO(currentRevisedEndStr);
-    const originalEnd = item.original_end_date ? parseISO(item.original_end_date) : null;
+    const normRevisedStart = startOfDay(parseISO(currentRevisedStartStr));
+    const normRevisedEnd = startOfDay(parseISO(currentRevisedEndStr));
+    const normOriginalStart = originalStartStr ? startOfDay(parseISO(originalStartStr)) : null;
+    const normOriginalEnd = originalEndStr ? startOfDay(parseISO(originalEndStr)) : null;
 
-    const normStart = startOfDay(currentStart);
-    const normRevisedEnd = startOfDay(currentRevisedEnd);
-    const normOriginalEnd = originalEnd ? startOfDay(originalEnd) : null;
-
-    // A. EXTEND End Date
-    if (normClicked > normRevisedEnd) {
-      setRevisedDateUpdates(prev => ({ ...prev, [item.wbs_id]: dateStr }));
-      toast.info(`End Date extended to ${format(clickedDate, "dd MMM")}`);
-      return;
+    // =================================================================================
+    // ZONE 1: BLOCKED (Below Original Start)
+    // "not below to 5 like 4,3,2..."
+    // =================================================================================
+    if (normOriginalStart && normClicked < normOriginalStart) {
+        toast.warn(`Revised Start cannot be before Original Start (${format(normOriginalStart, 'dd MMM')})`);
+        return;
     }
 
-    // B. REVERT to Original End
-    if (normOriginalEnd && normRevisedEnd > normOriginalEnd && isSameDay(normClicked, normOriginalEnd)) {
-       if (window.confirm(`Revert Revised Date back to Original End Date (${format(clickedDate, "dd MMM")})?\nThis will clear inputs after this date.`)) {
-          clearValuesInRange(item.wbs_id, addDays(normOriginalEnd, 1), normRevisedEnd);
-          setRevisedDateUpdates(prev => ({ ...prev, [item.wbs_id]: dateStr }));
-          toast.info(`Revised Date reset & inputs cleared`);
-       }
-       return;
+    // =================================================================================
+    // ZONE 2: END DATE LOGIC (Above Original End)
+    // "on double click above OE... revise end date"
+    // "can be 14, 15... but not below OE"
+    // =================================================================================
+    if (normOriginalEnd && normClicked > normOriginalEnd) {
+        // We are strictly modifying RE here.
+        if (normClicked > normRevisedEnd) {
+            // Extending
+            setRevisedDateUpdates(prev => ({ ...prev, [item.wbs_id]: dateStr }));
+            toast.info(`Revised End extended to ${format(clickedDate, "dd MMM")}`);
+        } else {
+            // Reducing (but still > OE)
+            if (window.confirm(`Reduce Revised End Date to ${format(clickedDate, "dd MMM")}?`)) {
+                clearValuesInRange(item.wbs_id, addDays(normClicked, 1), normRevisedEnd);
+                setRevisedDateUpdates(prev => ({ ...prev, [item.wbs_id]: dateStr }));
+                toast.info(`End Date reduced`);
+            }
+        }
+        return;
     }
 
-    // C. REDUCE Revised End
-    if (normOriginalEnd && normClicked > normOriginalEnd && normClicked < normRevisedEnd) {
-      if (window.confirm(`Reduce Revised End Date to ${format(clickedDate, "dd MMM")}?\nThis will clear inputs after this date.`)) {
-        clearValuesInRange(item.wbs_id, addDays(normClicked, 1), normRevisedEnd);
-        setRevisedDateUpdates(prev => ({ ...prev, [item.wbs_id]: dateStr }));
-        toast.info(`End Date reduced & inputs cleared`);
-      }
-      return;
-    }
-
-    // D. SHIFT Start Date
-    if (normOriginalEnd && normClicked > normStart && normClicked < normOriginalEnd) {
-      const diffDays = differenceInCalendarDays(normClicked, normStart);
-      if (window.confirm(`Move Start Date to ${format(clickedDate, 'dd MMM')}?\n(This skips ${diffDays} days and will clear their inputs)`)) {
-        clearValuesInRange(item.wbs_id, normStart, addDays(normClicked, -1));
-
-        const shouldExtendEnd = window.confirm(
-          `You skipped ${diffDays} days.\n\nClick OK to ADD these days to the Revised End Date.\nClick Cancel to KEEP the current End Date (Shrink Duration).`
+    // =================================================================================
+    // ZONE 3: EXACTLY ON ORIGINAL END (Ambiguous Zone)
+    // "on double click on Original end date OE: ask want to revise start or end"
+    // =================================================================================
+    if (normOriginalEnd && isSameDay(normClicked, normOriginalEnd)) {
+        // Create a custom choice flow using confirm (Binary choice)
+        // OK = Revise Start | Cancel = Revise End
+        
+        // Note: JS confirm is limited. Ideally use a custom modal. 
+        // Here we frame the question to work with OK/Cancel.
+        const choice = window.confirm(
+            `You clicked the Original End Date (${format(clickedDate, 'dd MMM')}).\n\n` +
+            `Click OK to set REVISED START (Delay start to this date).\n` +
+            `Click CANCEL to set REVISED END (Reset end to this date).`
         );
 
-        setStartDateUpdates(prev => ({ ...prev, [item.wbs_id]: dateStr }));
+        if (choice) {
+            // --- OPTION A: REVISE START (Delay RS to OE) ---
+            const diffDays = differenceInCalendarDays(normClicked, normRevisedStart);
+            
+            // 1. Move Start
+            clearValuesInRange(item.wbs_id, normRevisedStart, addDays(normClicked, -1));
+            setStartDateUpdates(prev => ({ ...prev, [item.wbs_id]: dateStr }));
 
-        if (shouldExtendEnd) {
-          const newEndDate = addDays(normRevisedEnd, diffDays);
-          setRevisedDateUpdates(prev => ({ ...prev, [item.wbs_id]: newEndDate.toISOString() }));
-          toast.success(`Start moved, inputs cleared & End extended`);
+            // 2. Ask to Extend RE
+            if(window.confirm(`Start delayed by ${diffDays} days.\n\nExtend Revised End by ${diffDays} days?`)) {
+                const newEnd = addDays(normRevisedEnd, diffDays);
+                const newEndStr = format(newEnd, "yyyy-MM-dd") + "T00:00:00.000Z";
+                setRevisedDateUpdates(prev => ({ ...prev, [item.wbs_id]: newEndStr }));
+                toast.success(`Start delayed to OE & End extended`);
+            } else {
+                toast.success(`Start delayed to OE`);
+            }
         } else {
-          toast.success(`Start moved & inputs cleared`);
+            // --- OPTION B: REVISE END (Reset RE to OE) ---
+            // If current RE is > OE, we are reducing it back to OE
+            if (normRevisedEnd > normClicked) {
+                clearValuesInRange(item.wbs_id, addDays(normClicked, 1), normRevisedEnd);
+            }
+            setRevisedDateUpdates(prev => ({ ...prev, [item.wbs_id]: dateStr }));
+            toast.info(`Revised End reset to Original End`);
         }
-      }
+        return;
+    }
+
+    // =================================================================================
+    // ZONE 4: START DATE LOGIC (Between OS and OE)
+    // "RS can be from 7... to 13... not above 13"
+    // =================================================================================
+    if (normOriginalStart && normOriginalEnd && normClicked >= normOriginalStart && normClicked < normOriginalEnd) {
+        
+        // This is strictly RS modification.
+        
+        // Case A: Backward Shift (Early)
+        // "if RS is backward one day just update RS"
+        if (normClicked < normRevisedStart) {
+            if (window.confirm(`Move Revised Start earlier to ${format(clickedDate, 'dd MMM')}?`)) {
+                setStartDateUpdates(prev => ({ ...prev, [item.wbs_id]: dateStr }));
+                toast.success(`Start Date moved earlier`);
+            }
+            return;
+        }
+
+        // Case B: Forward Shift (Delay)
+        // "if RS delayed one day ask want to extend RE"
+        if (normClicked > normRevisedStart) {
+            const diffDays = differenceInCalendarDays(normClicked, normRevisedStart);
+            
+            if (window.confirm(`Delay Revised Start by ${diffDays} days to ${format(clickedDate, 'dd MMM')}?`)) {
+                
+                // 1. Update RS
+                clearValuesInRange(item.wbs_id, normRevisedStart, addDays(normClicked, -1));
+                setStartDateUpdates(prev => ({ ...prev, [item.wbs_id]: dateStr }));
+
+                // 2. Ask Update RE
+                if(window.confirm(`Add these ${diffDays} days to the Revised End Date?`)) {
+                    const newEnd = addDays(normRevisedEnd, diffDays);
+                    const newEndStr = format(newEnd, "yyyy-MM-dd") + "T00:00:00.000Z";
+                    setRevisedDateUpdates(prev => ({ ...prev, [item.wbs_id]: newEndStr }));
+                    toast.success(`Start delayed & End extended`);
+                } else {
+                    toast.success(`Start delayed`);
+                }
+            }
+            return;
+        }
     }
   };
 
@@ -261,7 +341,7 @@ const DailyProjects = () => {
                 Daily Progress {!isEditing && <Lock size={14} className="text-gray-400" />}
             </h2>
             <p className="text-xs text-gray-500 dark:text-gray-400">
-                {isEditing ? "Double-click cells to adjust dates" : "Click 'Edit' to make changes"}
+                {isEditing ? "Double-click cells to adjust active timeline" : "Click 'Edit' to make changes"}
             </p>
           </div>
         </div>
@@ -285,11 +365,11 @@ const DailyProjects = () => {
 
       {/* --- Legend --- */}
       <div className="flex gap-6 px-4 py-2 text-xs text-gray-500 border-b border-gray-100 dark:border-gray-800 bg-white dark:bg-layout-dark overflow-x-auto">
-        <div className="flex items-center gap-2 whitespace-nowrap"><span className="w-3 h-3 rounded-full bg-green-500"></span> Start (S)</div>
-        <div className="flex items-center gap-2 whitespace-nowrap"><span className="w-3 h-3 rounded-full bg-red-500"></span> Original End (E)</div>
-        <div className="flex items-center gap-2 whitespace-nowrap"><span className="w-3 h-3 rounded-full bg-purple-500"></span> Revised End (R)</div>
-        <div className="flex items-center gap-2 whitespace-nowrap"><span className="w-12 h-3 rounded bg-blue-100 border border-blue-200 text-[9px] flex items-center justify-center text-blue-600 font-bold">W1: 15</span> Weekly Plan</div>
-        <div className="flex items-center gap-2 whitespace-nowrap"><span className="w-3 h-3 rounded-sm border border-gray-300 bg-white"></span> Non Editable</div>
+        <div className="flex items-center gap-2 whitespace-nowrap"><span className="w-3 h-3 rounded-full bg-cyan-500"></span> Orig. Start (OS)</div>
+        <div className="flex items-center gap-2 whitespace-nowrap"><span className="w-3 h-3 rounded-full bg-green-500"></span> Rev. Start (S)</div>
+        <div className="flex items-center gap-2 whitespace-nowrap"><span className="w-3 h-3 rounded-full bg-red-500"></span> Orig. End (E)</div>
+        <div className="flex items-center gap-2 whitespace-nowrap"><span className="w-3 h-3 rounded-full bg-purple-500"></span> Rev. End (R)</div>
+        <div className="flex items-center gap-2 whitespace-nowrap"><span className="w-12 h-3 rounded bg-blue-100 border border-blue-200 text-[9px] flex items-center justify-center text-blue-600 font-bold">W1: 15</span> Plan</div>
       </div>
 
       {/* --- Matrix --- */}
@@ -322,8 +402,10 @@ const DailyProjects = () => {
 
           <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
             {items.map((item, index) => {
-              const currentRevisedDate = getRevisedDate(item);
-              const currentStartDate = getStartDate(item);
+              const currentRevisedStart = getRevisedStartDate(item);
+              const currentRevisedEnd = getRevisedEndDate(item);
+              const constantOriginalStart = item.original_start_date;
+              const constantOriginalEnd = item.original_end_date;
 
               return (
                 <tr key={item.wbs_id} className="group hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
@@ -332,39 +414,43 @@ const DailyProjects = () => {
                       <div className="font-semibold text-sm text-gray-800 dark:text-gray-200 truncate max-w-[280px]" title={item.description}>{index+1}. {item.description}</div>
                       <div className="flex items-center gap-2 mt-1">
                         <span className="text-[10px] bg-gray-100 dark:bg-gray-700 text-gray-500 px-1.5 py-0.5 rounded">{item.wbs_id}</span>
-                        <span className="text-[10px] text-gray-500">Qty: {item.quantity} {item.unit}</span>
+                        <span className="text-[10px] text-gray-500">Qty: {item.quantity} {item.unit} dt: {item.revised_duration} = {(item.quantity / item.revised_duration).toFixed(4)}</span>
                       </div>
                     </div>
                   </td>
 
                   {daysInMonth.map((day) => {
-                    const dayStr = format(day, "yyyy-MM-dd") + "T00:00:00.000Z";
+                    // FORCE UTC MIDNIGHT KEY GENERATION
+                    const dayStr = normalizeToUTC(day.toISOString()); 
                     const dayParsed = parseISO(dayStr);
-                    
-                    // --- DATE PARSING WITH NULL SAFETY ---
-                    const parsedStart = currentStartDate ? parseISO(currentStartDate) : null;
-                    const parsedOriginalEnd = item.original_end_date ? parseISO(item.original_end_date) : null;
-                    const parsedRevisedEnd = currentRevisedDate ? parseISO(currentRevisedDate) : null;
-
-                    // Normalize to Start of Day
                     const normDay = startOfDay(dayParsed);
-                    const normStart = parsedStart ? startOfDay(parsedStart) : null;
-                    const normRevisedEnd = parsedRevisedEnd ? startOfDay(parsedRevisedEnd) : null;
+
+                    // --- PARSING WITH NULL SAFETY ---
+                    const parsedRevStart = currentRevisedStart ? parseISO(currentRevisedStart) : null;
+                    const parsedRevEnd = currentRevisedEnd ? parseISO(currentRevisedEnd) : null;
+                    const parsedOrigStart = constantOriginalStart ? parseISO(constantOriginalStart) : null;
+                    const parsedOrigEnd = constantOriginalEnd ? parseISO(constantOriginalEnd) : null;
+
+                    const normRevStart = parsedRevStart ? startOfDay(parsedRevStart) : null;
+                    const normRevEnd = parsedRevEnd ? startOfDay(parsedRevEnd) : null;
 
                     // 1. Range Check (only if dates exist)
-                    const isActiveRange = (normStart && normRevisedEnd) 
-                        ? isWithinInterval(normDay, { start: normStart, end: normRevisedEnd }) 
+                    const isActiveRange = (normRevStart && normRevEnd) 
+                        ? isWithinInterval(normDay, { start: normRevStart, end: normRevEnd }) 
                         : false;
                     
-                    // 2. Marker Checks (only if dates exist)
-                    const isStart = parsedStart ? isSameDay(parsedStart, dayParsed) : false;
-                    const isOriginalEnd = parsedOriginalEnd ? isSameDay(parsedOriginalEnd, dayParsed) : false;
-                    const isRevisedEnd = parsedRevisedEnd ? isSameDay(parsedRevisedEnd, dayParsed) : false;
-                    const isCombinedEnd = isOriginalEnd && isRevisedEnd;
+                    // 2. Marker Checks
+                    const isRevStart = parsedRevStart ? isSameDay(parsedRevStart, dayParsed) : false;
+                    const isOrigStart = parsedOrigStart ? isSameDay(parsedOrigStart, dayParsed) : false;
+                    const isOrigEnd = parsedOrigEnd ? isSameDay(parsedOrigEnd, dayParsed) : false;
+                    const isRevEnd = parsedRevEnd ? isSameDay(parsedRevEnd, dayParsed) : false;
+                    
+                    const isCombinedEnd = isOrigEnd && isRevEnd;
+                    const isCombinedStart = isOrigStart && isRevStart;
 
-                    // 3. Weekly Badge (only if dates exist)
-                    const weeklyPlanData = (currentStartDate && currentRevisedDate)
-                        ? getWeeklyPlanForLabel(item, dayParsed, currentStartDate, currentRevisedDate, currentDate)
+                    // 3. Weekly Badge
+                    const weeklyPlanData = (currentRevisedStart && currentRevisedEnd)
+                        ? getWeeklyPlanForLabel(item, dayParsed, currentRevisedStart, currentRevisedEnd, currentDate)
                         : null;
 
                     // Styling
@@ -375,10 +461,12 @@ const DailyProjects = () => {
                     let cellClasses = `border-r border-gray-100 dark:border-gray-800 p-1 relative min-h-[50px] align-middle cursor-pointer ${bgClass}`;
                     let inputClasses = `w-full h-8 text-center text-sm border rounded focus:ring-2 focus:ring-blue-500 focus:outline-none transition-all mt-4 ${!isEditing || !isActiveRange ? "bg-gray-50 text-gray-500 cursor-not-allowed" : "bg-white text-gray-800"}`;
 
-                    if (isStart) inputClasses += " border-green-400 bg-green-50 dark:bg-green-900/20 text-green-700 ";
+                    if (isRevStart) inputClasses += " border-green-400 bg-green-50 dark:bg-green-900/20 text-green-700 ";
                     else if (isCombinedEnd) inputClasses += " border-purple-400 bg-purple-50 dark:bg-purple-900/20 text-purple-700 ";
-                    else if (isRevisedEnd) inputClasses += " border-purple-400 bg-purple-50 dark:bg-purple-900/20 text-purple-700 ";
-                    else if (isOriginalEnd) inputClasses += " border-red-400 bg-red-50 dark:bg-red-900/20 text-red-700 ";
+                    else if (isRevEnd) inputClasses += " border-purple-400 bg-purple-50 dark:bg-purple-900/20 text-purple-700 ";
+                    else if (isOrigEnd) inputClasses += " border-red-400 bg-red-50 dark:bg-red-900/20 text-red-700 ";
+                    else if (isOrigStart) inputClasses += " border-cyan-400 bg-cyan-50 dark:bg-cyan-900/20 text-cyan-700 "; 
+                    
                     else if (isActiveRange) inputClasses += " border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 dark:text-white ";
                     else inputClasses += " bg-transparent border-none text-transparent pointer-events-none";
 
@@ -393,14 +481,16 @@ const DailyProjects = () => {
                          )}
 
                         <div className="absolute bottom-1 right-1 pointer-events-none z-20 flex gap-0.5">
-                             {isStart && <span className="text-[7px] w-3 h-3 flex items-center justify-center rounded-full font-bold text-white bg-green-500 shadow-sm" title="Start Date">S</span>}
+                             {isOrigStart && !isCombinedStart && <span className="text-[7px] w-4 h-3 flex items-center justify-center rounded-full font-bold text-white bg-cyan-500 shadow-sm" title="Original Start">OS</span>}
+                             
+                             {isRevStart && <span className="text-[7px] w-3 h-3 flex items-center justify-center rounded-full font-bold text-white bg-green-500 shadow-sm" title="Revised Start">S</span>}
                              
                              {isCombinedEnd ? (
                                 <span className="text-[7px] w-auto px-1 h-3 flex items-center justify-center rounded-full font-bold text-white bg-purple-500 shadow-sm" title="Original & Revised End">End</span>
                              ) : (
                                 <>
-                                  {isOriginalEnd && <span className="text-[7px] w-3 h-3 flex items-center justify-center rounded-full font-bold text-white bg-red-500 shadow-sm" title="Original End Date">E</span>}
-                                  {isRevisedEnd && <span className="text-[7px] w-3 h-3 flex items-center justify-center rounded-full font-bold text-white bg-purple-500 shadow-sm" title="Revised End Date">R</span>}
+                                  {isOrigEnd && <span className="text-[7px] w-3 h-3 flex items-center justify-center rounded-full font-bold text-white bg-red-500 shadow-sm" title="Original End Date">E</span>}
+                                  {isRevEnd && <span className="text-[7px] w-3 h-3 flex items-center justify-center rounded-full font-bold text-white bg-purple-500 shadow-sm" title="Revised End Date">R</span>}
                                 </>
                              )}
                         </div>

@@ -125,8 +125,9 @@ const ProjectSchedule = () => {
               <th className={`${baseCellClass} text-center bg-yellow-50/50 dark:bg-yellow-900/20`}>Rev. End</th>
               <th className={`${baseCellClass} text-center bg-yellow-50/50 dark:bg-yellow-900/20`}>Rev. Duration</th>
 
-              <th className={`${baseCellClass} text-center bg-yellow-50/50 dark:bg-yellow-900/20`}>Actual Completion</th>
               <th className={`${baseCellClass} text-center bg-yellow-50/50 dark:bg-yellow-900/20`}>Lag</th>
+              <th className={`${baseCellClass} text-center bg-yellow-50/50 dark:bg-yellow-900/20`}> Completion</th>
+
             </tr>
           </thead>
 
@@ -180,6 +181,9 @@ const ProjectSchedule = () => {
                   </td>
                   <td className={`${baseCellClass} text-center bg-yellow-50/20 dark:bg-yellow-900/10 font-bold ${Number(item.lag) > 0 ? 'text-red-600 dark:text-red-400' : 'text-green-600 dark:text-green-400'}`}>
                     {item.lag}
+                  </td>
+                  <td className={`${baseCellClass} text-center bg-yellow-50/20 dark:bg-yellow-900/10 font-bold ${Number(item.lag) > 0 ? 'text-red-600 dark:text-red-400' : 'text-green-600 dark:text-green-400'}`}>
+                    {formatDate(item.actual_completion)}
                   </td>
                 </tr>
               ))
