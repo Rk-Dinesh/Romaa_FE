@@ -9,6 +9,12 @@ const sampleCSv = `description,unit,quantity
 Foundation Excavation,m³,70
 Concrete Pour,m³,140
 Brick Laying,m²,210
+Wall Laying,m²,80
+Floor Laying,m²,46
+Roof Laying,m²,78
+painting,m²,453
+plumbing,m²,143
+electrical,m²,68
 `;
 
 const UploadWBS = ({ onclose, onSuccess }) => {

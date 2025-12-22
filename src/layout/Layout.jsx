@@ -125,7 +125,7 @@ const LayOut = () => {
       to: "/projects",
           nested: [
         {
-          title: "Zero Cost",
+          title: "BOQ Cost",
           icon: <RiDiscountPercentLine size={23} />,
           to: "/projects/zerocost",
         },

@@ -66,7 +66,7 @@ const ZeroCost = () => {
   return (
     <>
     <Table
-      title="Zero Cost"
+      title="BOQ Cost"
       subtitle={`Tender: ${tenderId}`}
       endpoint={items}
       columns={customerColumns}

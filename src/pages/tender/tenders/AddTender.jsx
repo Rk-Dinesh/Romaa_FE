@@ -41,6 +41,7 @@ const schema = yup.object().shape({
   }),
 
   tender_duration: yup.string().required("Project Duration is required"),
+  consider_completion_duration: yup.string().required("Consider Completion Duration is required"),
   tender_value: yup
     .number()
     .typeError("Proposal Cost must be a number")
@@ -101,6 +102,7 @@ const clientNameOptions = clients.map((c, i) => ({
       tender_start_date: "",
       tender_type: "",
       tender_duration: "",
+      consider_completion_duration: "",
       tender_value: "",
       tender_end_date: "",
       emd: { emd_amount: "", emd_validity: "" },
@@ -180,6 +182,7 @@ const clientNameOptions = clients.map((c, i) => ({
                   register={register}
                   errors={errors}
                 />
+
                 <InputField
                   label="Tender Type"
                   type="select"
@@ -300,6 +303,13 @@ const clientNameOptions = clients.map((c, i) => ({
                   errors={errors}
                   placeholder="Enter duration"
                 />
+                 <InputField
+                  label="Consider Completion "
+                  name="consider_completion_duration"
+                  register={register}
+                  errors={errors}
+                  placeholder="Enter duration"
+                />
                 <InputField
                   label="Tender Value"
                   name="tender_value"
@@ -309,7 +319,7 @@ const clientNameOptions = clients.map((c, i) => ({
                    type="number"
                 />
                 <InputField
-                  label="Due Date"
+                  label="Bid Submission Date"
                   name="tender_end_date"
                   type="date"
                   register={register}

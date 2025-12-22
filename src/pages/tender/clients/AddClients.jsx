@@ -10,9 +10,9 @@ import { API } from "../../../constant";
 
 const schema = yup.object().shape({
   client_name: yup.string().required("Client Name is required"),
-  pan_no: yup.string().required("PAN Number is required"),
-  cin_no: yup.string().required("CIN Number is required"),
-  gstin: yup.string().required("GSTIN is required"),
+  pan_no: yup.string(),
+  cin_no: yup.string(),
+  gstin: yup.string(),
   contact_phone: yup
     .string()
     .matches(/^[0-9]{10}$/, "Phone number must be 10 digits")
@@ -45,9 +45,9 @@ const AddClients = ({ onclose, onSuccess }) => {
   const onSubmit = async (data) => {
     const payload = {
       client_name: data.client_name,
-      pan_no: data.pan_no,
-      cin_no: data.cin_no,
-      gstin: data.gstin,
+      pan_no: data.pan_no || "PAN",
+      cin_no: data.cin_no || "CIN",
+      gstin: data.gstin || "GSTIN",
       contact_email: data.contact_email,
       contact_phone: data.contact_phone,
       address: {
@@ -93,7 +93,7 @@ const AddClients = ({ onclose, onSuccess }) => {
               <div className="space-y-4">
                 <InputField label="Client Name" name="client_name" register={register} errors={errors} placeholder="Enter client name" />
                 <InputField label="PAN no" name="pan_no" register={register} errors={errors} placeholder="Enter pan.no" />
-                <InputField label="CIN no" name="cin_no" register={register} errors={errors} placeholder="Enter cin.no" />
+                {/* <InputField label="CIN no" name="cin_no" register={register} errors={errors} placeholder="Enter cin.no" /> */}
                 <InputField label="GST" name="gstin" register={register} errors={errors} placeholder="Enter gst.no" />
                 <InputField label="Phone number" name="contact_phone" type="number" register={register} errors={errors} placeholder="Enter phone.no" />
                 <InputField label="Email" name="contact_email" type="email" register={register} errors={errors} placeholder="Enter email ID" />

@@ -15,14 +15,17 @@ const processData = (items) => {
       ? [...item.daily].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
       : [];
 
-    const originalStart = item.start_date || (sortedDaily.length > 0 ? sortedDaily[0].date : new Date().toISOString());
-    const originalEnd = item.end_date || (sortedDaily.length > 0 ? sortedDaily[sortedDaily.length - 1].date : new Date().toISOString());
+    // FIX: Set to null if missing. Do NOT fallback to 'new Date()' to avoid fake markers.
+    const originalStart = item.start_date || null;
+    const revisedStart = item.revised_start_date || originalStart;
+    const originalEnd = item.end_date || null;
     const revisedEnd = item.revised_end_date || originalEnd;
 
     return {
       ...item,
       start_date: originalStart,
       original_end_date: originalEnd,
+      revised_start_date: revisedStart,
       revised_end_date: revisedEnd,
       daily: sortedDaily
     };
@@ -31,6 +34,9 @@ const processData = (items) => {
 
 // --- Helper: Calculate Single Week Plan Badge ---
 const getWeeklyPlanForLabel = (item, weekStartDay, currentStartDate, currentRevisedEndDate, monthStart) => {
+  // Guard: If dates are null, we cannot calculate a plan
+  if (!currentStartDate || !currentRevisedEndDate) return null;
+
   const startDate = parseISO(currentStartDate);
   const endDate = parseISO(currentRevisedEndDate);
   const totalDuration = differenceInCalendarDays(endDate, startDate) + 1;
@@ -69,7 +75,7 @@ const getWeeklyPlanForLabel = (item, weekStartDay, currentStartDate, currentRevi
 const DailyProjects = () => {
   const { tenderId } = useProject();
   
-  const [currentDate, setCurrentDate] = useState(new Date("2025-12-01"));
+  const [currentDate, setCurrentDate] = useState(new Date("2025-12-01")); 
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(false);
   const [updates, setUpdates] = useState({}); 
@@ -118,10 +124,8 @@ const DailyProjects = () => {
   const getStartDate = (item) => startDateUpdates[item.wbs_id] || item.start_date;
 
   const clearValuesInRange = (wbsId, rangeStart, rangeEnd) => {
-    if (rangeStart > rangeEnd) return;
-
+    if (rangeStart > rangeEnd) return; 
     const datesToClear = eachDayOfInterval({ start: rangeStart, end: rangeEnd });
-    
     setUpdates(prev => {
       const newUpdates = { ...prev };
       datesToClear.forEach(date => {
@@ -136,15 +140,29 @@ const DailyProjects = () => {
     if (!isEditing) return;
 
     const clickedDate = parseISO(dateStr);
-    const currentStart = parseISO(getStartDate(item));
-    const currentRevisedEnd = parseISO(getRevisedDate(item));
-    const originalEnd = parseISO(item.original_end_date);
-
-    // Normalize for comparisons (Fixes the "18:30 vs 00:00" issue)
     const normClicked = startOfDay(clickedDate);
+
+    const currentStartStr = getStartDate(item);
+    const currentRevisedEndStr = getRevisedDate(item);
+
+    // Case 0: Initialize Dates (If item has no dates yet)
+    if (!currentStartStr) {
+        if(window.confirm(`Set Start Date to ${format(clickedDate, 'dd MMM')}?`)) {
+             setStartDateUpdates(prev => ({ ...prev, [item.wbs_id]: dateStr }));
+             // Initialize end date same as start for a 1-day duration initially
+             setRevisedDateUpdates(prev => ({ ...prev, [item.wbs_id]: dateStr }));
+             toast.success("Project Started");
+        }
+        return;
+    }
+
+    const currentStart = parseISO(currentStartStr);
+    const currentRevisedEnd = parseISO(currentRevisedEndStr);
+    const originalEnd = item.original_end_date ? parseISO(item.original_end_date) : null;
+
     const normStart = startOfDay(currentStart);
     const normRevisedEnd = startOfDay(currentRevisedEnd);
-    const normOriginalEnd = startOfDay(originalEnd);
+    const normOriginalEnd = originalEnd ? startOfDay(originalEnd) : null;
 
     // A. EXTEND End Date
     if (normClicked > normRevisedEnd) {
@@ -154,7 +172,7 @@ const DailyProjects = () => {
     }
 
     // B. REVERT to Original End
-    if (normRevisedEnd > normOriginalEnd && isSameDay(normClicked, normOriginalEnd)) {
+    if (normOriginalEnd && normRevisedEnd > normOriginalEnd && isSameDay(normClicked, normOriginalEnd)) {
        if (window.confirm(`Revert Revised Date back to Original End Date (${format(clickedDate, "dd MMM")})?\nThis will clear inputs after this date.`)) {
           clearValuesInRange(item.wbs_id, addDays(normOriginalEnd, 1), normRevisedEnd);
           setRevisedDateUpdates(prev => ({ ...prev, [item.wbs_id]: dateStr }));
@@ -164,7 +182,7 @@ const DailyProjects = () => {
     }
 
     // C. REDUCE Revised End
-    if (normClicked > normOriginalEnd && normClicked < normRevisedEnd) {
+    if (normOriginalEnd && normClicked > normOriginalEnd && normClicked < normRevisedEnd) {
       if (window.confirm(`Reduce Revised End Date to ${format(clickedDate, "dd MMM")}?\nThis will clear inputs after this date.`)) {
         clearValuesInRange(item.wbs_id, addDays(normClicked, 1), normRevisedEnd);
         setRevisedDateUpdates(prev => ({ ...prev, [item.wbs_id]: dateStr }));
@@ -174,7 +192,7 @@ const DailyProjects = () => {
     }
 
     // D. SHIFT Start Date
-    if (normClicked > normStart && normClicked < normOriginalEnd) {
+    if (normOriginalEnd && normClicked > normStart && normClicked < normOriginalEnd) {
       const diffDays = differenceInCalendarDays(normClicked, normStart);
       if (window.confirm(`Move Start Date to ${format(clickedDate, 'dd MMM')}?\n(This skips ${diffDays} days and will clear their inputs)`)) {
         clearValuesInRange(item.wbs_id, normStart, addDays(normClicked, -1));
@@ -196,14 +214,9 @@ const DailyProjects = () => {
     }
   };
 
-  // --- 4. Edit Toggle & Save ---
   const handleEditToggle = async () => {
     if (isEditing) {
-        // Save Mode: Send updates to backend
         try {
-          console.log("updates", updates);
-          console.log("revisedDateUpdates", revisedDateUpdates);
-          console.log("startDateUpdates", startDateUpdates);
             const res = await axios.put(`${API}/schedule/update-daily-schedule/${tenderId}`, {
                 daily_updates: updates,
                 revised_end_dates: revisedDateUpdates,
@@ -212,11 +225,9 @@ const DailyProjects = () => {
             if (res.data && res.data.status) {
                 toast.success("Schedule Updated Successfully");
                 setIsEditing(false);
-                // Clear local tracking states
                 setUpdates({});
                 setRevisedDateUpdates({});
                 setStartDateUpdates({});
-                // Refresh data
                 fetchWBS(); 
             }
         } catch (err) {
@@ -310,7 +321,7 @@ const DailyProjects = () => {
           </thead>
 
           <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
-            {items.map((item,index) => {
+            {items.map((item, index) => {
               const currentRevisedDate = getRevisedDate(item);
               const currentStartDate = getStartDate(item);
 
@@ -318,9 +329,8 @@ const DailyProjects = () => {
                 <tr key={item.wbs_id} className="group hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
                   <td className="sticky left-0 z-30 bg-white dark:bg-layout-dark group-hover:bg-gray-50 dark:group-hover:bg-gray-800 border-r border-gray-200 dark:border-gray-700 p-3 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] align-top">
                     <div className="flex flex-col gap-1">
-                      <div className="font-semibold text-sm text-gray-800 dark:text-gray-200 truncate max-w-[280px]" title={item.description}> {index+1}. {item.description}</div>
+                      <div className="font-semibold text-sm text-gray-800 dark:text-gray-200 truncate max-w-[280px]" title={item.description}>{index+1}. {item.description}</div>
                       <div className="flex items-center gap-2 mt-1">
-                        
                         <span className="text-[10px] bg-gray-100 dark:bg-gray-700 text-gray-500 px-1.5 py-0.5 rounded">{item.wbs_id}</span>
                         <span className="text-[10px] text-gray-500">Qty: {item.quantity} {item.unit}</span>
                       </div>
@@ -330,25 +340,34 @@ const DailyProjects = () => {
                   {daysInMonth.map((day) => {
                     const dayStr = format(day, "yyyy-MM-dd") + "T00:00:00.000Z";
                     const dayParsed = parseISO(dayStr);
-                    const parsedStart = parseISO(currentStartDate);
-                    const parsedOriginalEnd = parseISO(item.original_end_date);
-                    const parsedRevisedEnd = parseISO(currentRevisedDate);
-
-                    // FIX: Normalize ALL dates to Start of Day for the RANGE CHECK only
-                    // This ignores the '18:30' vs '00:00' time difference issue
-                    const normDay = startOfDay(dayParsed);
-                    const normStart = startOfDay(parsedStart);
-                    const normRevisedEnd = startOfDay(parsedRevisedEnd);
-                    const isActiveRange = isWithinInterval(normDay, { start: normStart, end: normRevisedEnd });
                     
-                    // Keep markers strictly checking the exact date object from previous logic (which used isSameDay correctly)
-                    const isStart = isSameDay(parsedStart, dayParsed);
-                    const isOriginalEnd = isSameDay(parsedOriginalEnd, dayParsed);
-                    const isRevisedEnd = isSameDay(parsedRevisedEnd, dayParsed);
+                    // --- DATE PARSING WITH NULL SAFETY ---
+                    const parsedStart = currentStartDate ? parseISO(currentStartDate) : null;
+                    const parsedOriginalEnd = item.original_end_date ? parseISO(item.original_end_date) : null;
+                    const parsedRevisedEnd = currentRevisedDate ? parseISO(currentRevisedDate) : null;
+
+                    // Normalize to Start of Day
+                    const normDay = startOfDay(dayParsed);
+                    const normStart = parsedStart ? startOfDay(parsedStart) : null;
+                    const normRevisedEnd = parsedRevisedEnd ? startOfDay(parsedRevisedEnd) : null;
+
+                    // 1. Range Check (only if dates exist)
+                    const isActiveRange = (normStart && normRevisedEnd) 
+                        ? isWithinInterval(normDay, { start: normStart, end: normRevisedEnd }) 
+                        : false;
+                    
+                    // 2. Marker Checks (only if dates exist)
+                    const isStart = parsedStart ? isSameDay(parsedStart, dayParsed) : false;
+                    const isOriginalEnd = parsedOriginalEnd ? isSameDay(parsedOriginalEnd, dayParsed) : false;
+                    const isRevisedEnd = parsedRevisedEnd ? isSameDay(parsedRevisedEnd, dayParsed) : false;
                     const isCombinedEnd = isOriginalEnd && isRevisedEnd;
 
-                    const weeklyPlanData = getWeeklyPlanForLabel(item, dayParsed, currentStartDate, currentRevisedDate, currentDate);
+                    // 3. Weekly Badge (only if dates exist)
+                    const weeklyPlanData = (currentStartDate && currentRevisedDate)
+                        ? getWeeklyPlanForLabel(item, dayParsed, currentStartDate, currentRevisedDate, currentDate)
+                        : null;
 
+                    // Styling
                     const dayNum = getDate(day);
                     const isEvenWeek = (dayNum > 7 && dayNum <= 14) || (dayNum > 21 && dayNum <= 28);
                     const bgClass = isEvenWeek ? "bg-gray-50/30 dark:bg-gray-800/20" : "bg-white dark:bg-layout-dark";

@@ -16,7 +16,7 @@ const customerColumns = [
 
 const WBS = () => {
    const { tenderId } = useProject();
-  console.log(tenderId);
+
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(false);
 

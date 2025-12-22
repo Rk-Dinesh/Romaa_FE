@@ -23,7 +23,6 @@ const Columns = [
 
     render: (percentage) => <ProgressBar percentage={percentage.status} />,
   },
-  { label: "Project Manager", key: "pmanager" },
   { label: "Budget", key: "tender_value" },
 ];
 
