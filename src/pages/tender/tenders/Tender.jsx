@@ -23,7 +23,7 @@ const TenderColumns = [
   {
     label: "Submission Date",
     key: "tender_start_date",
-    render: (item) => item.tender_start_date ? new Date(item.tender_start_date).toLocaleDateString() : "-"
+    render: (item) => item.tender_start_date ? new Date(item.tender_start_date).toLocaleDateString("en-GB").replace(/\//g, "-") : "-"
   },
   { label: "Budget", key: "tender_value" , formatter: (value) => new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0, minimumFractionDigits: 0 }).format(value) },
   {

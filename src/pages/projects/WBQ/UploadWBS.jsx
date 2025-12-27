@@ -5,16 +5,38 @@ import { toast } from "react-toastify";
 import { useProject } from "../ProjectContext";
 import { API } from "../../../constant";
 
-const sampleCSv = `description,unit,quantity
-Foundation Excavation,m³,70
-Concrete Pour,m³,140
-Brick Laying,m²,210
-Wall Laying,m²,80
-Floor Laying,m²,46
-Roof Laying,m²,78
-painting,m²,453
-plumbing,m²,143
-electrical,m²,68
+// const sampleCSv = `description,unit,quantity
+// Foundation Excavation,m³,70
+// Concrete Pour,m³,140
+// Brick Laying,m²,210
+// Wall Laying,m²,80
+// Floor Laying,m²,46
+// Roof Laying,m²,78
+// painting,m²,453
+// plumbing,m²,143
+// electrical,m²,68
+// `;
+
+const sampleCSv = `
+Code,Description,Unit,Quantity
+A,SITE ESTABLISHMENT,,
+1,Soil Cutting,cum,10400
+B,LHS-Side-Hight Portion,,
+1,D/S Cut off Wall,,
+1.1,Earthwork +49.2,,
+1.1.1,ch 0-20,Rmt,100
+1.1.2,ch 20-30,Rmt,15
+1.1.3,ch 30-40,Rmt,10
+,,,
+1.2,PCC Top +49.3,,
+1.2.1,ch 40-50,Rmt,55
+1.2.2 ,ch 50-60,Rmt,60
+2,Concrete Works,,
+2.1,PCC,,
+2.1.1,ch 60-85,Rmt,90
+2.1.2,ch 85-120,Rmt,200
+2.1.3,ch 120-125,Rmt,20
+2.1.4,ch 125-130,Rmt,40
 `;
 
 const UploadWBS = ({ onclose, onSuccess }) => {
@@ -60,7 +82,7 @@ const UploadWBS = ({ onclose, onSuccess }) => {
       if (files.length === 1) {
         // Single file upload
         formData.append("file", files[0]);
-        await axios.post(`${API}/schedule/upload-csv`, formData, {
+        await axios.post(`${API}/schedulelite/upload-csv`, formData, {
           headers: { "Content-Type": "multipart/form-data" },
         });
       }

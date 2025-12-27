@@ -75,16 +75,16 @@ const AddTender = ({ onclose, onSuccess }) => {
       .catch((err) => console.error("Error fetching clients", err));
   }, []);
 
- const clientIdOptions = clients.map(c => ({
-  value: c.client_id,
-  label: c.client_id
-}));
+  const clientIdOptions = clients.map((c) => ({
+    value: c.client_id,
+    label: c.client_id,
+  }));
 
-const clientNameOptions = clients.map((c, i) => ({
-  value: c.client_name,
-  label: c.client_name,
-  key: `${c.client_id}-${i}` // ensures uniqueness
-}));
+  const clientNameOptions = clients.map((c, i) => ({
+    value: c.client_name,
+    label: c.client_name,
+    key: `${c.client_id}-${i}`,
+  }));
 
   const {
     register,
@@ -134,8 +134,6 @@ const clientNameOptions = clients.map((c, i) => ({
   }, [client_name]);
 
   const onSubmit = async (data) => {
-    console.log("submitted", data);
-
     try {
       setLoading(true);
       await axios.post(`${API}/tender/addtender`, data);
@@ -143,51 +141,65 @@ const clientNameOptions = clients.map((c, i) => ({
       onclose();
       toast.success("Tender created successfully ✅");
     } catch (err) {
-      console.error("Error creating tender:", err);
-      alert(err.response?.data?.message || "Failed to create tender");
+      toast.error("Failed to create tender");
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="font-roboto-flex fixed inset-0 grid justify-center items-center backdrop-blur-xs backdrop-grayscale-50 drop-shadow-lg z-20">
-      <div className="mx-2 shadow-lg py-2 dark:bg-overall_bg-dark bg-white rounded-md">
-        <div className="grid">
-          <button
-            onClick={onclose}
-            className="place-self-end cursor-pointer dark:bg-overall_bg-dark bg-white rounded-full lg:-mx-4 md:-mx-4 -mx-2 lg:-my-6 md:-my-5 -my-3"
-            disabled={loading}
+    /* ✅ HEIGHT FIXED MODAL WRAPPER */
+    <div className="font-roboto-flex fixed inset-0 z-20 flex items-center justify-center bg-black/30">
+      {/* ✅ MODAL CARD */}
+      <div
+        className="mx-2 w-full max-w-4xl bg-white dark:bg-overall_bg-dark rounded-md shadow-lg
+                      max-h-[100vh] overflow-hidden"
+      >
+        <p
+          onClick={onclose}
+          className="place-self-end cursor-pointer dark:bg-overall_bg-dark bg-white rounded-full "
+ disabled={loading}
+>
+          <IoClose className="size-[24px]" />
+        </p>
+
+        <h1 className="text-center font-medium text-2xl ">Add Tender</h1>
+
+        {/* ✅ FLEX FORM */}
+        <form
+          onSubmit={handleSubmit(onSubmit)}
+          className="flex flex-col h-full mx-6"
+        >
+          {/* ✅ SCROLLABLE CONTENT */}
+          <div
+            className="grid lg:grid-cols-2 grid-cols-1 gap-6 px-2 py-2
+                          overflow-y-auto max-h-[90vh] "
           >
-            <IoClose className="size-[24px]" />
-          </button>
+            {/* LEFT */}
+            <div className="space-y-4">
+              <InputField
+                label="Tender Name"
+                name="tender_name"
+                placeholder="Enter tender name"
+                register={register}
+                errors={errors}
+              />
 
-          <h1 className="text-center font-medium text-2xl py-2">Add Tender</h1>
-
-          <form onSubmit={handleSubmit(onSubmit)}>
-            <div className="grid lg:grid-cols-2 grid-cols-1 lg:gap-8 gap-4 px-6 lg:py-6 py-2">
-              {/* Left column */}
-              <div className="lg:space-y-6 space-y-2">
-                <InputField
-                  label="Tender Name"
-                  name="tender_name"
-                  register={register}
-                  errors={errors}
-                  placeholder="Enter tender name"
-                />
-                <InputField
-                  label="Tender Published Date"
-                  name="tender_start_date"
-                  type="date"
-                  register={register}
-                  errors={errors}
-                />
+              <InputField
+                label="Tender Published Date"
+                name="tender_start_date"
+                type="date"
+                placeholder="Select published date"
+                register={register}
+                errors={errors}
+              />
 
                 <InputField
                   label="Tender Type"
                   type="select"
                   name="tender_type"
                   register={register}
+                  placeholder="Select tender type"
                   errors={errors}
                   options={[
                     {
@@ -198,13 +210,14 @@ const clientNameOptions = clients.map((c, i) => ({
                     { value: "lumpsum", label: "Lumpsum" },
                   ]}
                 />
-                <InputField
-                  label="Client ID"
-                  type="select"
-                  name="client_id"
-                  register={register}
-                  errors={errors}
-                   options={clientIdOptions}
+              <InputField
+                label="Client ID"
+                type="select"
+                name="client_id"
+                placeholder="Select client ID"
+                register={register}
+                errors={errors}
+                options={clientIdOptions}
                   onChange={(e) => {
                     const selectedId = e.target.value;
                     setValue("client_id", selectedId);
@@ -216,15 +229,16 @@ const clientNameOptions = clients.map((c, i) => ({
                         shouldValidate: true,
                       });
                   }}
-                />
+              />
 
-                <InputField
-                  label="Client Name"
-                  type="select"
-                  name="client_name"
-                  register={register}
-                  errors={errors}
-                   options={clientNameOptions}
+              <InputField
+                label="Client Name"
+                type="select"
+                name="client_name"
+                placeholder="Select client name"
+                register={register}
+                errors={errors}
+                options={clientNameOptions}
                   onChange={(e) => {
                     const selectedName = e.target.value;
                     setValue("client_name", selectedName);
@@ -236,143 +250,156 @@ const clientNameOptions = clients.map((c, i) => ({
                         shouldValidate: true,
                       });
                   }}
-                />
+              />
 
-                <InputField
-                  label="Contact Person"
-                  name="tender_contact_person"
-                  register={register}
-                  errors={errors}
-                  placeholder="Enter contact person"
-                />
-                <InputField
-                  label="Phone Number"
-                  name="tender_contact_phone"
-                  register={register}
-                  errors={errors}
-                  placeholder="Enter phone number"
-                  type="number"
-                />
-                <InputField
-                  label="Contact Email"
-                  name="tender_contact_email"
-                  type="email"
-                  register={register}
-                  errors={errors}
-                  placeholder="Enter contact email"
-                />
+              <InputField
+                label="Contact Person"
+                name="tender_contact_person"
+                placeholder="Enter contact person name"
+                register={register}
+                errors={errors}
+              />
 
-                <InputField
-                  label="City"
-                  name="tender_location.city"
-                  register={register}
-                  errors={errors}
-                  placeholder="Enter city"
-                />
-              </div>
+              <InputField
+                label="Phone Number"
+                name="tender_contact_phone"
+                type="number"
+                placeholder="Enter 10 digit phone number"
+                register={register}
+                errors={errors}
+              />
 
-              {/* Right column */}
-              <div className="lg:space-y-4 space-y-2">
-                {/* Full location fields */}
-                <InputField
-                  label="State"
-                  name="tender_location.state"
-                  register={register}
-                  errors={errors}
-                  placeholder="Enter state"
-                />
-                <InputField
-                  label="Country"
-                  name="tender_location.country"
-                  register={register}
-                  errors={errors}
-                  placeholder="Enter country"
-                />
-                <InputField
-                  label="Pincode"
-                  name="tender_location.pincode"
-                  register={register}
-                  errors={errors}
-                  placeholder="Enter pincode"
-                />
+              <InputField
+                label="Contact Email"
+                name="tender_contact_email"
+                type="email"
+                placeholder="Enter email address"
+                register={register}
+                errors={errors}
+              />
 
-                <InputField
-                  label="Project Duration"
-                  name="tender_duration"
-                  register={register}
-                  errors={errors}
-                  placeholder="Enter duration"
-                />
-                 <InputField
-                  label="Consider Completion "
-                  name="consider_completion_duration"
-                  register={register}
-                  errors={errors}
-                  placeholder="Enter duration"
-                />
-                <InputField
-                  label="Tender Value"
-                  name="tender_value"
-                  register={register}
-                  errors={errors}
-                  placeholder="Enter cost"
-                   type="number"
-                />
-                <InputField
-                  label="Bid Submission Date"
-                  name="tender_end_date"
-                  type="date"
-                  register={register}
-                  errors={errors}
-                />
-                <InputField
-                  label="EMD Value"
-                  name="emd.emd_amount"
-                  register={register}
-                  errors={errors}
-                  placeholder="Enter EMD Value"
-                   type="number"
-                />
-                <InputField
-                  label="EMD Expiry Date"
-                  name="emd.emd_validity"
-                  type="date"
-                  register={register}
-                  errors={errors}
-                />
-                <InputField
-                  label="Description"
-                  type="textarea"
-                  name="tender_description"
-                  register={register}
-                  errors={errors}
-                  placeholder="Enter description"
-                />
-              </div>
+              <InputField
+                label="City"
+                name="tender_location.city"
+                placeholder="Enter city"
+                register={register}
+                errors={errors}
+              />
             </div>
 
-            {/* Buttons */}
-            <div className="mx-5 text-xs flex lg:justify-end md:justify-center justify-center gap-2 mb-4">
-              <button
-                type="button"
-                onClick={onclose}
-                disabled={loading}
-                className="cursor-pointer border border-darkest-blue dark:border-white px-6 py-2 rounded"
-              >
-                Cancel
-              </button>
-              <button
-                type="submit"
-                disabled={loading}
+            {/* RIGHT */}
+            <div className="space-y-2">
+              <InputField
+                label="State"
+                name="tender_location.state"
+                placeholder="Enter state"
+                register={register}
+                errors={errors}
+              />
+
+              <InputField
+                label="Country"
+                name="tender_location.country"
+                placeholder="Enter country"
+                register={register}
+                errors={errors}
+              />
+
+              <InputField
+                label="Pincode"
+                name="tender_location.pincode"
+                placeholder="Enter 6 digit pincode"
+                register={register}
+                errors={errors}
+              />
+
+              <InputField
+                label="Project Duration"
+                name="tender_duration"
+                placeholder="Eg: 12 Months"
+                register={register}
+                errors={errors}
+              />
+
+              <InputField
+                label="Consider Completion"
+                name="consider_completion_duration"
+                placeholder="Eg: 10 Months"
+                register={register}
+                errors={errors}
+              />
+
+              <InputField
+                label="Tender Value"
+                name="tender_value"
+                type="number"
+                placeholder="Enter tender value"
+                register={register}
+                errors={errors}
+              />
+
+              <InputField
+                label="Bid Submission Date"
+                name="tender_end_date"
+                type="date"
+                placeholder="Select due date"
+                register={register}
+                errors={errors}
+              />
+
+              <InputField
+                label="EMD Value"
+                name="emd.emd_amount"
+                type="number"
+                placeholder="Enter EMD amount"
+                register={register}
+                errors={errors}
+              />
+
+              <InputField
+                label="EMD Expiry Date"
+                name="emd.emd_validity"
+                type="date"
+                placeholder="Select EMD expiry date"
+                register={register}
+                errors={errors}
+              />
+              <InputField
+              label="Description"
+              type="textarea"
+              name="tender_description"
+              placeholder="Enter tender description (max 500 characters)"
+              register={register}
+              errors={errors}
+            />
+            </div>
+            
+          </div>
+
+          {/* ✅ FIXED BUTTON BAR */}
+          <div
+            className="sticky bottom-0 bg-white dark:bg-overall_bg-dark px-6 py-3
+                          flex justify-end gap-2 "
+          >
+            <button
+              type="button"
+              onClick={onclose}
+               disabled={loading}
+              className="border px-6 py-2 rounded"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              disabled={loading}
                 className={`cursor-pointer px-6 text-white rounded ${
                   loading ? "bg-gray-500 cursor-not-allowed" : "bg-darkest-blue"
                 }`}
-              >
-                {loading ? "Saving..." : "Save"}
-              </button>
-            </div>
-          </form>
-        </div>
+            >
+              {loading ? "Saving..." : "Save"}
+            </button>
+          </div>
+        </form>
       </div>
     </div>
   );

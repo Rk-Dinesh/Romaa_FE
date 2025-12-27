@@ -124,13 +124,13 @@ const EditTender = ({ item, onclose, onUpdated }) => {
         className="mx-2 shadow-lg py-2 dark:bg-overall_bg-dark bg-white rounded-md lg:w-[900px] md:w-[600px] w-96"
         onClick={(e) => e.stopPropagation()}
       >
-        <button
+        <p
           onClick={onclose}
           disabled={loading}
           className="place-self-end cursor-pointer dark:bg-overall_bg-dark bg-white rounded-full -mx-2 -my-3"
         >
           <IoClose className="size-[24px]" />
-        </button>
+        </p>
 
         <h1 className="text-center font-medium text-2xl py-2">Edit Tender</h1>
 

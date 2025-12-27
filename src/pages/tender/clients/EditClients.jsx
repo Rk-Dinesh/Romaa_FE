@@ -103,12 +103,12 @@ const EditClients = ({ item, onclose, onUpdated }) => {
         onClick={(e) => e.stopPropagation()} 
       >
 
-        <button
+        <p
           onClick={onclose}
           className="place-self-end cursor-pointer dark:bg-overall_bg-dark bg-white rounded-full lg:-mx-4 md:-mx-4 -mx-2 lg:-my-6 md:-my-5 -my-3 lg:shadow-md md:shadow-md shadow-none lg:py-2.5 md:py-2.5 py-0 lg:px-2.5 md:px-2.5 px-0"
         >
           <IoClose className="size-[24px]" />
-        </button>
+        </p>
 
         <h1 className="text-center font-medium text-2xl py-2">Edit Client</h1>
 

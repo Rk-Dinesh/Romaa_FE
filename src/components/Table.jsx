@@ -145,6 +145,7 @@ const Table = ({
 
     return sortableItems;
   }, [endpoint, sortConfig]);
+  const startIndex = (currentPage - 1) * itemsPerPage;
 
   return (
     <div className="font-roboto-flex flex flex-col h-full">
@@ -300,7 +301,7 @@ const Table = ({
                     className={`border-b-[3px] dark:border-overall_bg-dark border-light-blue text-center`}
                     onClick={() => onRowClick && onRowClick(item)}
                   >
-                    <td className="p-2 rounded-l-lg ">{index + 1}</td>
+                    <td className="p-2 rounded-l-lg ">{startIndex + index + 1}</td>
                     {columns.map((col, colIndex) => {
                       const isLastColumn = colIndex === columns.length - 1;
                       const hasAction = EditModal || ViewModal || DeleteModal || routepoint || editroutepoint;
