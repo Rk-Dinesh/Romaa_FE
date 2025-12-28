@@ -123,7 +123,7 @@ const UploadScheduleModal = ({ onClose, onSuccess }) => {
       // Pass file
       if (files.length === 1) {
         formData.append("file", files[0]);
-        await axios.post(`${API}/schedule/upload-csv-dates`, formData, {
+        await axios.post(`${API}/schedulelite/upload-csv-dates`, formData, {
           headers: { "Content-Type": "multipart/form-data" },
         });
       }
@@ -182,7 +182,7 @@ const UploadScheduleModal = ({ onClose, onSuccess }) => {
             </p>
             <input
               type="file"
-              accept=".csv"
+              accept=".xlsx, .xls,.csv"
               ref={inputRef}
               onChange={handleInputChange}
               className="hidden"
@@ -215,14 +215,14 @@ const UploadScheduleModal = ({ onClose, onSuccess }) => {
 
           {/* Buttons */}
           <div className="flex flex-col-reverse sm:flex-row justify-between gap-4 mt-2">
-            <button
+            {/* <button
               type="button"
               onClick={downloadSampleCsv}
               disabled={loading || items.length === 0}
               className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 text-sm font-medium hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
             >
               {loading ? "Loading Template..." : "Download Template CSV"}
-            </button>
+            </button> */}
 
             <div className="flex gap-3 justify-end">
                 <button
