@@ -1,10 +1,10 @@
 import React, { useEffect, useState, useMemo } from "react";
 import axios from "axios";
 import { format, isValid, parseISO } from "date-fns";
-import { 
-  ChevronRight, ChevronDown, 
-  Layers, Folder, ClipboardList, Activity, 
-  Link as LinkIcon 
+import {
+  ChevronRight, ChevronDown,
+  Layers, Folder, ClipboardList, Activity,
+  Link as LinkIcon
 } from "lucide-react";
 import { TbFileExport } from "react-icons/tb";
 import { useProject } from "../../../../ProjectContext";
@@ -52,7 +52,7 @@ const flattenStructure = (groups) => {
       level: level,
       expanded: true,
       row_index: node.row_index,
-      wbs_code: node.wbs_id, 
+      wbs_code: node.wbs_id,
       name: name,
       unit: node.unit,
       quantity: node.quantity,
@@ -66,6 +66,7 @@ const flattenStructure = (groups) => {
       rev_duration: node.revised_duration,
       lag: node.lag,
       predecessor: node.predecessor,
+      predecessor_actual: node.predecessor_actual,
       status: node.status || "pending"
     };
     rows.push(row);
@@ -148,14 +149,14 @@ const ProjectSchedule = () => {
       {/* Table Container */}
       <div className="flex-1 overflow-auto border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 shadow-sm  custom-scrollbar relative">
         <table className="border-separate border-spacing-0 w-full min-w-[1400px]">
-          
+
           {/* --- Sticky Header --- */}
           <thead className="bg-gray-100 dark:bg-gray-800 shadow-sm sticky top-0 z-40">
             {/* Top Header Row */}
             <tr className="uppercase text-[11px] tracking-wider font-bold text-gray-600 dark:text-gray-300">
-              
+
               {/* STICKY COLUMN HEADERS (Z-50) */}
-              <th rowSpan={2} className="border-r border-b border-gray-300 dark:border-gray-700 p-2 text-center bg-gray-100 dark:bg-gray-800 sticky left-0 top-0 z-50 min-w-[50px]">
+              <th rowSpan={2} className="border-r border-b border-gray-300 dark:border-gray-700 p-2 text-center bg-gray-100 dark:bg-gray-800 sticky left-0 top-0 z-60 min-w-[50px]">
                 No.
               </th>
               <th rowSpan={2} className="border-r border-b border-gray-300 dark:border-gray-700 p-2 text-left bg-gray-100 dark:bg-gray-800 sticky left-[10px] top-0 z-50 min-w-[300px] shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)]">
@@ -214,43 +215,43 @@ const ProjectSchedule = () => {
               visibleRows.map((row) => {
                 const isLeaf = row.type === 'leaf';
                 const hasChildren = row.type !== 'leaf';
-                
+
                 // Row Background logic
                 let bgRow = "bg-white dark:bg-gray-900";
-                if(row.type === 'group') bgRow = "bg-gray-100 dark:bg-gray-800";
-                else if(row.type === 'item') bgRow = "bg-gray-50 dark:bg-gray-900/60";
+                if (row.type === 'group') bgRow = "bg-gray-100 dark:bg-gray-800";
+                else if (row.type === 'item') bgRow = "bg-gray-50 dark:bg-gray-900/60";
 
                 // Sticky Cell Background Logic (Must match row, but explicitly set)
                 let stickyBg = "bg-white dark:bg-gray-900";
-                if(row.type === 'group') stickyBg = "bg-gray-100 dark:bg-gray-800";
-                else if(row.type === 'item') stickyBg = "bg-gray-50 dark:bg-gray-900";
+                if (row.type === 'group') stickyBg = "bg-gray-100 dark:bg-gray-800";
+                else if (row.type === 'item') stickyBg = "bg-gray-50 dark:bg-gray-900";
 
                 let textDesc = "text-slate-900 dark:text-gray-300";
-                if(row.type === 'group') textDesc = "font-bold text-gray-900 dark:text-white";
-                else if(row.type === 'item') textDesc = "font-semibold text-red-800 dark:text-gray-200";
-                else if(row.type === 'leaf') textDesc = "font-semibold text-blue-600 dark:text-gray-200";
+                if (row.type === 'group') textDesc = "font-bold text-gray-900 dark:text-white";
+                else if (row.type === 'item') textDesc = "font-semibold text-red-800 dark:text-gray-200";
+                else if (row.type === 'leaf') textDesc = "font-semibold text-blue-600 dark:text-gray-200";
 
                 const indentPx = row.level * 20 + 4;
 
                 return (
                   <tr key={row.uniqueKey} className={`${bgRow} hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors group`}>
-                    
+
                     {/* 1. Index (Sticky Z-30) */}
-                    <td className={`border-r border-b border-gray-100 dark:border-gray-800 px-2 py-2 text-center text-xs text-gray-400 font-mono sticky left-0 z-30 ${stickyBg} group-hover:bg-blue-50 dark:group-hover:bg-blue-900/20`}>
+                    <td className={`border-r border-b border-gray-100 dark:border-gray-800 px-2 py-2 text-center text-xs text-gray-400 font-mono sticky left-0 z-20 ${stickyBg} group-hover:bg-blue-50 dark:group-hover:bg-blue-900/20`}>
                       {row.row_index}
                     </td>
 
                     {/* 2. Description Tree (Sticky Z-30) */}
-                    <td className={`border-r border-b border-gray-100 dark:border-gray-800 px-2 py-2 text-left sticky left-[10px] z-30 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] ${stickyBg} group-hover:bg-blue-50 dark:group-hover:bg-blue-900/20`}>
+                    <td className={`border-r border-b border-gray-100 dark:border-gray-800 px-2 py-2 text-left sticky left-[10px] z-10 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] ${stickyBg} group-hover:bg-blue-50 dark:group-hover:bg-blue-900/20`}>
                       <div className="flex items-center" style={{ paddingLeft: `${indentPx}px` }}>
                         {hasChildren ? (
                           <button onClick={() => toggleRow(row.uniqueKey)} className="mr-1 text-gray-400 hover:text-blue-600">
-                            {expandedIds.has(row.uniqueKey) ? <ChevronDown size={14}/> : <ChevronRight size={14}/>}
+                            {expandedIds.has(row.uniqueKey) ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
                           </button>
-                        ) : <span className="w-[14px] mr-1"/>}
-                        
-                        
-                        
+                        ) : <span className="w-[14px] mr-1" />}
+
+
+
                         <div className="flex flex-col truncate">
                           <span className={`truncate ${textDesc} text-xs`} title={row.name}>{row.name}</span>
                           {isLeaf && row.wbs_code && (
@@ -286,9 +287,34 @@ const ProjectSchedule = () => {
 
                     {/* Tracking */}
                     <td className="border-r border-b border-gray-100 dark:border-gray-800 px-2 py-2 text-center text-[10px]">
-                      {row.predecessor ? (
-                        <div className="flex items-center justify-center gap-1 text-gray-500 bg-gray-100 px-1 py-0.5 rounded border border-gray-200">
-                          <LinkIcon size={8} /> {row.predecessor}
+                      {(row.predecessor || row.predecessor_actual) ? (
+                        <div className="flex items-center justify-center gap-1">
+
+                          {row.predecessor !== row.predecessor_actual ? (
+                            <>
+                              {row.predecessor && (
+                                <span
+                                  className="flex items-center gap-1 text-orange-700 bg-orange-100 border border-orange-300 px-1.5 py-0.5 rounded font-bold whitespace-nowrap"
+                                  title="revised"
+                                >
+                                  {row.predecessor}
+                                </span>
+                              )}
+
+                              {row.predecessor_actual && (
+                                <span
+                                  className="flex items-center gap-1 text-gray-500 bg-gray-50 border border-gray-200 px-1.5 py-0.5 rounded whitespace-nowrap"
+                                  title="original"
+                                >
+                                 {row.predecessor_actual}
+                                </span>
+                              )}
+                            </>
+                          ) : (
+                            <span className="flex items-center gap-1 text-gray-600 bg-gray-100 border border-gray-200 px-1.5 py-0.5 rounded whitespace-nowrap">
+                              <LinkIcon size={8} /> {row.predecessor_actual || row.predecessor}
+                            </span>
+                          )}
                         </div>
                       ) : ""}
                     </td>
@@ -316,9 +342,9 @@ const ProjectSchedule = () => {
       </div>
 
       {isUploadModalOpen && (
-        <UploadScheduleModal 
-          onclose={() => setIsUploadModalOpen(false)} 
-          onSuccess={() => { fetchWBS(); setIsUploadModalOpen(false); }} 
+        <UploadScheduleModal
+          onclose={() => setIsUploadModalOpen(false)}
+          onSuccess={() => { fetchWBS(); setIsUploadModalOpen(false); }}
         />
       )}
     </div>
