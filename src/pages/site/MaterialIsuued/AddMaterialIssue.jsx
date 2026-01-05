@@ -1,251 +1,377 @@
 import React, { useEffect, useState } from "react";
-import { useForm } from "react-hook-form";
+import { useForm, useFieldArray } from "react-hook-form";
 import { yupResolver } from "@hookform/resolvers/yup";
 import * as yup from "yup";
 import axios from "axios";
 import Modal from "../../../components/Modal";
-import { InputField } from "../../../components/InputField";
-import { API } from "../../../constant";
 import { toast } from "react-toastify";
+import { Trash2, Box } from "lucide-react";
+import { API } from "../../../constant";
 
-// Yup validation schema
+// --- Validation Schema ---
 const schema = yup.object().shape({
   site_name: yup.string().required("Site Name is required"),
-  item_description: yup.string().required("Material is required"),
-  unit: yup.string().required("Unit is required"),
-  received_quantity: yup.number().required(),
-  issued_quantity: yup
-    .number()
-    .typeError("Invalid quantity")
-    .required("Issued Quantity is required")
-    .min(1, "Issued quantity must be at least 1"),
   work_location: yup.string().required("Work Location is required"),
-  issued_by: yup.string().required("Requested By is required"),
+  issued_by: yup.string().required("Issued By is required"),
+  issued_items: yup.array().of(
+    yup.object().shape({
+      item_id: yup.string().required(),
+      item_description: yup.string().required("Material is required"),
+      unit: yup.string(),
+      current_stock: yup.number(),
+      issued_quantity: yup
+        .number()
+        .transform((value) => (isNaN(value) ? 0 : value))
+        .required("Required")
+        .min(0.001, "Min 0.001")
+        .test("max-qty", "Exceeds Stock", function (value) {
+          const { current_stock } = this.parent;
+          return value <= current_stock;
+        }),
+      purpose: yup.string().required("Purpose required"), // work_description
+      priority: yup.string().default("Normal"),
+    })
+  ),
 });
 
 const AddMaterialIssue = ({ onclose, onSuccess }) => {
   const tenderId = localStorage.getItem("tenderId");
+  
+  // State
   const [materials, setMaterials] = useState([]);
-  const [receivedQty, setReceivedQty] = useState(0);
-  const [issuedError, setIssuedError] = useState("");
+  const [loading, setLoading] = useState(false);
 
   const {
     register,
+    control,
     handleSubmit,
     setValue,
+    watch,
     formState: { errors },
   } = useForm({
     resolver: yupResolver(schema),
+    defaultValues: {
+      site_name: "",
+      work_location: "",
+      issued_by: "",
+      issued_items: [],
+    },
   });
 
-  // Fetch materials with balance > 0 (only show usable materials)
-  const fetchMaterials = async () => {
-    try {
-      const res = await axios.get(`${API}/material/getall/${tenderId}`);
-      const allMaterials = res.data.data || [];
+  const { fields, append, remove } = useFieldArray({
+    control,
+    name: "issued_items",
+  });
 
-      // Filter materials that still have balance left
-      const filtered = allMaterials.filter((mat) => {
-        const totalIssued = mat.issued
-          ? mat.issued.reduce((sum, r) => sum + r.issued_quantity, 0)
-          : 0;
+  // Watch for material selection changes in the *last* appended row (or handling separately)
+  // For simplicity in this UI, we will have a separate "Add Item" section or just a row-based selector.
+  // Here, I will implement a row-based selector where selecting a material auto-fills unit/stock.
 
-        const balance = mat.received_quantity - totalIssued;
-
-        return balance > 0; // only show items with balance
-      });
-
-      setMaterials(filtered);
-    } catch (error) {
-      console.error("Error fetching materials:", error);
-    }
-  };
-
+  // 1. Fetch Materials
   useEffect(() => {
+    const fetchMaterials = async () => {
+      try {
+        const res = await axios.get(`${API}/material/list/${tenderId}`);
+        const allMaterials = res.data.data || [];
+        
+        // Filter only items with stock > 0
+        const stockAvailable = allMaterials.filter(m => m.current_stock_on_hand > 0);
+        setMaterials(stockAvailable);
+      } catch (err) {
+        console.error("Error fetching materials:", err);
+        toast.error("Failed to load material list");
+      }
+    };
+
     if (tenderId) fetchMaterials();
   }, [tenderId]);
 
-  // When material changes
-  const handleMaterialChange = (e) => {
-    const selected = e.target.value;
-    const found = materials.find((m) => m.item_description === selected);
+  // 2. Handle Material Selection for a specific row
+  const handleMaterialSelect = (index, e) => {
+    const selectedDesc = e.target.value;
+    const material = materials.find((m) => m.description === selectedDesc);
 
-    if (found) {
-      // calculate total issued
-      const totalIssued = found.issued
-        ? found.issued.reduce((sum, r) => sum + r.issued_quantity, 0)
-        : 0;
-
-      const balance = found.received_quantity - totalIssued;
-
-      setValue("unit", found.unit);
-      setValue("received_quantity", balance); // <-- SHOW BALANCE instead of original
-
-      setReceivedQty(balance);
+    if (material) {
+      setValue(`issued_items.${index}.item_id`, material.item_id);
+      setValue(`issued_items.${index}.unit`, material.unit);
+      setValue(`issued_items.${index}.current_stock`, material.current_stock_on_hand);
+      setValue(`issued_items.${index}.issued_quantity`, ""); // Reset qty
     } else {
-      setValue("unit", "");
-      setValue("received_quantity", 0);
-      setReceivedQty(0);
+      // Clear fields if deselected
+      setValue(`issued_items.${index}.item_id`, "");
+      setValue(`issued_items.${index}.unit`, "");
+      setValue(`issued_items.${index}.current_stock`, 0);
     }
   };
 
-  // Validate issued qty does not exceed received qty
-  const validateIssuedQty = (e) => {
-    const value = Number(e.target.value);
-
-    if (value > receivedQty) {
-      setIssuedError("Issued quantity cannot exceed received quantity");
-    } else {
-      setIssuedError("");
-    }
+  // 3. Add Empty Row
+  const handleAddRow = () => {
+    append({
+      item_id: "",
+      item_description: "",
+      unit: "",
+      current_stock: 0,
+      issued_quantity: "",
+      purpose: "",
+      priority: "Normal",
+    });
   };
 
-  // Submit form
+  // 4. Submit Handler
   const onSubmit = async (data) => {
-    if (Number(data.issued_quantity) > receivedQty) {
-      setIssuedError("Issued quantity cannot exceed received quantity");
-      return;
-    }
-
-    const payload = {
-      tender_id: tenderId,
-      item_description: data.item_description,
-      unit: data.unit,
-      received_quantity: data.received_quantity,
-      issued_quantity: data.issued_quantity,
-      site_name: data.site_name.toLowerCase(),
-      work_location: data.work_location,
-      issued_by: data.issued_by,
-    };
-
+    setLoading(true);
     try {
-      await axios.post(`${API}/material/addissued`, payload);
-      toast.success("Material issued successfully!");
+      if (data.issued_items.length === 0) {
+        toast.warn("Please add at least one material to issue.");
+        setLoading(false);
+        return;
+      }
 
+      // Map to API structure
+      const payload = {
+        tender_id: tenderId,
+        issued_by: data.issued_by,
+        issued_items: data.issued_items.map((item) => ({
+          item_id: item.item_id,
+          item_description: item.item_description, // Send description as fallback/reference
+          issued_quantity: item.issued_quantity,
+          issued_to: data.site_name, // Mapping site_name to issued_to or keep separate? 
+          // Based on your schema: issued_to (Contractor), site_location (Block A)
+          // Adjusting based on your form fields:
+          issued_to: data.site_name, 
+          work_location: data.work_location,
+          purpose: item.purpose,
+          priority: item.priority
+        })),
+      };
+
+      await axios.post(`${API}/material/addMaterialIssued`, payload);
+      
       if (onSuccess) onSuccess();
+      toast.success("Materials issued successfully!");
       onclose();
-    } catch (error) {
-      console.error("Error issuing material:", error);
-      toast.error("Failed to issue material");
+    } catch (err) {
+      console.error(err);
+      toast.error(err.response?.data?.error || err.message || "Failed to issue materials");
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
     <Modal
-      title={"Add Material Issue"}
+      title="Issue Materials to Site"
       onclose={onclose}
-      widthClassName={"lg:w-[500px] md:w-[500px] w-[96]"}
+      widthClassName="w-full max-w-6xl"
       child={
-        <form onSubmit={handleSubmit(onSubmit)}>
-          <div className="px-6 py-6">
-            <div className="lg:space-y-4 space-y-3">
-              {/* Site Name */}
-              <InputField
-                label="Site Name"
-                type="text"
-                name="site_name"
-                register={register}
-                errors={errors}
-                placeholder="Enter Site Name"
+        <form onSubmit={handleSubmit(onSubmit)} className="p-6 font-roboto-flex">
+          
+          {/* --- Header Inputs (Common for the batch) --- */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8 p-4 bg-gray-50 dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700">
+            {/* Site / Contractor Name */}
+            <div className="flex flex-col gap-1.5">
+              <label className="text-xs font-bold uppercase text-gray-500 dark:text-gray-400">
+                Issued Site <span className="text-red-500">*</span>
+              </label>
+              <input
+                {...register("site_name")}
+                className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-700 shadow-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-900 dark:text-white"
+                placeholder="e.g. John Doe (Contractor)"
               />
+              <p className="text-xs text-red-500 min-h-[16px]">{errors.site_name?.message}</p>
+            </div>
 
-              {/* Material Dropdown */}
-              <div>
-                <label className="text-sm font-medium">Material</label>
-                <select
-                  {...register("item_description")}
-                  onChange={handleMaterialChange}
-                  className="w-full bg-layout-dark mt-1 p-2 border rounded text-sm"
-                >
-                  <option value="">Select Material</option>
-                  {materials.map((mat, idx) => (
-                    <option key={idx} value={mat.item_description}>
-                      {mat.item_description}
-                    </option>
-                  ))}
-                </select>
-
-                {errors.item_description && (
-                  <p className="text-xs text-red-500 mt-1">
-                    {errors.item_description.message}
-                  </p>
-                )}
-              </div>
-
-              {/* Unit */}
-              <InputField
-                label="Unit"
-                type="text"
-                name="unit"
-                register={register}
-                errors={errors}
-                readOnly
+            {/* Work Location */}
+            <div className="flex flex-col gap-1.5">
+              <label className="text-xs font-bold uppercase text-gray-500 dark:text-gray-400">
+                Site Location <span className="text-red-500">*</span>
+              </label>
+              <input
+                {...register("work_location")}
+                className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-700 shadow-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-900 dark:text-white"
+                placeholder="e.g. Block A, 1st Floor"
               />
+              <p className="text-xs text-red-500 min-h-[16px]">{errors.work_location?.message}</p>
+            </div>
 
-              {/* Received Quantity */}
-              <InputField
-                label="Available Quantity"
-                type="number"
-                name="received_quantity"
-                register={register}
-                errors={errors}
-                readOnly
+            {/* Issued By */}
+            <div className="flex flex-col gap-1.5">
+              <label className="text-xs font-bold uppercase text-gray-500 dark:text-gray-400">
+                Issued By (Staff) <span className="text-red-500">*</span>
+              </label>
+              <input
+                {...register("issued_by")}
+                className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-700 shadow-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-900 dark:text-white"
+                placeholder="e.g. Site Engineer"
               />
-
-              {/* Issued Quantity */}
-              <div>
-                <label className="text-sm font-medium">Issued Quantity</label>
-                <input
-                  type="number"
-                  {...register("issued_quantity")}
-                  onChange={validateIssuedQty}
-                  className="w-full bg-layout-dark mt-1 p-2 border rounded text-sm"
-                  placeholder="Enter Issued Quantity"
-                />
-                {(issuedError || errors.issued_quantity) && (
-                  <p className="text-xs text-red-500 mt-1">
-                    {issuedError || errors.issued_quantity.message}
-                  </p>
-                )}
-              </div>
-
-              {/* Work Location */}
-              <InputField
-                label="Work Location"
-                type="text"
-                name="work_location"
-                register={register}
-                errors={errors}
-                placeholder="Enter Work Location"
-              />
-
-
-              {/* Requested By */}
-              <InputField
-                label="Issued By"
-                type="text"
-                name="issued_by"
-                register={register}
-                errors={errors}
-                placeholder="Enter Issued By"
-              />
+              <p className="text-xs text-red-500 min-h-[16px]">{errors.issued_by?.message}</p>
             </div>
           </div>
 
-          {/* Buttons */}
-          <div className="mx-5 text-xs flex justify-end gap-2 mb-4">
+          {/* --- Dynamic Items Table --- */}
+          <div className="mb-6">
+            <div className="flex justify-between items-center mb-2">
+              <h3 className="text-sm font-bold text-gray-700 dark:text-gray-300">Materials List</h3>
+              <button
+                type="button"
+                onClick={handleAddRow}
+                className="text-xs font-medium text-blue-600 hover:text-blue-700 hover:bg-blue-50 px-3 py-1.5 rounded-lg border border-blue-200 transition-colors"
+              >
+                + Add Item
+              </button>
+            </div>
+
+            <div className="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm dark:border-gray-700 dark:bg-gray-800">
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm text-left">
+                  <thead className="bg-gray-50 text-xs uppercase font-bold text-gray-500 dark:bg-gray-700/50 dark:text-gray-300">
+                    <tr>
+                      <th className="px-4 py-3 min-w-[200px]">Material <span className="text-red-500">*</span></th>
+                      <th className="px-4 py-3 w-20 text-center">Unit</th>
+                      <th className="px-4 py-3 w-24 text-center">Stock</th>
+                      <th className="px-4 py-3 w-32">Issue Qty <span className="text-red-500">*</span></th>
+                      <th className="px-4 py-3 min-w-[150px]">Purpose / Work</th>
+                      <th className="px-4 py-3 w-28">Priority</th>
+                      <th className="px-4 py-3 w-10"></th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
+                    {fields.map((item, index) => (
+                      <tr key={item.id} className="group hover:bg-gray-50 dark:hover:bg-gray-700/30">
+                        
+                        {/* Material Select */}
+                        <td className="px-4 py-2">
+                          <select
+                            {...register(`issued_items.${index}.item_description`)}
+                            onChange={(e) => handleMaterialSelect(index, e)}
+                            className="w-full rounded border-gray-300 bg-transparent py-1.5 text-sm outline-none dark:border-gray-600 dark:text-white"
+                          >
+                            <option value="">Select Material</option>
+                            {materials.map((mat) => (
+                              <option key={mat.item_id} value={mat.description}>
+                                {mat.description}
+                              </option>
+                            ))}
+                          </select>
+                          {errors.issued_items?.[index]?.item_description && (
+                            <p className="text-[10px] text-red-500 mt-0.5">Required</p>
+                          )}
+                        </td>
+
+                        {/* Unit (Read Only) */}
+                        <td className="px-4 py-2 text-center text-gray-500">
+                          <input 
+                            {...register(`issued_items.${index}.unit`)} 
+                            readOnly 
+                            className="w-full bg-transparent text-center border-none focus:ring-0 p-0 text-xs" 
+                          />
+                        </td>
+
+                        {/* Stock (Read Only) */}
+                        <td className="px-4 py-2 text-center">
+                          <div className="flex justify-center">
+                            <span className="inline-flex items-center rounded-full bg-green-50 px-2 py-0.5 text-xs font-bold text-green-700 dark:bg-green-900/30 dark:text-green-400">
+                              {watch(`issued_items.${index}.current_stock`)}
+                            </span>
+                          </div>
+                        </td>
+
+                        {/* Issue Qty Input */}
+                        <td className="px-4 py-2">
+                          <input
+                            type="number"
+                            step="any"
+                            {...register(`issued_items.${index}.issued_quantity`)}
+                            className={`w-full rounded border px-2 py-1.5 text-sm ${
+                              errors.issued_items?.[index]?.issued_quantity 
+                                ? "border-red-500 bg-red-50" 
+                                : "border-gray-300 focus:border-blue-500 dark:bg-gray-800 dark:border-gray-600"
+                            }`}
+                            placeholder="0.00"
+                          />
+                          {errors.issued_items?.[index]?.issued_quantity && (
+                            <p className="text-[10px] text-red-500 mt-0.5 whitespace-nowrap">
+                              {errors.issued_items[index].issued_quantity.message || "Exceeds Stock"}
+                            </p>
+                          )}
+                        </td>
+
+                        {/* Purpose Input */}
+                        <td className="px-4 py-2">
+                          <input
+                            type="text"
+                            {...register(`issued_items.${index}.purpose`)}
+                            className="w-full rounded border border-gray-300 px-2 py-1.5 text-sm dark:bg-gray-800 dark:border-gray-600"
+                            placeholder="e.g. Plastering"
+                          />
+                          {errors.issued_items?.[index]?.purpose && (
+                            <p className="text-[10px] text-red-500 mt-0.5">Required</p>
+                          )}
+                        </td>
+
+                        {/* Priority Select */}
+                        <td className="px-4 py-2">
+                          <select
+                            {...register(`issued_items.${index}.priority`)}
+                            className="w-full rounded border border-gray-300 py-1.5 text-sm dark:bg-gray-800 dark:border-gray-600"
+                          >
+                            <option value="Normal">Normal</option>
+                            <option value="Urgent">Urgent</option>
+                          </select>
+                        </td>
+
+                        {/* Remove Button */}
+                        <td className="px-4 py-2 text-center">
+                          <button
+                            type="button"
+                            onClick={() => remove(index)}
+                            className="text-gray-400 hover:text-red-500 transition-colors p-1"
+                          >
+                            <Trash2 size={16} />
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+
+                    {/* Empty State */}
+                    {fields.length === 0 && (
+                      <tr>
+                        <td colSpan="7">
+                          <div className="flex flex-col items-center justify-center py-8 text-gray-400 dark:text-gray-500">
+                            <Box size={32} strokeWidth={1.5} className="mb-2 opacity-50" />
+                            <p className="text-sm">No items added yet.</p>
+                            <button 
+                              type="button" 
+                              onClick={handleAddRow}
+                              className="mt-2 text-blue-600 text-xs font-medium hover:underline"
+                            >
+                              Add first item
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+
+          {/* --- Footer Actions --- */}
+          <div className="flex items-center justify-end gap-3 pt-4 border-t border-gray-100 dark:border-gray-700">
             <button
               type="button"
               onClick={onclose}
-              className="border dark:border-white dark:text-white border-darkest-blue text-darkest-blue px-6 py-2 rounded"
+              className="rounded-lg border border-gray-300 bg-white px-5 py-2.5 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-gray-200 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700"
             >
               Cancel
             </button>
             <button
               type="submit"
-              className="px-6 bg-darkest-blue text-white rounded"
+              disabled={loading || fields.length === 0}
+              className="rounded-lg bg-slate-700 px-5 py-2.5 text-sm font-medium text-white shadow-md hover:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-slate-500 focus:ring-offset-2 disabled:bg-gray-300 disabled:shadow-none disabled:cursor-not-allowed dark:disabled:bg-gray-700 transition-all"
             >
-              Save
+              {loading ? "Saving..." : "Save Issue Entry"}
             </button>
           </div>
         </form>

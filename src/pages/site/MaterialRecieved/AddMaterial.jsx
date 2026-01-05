@@ -308,6 +308,7 @@ const AddMaterial = ({ onclose, onSuccess }) => {
                         <div className="relative">
                           <input
                             type="number"
+                            step="any"
                             {...register(`received_items.${index}.received_quantity`)}
                             className={`w-full rounded-md border px-2 py-1.5 text-sm shadow-sm transition-all focus:outline-none focus:ring-2 ${
                               errors.received_items?.[index]?.received_quantity 

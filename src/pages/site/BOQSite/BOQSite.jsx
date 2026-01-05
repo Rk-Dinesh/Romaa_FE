@@ -1,25 +1,22 @@
-import { useEffect, useState } from "react";
-import { BoqSitedata } from "../../../components/Data";
-import DeleteModal from "../../../components/DeleteModal";
-import Filters from "../../../components/Filters";
-import Table from "../../../components/Table";
-import { useProject } from "../../projects/ProjectContext";
-import EditBOQSite from "./EditBOQSite";
-import axios from "axios";
-import { API } from "../../../constant";
-import { toast } from "react-toastify";
 
-const BoqSiteColumns = [
-  { label: "Item Name", key: "item_name" },
+import axios from 'axios';
+import DeleteModal from '../../../components/DeleteModal';
+import Table from '../../../components/Table'
+import { API } from '../../../constant';
+import { useEffect, useState } from 'react';
+import { toast } from 'react-toastify';
+
+const customerColumns = [
+  { label: "Item Code", key: "item_name" },
   { label: "Item Description", key: "description" },
   { label: "Quantity", key: "quantity" },
   { label: "Units", key: "unit" },
-  { label: "Final Rate", key: "final_unit_rate" },
-  { label: "Amount", key: "final_amount" },
+  { label: "Final Rate", key: "n_rate",formatter: (value) => new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0, minimumFractionDigits: 0 }).format(value) },
+  { label: "Amount", key: "n_amount",formatter: (value) => new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0, minimumFractionDigits: 0 }).format(value) },
 ];
 
 const BOQSite = () => {
-  const { tenderId } = useProject(); // 📌 Get tender_id from URL
+  const tenderId = localStorage.getItem("tenderId");
 
   
 
@@ -27,9 +24,8 @@ const BOQSite = () => {
   const [loading, setLoading] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(0);
-  const [showModal, setShowModal] = useState(false);
 
-  const fetchBoqItems = async () => {
+  const fetchZeroCost = async () => {
     if (!tenderId) return;
     setLoading(true);
     try {
@@ -39,7 +35,6 @@ const BOQSite = () => {
           limit: 10,
         },
       });
-console.log(res);
 
       setItems(res.data.data || []);
       setTotalPages(res.data.totalPages || 1);
@@ -51,14 +46,14 @@ console.log(res);
   };
 
   useEffect(() => {
-    fetchBoqItems();
+    fetchZeroCost();
   }, [tenderId, currentPage]);
 
-  const handleDeleteBoqItem = async (item_code) => {
+  const handleDeleteZeroCostItem = async (item_code) => {
     try {
       await axios.delete(`${API}/boq/removeitem/${tenderId}/${item_code}`);
       toast.success("Item deleted successfully");
-      fetchBoqItems(); // refresh table
+      fetchZeroCost(); // refresh table
     } catch (error) {
       console.error(error);
       toast.error("Failed to delete BOQ item");
@@ -66,27 +61,28 @@ console.log(res);
   };
 
   return (
+    <>
     <Table
-      title="Site"
-      subtitle="BOQ"
-      pagetitle="BOQ"
+      title="BOQ Cost"
+      subtitle={`Tender: ${tenderId}`}
       endpoint={items}
-      columns={BoqSiteColumns}
-      EditModal={EditBOQSite}
-      ViewModal={true}
-      DeleteModal={DeleteModal}
-      deletetitle="BOQ"
-      FilterModal={Filters}
-      onExport={() => console.log("Exporting...")}
+      columns={customerColumns}
+     // EditModal={true}       
+      exportModal={false}
+     // DeleteModal={DeleteModal}
+     // deletetitle="Zero Cost"
       totalPages={totalPages}
       currentPage={currentPage}
       setCurrentPage={setCurrentPage}
-      onUpdated={fetchBoqItems}
-      onSuccess={fetchBoqItems}
-      onDelete={handleDeleteBoqItem}
+      onUpdated={fetchZeroCost}
+      onSuccess={fetchZeroCost}
+      //onDelete={handleDeleteZeroCostItem}
       idKey="item_code"
+  
     />
-  );
-};
+    
+    </>
+  )
+}
 
-export default BOQSite;
+export default BOQSite

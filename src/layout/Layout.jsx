@@ -259,16 +259,7 @@ const LayOut = () => {
         //   icon: <TbCalendarStats size={23} />,
         //   //to: "/site/sitedrawing",
         // },
-        {
-          title: "Work Done",
-          icon: <TbReceipt2 size={23} />,
-          to: "/site/workDoneSite",
-        },
-        {
-          title: "Daily Labour Report",
-          icon: <TbReportAnalytics size={23} />,
-          to: "/site/dialylabourreport",
-        },
+        
         {
           title: "Purchase Request",
           icon: <TbFolderQuestion size={23} />,
@@ -289,7 +280,21 @@ const LayOut = () => {
           icon: <CiBoxList size={23} />,
           to: "/site/stockregistersite",
         },
-
+        {
+          title: "Work Done",
+          icon: <TbReceipt2 size={23} />,
+          to: "/site/workDoneSite",
+        },
+        {
+          title: "Daily Labour Report",
+          icon: <TbReportAnalytics size={23} />,
+          to: "/site/dialylabourreport",
+        },
+         {
+          title: "Machinery Entry",
+          icon: <LuGlassWater size={23} />,
+          to: "/site/machineryentry",
+        },
         {
           title: "Site Assets",
           icon: <TbAssembly size={23} />,
@@ -310,11 +315,7 @@ const LayOut = () => {
           icon: <Quote size={23} />,
           to: "/site/plannedvsachived",
         },
-        {
-          title: "Machinery Entry",
-          icon: <LuGlassWater size={23} />,
-          to: "/site/machineryentry",
-        },
+       
 
       ],
     },

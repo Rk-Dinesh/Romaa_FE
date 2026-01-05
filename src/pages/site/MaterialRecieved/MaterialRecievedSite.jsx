@@ -3,10 +3,11 @@ import { TbPlus, TbFilter, TbSearch, TbEye } from "react-icons/tb";
 import AddMaterial from "./AddMaterial"; // Your Modal Component
 import axios from "axios";
 import { API } from "../../../constant";
-import { Box, Eye } from "lucide-react"; // Icon for empty state
+import { Box,  } from "lucide-react"; // Icon for empty state
 import Button from "../../../components/Button";
 import { FaEye } from "react-icons/fa";
 import { useNavigate } from "react-router-dom";
+import { IoIosEye } from "react-icons/io";
 
 const MaterialRecievedSite = () => {
   const tenderId = localStorage.getItem("tenderId");
@@ -146,13 +147,13 @@ const handleView = (itemId) => {
                 /* Loading Skeleton Rows */
                 [...Array(5)].map((_, i) => (
                   <tr key={i} className="animate-pulse">
-                    <td className="px-6 py-4">{i + 1}</td>
-                    <td className="px-6 py-4"><div className="h-4 bg-gray-200 rounded dark:bg-gray-700 w-3/4"></div></td>
-                    <td className="px-6 py-4"><div className="h-4 bg-gray-200 rounded dark:bg-gray-700 w-1/2"></div></td>
-                    <td className="px-6 py-4"><div className="h-4 bg-gray-200 rounded dark:bg-gray-700 w-12 mx-auto"></div></td>
-                    <td className="px-6 py-4"><div className="h-4 bg-gray-200 rounded dark:bg-gray-700 w-16 mx-auto"></div></td>
-                    <td className="px-6 py-4"><div className="h-4 bg-gray-200 rounded dark:bg-gray-700 w-16 mx-auto"></div></td>
-                    <td className="px-6 py-4"><div className="h-4 bg-gray-200 rounded dark:bg-gray-700 w-16 mx-auto"></div></td>
+                    <td className="px-6 py-2">{i + 1}</td>
+                    <td className="px-6 py-2"><div className="h-4 bg-gray-200 rounded dark:bg-gray-700 w-3/4"></div></td>
+                    <td className="px-6 py-2"><div className="h-4 bg-gray-200 rounded dark:bg-gray-700 w-1/2"></div></td>
+                    <td className="px-6 py-2"><div className="h-4 bg-gray-200 rounded dark:bg-gray-700 w-12 mx-auto"></div></td>
+                    <td className="px-6 py-2"><div className="h-4 bg-gray-200 rounded dark:bg-gray-700 w-16 mx-auto"></div></td>
+                    <td className="px-6 py-2"><div className="h-4 bg-gray-200 rounded dark:bg-gray-700 w-16 mx-auto"></div></td>
+                    <td className="px-6 py-2"><div className="h-4 bg-gray-200 rounded dark:bg-gray-700 w-16 mx-auto"></div></td>
                   </tr>
                 ))
               ) : currentData.length > 0 ? (
@@ -166,31 +167,31 @@ const handleView = (itemId) => {
                       key={index} 
                       className="hover:bg-gray-50 dark:hover:bg-gray-700/30 transition-colors cursor-pointer group"
                     >
-                      <td className="px-6 py-4 font-medium text-gray-800 dark:text-gray-200">
+                      <td className="px-6 py-3 font-medium text-gray-800 dark:text-gray-200">
                         {index + 1}
                       </td>
-                      <td className="px-6 py-4 font-medium text-gray-800 dark:text-gray-200">
+                      <td className="px-6 py-3 font-medium text-gray-800 dark:text-gray-200">
                         {item.description}
                       </td>
-                      <td className="px-6 py-4 text-gray-500 dark:text-gray-400">
+                      <td className="px-6 py-3 text-center text-gray-500 dark:text-gray-400">
                         <span className="inline-flex items-center rounded-md bg-gray-100 px-2 py-1 text-xs font-medium text-gray-600 ring-1 ring-inset ring-gray-500/10 dark:bg-gray-700 dark:text-gray-300 dark:ring-gray-600">
                           {item.category}
                         </span>
                       </td>
-                      <td className="px-6 py-4 text-center text-gray-500 dark:text-gray-400">
+                      <td className="px-6 py-3 text-center text-gray-500 dark:text-gray-400">
                         {item.unit}
                       </td>
-                      <td className="px-6 py-4 text-center font-medium text-gray-600 dark:text-gray-300">
+                      <td className="px-6 py-3 text-center font-medium text-gray-600 dark:text-gray-300">
                         {item.total_budgeted_qty?.toLocaleString()}
                       </td>
-                      <td className="px-6 py-4 text-center">
-                        <span className="font-bold text-slate-900 dark:text-slate-400 bg-slate-50 dark:bg-slate-900/20 px-2.5 py-0.5 rounded-full">
+                      <td className="px-6 py-3 text-center">
+                        <span className="font-bold text-slate-900 dark:text-slate-400  px-2.5 py-0.5">
                           {item.total_received_qty?.toLocaleString()}
                         </span>
                       </td>
-                      <td className="px-6 py-4 text-center">
-                        <button onClick={() => handleView(item.item_id)} className="p-2 border border-gray-300 rounded-lg hover:bg-gray-50 dark:border-gray-700 dark:hover:bg-gray-800 text-gray-600 dark:text-gray-300">
-                          <TbEye size={18}/>
+                      <td className="px-6 py-3 text-center">
+                        <button onClick={() => handleView(item.item_id)} className=" flex items-center gap-2  hover:bg-gray-50  dark:hover:bg-gray-800 text-gray-600 dark:text-gray-300">
+                         <TbEye size={16} /> <p className="text-xs">View</p>
                         </button>
                       </td>
                     </tr>
@@ -199,7 +200,7 @@ const handleView = (itemId) => {
               ) : (
                 /* Empty State */
                 <tr>
-                  <td colSpan="7">
+                  <td colSpan="7">  
                     <div className="flex flex-col items-center justify-center py-16 text-gray-400 dark:text-gray-500">
                       <Box size={48} strokeWidth={1} className="mb-3 opacity-50" />
                       <p className="text-sm font-medium">No materials found for {activeTab}</p>
