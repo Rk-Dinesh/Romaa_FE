@@ -162,6 +162,7 @@ import EMDTrackingTable from "../pages/tender/emd/viewEMDTracking";
 import SecurityDepositTrackingTable from "../pages/tender/security deposit/viewSDTracking";
 import TenderDetailedEstimate from "../pages/tender/tenders/view tenders/detailed estimate/TenderDetailedEstimate";
 import TenderZeroCost from "../pages/tender/tenders/view tenders/zero cost/TenderZeroCost";
+import ViewWorkDone from "../pages/site/WorkDone/ViewWorkDone";
 
 const AppRoutes = () => {
   return (
@@ -374,7 +375,10 @@ const AppRoutes = () => {
                 <Route index element={<SiteDrawing />} />
                 <Route path="viewdrawing" element={<ViewSiteDrawing />} />
               </Route>
-              <Route path="workDoneSite" element={<WorkDoneSite />} />
+              <Route path="workDoneSite">
+                <Route index element={<WorkDoneSite />} />
+                <Route path="viewworkDoneSite" element={<ViewWorkDone />} />
+              </Route>
               <Route path="dialylabourreport">
                 <Route index element={<DailyLabourReport />} />
                 <Route

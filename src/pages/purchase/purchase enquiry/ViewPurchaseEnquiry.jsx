@@ -113,7 +113,7 @@ const ViewPurchaseEnquiry = () => {
   
   const passedItem = location.state?.item || {};
   const requestIdParam = passedItem.requestId;
-  const projectIdParam = passedItem.projectName;
+  const projectIdParam = passedItem.projectId;
 
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);

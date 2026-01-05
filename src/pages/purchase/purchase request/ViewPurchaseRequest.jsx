@@ -72,8 +72,9 @@ const ViewPurchaseRequest = () => {
   
   // Safe State Access
   const passedItem = location.state?.item || {};
+  console.log(passedItem);
   const requestIdParam = passedItem.requestId;
-  const projectIdParam = passedItem.projectName; // Assuming 'projectName' holds the ID based on context
+  const projectIdParam = passedItem.projectId; // Assuming 'projectName' holds the ID based on context
 
   const [requestRegister, setRequestRegister] = useState(false);
   const [data, setData] = useState(null);

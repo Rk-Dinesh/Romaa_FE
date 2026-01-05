@@ -823,3 +823,17 @@ Service api of MaterialItemSchema
   }
 
   design the API for addMaterialReceived if changes needed and also design the component for addMaterialReceived
+
+
+write Api for createWorkDone request to handle multiple entries of work done
+write an Api to get the work done details based on work done id and date
+write an api get the work done basic details without history
+and further more necessary apis
+
+
+my requirements in site engineer 
+will do an multiple entry of work done.if it has 5 entires it to be stored inarray and i want an common workdone_id for.
+
+ondaily entry new workdone _id will be genreated as common
+i want to store it under particular tenderId,
+

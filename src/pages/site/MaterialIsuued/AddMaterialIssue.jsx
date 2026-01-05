@@ -135,9 +135,6 @@ const AddMaterialIssue = ({ onclose, onSuccess }) => {
           item_id: item.item_id,
           item_description: item.item_description, // Send description as fallback/reference
           issued_quantity: item.issued_quantity,
-          issued_to: data.site_name, // Mapping site_name to issued_to or keep separate? 
-          // Based on your schema: issued_to (Contractor), site_location (Block A)
-          // Adjusting based on your form fields:
           issued_to: data.site_name, 
           work_location: data.work_location,
           purpose: item.purpose,
