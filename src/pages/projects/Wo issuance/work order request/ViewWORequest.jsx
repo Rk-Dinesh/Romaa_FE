@@ -293,7 +293,7 @@ const ViewWORequest = () => {
             <DetailRow label="Site Name" value={data.siteDetails?.siteName} />
             <DetailRow label="Location" value={data.siteDetails?.location} />
             <DetailRow label="Incharge" value={data.siteDetails?.siteIncharge} />
-            <DetailRow label="PO Status" value={data.purchaseOrder?.progressStatus} />
+            <DetailRow label="PO Status" value={data.workOrder?.progressStatus} />
           </InfoCard>
 
           <InfoCard title="Invited Vendors" icon={<User size={16} className="text-purple-500"/>}>

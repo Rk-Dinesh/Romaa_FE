@@ -42,33 +42,44 @@ const CreateRequest = ({ onclose, onSuccess }) => {
   // --- State ---
   const [materials, setMaterials] = useState([]);
   const [vendors, setVendors] = useState([]); 
+  const [availableItems, setAvailableItems] = useState([]); // From Quantity API
   
-  // Dynamic Vendor Selection State
+  // Vendor Selection State
   const [selectedVendors, setSelectedVendors] = useState([{ vendorId: "", vendorName: "" }]);
 
+  // Material Input State
   const [materialInput, setMaterialInput] = useState({
     materialName: "",
     quantity: "",
     unit: "",
+    maxQuantity: 0 // To track limit
   });
+  
   const [loading, setLoading] = useState(false);
 
-  /* ---------------- Fetch Vendors ---------------- */
+  /* ---------------- Fetch Data ---------------- */
   useEffect(() => {
-    const fetchVendors = async () => {
+    if (!tenderId) return;
+
+    const fetchData = async () => {
       try {
-        const res = await axios.get(
-          `${API}/permittedvendor/permitted-vendors/${tenderId}`
-        );
-        setVendors(res.data?.data || []);
-      } catch {
-        toast.error("Failed to load vendors");
+        // 1. Fetch Vendors
+        const vendorRes = await axios.get(`${API}/permittedvendor/permitted-vendors/${tenderId}`);
+        setVendors(vendorRes.data?.data || []);
+
+        const qtyRes = await axios.get(`${API}/raquantities/quantites/allowed/${tenderId}/contractor`); 
+        setAvailableItems(qtyRes.data?.data || []);
+
+      } catch (err) {
+        console.error(err);
+        toast.error("Failed to load project data");
       }
     };
-    if (tenderId) fetchVendors();
+
+    fetchData();
   }, [tenderId]);
 
-  /* ---------------- Vendor Handlers (Like CreateEnquiry) ---------------- */
+  /* ---------------- Vendor Handlers ---------------- */
   const handleAddVendor = () => {
     setSelectedVendors([...selectedVendors, { vendorId: "", vendorName: "" }]);
   };
@@ -82,7 +93,6 @@ const CreateRequest = ({ onclose, onSuccess }) => {
     const updated = [...selectedVendors];
     updated[index][field] = value;
 
-    // Auto-fill logic
     if (field === "vendorId") {
       const found = vendors.find(v => v.vendor_id === value);
       if (found) updated[index].vendorName = found.vendor_name;
@@ -94,15 +104,57 @@ const CreateRequest = ({ onclose, onSuccess }) => {
     setSelectedVendors(updated);
   };
 
-  /* ---------------- Material Handlers ---------------- */
+  /* ---------------- Material Handlers (Enhanced) ---------------- */
+  
+  // Handle Material Selection from Dropdown
+  const handleMaterialSelect = (e) => {
+    const selectedName = e.target.value;
+    const item = availableItems.find(i => i.item_description === selectedName);
+
+    if (item) {
+      setMaterialInput({
+        materialName: item.item_description,
+        quantity: "", // Reset quantity
+        unit: item.unit,
+        maxQuantity: item.ex_quantity // Set Limit
+      });
+    } else {
+      // Reset if "Select" chosen
+      setMaterialInput({ materialName: "", quantity: "", unit: "", maxQuantity: 0 });
+    }
+  };
+
+  // Handle Quantity Change with Validation
+  const handleQuantityChange = (e) => {
+    const val = parseFloat(e.target.value);
+    const max = materialInput.maxQuantity;
+
+    if (val > max) {
+      toast.warning(`Quantity cannot exceed available limit: ${max}`);
+      // Optionally reset to max or allow typing but show error
+      // Here we allow typing but user can't Add if invalid (handled in Add function)
+    }
+    
+    setMaterialInput({ ...materialInput, quantity: e.target.value });
+  };
+
   const handleMaterialAdd = () => {
-    const { materialName, quantity, unit } = materialInput;
+    const { materialName, quantity, unit, maxQuantity } = materialInput;
+    
     if (!materialName || !quantity || !unit) {
       toast.warning("Please fill all material fields.");
       return;
     }
+
+    if (parseFloat(quantity) > maxQuantity) {
+        toast.error(`Quantity exceeds available limit (${maxQuantity} ${unit})`);
+        return;
+    }
+
     setMaterials((prev) => [...prev, materialInput]);
-    setMaterialInput({ materialName: "", quantity: "", unit: "" });
+    
+    // Reset input
+    setMaterialInput({ materialName: "", quantity: "", unit: "", maxQuantity: 0 });
   };
 
   const handleMaterialDelete = (index) => {
@@ -111,25 +163,21 @@ const CreateRequest = ({ onclose, onSuccess }) => {
 
   /* ---------------- Submit ---------------- */
   const onSubmit = async (data) => {
-    // 1. Validate Materials
     if (materials.length === 0) {
       toast.warning("Please add at least one material.");
       return;
     }
 
-    // 2. Validate Vendors (Filter empty rows)
     const validVendors = selectedVendors.filter(v => v.vendorId && v.vendorName);
     if (validVendors.length === 0) {
       toast.warning("Please select at least one valid vendor.");
       return;
     }
 
-    // 3. Prepare Payload
     const finalData = {
       ...data,
       projectId: tenderId,
-      materialsRequired: materials,
-      // Map to backend expected format
+      materialsRequired: materials.map(({ maxQuantity, ...rest }) => rest), // Remove maxQuantity before sending
       permittedVendor: validVendors.map(v => ({
         vendorId: v.vendorId,
         vendorName: v.vendorName
@@ -249,7 +297,7 @@ const CreateRequest = ({ onclose, onSuccess }) => {
 
           <hr className="border-gray-200 dark:border-gray-800" />
 
-          {/* SECTION 3: VENDOR SELECTION (Dynamic Table) */}
+          {/* SECTION 3: VENDOR SELECTION */}
           <div>
             <div className="flex justify-between items-center mb-3">
                 <h3 className="text-sm font-bold text-gray-800 dark:text-gray-200 flex items-center gap-2">
@@ -278,8 +326,6 @@ const CreateRequest = ({ onclose, onSuccess }) => {
                   {selectedVendors.map((row, i) => (
                     <tr key={i} className="bg-white dark:bg-gray-900 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
                       <td className="px-4 py-3 text-center text-gray-400">{i + 1}</td>
-                      
-                      {/* Vendor ID Dropdown */}
                       <td className="px-4 py-3">
                         <select
                           value={row.vendorId}
@@ -288,14 +334,10 @@ const CreateRequest = ({ onclose, onSuccess }) => {
                         >
                           <option value="" className="dark:bg-gray-800">Select ID</option>
                           {vendors.map((v) => (
-                            <option key={v.vendor_id} value={v.vendor_id} className="dark:bg-gray-800">
-                              {v.vendor_id}
-                            </option>
+                            <option key={v.vendor_id} value={v.vendor_id} className="dark:bg-gray-800">{v.vendor_id}</option>
                           ))}
                         </select>
                       </td>
-
-                      {/* Vendor Name Dropdown */}
                       <td className="px-4 py-3">
                         <select
                           value={row.vendorName}
@@ -304,14 +346,10 @@ const CreateRequest = ({ onclose, onSuccess }) => {
                         >
                           <option value="" className="dark:bg-gray-800">Select Name</option>
                           {vendors.map((v) => (
-                            <option key={v.vendor_id} value={v.vendor_name} className="dark:bg-gray-800">
-                              {v.vendor_name}
-                            </option>
+                            <option key={v.vendor_id} value={v.vendor_name} className="dark:bg-gray-800">{v.vendor_name}</option>
                           ))}
                         </select>
                       </td>
-
-                      {/* Remove Action */}
                       <td className="px-4 py-3 text-center">
                         {selectedVendors.length > 1 && (
                           <button
@@ -341,36 +379,50 @@ const CreateRequest = ({ onclose, onSuccess }) => {
             {/* Material Input Row */}
             <div className="flex flex-col sm:flex-row gap-3 mb-4 items-end">
               <div className="flex-1">
-                <input
+                <label className="block text-xs font-medium text-gray-500 mb-1">Item Description</label>
+                <select
                   value={materialInput.materialName}
-                  onChange={(e) => setMaterialInput({ ...materialInput, materialName: e.target.value })}
+                  onChange={handleMaterialSelect}
                   className="w-full bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-md px-3 py-2 text-sm text-gray-900 dark:text-white focus:ring-1 focus:ring-blue-500 outline-none"
-                  placeholder="Item Description"
-                />
+                >
+                  <option value="" className="dark:bg-gray-800">Select Item</option>
+                  {availableItems.map((item, idx) => (
+                    <option key={idx} value={item.item_description} className="dark:bg-gray-800">
+                      {item.item_description}
+                    </option>
+                  ))}
+                </select>
               </div>
-              <div className="w-24">
+
+              <div className="w-32">
+                <label className="block text-xs font-medium text-gray-500 mb-1">
+                   Qty {materialInput.maxQuantity > 0 && <span className="text-blue-500">(Max: {materialInput.maxQuantity})</span>}
+                </label>
                 <input
                   type="number"
                   value={materialInput.quantity}
-                  onChange={(e) => setMaterialInput({ ...materialInput, quantity: e.target.value })}
+                  onChange={handleQuantityChange}
                   className="w-full bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-md px-3 py-2 text-sm text-gray-900 dark:text-white focus:ring-1 focus:ring-blue-500 outline-none"
-                  placeholder="Qty"
+                  placeholder="0.00"
                 />
               </div>
+
               <div className="w-24">
+                <label className="block text-xs font-medium text-gray-500 mb-1">Unit</label>
                 <input
                   value={materialInput.unit}
-                  onChange={(e) => setMaterialInput({ ...materialInput, unit: e.target.value })}
-                  className="w-full bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-md px-3 py-2 text-sm text-gray-900 dark:text-white focus:ring-1 focus:ring-blue-500 outline-none"
+                  readOnly // Unit comes from API
+                  className="w-full bg-gray-100 dark:bg-gray-800/50 border border-gray-300 dark:border-gray-700 rounded-md px-3 py-2 text-sm text-gray-500 cursor-not-allowed outline-none"
                   placeholder="Unit"
                 />
               </div>
+
               <button
                 type="button"
                 onClick={handleMaterialAdd}
-                className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors"
+                className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors h-10"
               >
-                Add Item
+                Add
               </button>
             </div>
 

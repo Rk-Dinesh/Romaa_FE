@@ -387,7 +387,7 @@ const ProjectSchedule = () => {
 
       {isUploadModalOpen && (
         <UploadScheduleModal
-          onclose={() => setIsUploadModalOpen(false)}
+          onClose={() => setIsUploadModalOpen(false)}
           onSuccess={() => { fetchWBS(); setIsUploadModalOpen(false); }}
         />
       )}
