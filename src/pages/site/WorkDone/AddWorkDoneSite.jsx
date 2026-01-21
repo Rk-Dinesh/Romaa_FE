@@ -203,7 +203,6 @@ const AddWorkDoneSite = ({ onclose, onSuccess }) => {
           toast.info(`Work Order ${data.work_order_id} marked as Completed.`);
         }
       }
-
       if (onSuccess) onSuccess();
       onclose();
     } catch (error) {
