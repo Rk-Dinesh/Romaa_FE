@@ -25,7 +25,6 @@ const ViewClBillProjects = () => {
   const location = useLocation();
   const [activeTab, setActiveTab] = useState("Comparative");
   const rowData = location.state?.item;
-  console.log(rowData);
   const tenderId = rowData.tender_id;
   const billId = rowData.bill_id;
   const billSequence = rowData.bill_sequence;

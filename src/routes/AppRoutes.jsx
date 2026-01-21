@@ -163,6 +163,7 @@ import SecurityDepositTrackingTable from "../pages/tender/security deposit/viewS
 import TenderDetailedEstimate from "../pages/tender/tenders/view tenders/detailed estimate/TenderDetailedEstimate";
 import TenderZeroCost from "../pages/tender/tenders/view tenders/zero cost/TenderZeroCost";
 import ViewWorkDone from "../pages/site/WorkDone/ViewWorkDone";
+import AssetDetails from "../pages/settings/assets/machinery/AssetDetails";
 
 const AppRoutes = () => {
   return (
@@ -538,7 +539,11 @@ const AppRoutes = () => {
                 <Route path="addroles" element={<AddRoles />} />
               </Route>
               <Route path="master" element={<Master />} />
-              <Route path="assets" element={<Assets />} />
+              
+              <Route path="assets" >
+                <Route index element={<Assets />} />
+                <Route path="details/:assetId" element={<AssetDetails />} />
+              </Route>
             </Route>
           </Route>
         </Routes>
