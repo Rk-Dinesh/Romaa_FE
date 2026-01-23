@@ -6,10 +6,12 @@ import Leave from "./leave/Leave";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
 import { API } from "../../../constant";
+import { useAuth } from "../../../context/AuthContext";
 
 const Profile = () => {
   const [activeTab, setActiveTab] = useState("profile");
   const [filter, setFilter] = useState(false);
+  const { logout } = useAuth();
 
   const navigate = useNavigate();
 
@@ -30,7 +32,7 @@ const Profile = () => {
   };
   const currentTabLabel = tabs.find((tab) => tab.id === activeTab)?.label;
 
-  const logout = async () => {
+  const handleLogout = async () => {
 
     try {
       // 2. Call Backend to clear HttpOnly Cookies
@@ -43,7 +45,7 @@ const Profile = () => {
       console.error("⚠️ Backend logout failed (Cookies might persist):", error);
     } finally {
       // 3. Clear Local Storage & State regardless of backend success
-      localStorage.removeItem("crm_user");
+      logout();
       navigate("/"); // Redirect to Login
     }
 };
@@ -75,7 +77,7 @@ const Profile = () => {
                 </button>
               ))}
             </div>
-            <button className="py-2 px-3 rounded-md text-sm font-medium text-white bg-darkest-blue font-light   font-roboto-flex" onClick={()=>logout()}>Logout</button>
+            <button className="py-2 px-3 rounded-md text-sm font-medium text-white bg-darkest-blue font-light   font-roboto-flex" onClick={()=>handleLogout()}>Logout</button>
           </div>
            </div>
           <div className=" overflow-y-auto no-scrollbar">

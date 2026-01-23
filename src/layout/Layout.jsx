@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import Headers from "./Headers";
 import { NavLink, Outlet, useLocation } from "react-router-dom";
+
 import { RiCalendarScheduleLine, RiDashboardLine } from "react-icons/ri";
 import { TbAssembly, TbFileDelta, TbListSearch } from "react-icons/tb";
 import { LuFileBox, LuUserRoundSearch } from "react-icons/lu";
@@ -67,480 +68,596 @@ import { BsBoxSeam } from "react-icons/bs";
 import { RiBox3Line } from "react-icons/ri";
 import { CiBoxList } from "react-icons/ci";
 import { TbFolderQuestion } from "react-icons/tb";
+import { useAuth } from "../context/AuthContext";
+
+ const Menus = [
+  {
+    title: "Dashboard",
+    icon: <RiDashboardLine size={23} />,
+    to: "/dashboard",
+    module: "dashboard", 
+  },
+  {
+    title: "Tender",
+    icon: <TbFileDelta size={23} />,
+    to: "/tender/customers",
+    module: "tender", 
+    nested: [
+      {
+        title: "Clients",
+        icon: <LuUserRoundSearch size={23} />,
+        to: "/tender/customers",
+        subModule: "clients", 
+      },
+      {
+        title: "Tenders",
+        icon: <HiOutlineClipboardList size={23} />,
+        to: "/tender/tenders",
+        subModule: "tenders",
+      },
+      {
+        title: "DLP",
+        icon: <TbDatabaseDollar size={23} />,
+        to: "/tender/dlp",
+        subModule: "dlp",
+      },
+      {
+        title: "EMD",
+        icon: <TbLockDollar size={23} />,
+        to: "/tender/emd",
+        subModule: "emd",
+      },
+      {
+        title: "Security Deposit",
+        icon: <TbShieldLock size={23} />,
+        to: "/tender/securitydeposit",
+        subModule: "security_deposit",
+      },
+      {
+        title: "Project Penalty",
+        icon: <TbShieldCheckered size={23} />,
+        to: "/tender/projectpenalty",
+        subModule: "project_penalty",
+      },
+    ],
+  },
+  {
+    title: "Projects",
+    icon: <HiOutlineClipboardList size={23} />,
+    to: "/projects",
+    module: "project",
+    nested: [
+      {
+        title: "BOQ Cost",
+        icon: <RiDiscountPercentLine size={23} />,
+        to: "/projects/zerocost",
+        subModule: "boq_cost",
+      },
+      {
+        title: "Detailed Estimate",
+        icon: <HiOutlineClipboardList size={23} />,
+        to: "/projects/detailestimate",
+        subModule: "detailed_estimate",
+      },
+      {
+        title: "Drawing vs BOQ",
+        icon: <PiBoundingBoxBold size={23} />,
+        to: "/projects/drawingboq",
+        subModule: "drawing_boq",
+      },
+      {
+        title: "WBS",
+        icon: <RiNodeTree size={23} />,
+        to: "/projects/wbs",
+        subModule: "wbs",
+      },
+      {
+        title: "Schedule",
+        icon: <TbCalendarStats size={23} />,
+        to: "/projects/projectschedule",
+        subModule: "schedule",
+      },
+      {
+        title: "WOR / WO issuance",
+        icon: <AiOutlineFileDone size={23} />,
+        to: "/projects/woissuance",
+        subModule: "wo_issuance",
+      },
+      {
+        title: "Client Billing",
+        icon: <TbReceipt2 size={23} />,
+        to: "/projects/clientbillingprojects",
+        subModule: "client_billing",
+      },
+      {
+        title: "Work Progress",
+        icon: <GrInProgress size={23} />,
+        to: "/projects/workprogressprojects",
+        subModule: "work_progress",
+      },
+      {
+        title: "Basic Material Quantity",
+        icon: <PiHash size={23} />,
+        to: "/projects/projectsmaterialquantity",
+        subModule: "material_quantity",
+      },
+      {
+        title: "Stocks",
+        icon: <LuFileBox size={23} />,
+        to: "/projects/projectsstocks",
+        subModule: "stocks",
+      },
+      {
+        title: "Assets",
+        icon: <TbAssembly size={23} />,
+        to: "/projects/projectsassets",
+        subModule: "assets",
+      },
+    ],
+  },
+  {
+    title: "Purchase",
+    icon: <BsCart3 size={23} />,
+    to: "/purchase/vendorsupplier",
+    module: "purchase",
+    nested: [
+      {
+        title: "Vendor & Supplier",
+        icon: <BookUser size={23} />,
+        to: "/purchase/vendorsupplier",
+        subModule: "vendor_supplier",
+      },
+      {
+        title: "Purchase Requests",
+        icon: <AiOutlineFileAdd size={23} />,
+        to: "/purchase/request",
+        subModule: "request",
+      },
+      {
+        title: "Purchase Enquiry",
+        icon: <LiaClipboardListSolid size={23} />,
+        to: "/purchase/enquiry",
+        subModule: "enquiry",
+      },
+      {
+        title: "Purchase Order",
+        icon: <ScrollText size={23} />,
+        to: "/purchase/order",
+        subModule: "order",
+      },
+      {
+        title: "Goods Receipt",
+        icon: <TbReceipt2 size={23} />,
+        to: "/purchase/goodsreceipt",
+        subModule: "goods_receipt",
+      },
+      {
+        title: "Purchase Bill",
+        icon: <IoCartOutline size={23} />,
+        to: "/purchase/bill",
+        subModule: "bill",
+      },
+      {
+        title: "Machinery Tracking",
+        icon: <MdContentPasteSearch size={23} />,
+        to: "/purchase/machinerytracking",
+        subModule: "machinery_tracking",
+      },
+      {
+        title: "Stocks",
+        icon: <LuFileBox size={23} />,
+        to: "/purchase/purchasestocks",
+        subModule: "stocks",
+      },
+      {
+        title: "Assets",
+        icon: <TbAssembly size={23} />,
+        to: "/purchase/purchaseassets",
+        subModule: "assets",
+      },
+    ],
+  },
+  {
+    title: "Site",
+    icon: <LuLandPlot size={23} />,
+    to: "/site",
+    module: "site",
+    nested: [
+      {
+        title: "BOQ Site",
+        icon: <ScrollText size={23} />,
+        to: "/site/boqsite",
+        subModule: "boq_site",
+      },
+      {
+        title: "Detailed Estimate ",
+        icon: <AiOutlineFileAdd size={23} />,
+        to: "/site/detailestimatesite",
+        subModule: "detailed_estimate",
+      },
+      {
+        title: "Site Drawing",
+        icon: <BiShapeSquare size={23} />,
+        to: "/site/sitedrawing",
+        subModule: "site_drawing",
+      },
+      {
+        title: "Purchase Request",
+        icon: <TbFolderQuestion size={23} />,
+        to: "/site/purchaserequestsite",
+        subModule: "purchase_request",
+      },
+      {
+        title: "Material Received",
+        icon: <BsBoxSeam size={23} />,
+        to: "/site/materialrecievedsite",
+        subModule: "material_received",
+      },
+      {
+        title: "Material Issued",
+        icon: <RiBox3Line size={23} />,
+        to: "/site/materialissuedsite",
+        subModule: "material_issued",
+      },
+      {
+        title: "Stock Register",
+        icon: <CiBoxList size={23} />,
+        to: "/site/stockregistersite",
+        subModule: "stock_register",
+      },
+      {
+        title: "Work Done",
+        icon: <TbReceipt2 size={23} />,
+        to: "/site/workDoneSite",
+        subModule: "work_done",
+      },
+      {
+        title: "Daily Labour Report",
+        icon: <TbReportAnalytics size={23} />,
+        to: "/site/dialylabourreport",
+        subModule: "daily_labour_report",
+      },
+      {
+        title: "Machinery Entry",
+        icon: <LuGlassWater size={23} />,
+        to: "/site/machineryentry",
+        subModule: "machinery_entry",
+      },
+      {
+        title: "Site Assets",
+        icon: <TbAssembly size={23} />,
+        to: "/site/siteassets",
+        subModule: "site_assets",
+      },
+      {
+        title: "Weekly Billing",
+        icon: <TbReceipt2 size={23} />,
+        to: "/site/weeklybillingsite",
+        subModule: "weekly_billing",
+      },
+      {
+        title: "Reconciliation",
+        icon: <TbFileOrientation size={23} />,
+        to: "/site/reconciliationsite",
+        subModule: "reconciliation",
+      },
+      {
+        title: "Planned vs Achieved",
+        icon: <Quote size={23} />,
+        to: "/site/plannedvsachived",
+        subModule: "planned_vs_achieved",
+      },
+    ],
+  },
+  {
+    title: "HR",
+    icon: <LuNotebookText size={23} />,
+    to: "/hr/employee",
+    module: "hr",
+    nested: [
+      {
+        title: "Employee",
+        icon: <AiOutlineFileAdd size={23} />,
+        to: "/hr/employee",
+        subModule: "employee",
+      },
+      {
+        title: "Attendance",
+        icon: <LuFileUser size={23} />,
+        to: "/hr/attendance",
+        subModule: "attendance",
+      },
+      {
+        title: "Leave",
+        icon: <TbDoorExit size={23} />,
+        to: "/hr/leave",
+        subModule: "leave",
+      },
+      {
+        title: "Payroll",
+        icon: <LuScrollText size={23} />,
+        to: "/hr/payroll",
+        subModule: "payroll",
+      },
+      {
+        title: "Contract & NMR",
+        icon: <TbContract size={23} />,
+        to: "/hr/contractnmr",
+        subModule: "contract_nmr",
+      },
+      {
+        title: "NMR",
+        icon: <TbListSearch size={23} />,
+        to: "/hr/nmr",
+        subModule: "nmr",
+      },
+      {
+        title: "NMR Attendance",
+        icon: <TfiLayoutListThumb size={23} />,
+        to: "/hr/NMRattendance",
+        subModule: "nmr_attendance",
+      },
+    ],
+  },
+  {
+    title: "Finance",
+    icon: <TbReportMoney size={23} />,
+    to: "/finance/clientbilling",
+    module: "finance",
+    nested: [
+      {
+        title: "Client Billing",
+        icon: <FileText size={23} />,
+        to: "/finance/clientbilling",
+        subModule: "client_billing",
+      },
+      {
+        title: "Purchase Bill",
+        icon: <ClipboardList size={23} />,
+        to: "/finance/purchasetotalbill",
+        subModule: "purchase_bill",
+      },
+      {
+        title: "Contractor Bill",
+        icon: <ClipboardList size={23} />,
+        to: "/finance/contractorbill",
+        subModule: "contractor_bill",
+      },
+      {
+        title: "Debit, Credit Note",
+        icon: <FileWarning size={23} />,
+        to: "/finance/debitcreditnote",
+        subModule: "debit_credit_note",
+      },
+      {
+        title: "Internal Bank Transfer",
+        icon: <TbReportMoney size={23} />,
+        to: "/finance/internalbanktransfer",
+        subModule: "internal_transfer",
+      },
+      {
+        title: "Bank Transcation",
+        icon: <TbReportMoney size={23} />,
+        to: "/finance/banktransaction",
+        subModule: "bank_transaction",
+      },
+      {
+        title: "Journal Entry",
+        icon: <Workflow size={23} />,
+        to: "/finance/journalentry",
+        subModule: "journal_entry",
+      },
+      {
+        title: "Banks",
+        icon: <RiBankLine size={23} />,
+        to: "/finance/banks",
+        subModule: "banks",
+      },
+      {
+        title: "TDS",
+        icon: <TbCards size={23} />,
+        to: "/finance/tds",
+        subModule: "tds",
+      },
+      {
+        title: "Cash Entry",
+        icon: <MdLocalAtm size={23} />,
+        to: "/finance/cashentry",
+        subModule: "cash_entry",
+      },
+      {
+        title: "Ledger Entry",
+        icon: <MdLocalAtm size={23} />,
+        to: "/finance/ledgerentry",
+        subModule: "ledger_entry",
+      },
+      {
+        title: "Supplier Outstanding",
+        icon: <Banknote size={23} />,
+        to: "/finance/supplieroutstanding",
+        subModule: "supplier_outstanding",
+      },
+      {
+        title: "Overall Expenses",
+        icon: <FaBars size={23} />,
+        to: "/finance/overallexpenses",
+        subModule: "overall_expenses",
+      },
+    ],
+  },
+  {
+    title: "Reports",
+    icon: <TbReportAnalytics size={23} />,
+    to: "/reports/projectdashboard",
+    module: "report",
+    nested: [
+      {
+        title: "Project Dashboard",
+        icon: <HiOutlineClipboardDocumentList size={23} />,
+        to: "/reports/projectdashboard",
+        subModule: "project_dashboard",
+      },
+      {
+        title: "Work Analysis",
+        icon: <LuWorkflow size={23} />,
+        to: "/reports/workanalysis",
+        subModule: "work_analysis",
+      },
+      {
+        title: "Client Billing",
+        icon: <RiBillLine size={23} />,
+        to: "/reports/clientbilling",
+        subModule: "client_billing",
+      },
+      {
+        title: "Financial Report",
+        icon: <TbFileDelta size={23} />,
+        to: "/reports/financialreport",
+        subModule: "financial_report",
+      },
+      {
+        title: "P&L",
+        icon: <TbFileInvoice size={23} />,
+        to: "/reports/p&l",
+        subModule: "pnl",
+      },
+      {
+        title: "Cash Flow",
+        icon: <HiOutlineCash size={23} />,
+        to: "/reports/cashflow",
+        subModule: "cash_flow",
+      },
+      {
+        title: "Expenses Report",
+        icon: <TbFileDollar size={23} />,
+        to: "/reports/expensesreport",
+        subModule: "expenses_report",
+      },
+      {
+        title: "Vendor Report",
+        icon: <TbFileInvoice size={23} />,
+        to: "/reports/vendorreport",
+        subModule: "vendor_report",
+      },
+      {
+        title: "Reconciliation",
+        icon: <TbFileOrientation size={23} />,
+        to: "/reports/reconciliation",
+        subModule: "reconciliation",
+      },
+      {
+        title: "Actual vs Biller",
+        icon: <TbReceipt2 size={23} />,
+        to: "/reports/actualvsbilled",
+        subModule: "actual_vs_billed",
+      },
+      {
+        title: "Cost to Complete",
+        icon: <RiDiscountPercentLine size={23} />,
+        to: "/reports/costtocomplete",
+        subModule: "cost_to_complete",
+      },
+      // {
+      //   title: "Schedule",
+      //   icon: <LuCalendar1 size={23} />,
+      //   // to: "/reports/schedule",
+      // },
+      {
+        title: "Planned Vs Actual",
+        icon: <Quote size={23} />,
+        to: "/reports/plannedvsactual",
+        subModule: "planned_vs_actual",
+      },
+      {
+        title: "Labour Productivity",
+        icon: <GiHoneycomb size={23} />,
+        to: "/reports/labourproductivity",
+        subModule: "labour_productivity",
+      },
+      {
+        title: "Machine Productivity",
+        icon: <LuGlassWater size={23} />,
+        to: "/reports/machineproductivity",
+        subModule: "machine_productivity",
+      },
+      {
+        title: "Collection Projection",
+        icon: <RiShareBoxLine size={23} />,
+        to: "/reports/collectionprojection",
+        subModule: "collection_projection",
+      },
+    ],
+  },
+  {
+    title: "Settings",
+    icon: <FiSettings size={23} />,
+    to: "/settings/user",
+    module: "settings",
+    nested: [
+      {
+        title: "User",
+        icon: <RiUserAddLine size={23} />,
+        to: "/settings/user",
+        subModule: "user",
+      },
+      {
+        title: "Roles",
+        icon: <GrGroup size={23} />,
+        to: "/settings/roles",
+        subModule: "roles",
+      },
+      {
+        title: "Master",
+        icon: <RiGroupLine size={23} />,
+        to: "/settings/master",
+        subModule: "master",
+      },
+      {
+        title: "Assets",
+        icon: <RiGroupLine size={23} />,
+        to: "/settings/assets",
+        subModule: "assets",
+      },
+    ],
+  },
+];
+
 const LayOut = () => {
   const location = useLocation();
+  const { user } = useAuth(); // 1. Get Logged-in User Data
+  // --- 2. Permission Checker Function ---
+  const checkAccess = (module, subModule) => {
+    // Safety check: if no user or permissions, hide everything
+    if (!user || !user.role || !user.role.permissions) return false;
 
-  const Menus = [
-    {
-      title: "Dashboard",
-      icon: <RiDashboardLine size={23} />,
-      to: "/dashboard",
-    },
-    {
-      title: "Tender",
-      icon: <TbFileDelta size={23} />,
-      to: "/tender/customers",
-      nested: [
-        {
-          title: "Clients",
-          icon: <LuUserRoundSearch size={23} />,
-          to: "/tender/customers",
-        },
-        {
-          title: "Tenders",
-          icon: <HiOutlineClipboardList size={23} />,
-          to: "/tender/tenders",
-        },
-        // {
-        //   title: "Workorders",
-        //   icon: <LiaClipboardListSolid size={23} />,
-        //   to: "/tender/workorders",
-        // },
-        {
-          title: "DLP",
-          icon: <TbDatabaseDollar size={23} />,
-          to: "/tender/dlp",
-        },
-        {
-          title: "EMD",
-          icon: <TbLockDollar size={23} />,
-          to: "/tender/emd",
-        },
-        {
-          title: "Security Deposit",
-          icon: <TbShieldLock size={23} />,
-          to: "/tender/securitydeposit",
-        },
-        {
-          title: "Project Penalty",
-          icon: <TbShieldCheckered size={23} />,
-          to: "/tender/projectpenalty",
-        },
+    // Get permissions for the specific module (e.g., 'tender')
+    const modulePerms = user.role.permissions[module];
+    if (!modulePerms) return false;
 
-      ],
-    },
-    {
-      title: "Projects",
-      icon: <HiOutlineClipboardList size={23} />,
-      to: "/projects",
-      nested: [
-        {
-          title: "BOQ Cost",
-          icon: <RiDiscountPercentLine size={23} />,
-          to: "/projects/zerocost",
-        },
-        {
-          title: "Detailed Estimate",
-          icon: <HiOutlineClipboardList size={23} />,
-          to: "/projects/detailestimate",
-        },
-        {
-          title: "Drawing vs BOQ",
-          icon: <PiBoundingBoxBold size={23} />,
-          to: "/projects/drawingboq",
-        },
-        {
-          title: "WBS",
-          icon: <RiNodeTree size={23} />,
-          to: "/projects/wbs",
-        },
-        {
-          title: "Schedule",
-          icon: <TbCalendarStats size={23} />,
-          to: "/projects/projectschedule",
-        },
-        {
-          title: "WOR / WO issuance",
-          icon: <AiOutlineFileDone size={23} />,
-          to: "/projects/woissuance",
-        },
-        {
-          title: "Client Billing",
-          icon: <TbReceipt2 size={23} />,
-          to: "/projects/clientbillingprojects",
-        },
-        {
-          title: "Work Progress",
-          icon: <GrInProgress size={23} />,
-          to: "/projects/workprogressprojects",
-        },
-        {
-          title: "Basic Material Quantity",
-          icon: <PiHash size={23} />,
-          to: "/projects/projectsmaterialquantity",
-        },
-        {
-          title: "Stocks",
-          icon: <LuFileBox size={23} />,
-          to: "/projects/projectsstocks",
-        },
-        {
-          title: "Assets",
-          icon: <TbAssembly size={23} />,
-          to: "/projects/projectsassets",
-        },
+    // Case A: SubModule (e.g., 'clients')
+    if (subModule) {
+      // Check if the submodule exists and 'read' is true
+      return modulePerms[subModule] && modulePerms[subModule].read === true;
+    }
 
-      ],
-    },
-    {
-      title: "Purchase",
-      icon: <BsCart3 size={23} />,
-      to: "/purchase/vendorsupplier",
-      nested: [
-        {
-          title: "Vendor & Supplier",
-          icon: <BookUser size={23} />,
-          to: "/purchase/vendorsupplier",
-        },
-        {
-          title: "Purchase Requests",
-          icon: <AiOutlineFileAdd size={23} />,
-          to: "/purchase/request",
-        },
-        {
-          title: "Purchase Enquiry",
-          icon: <LiaClipboardListSolid size={23} />,
-          to: "/purchase/enquiry",
-        },
-        {
-          title: "Purchase Order",
-          icon: <ScrollText size={23} />,
-          to: "/purchase/order",
-        },
-        {
-          title: "Goods Receipt",
-          icon: <TbReceipt2 size={23} />,
-          to: "/purchase/goodsreceipt",
-        },
-        {
-          title: "Purchase Bill",
-          icon: <IoCartOutline size={23} />,
-          to: "/purchase/bill",
-        },
-        {
-          title: "Machinery Tracking",
-          icon: <MdContentPasteSearch size={23} />,
-          to: "/purchase/machinerytracking",
-        },
-        {
-          title: "Stocks",
-          icon: <LuFileBox size={23} />,
-          to: "/purchase/purchasestocks",
-        },
-        {
-          title: "Assets",
-          icon: <TbAssembly size={23} />,
-          to: "/purchase/purchaseassets",
-        },
-      ],
-    },
-    {
-      title: "Site",
-      icon: <LuLandPlot size={23} />,
-      to: "/site",
-      nested: [
-        {
-          title: "BOQ Site",
-          icon: <ScrollText size={23} />,
-          to: "/site/boqsite",
-        },
-        {
-          title: "Detailed Estimate ",
-          icon: <AiOutlineFileAdd size={23} />,
-          to: "/site/detailestimatesite",
-        },
-        {
-          title: "Site Drawing",
-          icon: <BiShapeSquare size={23} />,
-          to: "/site/sitedrawing",
-        },
-        {
-          title: "Purchase Request",
-          icon: <TbFolderQuestion size={23} />,
-          to: "/site/purchaserequestsite",
-        },
-        {
-          title: "Material Received",
-          icon: <BsBoxSeam size={23} />,
-          to: "/site/materialrecievedsite",
-        },
-        {
-          title: "Material Issued",
-          icon: <RiBox3Line size={23} />,
-          to: "/site/materialissuedsite",
-        },
-        {
-          title: "Stock Register",
-          icon: <CiBoxList size={23} />,
-          to: "/site/stockregistersite",
-        },
-        {
-          title: "Work Done",
-          icon: <TbReceipt2 size={23} />,
-          to: "/site/workDoneSite",
-        },
-        {
-          title: "Daily Labour Report",
-          icon: <TbReportAnalytics size={23} />,
-          to: "/site/dialylabourreport",
-        },
-         {
-          title: "Machinery Entry",
-          icon: <LuGlassWater size={23} />,
-          to: "/site/machineryentry",
-        },
-        {
-          title: "Site Assets",
-          icon: <TbAssembly size={23} />,
-          to: "/site/siteassets",
-        },
-        {
-          title: "Weekly Billing",
-          icon: <TbReceipt2 size={23} />,
-          to: "/site/weeklybillingsite",
-        },
-        {
-          title: "Reconciliation",
-          icon: <TbFileOrientation size={23} />,
-          to: "/site/reconciliationsite",
-        },
-        {
-          title: "Planned vs Achieved",
-          icon: <Quote size={23} />,
-          to: "/site/plannedvsachived",
-        },
-       
+    // Case B: Simple Module (e.g., 'dashboard')
+    // Check if 'read' is true directly on the module
+    return modulePerms.read === true;
+  };
 
-      ],
-    },
-    {
-      title: "HR",
-      icon: <LuNotebookText size={23} />,
-      to: "/hr/employee",
-      nested: [
-        {
-          title: "Employee",
-          icon: <AiOutlineFileAdd size={23} />,
-          to: "/hr/employee",
-        },
-        {
-          title: "Attendance",
-          icon: <LuFileUser size={23} />,
-          to: "/hr/attendance",
-        },
-        {
-          title: "Leave",
-          icon: <TbDoorExit size={23} />,
-          to: "/hr/leave",
-        },
-        {
-          title: "Payroll",
-          icon: <LuScrollText size={23} />,
-          to: "/hr/payroll",
-        },
-        {
-          title: "Contract & NMR",
-          icon: <TbContract size={23} />,
-          to: "/hr/contractnmr",
-        }, {
-          title: "NMR",
-          icon: <TbListSearch size={23} />,
-          to: "/hr/nmr",
-        },
-        {
-          title: "NMR Attendance",
-          icon: <TfiLayoutListThumb size={23} />,
-          to: "/hr/NMRattendance",
-        },
-      ],
-    },
-    {
-      title: "Finance",
-      icon: <TbReportMoney size={23} />,
-      to: "/finance/clientbilling",
-      nested: [
-        {
-          title: "Client Billing",
-          icon: <FileText size={23} />,
-          to: "/finance/clientbilling",
-        },
-        {
-          title: "Purchase Bill",
-          icon: <ClipboardList size={23} />,
-          to: "/finance/purchasetotalbill",
-        },
-        {
-          title: "Contractor Bill",
-          icon: <ClipboardList size={23} />,
-          to: "/finance/contractorbill",
-        },
-        {
-          title: "Debit, Credit Note",
-          icon: <FileWarning size={23} />,
-          to: "/finance/debitcreditnote",
-        },
-        {
-          title: "Internal Bank Transfer",
-          icon: <TbReportMoney size={23} />,
-          to: "/finance/internalbanktransfer",
-        },
-        {
-          title: "Bank Transcation",
-          icon: <TbReportMoney size={23} />,
-          to: "/finance/banktransaction",
-        },
-        {
-          title: "Journal Entry",
-          icon: <Workflow size={23} />,
-          to: "/finance/journalentry",
-        },
-        {
-          title: "Banks",
-          icon: <RiBankLine size={23} />,
-          to: "/finance/banks",
-        },
-        {
-          title: "TDS",
-          icon: <TbCards size={23} />,
-          to: "/finance/tds",
-        },
-        {
-          title: "Cash Entry",
-          icon: <MdLocalAtm size={23} />,
-          to: "/finance/cashentry",
-        },
-        {
-          title: "Ledger Entry",
-          icon: <MdLocalAtm size={23} />,
-          to: "/finance/ledgerentry",
-        },
-        {
-          title: "Supplier Outstanding",
-          icon: <Banknote size={23} />,
-          to: "/finance/supplieroutstanding",
-        }, {
-          title: "Overall Expenses",
-          icon: <FaBars size={23} />,
-          to: "/finance/overallexpenses",
-        },
-      ],
-    },
-    {
-      title: "Reports",
-      icon: <TbReportAnalytics size={23} />,
-      to: "/reports/projectdashboard",
-      nested: [
-        {
-          title: "Project Dashboard",
-          icon: <HiOutlineClipboardDocumentList size={23} />,
-          to: "/reports/projectdashboard",
-        },
-        {
-          title: "Work Analysis",
-          icon: <LuWorkflow size={23} />,
-          to: "/reports/workanalysis",
-        },
-        {
-          title: "Client Billing",
-          icon: <RiBillLine size={23} />,
-          to: "/reports/clientbilling",
-        },
-        {
-          title: "Financial Report",
-          icon: <TbFileDelta size={23} />,
-          to: "/reports/financialreport",
-        },
-        {
-          title: "P&L",
-          icon: <TbFileInvoice size={23} />,
-          to: "/reports/p&l",
-        },
-        {
-          title: "Cash Flow",
-          icon: <HiOutlineCash size={23} />,
-          to: "/reports/cashflow",
-        },
-        {
-          title: "Expenses Report",
-          icon: <TbFileDollar size={23} />,
-          to: "/reports/expensesreport",
-        },
-        {
-          title: "Vendor Report",
-          icon: <TbFileInvoice size={23} />,
-          to: "/reports/vendorreport",
-        },
-        {
-          title: "Reconciliation",
-          icon: <TbFileOrientation size={23} />,
-          to: "/reports/reconciliation",
-        },
-        {
-          title: "Actual vs Biller",
-          icon: <TbReceipt2 size={23} />,
-          to: "/reports/actualvsbilled",
-        },
-        {
-          title: "Cost to Complete",
-          icon: <RiDiscountPercentLine size={23} />,
-          to: "/reports/costtocomplete",
-        },
-        {
-          title: "Schedule",
-          icon: <LuCalendar1 size={23} />,
-          // to: "/reports/schedule",
-        },
-        {
-          title: "Planned Vs Actual",
-          icon: <Quote size={23} />,
-          to: "/reports/plannedvsactual",
-        },
-        {
-          title: "Labour Productivity",
-          icon: <GiHoneycomb size={23} />,
-          to: "/reports/labourproductivity",
-        },
-        {
-          title: "Machine Productivity",
-          icon: <LuGlassWater size={23} />,
-          to: "/reports/machineproductivity",
-        },
-        {
-          title: "Collection Projection",
-          icon: <RiShareBoxLine size={23} />,
-          to: "/reports/collectionprojection",
-        },
-      ],
-    },
-    {
-      title: "Settings",
-      icon: <FiSettings size={23} />,
-      to: "/settings/user",
-      nested: [
-        {
-          title: "User",
-          icon: <RiUserAddLine size={23} />,
-          to: "/settings/user",
-        },
-        {
-          title: "Roles",
-          icon: <GrGroup size={23} />,
-          to: "/settings/roles",
-        },
-        {
-          title: "Master",
-          icon: <RiGroupLine size={23} />,
-          to: "/settings/master",
-        },
-        {
-          title: "Assets",
-          icon: <RiGroupLine size={23} />,
-          to: "/settings/assets",
-        },
-      ],
-    },
-  ];
+  // --- 3. Filter Parent Menus ---
+  // Only show a Parent Icon if:
+  // A. It's a simple menu (Dashboard) AND user has access.
+  // B. It has nested items AND user has access to AT LEAST ONE child.
+  const visibleMenus = Menus.filter((menu) => {
+    if (!menu.nested) {
+      return checkAccess(menu.module, null);
+    }
+    // Check if ANY child is visible
+    return menu.nested.some((child) => checkAccess(menu.module, child.subModule));
+  });
 
+  // --- Helper: Active State Logic ---
   const isMenuActive = (menu) => {
     if (location.pathname.startsWith(menu.to)) {
       return true;
@@ -554,20 +671,35 @@ const LayOut = () => {
     return false;
   };
 
+  // --- Helper: Sidebar Visibility Logic (UX) ---
+  const isNestedSidebarVisible = (menuTitle, pathname) => {
+    // Keep your existing specific logic for Projects/Site
+    if (menuTitle === "Projects") {
+      return pathname.startsWith("/projects/") && pathname !== "/projects";
+    }
+    if (menuTitle === "Site") {
+      return pathname.startsWith("/site/") && pathname !== "/site";
+    }
+    return pathname.startsWith(`/${menuTitle.toLowerCase()}`);
+  };
+
   return (
-    <div className=" font-roboto-flex w-full fixed h-screen ">
+    <div className="font-roboto-flex w-full fixed h-screen">
       <Headers />
-      <div className="flex dark:bg-overall_bg-dark bg-light-blue dark:text-white h-11/12 ">
-        <div className="px-6 dark:bg-overall_bg-dark bg-light-blue overflow-auto no-scrollbar ">
+      <div className="flex dark:bg-overall_bg-dark bg-light-blue dark:text-white h-11/12">
+        
+        {/* --- MAIN SIDEBAR (Filtered by Permissions) --- */}
+        <div className="px-6 dark:bg-overall_bg-dark bg-light-blue overflow-auto no-scrollbar">
           <ul>
-            {Menus.map((menu, index) => (
+            {visibleMenus.map((menu, index) => (
               <React.Fragment key={index}>
                 <NavLink to={menu.to}>
                   <li
-                    className={`w-[80px] text-sm font-extralight flex flex-col items-center gap-1 px-3 py-3 my-4 border dark:border-border-dark-grey border-border-sidebar rounded-xl ${isMenuActive(menu)
-                        ? " text-white  bg-darkest-blue "
-                        : " dark:text-white text-darkest-blue  "
-                      }`}
+                    className={`w-[80px] text-sm font-extralight flex flex-col items-center gap-1 px-3 py-3 my-4 border dark:border-border-dark-grey border-border-sidebar rounded-xl ${
+                      isMenuActive(menu)
+                        ? "text-white bg-darkest-blue"
+                        : "dark:text-white text-darkest-blue"
+                    }`}
                   >
                     <span>{menu.icon}</span>
                     <p>{menu.title}</p>
@@ -577,54 +709,54 @@ const LayOut = () => {
             ))}
           </ul>
         </div>
-        {Menus.map((menu, index) => {
-          const isNestedSidebarVisible = (menuTitle, pathname) => {
-            if (menuTitle === "Projects") {
-              return (
-                pathname.startsWith("/projects/") && pathname !== "/projects"
-              );
-            }
 
-            if (menuTitle === "Site") {
-              return pathname.startsWith("/site/") && pathname !== "/site";
-            }
-
-            return pathname.startsWith(`/${menuTitle.toLowerCase()}`);
-          };
-
+        {/* --- SUB SIDEBAR (Filtered by Permissions) --- */}
+        {visibleMenus.map((menu, index) => {
+          
+          // 1. Check UX Logic: Should we show this panel based on URL?
           const shouldShowSidebar =
             menu.nested &&
-            isNestedSidebarVisible(menu.title, location.pathname);
+            isNestedSidebarVisible(menu.title, location.pathname) &&
+            isMenuActive(menu);
+
+          if (!shouldShowSidebar) return null;
 
           return (
-            shouldShowSidebar &&
-            isMenuActive(menu) && (
-              <div
-                key={index}
-                className="mx-2 w-56 text-sm  my-4 rounded-lg dark:bg-layout-dark bg-white  overflow-auto no-scrollbar py-6"
-              >
-                <ul>
-                  {menu.nested.map((item, index) => (
-                    <li key={index} className="mb-2">
+            <div
+              key={index}
+              className="mx-2 w-56 text-sm my-4 rounded-lg dark:bg-layout-dark bg-white overflow-auto no-scrollbar py-6"
+            >
+              <ul>
+                {menu.nested.map((item, subIndex) => {
+                  
+                  // 2. Check RBAC Logic: Does user have read access to this specific link?
+                  // If NOT, do not render this <li>
+                  if (!checkAccess(menu.module, item.subModule)) return null;
+
+                  return (
+                    <li key={subIndex} className="mb-2">
                       <NavLink to={item.to}>
                         <div
-                          className={`w-full   flex  items-center gap-2 py-3 px-3 cursor-pointer ${location.pathname.startsWith(item.to)
-                              ? "dark:bg-overall_bg-dark bg-select-subbar dark:text-white  text-darkest-blue border-r-4 border-r-darkest-blue "
+                          className={`w-full flex items-center gap-2 py-3 px-3 cursor-pointer ${
+                            location.pathname.startsWith(item.to)
+                              ? "dark:bg-overall_bg-dark bg-select-subbar dark:text-white text-darkest-blue border-r-4 border-r-darkest-blue"
                               : "dark:text-white text-darkest-blue"
-                            }`}
+                          }`}
                         >
                           <span>{item.icon}</span>
                           <p>{item.title}</p>
                         </div>
                       </NavLink>
                     </li>
-                  ))}
-                </ul>
-              </div>
-            )
+                  );
+                })}
+              </ul>
+            </div>
           );
         })}
-        <div className="w-full  p-4 overflow-auto no-scrollbar ">
+
+        {/* --- MAIN CONTENT AREA --- */}
+        <div className="w-full p-4 overflow-auto no-scrollbar">
           <Outlet />
         </div>
       </div>
