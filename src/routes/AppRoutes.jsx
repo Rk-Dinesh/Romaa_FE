@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { Routes, Route } from "react-router-dom";
 import LayOut from "../layout/Layout";
 import Dashboard from "../pages/dashboard/Dashboard";
 import Customer from "../pages/tender/clients/Clients";
@@ -164,390 +164,391 @@ import TenderDetailedEstimate from "../pages/tender/tenders/view tenders/detaile
 import TenderZeroCost from "../pages/tender/tenders/view tenders/zero cost/TenderZeroCost";
 import ViewWorkDone from "../pages/site/WorkDone/ViewWorkDone";
 import AssetDetails from "../pages/settings/assets/machinery/AssetDetails";
+import ProtectedRoute from "../pages/auth/protectedRoute";
 
 const AppRoutes = () => {
   return (
     <>
-      {" "}
-      <BrowserRouter>
-        <Routes>
-          <Route path="" element={<Login />} />
-          <Route path="/forgotpassword" element={<ForgotPassword />} />
-          <Route path="/resetpassword" element={<ResentPassword />} />
-                 <Route path="/projects/woissuance/requestform/:tenderId/:requestId" element={<WorkOrderRequestForm />} />
-                 <Route path="/purchase/enquiryform/:tenderId/:requestId" element={<EnquiryForm />} />
-          <Route path="/" element={<LayOut />}>
-            <Route path="/dashboard">
-              <Route index element={<Dashboard />} />
-              <Route path="viewcalendar" element={<ViewCalendar />} />
-              <Route path="tickets" element={<Tickets />} />
-              <Route path="profile" element={<Profile />} />
-              <Route path="employeedashboard" element={<EmployeeDashboard />} />
+      <Routes>
+        <Route path="" element={<Login />} />
+        <Route path="/forgotpassword" element={<ForgotPassword />} />
+        <Route path="/resetpassword" element={<ResentPassword />} />
+        <Route path="/projects/woissuance/requestform/:tenderId/:requestId" element={<WorkOrderRequestForm />} />
+        <Route path="/purchase/enquiryform/:tenderId/:requestId" element={<EnquiryForm />} />
+        
+        <Route element={<ProtectedRoute />}>
+        <Route path="/" element={<LayOut />}>
+          <Route path="/dashboard">
+            <Route index element={<Dashboard />} />
+            <Route path="viewcalendar" element={<ViewCalendar />} />
+            <Route path="tickets" element={<Tickets />} />
+            <Route path="profile" element={<Profile />} />
+            <Route path="employeedashboard" element={<EmployeeDashboard />} />
+          </Route>
+          <Route path="/tender">
+            <Route path="customers" element={<Customer />} />
+            <Route path="tenders">
+              <Route index element={<Tender />} />
+              <Route path="viewtender/:tender_id" element={<ViewTender />} />
+              <Route path=":tender_id/detailedestimate" element={<TenderDetailedEstimate />} />
+              <Route path=":tender_id/zerocost" element={<TenderZeroCost />} />
             </Route>
-            <Route path="/tender">
-              <Route path="customers" element={<Customer />} />
-              <Route path="tenders">
-                <Route index element={<Tender />} />
-                <Route path="viewtender/:tender_id" element={<ViewTender />} />
-                <Route path=":tender_id/detailedestimate" element={<TenderDetailedEstimate />} />
-                <Route path=":tender_id/zerocost" element={<TenderZeroCost />} />
-              </Route>
-              <Route path="workorders">
-                <Route index element={<WorkOrder />} />
-                <Route path="viewworkorder/:tender_id/:workOrder_id">
-                  <Route index element={<ViewWorkOrder />} />
-                  <Route
-                    path="viewworkordertable"
-                    element={<ViewTableWOBoq />}
-                  />
-                </Route>
-              </Route>
-              <Route path="emd">
-                <Route index element={<EMD />} />
-                <Route path="viewemd/:tender_id" element={<EMDTrackingTable />} />
-              </Route>
-              <Route path="dlp" element={<DLP />} />
-              <Route path="securitydeposit">
-                <Route index element={<SecurityDeposit />} />
-                <Route path="viewsecuritydeposit/:tender_id" element={<SecurityDepositTrackingTable />} />
-              </Route>
-              {/* <Route path="projectpenalty" element={<ProjectPenalty />} /> */}
-              <Route path="projectpenalty">
-                <Route index element={<ProjectPenalty />} />
+            <Route path="workorders">
+              <Route index element={<WorkOrder />} />
+              <Route path="viewworkorder/:tender_id/:workOrder_id">
+                <Route index element={<ViewWorkOrder />} />
                 <Route
-                  path="viewpenalty/:tender_id"
-                  element={<PenaltyCardGrid />}
+                  path="viewworkordertable"
+                  element={<ViewTableWOBoq />}
                 />
               </Route>
             </Route>
-            <Route path="/projects">
-              <Route index element={<Project />} />
-              <Route path="zerocost">
-                <Route index element={<ZeroCost />} />
-                <Route path="viewboqsplit" element={<ViewBoqSplit />} />
-                <Route path="editrateanalysis" element={<EditRateAnalysis />} />
-              </Route>
-              <Route path="detailestimate">
-                <Route index element={<DetailedEstimate />} />
-                <Route path="viewgs" element={<ViewGs />} />
-                <Route path="viewboqproject" element={<ViewBillQtyProject />} />
-                <Route path="viewnewinletdet" element={<ViewNewInletDet />} />
-                <Route path="viewnewinletabs" element={<ViewNewInletAbs />} />
-
-                <Route
-                  path="viewvendorproject"
-                  element={<ViewVendorProject />}
-                />
-              </Route>
-              <Route path="drawingboq">
-                <Route index element={<DrawingBoq />} />
-                <Route path="viewdrawingboq" element={<ViewDrawingBoq />} />
-              </Route>
-              <Route path="wbs">
-                <Route index element={<WBS />} />
-                <Route path="viewwbs" element={<ViewWbs />} />
-              </Route>
-              <Route path="projectschedule">
-                <Route index element={<ScheduleProjects />} />
-                <Route path="viewdailyproject" element={<ViewDailyProject />} />
-                <Route path="viewweekly" element={<ViewWeekly />} />
-                <Route
-                  path="viewprojectschedule"
-                  element={<ViewProjectSchedule />}
-                />
-                <Route
-                  path="viewmanpowerhistogram"
-                  element={<ViewManPowerHistogram />}
-                />
-                <Route
-                  path="viewmechineryschedule"
-                  element={<ViewMechinerySchedule />}
-                />
-              </Route>
-
-              <Route path="woissuance">
-                <Route index element={<WoIssuance />} />
-                <Route path="viewworequest" element={<ViewWORequest />} />
-                <Route path="viewwoissuance" element={<ViewWOIssuance />} />
-              </Route>
-              <Route path="clientbillingprojects">
-                <Route index element={<ClientBillingProject />} />
-                <Route
-                  path="viewclbillproject"
-                  element={<ViewClBillProjects />}
-                />
-              </Route>
-              <Route path="workprogressprojects">
-                <Route index element={<ProjectWorkProgress />} />
-                <Route
-                  path="viewprojectworkprogress"
-                  element={<ViewProjectWorkProgress />}
-                />
-              </Route>
+            <Route path="emd">
+              <Route index element={<EMD />} />
+              <Route path="viewemd/:tender_id" element={<EMDTrackingTable />} />
+            </Route>
+            <Route path="dlp" element={<DLP />} />
+            <Route path="securitydeposit">
+              <Route index element={<SecurityDeposit />} />
+              <Route path="viewsecuritydeposit/:tender_id" element={<SecurityDepositTrackingTable />} />
+            </Route>
+            {/* <Route path="projectpenalty" element={<ProjectPenalty />} /> */}
+            <Route path="projectpenalty">
+              <Route index element={<ProjectPenalty />} />
               <Route
-                path="projectsmaterialquantity"
-                element={<ProjectMaterailQty />}
+                path="viewpenalty/:tender_id"
+                element={<PenaltyCardGrid />}
               />
-              <Route path="projectsstocks" element={<StockProject />} />
-                 <Route path="projectsassets">
-                <Route index element={<ProjectAsset />} />
-                <Route path="viewprojectassest" element={<ViewProjectAssest />} />
-              </Route>
-            </Route>
-            <Route path="/purchase">
-              <Route path="vendorsupplier">
-                <Route index element={<VendorSupplier />} />
-                <Route
-                  path="viewvendorsupplier/:vendorId"
-                  element={<ViewVendorSupplier />}
-                />
-              </Route>
-              <Route path="request">
-                <Route index element={<PurchaseRequest />} />
-                <Route
-                  path="viewpurchaserequest"
-                  element={<ViewPurchaseRequest />}
-                />
-              </Route>
-
-              <Route path="enquiry">
-                <Route index element={<PurchaseEnquiry />} />
-                <Route
-                  path="viewpurchaseenquire"
-                  element={<ViewPurchaseEnquiry />}
-                />
-              </Route>
-              <Route path="order">
-                <Route index element={<PurchaseOrder />} />
-                <Route
-                  path="viewpurchaseorder"
-                  element={<ViewPurchaseOrder />}
-                />
-              </Route>
-              <Route path="goodsreceipt">
-                <Route index element={<GoodsReceipt />} />
-                <Route path="viewgoodreceipt" element={<ViewGoodRecipt />} />
-              </Route>
-              <Route path="bill">
-                <Route index element={<PurchaseBill />} />
-                <Route path="viewpurchasebill" element={<ViewPurchaseBill />} />
-              </Route>
-              <Route path="machinerytracking" element={<MachineryTracking />} />
-              <Route path="purchasestocks" element={<PurchaseStocks />} />
-              <Route path="purchaseassets" element={<PurchaseAssets />} />
-            </Route>
-            <Route path="/site">
-              <Route index element={<Site />} />
-              <Route path="boqsite" element={<BOQSite />} />
-              <Route path="detailestimatesite">
-                <Route index element={<DetailedEstimateSite />} />
-                <Route path="viewSE" element={<ViewGS />} />
-                <Route path="viewBillQty" element={<ViewBillQtySite />} />
-                <Route path="viewNewInlet" element={<ViewNewInletSite />} />
-                <Route
-                  path="viewroaddetailssite"
-                  element={<ViewRoadDetailsSite />}
-                />
-                <Route
-                  path="viewroadabstractsite"
-                  element={<ViewRoadAbstractSite />}
-                />
-                <Route
-                  path="viewretainingwallsite"
-                  element={<ViewRetainingWallSite />}
-                />
-                <Route
-                  path="viewretainingabstractsite"
-                  element={<ViewRetainingAbstractSite />}
-                />
-                <Route path="viewvendorsite" element={<ViewVendorSite />} />
-                <Route
-                  path="viewNewInletAbs"
-                  element={<ViewNewInletAbsSite />}
-                />
-              </Route>
-              <Route
-                path="reconciliationsite"
-                element={<ReconciliationSite />}
-              />
-              <Route path="plannedvsachived" element={<PlannedvsAchived />} />
-              <Route path="machineryentry" element={<MachineryEntry />} />
-              <Route path="sitedrawing">
-                <Route index element={<SiteDrawing />} />
-                <Route path="viewdrawing" element={<ViewSiteDrawing />} />
-              </Route>
-              <Route path="workDoneSite">
-                <Route index element={<WorkDoneSite />} />
-                <Route path="viewworkDoneSite" element={<ViewWorkDone />} />
-              </Route>
-              <Route path="dialylabourreport">
-                <Route index element={<DailyLabourReport />} />
-                <Route
-                  path="viewdailylabourReport"
-                  element={<ViewDialyReportSite />}
-                />
-              </Route>
-              <Route path="materialrecievedsite">
-                <Route index element={<MaterialRecievedSite />} />
-                <Route
-                  path="viewmaterialrecieved"
-                  element={<ViewMaterialRecieved />}
-                />
-              </Route>
-              <Route path="materialissuedsite">
-                <Route index element={<MaterialIssue />} />
-                <Route
-                  path="viewmaterialissued"
-                  element={<ViewMaterialIssue />}
-                />
-              </Route>
-              <Route path="stockregistersite">
-                <Route index element={<StockRegister />} />
-                <Route
-                  path="viewstockregistersite"
-                  element={<ViewStockRegisterSite />}
-                />
-              </Route>
-              <Route path="purchaserequestsite">
-                <Route index element={<PurchaseRequestSite />} />
-                <Route
-                  path="viewpurchaserequestsite"
-                  element={<ViewPurchaseRequestSite />}
-                />
-              </Route>
-              <Route path="siteassets">
-                <Route index element={<SiteAsset />} />
-                <Route path="viewsiteassest" element={<ViewSiteAssest />} />
-              </Route>
-              <Route path="weeklybillingsite" element={<WeeklyBilling />} />
-            </Route>
-            <Route path="/hr">
-              <Route path="employee">
-                <Route index element={<Employee />} />
-                <Route path="viewemployee" element={<ViewEmployee />} />
-                <Route path="editemployee" element={<EditEmployee />} />
-              </Route>
-              <Route path="attendance" element={<Attendance />} />
-              <Route path="leave" element={<Leave />} />
-              <Route path="payroll">
-                <Route index element={<PayRoll />} />
-                <Route path="viewpayroll" element={<ViewPayroll />} />
-              </Route>
-              <Route path="contractnmr">
-                <Route index element={<ContractNmr />} />
-                <Route path="viewcontractor" element={<ViewContractor />} />
-                <Route path="editcontractor" element={<EditContractor />} />
-              </Route>
-
-              <Route path="NMRattendance" element={<NMRattendance />} />
-              <Route path="nmr">
-                <Route index element={<NMR />} />
-                <Route path="viewnmr" element={<ViewNMR />} />
-                <Route path="editnmr" element={<EditNMR />} />
-              </Route>
-            </Route>
-
-            <Route path="/finance">
-              <Route path="clientbilling" element={<ClientBilling />} />
-              <Route path="purchasetotalbill" element={<PurchaseTotalBill />} />
-              <Route path="contractorbill" element={<ContractorBill />} />
-              <Route
-                path="internalbanktransfer"
-                element={<InternalBankTransfer />}
-              />
-              <Route path="debitcreditnote" element={<Debit_CreditNote />} />
-              <Route path="banktransaction" element={<BankTransactions />} />
-              <Route path="journalentry" element={<JournalEntry />} />
-              {/* <Route path="gst" element={<GST_PL />} /> */}
-              <Route path="banks" element={<Banks />} />
-              <Route path="tds" element={<TDS />} />
-              <Route path="cashentry" element={<CashEntry />} />
-              <Route path="ledgerentry">
-                <Route index element={<LedgerEntry />} />
-                <Route path="viewledgerentry" element={<ViewLedgerEntry />} />
-              </Route>{" "}
-              <Route
-                path="supplieroutstanding"
-                element={<SupplierOutstanding />}
-              />
-              <Route path="overallexpenses" element={<Overall_expenses />} />
-            </Route>
-            <Route path="/reports">
-              <Route path="projectdashboard" element={<ProjectDashboard />} />
-              <Route path="workanalysis">
-                <Route index element={<WorkAnalysis />} />
-                <Route path="viewworkanalysis" element={<ViewWorkAnalysis />} />
-              </Route>
-              <Route path="clientbilling">
-                <Route index element={<ClientBilling_Report />} />
-                <Route
-                  path="viewclientbilling"
-                  element={<ViewClientBilling />}
-                />
-              </Route>
-              <Route path="financialreport">
-                <Route index element={<FinancialReport />} />
-                <Route
-                  path="viewfinancialreport"
-                  element={<ViewFinancialReport />}
-                />
-              </Route>
-              <Route path="p&l">
-                <Route index element={<P_L />} />
-                <Route path="viewp&l" element={<ViewP_L />} />
-              </Route>
-              <Route path="cashflow" element={<CashFlow />} />
-              <Route path="expensesreport" element={<ExpensesReport />} />
-              <Route path="vendorreport" element={<VendorReport />} />
-              <Route path="reconciliation" element={<Reconciliation />} />
-              <Route path="actualvsbilled" element={<ActualvsBilled />} />
-
-              <Route path="costtocomplete" element={<CosttoComplete />} />
-              <Route path="schedule" element={<Schedule />} />
-
-              <Route path="plannedvsactual">
-                <Route index element={<PlannedvsAcutal />} />
-                <Route path="viewtablereport" element={<ViewTableReport />} />
-              </Route>
-              <Route path="labourproductivity">
-                <Route index element={<LabourProductivity />} />
-                <Route
-                  path="viewlabourproductivity"
-                  element={<ViewLabourProductivity />}
-                />
-              </Route>
-              <Route
-                path="machineproductivity"
-                element={<MachineProductivity />}
-              />
-              <Route path="collectionprojection">
-                <Route index element={<CollectionProjection />} />
-                <Route
-                  path="viewcollectionprojection"
-                  element={<ViewCollectionProjection />}
-                />
-              </Route>
-            </Route>
-            <Route path="/settings">
-              <Route path="user">
-                <Route index element={<User />} />
-                <Route path="edituser" element={<EditUser />} />
-              </Route>
-              <Route path="roles">
-                <Route index element={<Roles />} />
-                <Route path="editroles" element={<EditRoles />} />
-                <Route path="addroles" element={<AddRoles />} />
-              </Route>
-              <Route path="master" element={<Master />} />
-              
-              <Route path="assets" >
-                <Route index element={<Assets />} />
-                <Route path="details/:assetId" element={<AssetDetails />} />
-              </Route>
             </Route>
           </Route>
-        </Routes>
-      </BrowserRouter>
+          <Route path="/projects">
+            <Route index element={<Project />} />
+            <Route path="zerocost">
+              <Route index element={<ZeroCost />} />
+              <Route path="viewboqsplit" element={<ViewBoqSplit />} />
+              <Route path="editrateanalysis" element={<EditRateAnalysis />} />
+            </Route>
+            <Route path="detailestimate">
+              <Route index element={<DetailedEstimate />} />
+              <Route path="viewgs" element={<ViewGs />} />
+              <Route path="viewboqproject" element={<ViewBillQtyProject />} />
+              <Route path="viewnewinletdet" element={<ViewNewInletDet />} />
+              <Route path="viewnewinletabs" element={<ViewNewInletAbs />} />
+
+              <Route
+                path="viewvendorproject"
+                element={<ViewVendorProject />}
+              />
+            </Route>
+            <Route path="drawingboq">
+              <Route index element={<DrawingBoq />} />
+              <Route path="viewdrawingboq" element={<ViewDrawingBoq />} />
+            </Route>
+            <Route path="wbs">
+              <Route index element={<WBS />} />
+              <Route path="viewwbs" element={<ViewWbs />} />
+            </Route>
+            <Route path="projectschedule">
+              <Route index element={<ScheduleProjects />} />
+              <Route path="viewdailyproject" element={<ViewDailyProject />} />
+              <Route path="viewweekly" element={<ViewWeekly />} />
+              <Route
+                path="viewprojectschedule"
+                element={<ViewProjectSchedule />}
+              />
+              <Route
+                path="viewmanpowerhistogram"
+                element={<ViewManPowerHistogram />}
+              />
+              <Route
+                path="viewmechineryschedule"
+                element={<ViewMechinerySchedule />}
+              />
+            </Route>
+
+            <Route path="woissuance">
+              <Route index element={<WoIssuance />} />
+              <Route path="viewworequest" element={<ViewWORequest />} />
+              <Route path="viewwoissuance" element={<ViewWOIssuance />} />
+            </Route>
+            <Route path="clientbillingprojects">
+              <Route index element={<ClientBillingProject />} />
+              <Route
+                path="viewclbillproject"
+                element={<ViewClBillProjects />}
+              />
+            </Route>
+            <Route path="workprogressprojects">
+              <Route index element={<ProjectWorkProgress />} />
+              <Route
+                path="viewprojectworkprogress"
+                element={<ViewProjectWorkProgress />}
+              />
+            </Route>
+            <Route
+              path="projectsmaterialquantity"
+              element={<ProjectMaterailQty />}
+            />
+            <Route path="projectsstocks" element={<StockProject />} />
+            <Route path="projectsassets">
+              <Route index element={<ProjectAsset />} />
+              <Route path="viewprojectassest" element={<ViewProjectAssest />} />
+            </Route>
+          </Route>
+          <Route path="/purchase">
+            <Route path="vendorsupplier">
+              <Route index element={<VendorSupplier />} />
+              <Route
+                path="viewvendorsupplier/:vendorId"
+                element={<ViewVendorSupplier />}
+              />
+            </Route>
+            <Route path="request">
+              <Route index element={<PurchaseRequest />} />
+              <Route
+                path="viewpurchaserequest"
+                element={<ViewPurchaseRequest />}
+              />
+            </Route>
+
+            <Route path="enquiry">
+              <Route index element={<PurchaseEnquiry />} />
+              <Route
+                path="viewpurchaseenquire"
+                element={<ViewPurchaseEnquiry />}
+              />
+            </Route>
+            <Route path="order">
+              <Route index element={<PurchaseOrder />} />
+              <Route
+                path="viewpurchaseorder"
+                element={<ViewPurchaseOrder />}
+              />
+            </Route>
+            <Route path="goodsreceipt">
+              <Route index element={<GoodsReceipt />} />
+              <Route path="viewgoodreceipt" element={<ViewGoodRecipt />} />
+            </Route>
+            <Route path="bill">
+              <Route index element={<PurchaseBill />} />
+              <Route path="viewpurchasebill" element={<ViewPurchaseBill />} />
+            </Route>
+            <Route path="machinerytracking" element={<MachineryTracking />} />
+            <Route path="purchasestocks" element={<PurchaseStocks />} />
+            <Route path="purchaseassets" element={<PurchaseAssets />} />
+          </Route>
+          <Route path="/site">
+            <Route index element={<Site />} />
+            <Route path="boqsite" element={<BOQSite />} />
+            <Route path="detailestimatesite">
+              <Route index element={<DetailedEstimateSite />} />
+              <Route path="viewSE" element={<ViewGS />} />
+              <Route path="viewBillQty" element={<ViewBillQtySite />} />
+              <Route path="viewNewInlet" element={<ViewNewInletSite />} />
+              <Route
+                path="viewroaddetailssite"
+                element={<ViewRoadDetailsSite />}
+              />
+              <Route
+                path="viewroadabstractsite"
+                element={<ViewRoadAbstractSite />}
+              />
+              <Route
+                path="viewretainingwallsite"
+                element={<ViewRetainingWallSite />}
+              />
+              <Route
+                path="viewretainingabstractsite"
+                element={<ViewRetainingAbstractSite />}
+              />
+              <Route path="viewvendorsite" element={<ViewVendorSite />} />
+              <Route
+                path="viewNewInletAbs"
+                element={<ViewNewInletAbsSite />}
+              />
+            </Route>
+            <Route
+              path="reconciliationsite"
+              element={<ReconciliationSite />}
+            />
+            <Route path="plannedvsachived" element={<PlannedvsAchived />} />
+            <Route path="machineryentry" element={<MachineryEntry />} />
+            <Route path="sitedrawing">
+              <Route index element={<SiteDrawing />} />
+              <Route path="viewdrawing" element={<ViewSiteDrawing />} />
+            </Route>
+            <Route path="workDoneSite">
+              <Route index element={<WorkDoneSite />} />
+              <Route path="viewworkDoneSite" element={<ViewWorkDone />} />
+            </Route>
+            <Route path="dialylabourreport">
+              <Route index element={<DailyLabourReport />} />
+              <Route
+                path="viewdailylabourReport"
+                element={<ViewDialyReportSite />}
+              />
+            </Route>
+            <Route path="materialrecievedsite">
+              <Route index element={<MaterialRecievedSite />} />
+              <Route
+                path="viewmaterialrecieved"
+                element={<ViewMaterialRecieved />}
+              />
+            </Route>
+            <Route path="materialissuedsite">
+              <Route index element={<MaterialIssue />} />
+              <Route
+                path="viewmaterialissued"
+                element={<ViewMaterialIssue />}
+              />
+            </Route>
+            <Route path="stockregistersite">
+              <Route index element={<StockRegister />} />
+              <Route
+                path="viewstockregistersite"
+                element={<ViewStockRegisterSite />}
+              />
+            </Route>
+            <Route path="purchaserequestsite">
+              <Route index element={<PurchaseRequestSite />} />
+              <Route
+                path="viewpurchaserequestsite"
+                element={<ViewPurchaseRequestSite />}
+              />
+            </Route>
+            <Route path="siteassets">
+              <Route index element={<SiteAsset />} />
+              <Route path="viewsiteassest" element={<ViewSiteAssest />} />
+            </Route>
+            <Route path="weeklybillingsite" element={<WeeklyBilling />} />
+          </Route>
+          <Route path="/hr">
+            <Route path="employee">
+              <Route index element={<Employee />} />
+              <Route path="viewemployee" element={<ViewEmployee />} />
+              <Route path="editemployee" element={<EditEmployee />} />
+            </Route>
+            <Route path="attendance" element={<Attendance />} />
+            <Route path="leave" element={<Leave />} />
+            <Route path="payroll">
+              <Route index element={<PayRoll />} />
+              <Route path="viewpayroll" element={<ViewPayroll />} />
+            </Route>
+            <Route path="contractnmr">
+              <Route index element={<ContractNmr />} />
+              <Route path="viewcontractor" element={<ViewContractor />} />
+              <Route path="editcontractor" element={<EditContractor />} />
+            </Route>
+
+            <Route path="NMRattendance" element={<NMRattendance />} />
+            <Route path="nmr">
+              <Route index element={<NMR />} />
+              <Route path="viewnmr" element={<ViewNMR />} />
+              <Route path="editnmr" element={<EditNMR />} />
+            </Route>
+          </Route>
+
+          <Route path="/finance">
+            <Route path="clientbilling" element={<ClientBilling />} />
+            <Route path="purchasetotalbill" element={<PurchaseTotalBill />} />
+            <Route path="contractorbill" element={<ContractorBill />} />
+            <Route
+              path="internalbanktransfer"
+              element={<InternalBankTransfer />}
+            />
+            <Route path="debitcreditnote" element={<Debit_CreditNote />} />
+            <Route path="banktransaction" element={<BankTransactions />} />
+            <Route path="journalentry" element={<JournalEntry />} />
+            {/* <Route path="gst" element={<GST_PL />} /> */}
+            <Route path="banks" element={<Banks />} />
+            <Route path="tds" element={<TDS />} />
+            <Route path="cashentry" element={<CashEntry />} />
+            <Route path="ledgerentry">
+              <Route index element={<LedgerEntry />} />
+              <Route path="viewledgerentry" element={<ViewLedgerEntry />} />
+            </Route>{" "}
+            <Route
+              path="supplieroutstanding"
+              element={<SupplierOutstanding />}
+            />
+            <Route path="overallexpenses" element={<Overall_expenses />} />
+          </Route>
+          <Route path="/reports">
+            <Route path="projectdashboard" element={<ProjectDashboard />} />
+            <Route path="workanalysis">
+              <Route index element={<WorkAnalysis />} />
+              <Route path="viewworkanalysis" element={<ViewWorkAnalysis />} />
+            </Route>
+            <Route path="clientbilling">
+              <Route index element={<ClientBilling_Report />} />
+              <Route
+                path="viewclientbilling"
+                element={<ViewClientBilling />}
+              />
+            </Route>
+            <Route path="financialreport">
+              <Route index element={<FinancialReport />} />
+              <Route
+                path="viewfinancialreport"
+                element={<ViewFinancialReport />}
+              />
+            </Route>
+            <Route path="p&l">
+              <Route index element={<P_L />} />
+              <Route path="viewp&l" element={<ViewP_L />} />
+            </Route>
+            <Route path="cashflow" element={<CashFlow />} />
+            <Route path="expensesreport" element={<ExpensesReport />} />
+            <Route path="vendorreport" element={<VendorReport />} />
+            <Route path="reconciliation" element={<Reconciliation />} />
+            <Route path="actualvsbilled" element={<ActualvsBilled />} />
+
+            <Route path="costtocomplete" element={<CosttoComplete />} />
+            <Route path="schedule" element={<Schedule />} />
+
+            <Route path="plannedvsactual">
+              <Route index element={<PlannedvsAcutal />} />
+              <Route path="viewtablereport" element={<ViewTableReport />} />
+            </Route>
+            <Route path="labourproductivity">
+              <Route index element={<LabourProductivity />} />
+              <Route
+                path="viewlabourproductivity"
+                element={<ViewLabourProductivity />}
+              />
+            </Route>
+            <Route
+              path="machineproductivity"
+              element={<MachineProductivity />}
+            />
+            <Route path="collectionprojection">
+              <Route index element={<CollectionProjection />} />
+              <Route
+                path="viewcollectionprojection"
+                element={<ViewCollectionProjection />}
+              />
+            </Route>
+          </Route>
+          <Route path="/settings">
+            <Route path="user">
+              <Route index element={<User />} />
+              <Route path="edituser" element={<EditUser />} />
+            </Route>
+            <Route path="roles">
+              <Route index element={<Roles />} />
+              <Route path="editroles" element={<EditRoles />} />
+              <Route path="addroles" element={<AddRoles />} />
+            </Route>
+            <Route path="master" element={<Master />} />
+
+            <Route path="assets" >
+              <Route index element={<Assets />} />
+              <Route path="details/:assetId" element={<AssetDetails />} />
+            </Route>
+          </Route>
+        </Route>
+        </Route>
+      </Routes>
       <ToastContainer
         position="top-center"
         autoClose={2000}

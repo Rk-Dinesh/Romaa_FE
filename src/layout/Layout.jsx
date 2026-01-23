@@ -254,12 +254,6 @@ const LayOut = () => {
           icon: <BiShapeSquare size={23} />,
           to: "/site/sitedrawing",
         },
-        //  {
-        //   title: "Schedule",
-        //   icon: <TbCalendarStats size={23} />,
-        //   //to: "/site/sitedrawing",
-        // },
-        
         {
           title: "Purchase Request",
           icon: <TbFolderQuestion size={23} />,
