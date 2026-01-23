@@ -1,194 +1,334 @@
+import React, { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { yupResolver } from "@hookform/resolvers/yup";
 import * as yup from "yup";
-import Title from "../../../components/Title";
-import { IoSave } from "react-icons/io5";
-import { useLocation } from "react-router-dom";
-import { useEffect } from "react";
-import { InputField } from "../../../components/InputField";
+import { useLocation, useNavigate } from "react-router-dom";
+import axios from "axios";
+import { API } from "../../../constant";
+import { toast } from "react-toastify";
+import { 
+  FiUser, 
+  FiBriefcase, 
+  FiMapPin, 
+  FiShield, 
+  FiPhone, 
+  FiSave,
+  FiArrowLeft,
+  FiActivity
+} from "react-icons/fi";
 
-const Editschema = yup.object().shape({
-  userId: yup.string().required("User ID is required"),
+// --- Validation Schema ---
+const schema = yup.object().shape({
   name: yup.string().required("Name is required"),
-  email: yup.string().email("Invalid email").required("Email ID is required"),
-  phoneNumber: yup
-    .string()
-    .matches(/^[0-9]{10}$/, "Phone Number must be 10 digits")
-    .required("Phone Number is required"),
-  role: yup.string().required("Role is required"),
+  email: yup.string().email("Invalid email").required("Email is required"),
+  phone: yup.string().required("Phone is required"),
+  role: yup.string().required("Role is required"), // Stores Role ID
+  status: yup.string().required("Status is required"),
+  
+  designation: yup.string().required("Designation is required"),
+  dateOfJoining: yup.string().required("Date is required"),
+  
+  // Flattened Address
+  address_street: yup.string().required("Street is required"),
+  address_city: yup.string().required("City is required"),
+  address_state: yup.string().required("State is required"),
+  address_pincode: yup.string().required("Pincode is required"),
+
+  // Flattened Emergency
+  emergency_name: yup.string().required("Contact Name is required"),
+  emergency_relationship: yup.string().required("Relation is required"),
+  emergency_phone: yup.string().required("Emergency Phone is required"),
+
+  // Flattened ID Proof
+  id_proof_type: yup.string().required("ID Type is required"),
+  id_proof_number: yup.string().required("ID Number is required"),
 });
-
-const Changeschema = yup.object().shape({
-  newPassword: yup
-    .string()
-    .required("New password is required")
-    .min(9, "Password must be at least 9 characters")
-    .matches(/[A-Z]/, "Must contain at least one uppercase letter")
-    .matches(/[a-z]/, "Must contain at least one lowercase letter")
-    .matches(/[0-9]/, "Must contain at least one number")
-    .matches(/[^A-Za-z0-9]/, "Must contain at least one special character"),
-  confirmPassword: yup
-    .string()
-    .required("Confirm password is required")
-    .oneOf([yup.ref("newPassword")], "Passwords must match"),
-});
-
-
-
-
 
 const EditUser = () => {
   const location = useLocation();
-  const userData = location.state?.employee;
+  const navigate = useNavigate();
+  const userData = location.state?.item;
+
+  const [loading, setLoading] = useState(false);
+  const [roles, setRoles] = useState([]);
 
   const {
     register,
     handleSubmit,
-    formState: { errors },
     reset,
+    formState: { errors },
   } = useForm({
-    resolver: yupResolver(Editschema),
+    resolver: yupResolver(schema),
   });
 
+  // --- 1. Fetch Roles for Dropdown ---
+  useEffect(() => {
+    const fetchRoles = async () => {
+      try {
+        const res = await axios.get(`${API}/role/listForDropdown`, { withCredentials: true });
+        setRoles(res.data.data || []);
+      } catch (err) {
+        console.error("Error fetching roles", err);
+      }
+    };
+    fetchRoles();
+  }, []);
+
+  // --- 2. Populate Form Data ---
   useEffect(() => {
     if (userData) {
+      // Convert ISO Date to YYYY-MM-DD for input field
+      const formattedDate = userData.dateOfJoining 
+        ? new Date(userData.dateOfJoining).toISOString().split('T')[0] 
+        : "";
+
       reset({
-        userId: userData.userId || "",
-        name: userData.name || "",
-        email: userData.email || "",
-        phoneNumber: userData.phoneNumber || "",
-        role: userData.role || "",
+        name: userData.name,
+        email: userData.email,
+        phone: userData.phone,
+        
+        // Map the Role Object to just the ID for the dropdown
+        role: userData.role?._id || "", 
+        status: userData.status,
+        
+        designation: userData.designation,
+        dateOfJoining: formattedDate,
+
+        // Flatten Address
+        address_street: userData.address?.street,
+        address_city: userData.address?.city,
+        address_state: userData.address?.state,
+        address_pincode: userData.address?.pincode,
+
+        // Flatten Emergency
+        emergency_name: userData.emergencyContact?.name,
+        emergency_relationship: userData.emergencyContact?.relationship,
+        emergency_phone: userData.emergencyContact?.phone,
+
+        // Flatten ID Proof
+        id_proof_type: userData.idProof?.type,
+        id_proof_number: userData.idProof?.number,
       });
     }
   }, [userData, reset]);
 
-  const onSubmit = (data) => {
-    console.log("Form Data:", data);
+  // --- 3. Submit Handler ---
+  const onSubmit = async (data) => {
+    try {
+      setLoading(true);
+      
+      // Re-structure data for backend
+      const payload = {
+        name: data.name,
+        email: data.email,
+        phone: data.phone,
+        role: data.role, // Sending the Role ID
+        status: data.status,
+        designation: data.designation,
+        dateOfJoining: data.dateOfJoining,
+        
+        address: {
+            street: data.address_street,
+            city: data.address_city,
+            state: data.address_state,
+            pincode: data.address_pincode
+        },
+        emergencyContact: {
+            name: data.emergency_name,
+            relationship: data.emergency_relationship,
+            phone: data.emergency_phone
+        },
+        idProof: {
+            type: data.id_proof_type,
+            number: data.id_proof_number
+        }
+      };
+
+      await axios.put(`${API}/employee/update/${userData.employeeId}`, payload, { withCredentials: true });
+      
+      toast.success("User updated successfully");
+      navigate(-1); // Go back
+    } catch (error) {
+      console.error(error);
+      toast.error(error.response?.data?.message || "Failed to update user");
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const {
-    register: registerPassword,
-    handleSubmit: handleSubmitPassword,
-    formState: { errors: errorsPassword },
-  } = useForm({
-    resolver: yupResolver(Changeschema),
-  });
+  if (!userData) return <div className="p-10 text-center">No user data found.</div>;
 
-  const onSubmitPassword = (data) => {
-    console.log("Password Data:", data);
-  };
   return (
-    <div className="h-screen ">
-      <Title title="Settings" sub_title="User" page_title="Edit User" />
-      <div className="grid grid-cols-12  gap-2 my-4">
-        <div className="sm:col-span-6 col-span-12 w-full py-9 rounded-lg dark:bg-layout-dark bg-white">
-          <p className="w-full text-2xl font-semibold flex justify-center items-center">
-            {" "}
-            Edit user
-          </p>
-          <div className="">
-            <form onSubmit={handleSubmit(onSubmit)}>
-              <div className="grid grid-c gap-4 px-6 py-6">
-                <div className="space-y-4">
-                  <InputField
-                    label="User ID"
-                    name="userId"
-                    register={register}
-                    errors={errors}
-                    placeholder="Type Here"
-                  />
-                  <InputField
-                    label="Name"
-                    name="name"
-                    register={register}
-                    errors={errors}
-                    placeholder="Type Here"
-                  />
-                  <InputField
-                    label="Email ID"
-                    name="email"
-                    register={register}
-                    errors={errors}
-                    placeholder="Type Here"
-                    type="email"
-                  />
-                  <InputField
-                    label="Phone Number"
-                    name="phoneNumber"
-                    register={register}
-                    errors={errors}
-                    placeholder="Type Here"
-                  />
-                  <InputField
-                    label="Role"
-                    name="role"
-                    type="select"
-                    placeholder="select role"
-                    register={register}
-                    errors={errors}
-                    options={[{label:"Admin", value:"admin"},{label:"User", value:"User" },]}
-                  />
-                </div>
-              </div>
-              <div className="mx-5 text-xs flex lg:justify-end md:justify-center justify-center gap-2 mb-4">
-                <button
-                  type="submit"
-                  className="flex gap-2 text-base items-center p-3 cursor-pointer px-6 bg-darkest-blue text-white rounded"
-                >
-                  <IoSave size={23} />
-                  Save
-                </button>
-              </div>
-            </form>
+    <div className="min-h-screen bg-gray-50 dark:bg-overall_bg-dark font-layout-font pb-20">
+      
+      {/* --- Sticky Header --- */}
+      <div className="sticky top-0 z-20 bg-white/80 dark:bg-layout-dark/90 backdrop-blur-md border-b border-gray-200 dark:border-gray-800 px-6 py-4 flex justify-between items-center shadow-sm">
+        <div className="flex items-center gap-4">
+          <button onClick={() => navigate(-1)} className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
+            <FiArrowLeft className="text-xl text-gray-600 dark:text-gray-300" />
+          </button>
+          <div>
+            <h1 className="text-xl font-bold text-gray-900 dark:text-white leading-none">Edit User</h1>
+            <p className="text-xs text-gray-500 mt-1">Updating profile for {userData.employeeId}</p>
           </div>
         </div>
-        <div className="sm:col-span-6 col-span-12 w-full py-9 rounded-lg dark:bg-layout-dark bg-white">
-          <p className="w-full text-2xl font-semibold flex justify-center items-center">
-            Change Password
-          </p>
-          <div className="px-6 py-6">
-            <form
-              onSubmit={handleSubmitPassword(onSubmitPassword)}
-              className="space-y-4"
-            >
-              <InputField
-                label="New password"
-                name="newPassword"
-                register={registerPassword}
-                errors={errorsPassword}
-                type="password"
-                placeholder="enter new password"
-              />
-              <InputField
-                label="Confirm Password"
-                name="confirmPassword"
-                register={registerPassword}
-                errors={errorsPassword}
-                type="password"
-                 placeholder="enter confirm password"
-              />
-              <p className="text-xs dark:text-gray-400 text-gray-700">
-                "Make sure your password has: one capital letter, one small
-                letter, one number, one special symbol, and is at least 9
-                characters long."
-              </p>
-              <p className="text-xs mt-1">
-                <strong>Example:</strong> Design@2024
-              </p>
-              <div className="flex justify-end mt-4">
-                <button
-                  type="submit"
-                  className="flex items-center gap-2 px-6 py-2 bg-darkest-blue text-white rounded"
-                >
-                  <IoSave size={20} /> Save
-                </button>
-              </div>
-            </form>
+        <button
+          onClick={handleSubmit(onSubmit)}
+          disabled={loading}
+          className="px-6 py-2.5 bg-darkest-blue hover:bg-blue-900 text-white rounded-xl font-medium shadow-lg shadow-blue-500/20 flex items-center gap-2 transition-all active:scale-95 disabled:opacity-70 disabled:cursor-not-allowed"
+        >
+          {loading ? <span className="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full"></span> : <FiSave size={18} />}
+          <span>Save Changes</span>
+        </button>
+      </div>
+
+      {/* --- Form Content --- */}
+      <div className="max-w-7xl mx-auto px-6 py-8">
+        <form className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+          {/* Column 1: Identity & Role */}
+          <div className="space-y-6">
+            <div className="bg-white dark:bg-layout-dark p-6 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-800">
+               <h3 className="text-sm font-bold text-blue-600 uppercase tracking-wider mb-5 flex items-center gap-2 border-b pb-2 dark:border-gray-700">
+                  <FiUser /> Identity
+               </h3>
+               <div className="space-y-4">
+                  <Input label="Full Name" name="name" register={register} error={errors.name} />
+                  <Input label="Email Address" name="email" register={register} error={errors.email} />
+                  <Input label="Phone Number" name="phone" register={register} error={errors.phone} />
+               </div>
+            </div>
+
+            <div className="bg-white dark:bg-layout-dark p-6 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-800">
+               <h3 className="text-sm font-bold text-amber-600 uppercase tracking-wider mb-5 flex items-center gap-2 border-b pb-2 dark:border-gray-700">
+                  <FiShield /> Access Control
+               </h3>
+               <div className="space-y-4">
+                  {/* Role Dropdown */}
+                  <div>
+                    <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">System Role</label>
+                    <select 
+                      {...register("role")}
+                      className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2.5 text-sm bg-white dark:bg-gray-800 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none transition-all"
+                    >
+                      <option value="">Select Role</option>
+                      {roles.map((role) => (
+                        <option key={role._id} value={role._id}>{role.roleName}</option>
+                      ))}
+                    </select>
+                    {errors.role && <p className="text-red-500 text-[10px] mt-1">{errors.role.message}</p>}
+                  </div>
+
+                  <Select 
+                    label="Account Status" 
+                    name="status" 
+                    register={register} 
+                    error={errors.status}
+                    options={["Active", "Inactive", "Suspended"]} 
+                  />
+               </div>
+            </div>
           </div>
-        </div>
+
+          {/* Column 2: Job & Address */}
+          <div className="space-y-6">
+            <div className="bg-white dark:bg-layout-dark p-6 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-800">
+               <h3 className="text-sm font-bold text-emerald-600 uppercase tracking-wider mb-5 flex items-center gap-2 border-b pb-2 dark:border-gray-700">
+                  <FiBriefcase /> Job Details
+               </h3>
+               <div className="space-y-4">
+                  <Input label="Designation" name="designation" register={register} error={errors.designation} />
+                  <Input label="Date of Joining" type="date" name="dateOfJoining" register={register} error={errors.dateOfJoining} />
+                  <Input label="Employee ID" value={userData.employeeId} disabled={true} />
+               </div>
+            </div>
+
+            <div className="bg-white dark:bg-layout-dark p-6 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-800">
+               <h3 className="text-sm font-bold text-purple-600 uppercase tracking-wider mb-5 flex items-center gap-2 border-b pb-2 dark:border-gray-700">
+                  <FiMapPin /> Address
+               </h3>
+               <div className="space-y-4">
+                  <Input label="Street / Building" name="address_street" register={register} error={errors.address_street} />
+                  <div className="grid grid-cols-2 gap-4">
+                    <Input label="City" name="address_city" register={register} error={errors.address_city} />
+                    <Input label="Pincode" name="address_pincode" register={register} error={errors.address_pincode} />
+                  </div>
+                  <Input label="State" name="address_state" register={register} error={errors.address_state} />
+               </div>
+            </div>
+          </div>
+
+          {/* Column 3: Emergency & ID */}
+          <div className="space-y-6">
+             <div className="bg-white dark:bg-layout-dark p-6 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-800">
+               <h3 className="text-sm font-bold text-rose-600 uppercase tracking-wider mb-5 flex items-center gap-2 border-b pb-2 dark:border-gray-700">
+                  <FiActivity /> Emergency Contact
+               </h3>
+               <div className="space-y-4">
+                  <Input label="Contact Name" name="emergency_name" register={register} error={errors.emergency_name} />
+                  <Input label="Relationship" name="emergency_relationship" register={register} error={errors.emergency_relationship} />
+                  <Input label="Phone Number" name="emergency_phone" register={register} error={errors.emergency_phone} />
+               </div>
+            </div>
+
+            <div className="bg-white dark:bg-layout-dark p-6 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-800">
+               <h3 className="text-sm font-bold text-gray-600 uppercase tracking-wider mb-5 flex items-center gap-2 border-b pb-2 dark:border-gray-700">
+                  <FiShield /> Legal ID
+               </h3>
+               <div className="space-y-4">
+                  <Select 
+                    label="ID Type" 
+                    name="id_proof_type" 
+                    register={register} 
+                    error={errors.id_proof_type}
+                    options={["Aadhar", "PAN", "Passport", "Voter ID"]} 
+                  />
+                  <Input label="ID Number" name="id_proof_number" register={register} error={errors.id_proof_number} />
+               </div>
+            </div>
+          </div>
+
+        </form>
       </div>
     </div>
   );
 };
+
+// --- Reusable Input Component ---
+const Input = ({ label, name, type = "text", register, error, disabled, value }) => (
+  <div className="w-full">
+    <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">{label}</label>
+    <input 
+      type={type} 
+      {...(register ? register(name) : {})} 
+      disabled={disabled}
+      defaultValue={value}
+      className={`w-full border rounded-lg px-3 py-2.5 text-sm transition-all outline-none
+        ${disabled 
+          ? "bg-gray-100 dark:bg-gray-800 text-gray-500 border-gray-200 dark:border-gray-700 cursor-not-allowed" 
+          : "bg-white dark:bg-gray-800 text-gray-900 dark:text-white border-gray-300 dark:border-gray-600 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+        }
+      `}
+    />
+    {error && <p className="text-red-500 text-[10px] mt-1">{error.message}</p>}
+  </div>
+);
+
+// --- Reusable Select Component ---
+const Select = ({ label, name, register, error, options }) => (
+  <div className="w-full">
+    <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">{label}</label>
+    <select 
+      {...register(name)} 
+      className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2.5 text-sm bg-white dark:bg-gray-800 dark:text-white focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all"
+    >
+      <option value="">Select...</option>
+      {options.map((opt, i) => (
+        <option key={i} value={opt}>{opt}</option>
+      ))}
+    </select>
+    {error && <p className="text-red-500 text-[10px] mt-1">{error.message}</p>}
+  </div>
+);
 
 export default EditUser;

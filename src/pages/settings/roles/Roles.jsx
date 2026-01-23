@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from "react";
 import Filters from "../../../components/Filters";
 import Table from "../../../components/Table";
-import { RoleData } from "../../../components/Data";
 import { RiUserAddLine } from "react-icons/ri";
 import DeleteModal from "../../../components/DeleteModal";
 import axios from "axios";
@@ -9,38 +8,24 @@ import { API } from "../../../constant";
 import { toast } from "react-toastify";
 
 const RoleColumns = [
-  { label: "Name", key: "name" },
-  { label: "Role", key: "role_name" },
-  { label: "Created By", key: "created_by_user" },
+  { label: "Role ID", key: "role_id" },
+  { label: "Name", key: "roleName" },
+  { label: "Description", key: "description" },
+  { label: "Modules", key: "moduleAccess" },
+  { label: "Permissions", key: "totalPermissions" },
 ];
 
 const Roles = () => {
   const [roles, setRoles] = useState([]);
 
   const [loading, setLoading] = useState(false);
-  const [searchTerm, setSearchTerm] = useState("");
-  const [currentPage, setCurrentPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(0);
-  const [filterParams, setFilterParams] = useState({
-    fromdate: "",
-    todate: "",
-  });
 
   const fetchRoles = async () => {
     setLoading(true);
     try {
-      const res = await axios.get(`${API}/role/getallroles`, {
-        params: {
-          page: currentPage,
-          limit: 10,
-          search: searchTerm,
-          fromdate: filterParams.fromdate,
-          todate: filterParams.todate,
-        },
-      });
+      const res = await axios.get(`${API}/role/list`);
 
       setRoles(res.data.data);
-      setTotalPages(res.data.totalPages);
     } catch (err) {
       toast.error("Failed to fetch clients");
     } finally {
@@ -50,16 +35,18 @@ const Roles = () => {
 
   useEffect(() => {
     fetchRoles();
-  }, [currentPage, searchTerm, filterParams]);
+  }, []);
 
-  const handleDelete = async (roleId) => {
+  const handleDelete = async (role_id) => {
     try {
-      await axios.delete(`${API}/role/deletebyroleid?roleId=${roleId}`);
+      await axios.delete(`${API}/role/delete/${role_id}`);
       toast.success("Role deleted successfully");
       fetchRoles();
     } catch (err) {
       toast.error("Failed to delete role");
       console.error(err);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -82,11 +69,6 @@ const Roles = () => {
       FilterModal={Filters}
       addButtonLabel="Add Roles"
       addButtonIcon={<RiUserAddLine size={23} />}
-      totalPages={totalPages}
-      currentPage={currentPage}
-      setCurrentPage={setCurrentPage}
-      filterParams={filterParams}
-      setFilterParams={setFilterParams}
       onUpdated={fetchRoles}
       onSuccess={fetchRoles}
     />

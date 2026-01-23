@@ -80,3 +80,53 @@ const TrashToast = ({ onUndo, closeToast }) => {
 };
 
 export default TrashToast;
+
+
+
+  // const handleDelete = async (employee_id) => {
+  //   const payload = {
+  //     role_id: "",
+  //     role: "",
+  //   };
+  //   try {
+  //     setLoading(false);
+  //     await axios.put(
+  //       `${API}/employee/updateemployee/${employee_id}`, // <-- employee_id in URL
+  //       payload
+  //     );
+  //     fetchUsers();
+  //     toast(
+  //       ({ closeToast }) => (
+  //         <TrashToast
+  //           onUndo={() => restoreUser(employee_id)}
+  //           closeToast={closeToast}
+  //         />
+  //       ),
+  //       { autoClose: 4000, theme: "dark" }
+  //     );
+  //   } catch (err) {
+  //     console.error("Error deleting user:", err);
+  //   } finally {
+  //     setLoading(false);
+  //   }
+  // };
+
+  // const restoreUser = async (employee_id) => {
+  //   try {
+  //     const userToRestore = users.find((u) => u.employee_id === employee_id);
+  //     if (!userToRestore) return;
+
+  //     const payload = {
+  //       role_id: userToRestore.role_id,
+  //       role: userToRestore.role,
+  //     };
+
+  //     await axios.put(`${API}/employee/updateemployee/${employee_id}`, payload);
+
+  //     toast.success("User restored ✅");
+  //     fetchUsers(); // refresh list
+  //   } catch (err) {
+  //     console.error("Error restoring user:", err);
+  //     toast.error("Failed to restore user ❌");
+  //   }
+  // };

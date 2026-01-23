@@ -10,22 +10,11 @@ import { useEffect, useState } from "react";
 import { API } from "../../../constant";
 
 const EmployeeColumns = [
-  { label: "Employee ID", key: "employee_id" },
+  { label: "Employee ID", key: "employeeId" },
   { label: "Name", key: "name" },
-  { label: "Role", key: "role" },
-//  { label: "Department", key: "department" },  // If department exists in your schema/backend
-  { label: "Site Assigned", key: "site_assigned" },
+  { label: "Designation", key: "designation" },
+  { label: "Email", key: "email"  },
   { label: "Status", key: "status" },
-  {
-    label: "Address",
-    key: "address",
-    render: (item) =>
-      `${item.address?.city || ""}, ${item.address?.state || ""}, ${
-        item.address?.country || ""
-      } - ${item.address?.pincode || ""}`,
-  },
-  { label: "Phone", key: "contact_phone" },
-  { label: "Email", key: "contact_email" },
 ];
 
 
@@ -43,7 +32,7 @@ const Employee = () => {
   const fetchEmployees = async () => {
     setLoading(true);
     try {
-      const res = await axios.get(`${API}/employee/getemployees`, {
+      const res = await axios.get(`${API}/employee/list`, {
         params: {
           page: currentPage,
           limit: 10,

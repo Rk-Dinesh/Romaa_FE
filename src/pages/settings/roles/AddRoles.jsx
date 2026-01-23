@@ -1,417 +1,387 @@
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
-import Title from "../../../components/Title"; // Keep your existing Title component
 import axios from "axios";
-import { API } from "../../../constant"; // Keep your constant
-import { toast } from "react-toastify";
-import { FiChevronDown, FiChevronRight, FiCheck } from "react-icons/fi";
+import { API } from "../../../constant";
+import { toast } from "react-toastify"; 
+import { 
+  FiChevronDown, 
+  FiCheck, 
+  FiShield, 
+  FiInfo,
+  FiSave,
+  FiX,
+  FiGrid,
+  FiCheckSquare
+} from "react-icons/fi";
+import { Menus } from "../../../helperConfigData/helperData";
 
-// --- Configuration Data (Matches your Mongoose Schema) ---
-const MODULES_CONFIG = [
-  {
-    key: "dashboard",
-    label: "Dashboard",
-    hasSubModules: false,
-  },
-  {
-    key: "tender",
-    label: "Tender",
-    hasSubModules: true,
-    subModules: [
-      { key: "clients", label: "Clients" },
-      { key: "tenders", label: "Tenders" },
-      { key: "dlp", label: "DLP" },
-      { key: "emd", label: "EMD" },
-      { key: "security_deposit", label: "Security Deposit" },
-      { key: "project_penalty", label: "Project Penalty" },
-    ],
-  },
-  {
-    key: "project",
-    label: "Projects",
-    hasSubModules: true,
-    subModules: [
-      { key: "boq_cost", label: "BOQ Cost" },
-      { key: "detailed_estimate", label: "Detailed Estimate" },
-      { key: "drawing_boq", label: "Drawing vs BOQ" },
-      { key: "wbs", label: "WBS" },
-      { key: "schedule", label: "Schedule" },
-      { key: "wo_issuance", label: "WO Issuance" },
-      { key: "client_billing", label: "Client Billing" },
-      { key: "work_progress", label: "Work Progress" },
-      { key: "material_quantity", label: "Material Quantity" },
-      { key: "stocks", label: "Stocks" },
-      { key: "assets", label: "Assets" },
-    ],
-  },
-  {
-    key: "purchase",
-    label: "Purchase",
-    hasSubModules: true,
-    subModules: [
-      { key: "vendor_supplier", label: "Vendor & Supplier" },
-      { key: "request", label: "Purchase Request" },
-      { key: "enquiry", label: "Enquiry" },
-      { key: "order", label: "Order" },
-      { key: "goods_receipt", label: "Goods Receipt" },
-      { key: "bill", label: "Purchase Bill" },
-      { key: "machinery_tracking", label: "Machinery Tracking" },
-      { key: "stocks", label: "Stocks" },
-      { key: "assets", label: "Assets" },
-    ],
-  },
-  {
-    key: "site",
-    label: "Site",
-    hasSubModules: true,
-    subModules: [
-      { key: "boq_site", label: "BOQ Site" },
-      { key: "detailed_estimate", label: "Detailed Estimate" },
-      { key: "site_drawing", label: "Site Drawing" },
-      { key: "purchase_request", label: "Purchase Request" },
-      { key: "material_received", label: "Material Received" },
-      { key: "material_issued", label: "Material Issued" },
-      { key: "stock_register", label: "Stock Register" },
-      { key: "work_done", label: "Work Done" },
-      { key: "daily_labour_report", label: "Daily Labour Report" },
-      { key: "machinery_entry", label: "Machinery Entry" },
-      { key: "site_assets", label: "Site Assets" },
-      { key: "weekly_billing", label: "Weekly Billing" },
-      { key: "reconciliation", label: "Reconciliation" },
-      { key: "planned_vs_achieved", label: "Planned vs Achieved" },
-    ],
-  },
-  {
-    key: "hr",
-    label: "HR",
-    hasSubModules: true,
-    subModules: [
-      { key: "employee", label: "Employee" },
-      { key: "attendance", label: "Attendance" },
-      { key: "leave", label: "Leave" },
-      { key: "payroll", label: "Payroll" },
-      { key: "contract_nmr", label: "Contract & NMR" },
-      { key: "nmr", label: "NMR" },
-      { key: "nmr_attendance", label: "NMR Attendance" },
-    ],
-  },
-  {
-    key: "finance",
-    label: "Finance",
-    hasSubModules: true,
-    subModules: [
-      { key: "client_billing", label: "Client Billing" },
-      { key: "purchase_bill", label: "Purchase Bill" },
-      { key: "contractor_bill", label: "Contractor Bill" },
-      { key: "debit_credit_note", label: "Debit/Credit Note" },
-      { key: "internal_transfer", label: "Internal Transfer" },
-      { key: "bank_transaction", label: "Bank Transaction" },
-      { key: "journal_entry", label: "Journal Entry" },
-      { key: "banks", label: "Banks" },
-      { key: "tds", label: "TDS" },
-      { key: "cash_entry", label: "Cash Entry" },
-      { key: "ledger_entry", label: "Ledger Entry" },
-      { key: "supplier_outstanding", label: "Supplier Outstanding" },
-      { key: "overall_expenses", label: "Overall Expenses" },
-    ],
-  },
-  {
-    key: "report",
-    label: "Reports",
-    hasSubModules: true,
-    subModules: [
-      { key: "project_dashboard", label: "Project Dashboard" },
-      { key: "work_analysis", label: "Work Analysis" },
-      { key: "client_billing", label: "Client Billing" },
-      { key: "financial_report", label: "Financial Report" },
-      { key: "pnl", label: "P&L" },
-      { key: "cash_flow", label: "Cash Flow" },
-      { key: "expenses_report", label: "Expenses Report" },
-      { key: "vendor_report", label: "Vendor Report" },
-      { key: "reconciliation", label: "Reconciliation" },
-      { key: "actual_vs_billed", label: "Actual vs Billed" },
-      { key: "cost_to_complete", label: "Cost to Complete" },
-      { key: "planned_vs_actual", label: "Planned vs Actual" },
-      { key: "labour_productivity", label: "Labour Productivity" },
-      { key: "machine_productivity", label: "Machine Productivity" },
-      { key: "collection_projection", label: "Collection Projection" },
-    ],
-  },
-  {
-    key: "settings",
-    label: "Settings",
-    hasSubModules: true,
-    subModules: [
-      { key: "user", label: "User" },
-      { key: "roles", label: "Roles" },
-      { key: "master", label: "Master" },
-      { key: "assets", label: "Assets" },
-    ],
-  },
+// --- Constants ---
+const ACTIONS = [
+  { key: "read", label: "Read", color: "bg-blue-50 text-blue-600 border-blue-200" },
+  { key: "create", label: "Create", color: "bg-emerald-50 text-emerald-600 border-emerald-200" },
+  { key: "edit", label: "Edit", color: "bg-amber-50 text-amber-600 border-amber-200" },
+  { key: "delete", label: "Delete", color: "bg-rose-50 text-rose-600 border-rose-200" },
 ];
-
-const ACTIONS = ["read", "create", "edit", "delete"];
 
 const AddRoles = () => {
   const navigate = useNavigate();
   const [roleName, setRoleName] = useState("");
   const [description, setDescription] = useState("");
   const [loading, setLoading] = useState(false);
-  
-  // State for permissions object
-  // Structure: { module: { subModule: { read: true, ... } } }
   const [permissions, setPermissions] = useState({});
-
-  // State for expanded accordion items
   const [expandedModules, setExpandedModules] = useState({});
 
-  // Toggle Accordion
-  const toggleModule = (moduleKey) => {
-    setExpandedModules((prev) => ({
-      ...prev,
-      [moduleKey]: !prev[moduleKey],
+  // --- 1. Transform Menus to Module Config ---
+  // Ensure 'Menus' constant keys match your Mongoose Schema keys exactly
+  const MODULES_CONFIG = useMemo(() => {
+    return Menus.map(menu => ({
+        key: menu.module, // Must match Schema (e.g., "tender", "project")
+        label: menu.title,
+        icon: menu.icon,
+        hasSubModules: !!menu.nested && menu.nested.length > 0,
+        subModules: menu.nested ? menu.nested.map(sub => ({
+            key: sub.subModule, // Must match Schema (e.g., "clients", "boq_cost")
+            label: sub.title
+        })) : []
     }));
+  }, []);
+
+  // --- 2. Logic Helpers ---
+
+  const toggleModuleExpand = (moduleKey) => {
+    setExpandedModules((prev) => ({ ...prev, [moduleKey]: !prev[moduleKey] }));
   };
 
-  // Check Helper
-  const isChecked = (moduleKey, subModuleKey, action) => {
+  const isChecked = (moduleKey, subModuleKey, actionKey) => {
     if (subModuleKey) {
-      return permissions[moduleKey]?.[subModuleKey]?.[action] || false;
+      return permissions[moduleKey]?.[subModuleKey]?.[actionKey] === true;
     }
-    return permissions[moduleKey]?.[action] || false; // For simple modules like Dashboard
+    return permissions[moduleKey]?.[actionKey] === true;
   };
 
-  // Handle Checkbox Change
-  const handlePermissionChange = (moduleKey, subModuleKey, action) => {
+  const handlePermissionChange = (moduleKey, subModuleKey, actionKey) => {
     setPermissions((prev) => {
-      const newPerms = { ...prev };
-      
-      // Initialize if undefined
-      if (!newPerms[moduleKey]) newPerms[moduleKey] = {};
-      
+      // Deep copy to prevent mutation issues
+      const updatedModule = { ...(prev[moduleKey] || {}) };
+
       if (subModuleKey) {
-        if (!newPerms[moduleKey][subModuleKey]) newPerms[moduleKey][subModuleKey] = {};
-        
-        // Toggle value
-        newPerms[moduleKey][subModuleKey][action] = !newPerms[moduleKey][subModuleKey][action];
+        // Nested Module (e.g., Tender -> Clients)
+        const updatedSubModule = { ...(updatedModule[subModuleKey] || {}) };
+        updatedSubModule[actionKey] = !updatedSubModule[actionKey];
+        updatedModule[subModuleKey] = updatedSubModule;
       } else {
-        // Simple module (like Dashboard)
-        newPerms[moduleKey][action] = !newPerms[moduleKey][action];
+        // Simple Module (e.g., Dashboard)
+        //  - Dashboard only has 'read' in your schema
+        if (moduleKey === 'dashboard' && actionKey !== 'read') {
+            return prev; // Block create/edit/delete for dashboard if schema doesn't support it
+        }
+        updatedModule[actionKey] = !updatedModule[actionKey];
       }
-      return newPerms;
+
+      return { ...prev, [moduleKey]: updatedModule };
     });
   };
 
-  // Handle "Select All" for a Row (Module/SubModule)
-  const toggleRow = (moduleKey, subModuleKey, selectAll) => {
+  const isModuleFullySelected = (module) => {
+    const modPerms = permissions[module.key];
+    if (!modPerms) return false;
+
+    if (module.hasSubModules) {
+      return module.subModules.every(sub => {
+         return ACTIONS.every(act => modPerms[sub.key]?.[act.key] === true);
+      });
+    } else {
+      // For Dashboard, we only check 'read' because the schema only has 'read'
+      if(module.key === 'dashboard') return modPerms['read'] === true;
+      return ACTIONS.every(act => modPerms[act.key] === true);
+    }
+  };
+
+  const toggleFullModuleAccess = (module) => {
+    const isFull = isModuleFullySelected(module);
+    const targetState = !isFull; 
+
     setPermissions((prev) => {
-      const newPerms = { ...prev };
-      if (!newPerms[moduleKey]) newPerms[moduleKey] = {};
+      const updatedModule = { ...(prev[module.key] || {}) };
+      
+      const actionsObj = {};
+      ACTIONS.forEach(a => actionsObj[a.key] = targetState);
 
-      const actionsToSet = {};
-      ACTIONS.forEach(a => actionsToSet[a] = selectAll);
-
-      if (subModuleKey) {
-        newPerms[moduleKey][subModuleKey] = actionsToSet;
+      if (module.hasSubModules) {
+        module.subModules.forEach(sub => {
+          updatedModule[sub.key] = actionsObj;
+        });
       } else {
-        // If it's a parent module row being toggled (and it has no children, like Dashboard)
-        newPerms[moduleKey] = actionsToSet;
+        // Special case for Dashboard (Only allow Read)
+        if(module.key === 'dashboard') {
+             updatedModule['read'] = targetState;
+        } else {
+             Object.assign(updatedModule, actionsObj);
+        }
       }
-      return newPerms;
+
+      return { ...prev, [module.key]: updatedModule };
     });
   };
 
   const handleSave = async () => {
     if (!roleName.trim()) {
-      toast.error("Role name is required");
-      return;
+        toast.error("Role Name is required");
+        return;
     }
-
-    const payload = {
-      roleName: roleName,
-      description: description,
-      permissions: permissions,
+    
+    // --- PAYLOAD CONSTRUCTION ---
+    // This matches your Mongoose RoleSchema structure
+    const payload = { 
+        roleName: roleName, // Matches schema: roleName
+        description: description, // Matches schema: description
+        permissions: permissions // Matches schema: permissions object
+        // Note: 'role_id' is required in your Schema. 
+        // Ensure your Backend Service generates this (e.g. ROL-001) before saving.
     };
-
-    console.log("Sending Payload:", JSON.stringify(payload, null, 2));
-
+    
     try {
       setLoading(true);
-      const response = await axios.post(`${API}/role/create`, payload, {
-        withCredentials: true,
-      });
-
+      const response = await axios.post(`${API}/role/create`, payload, { withCredentials: true });
       if (response.data.status) {
         toast.success("Role created successfully!");
         navigate("/settings/roles");
-      } else {
-        toast.error(response.data.message || "Failed to create role");
       }
     } catch (error) {
-      console.error("Error creating role:", error);
-      toast.error(error.response?.data?.message || "Server Error");
+      console.error("Payload Error:", error);
+      toast.error(error.response?.data?.message || "Failed to create role");
     } finally {
       setLoading(false);
     }
   };
 
+  // Stats Logic
+  const stats = useMemo(() => {
+    let totalPerms = 0;
+    let modulesWithAccess = 0;
+
+    Object.keys(permissions).forEach(modKey => {
+      const mod = permissions[modKey];
+      let hasAccess = false;
+      const countTrue = (obj) => {
+        Object.values(obj).forEach(val => {
+          if (val === true) {
+            totalPerms++;
+            hasAccess = true;
+          } else if (typeof val === 'object') {
+            countTrue(val);
+          }
+        });
+      };
+      countTrue(mod);
+      if (hasAccess) modulesWithAccess++;
+    });
+
+    return { totalPerms, modulesWithAccess };
+  }, [permissions]);
+
   return (
-    <div className="h-full flex flex-col font-layout-font">
-      {/* Header Section */}
-      <div className="flex justify-between items-center mb-6">
-        <Title
-          title="Settings"
-          sub_title="Role Access"
-          page_title="Create New Role"
-        />
-        <div className="flex gap-3">
-          <button
-            onClick={() => navigate("/settings/roles")}
-            className="px-6 py-2 rounded-md border border-darkest-blue text-darkest-blue dark:border-white dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-          >
-            Cancel
-          </button>
-          <button
-            onClick={handleSave}
-            disabled={loading}
-            className={`px-8 py-2 rounded-md text-white shadow-md transition-all ${
-              loading
-                ? "bg-gray-400 cursor-not-allowed"
-                : "bg-darkest-blue hover:bg-blue-900"
-            }`}
-          >
-            {loading ? "Saving..." : "Save Role"}
-          </button>
-        </div>
-      </div>
-
-      {/* Role Details Card */}
-      <div className="bg-white dark:bg-layout-dark p-6 rounded-xl shadow-sm mb-6 flex flex-col gap-4">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div className="flex flex-col gap-2">
-            <label className="text-sm font-semibold text-gray-700 dark:text-gray-300">
-              Role Name <span className="text-red-500">*</span>
-            </label>
-            <input
-              type="text"
-              placeholder="e.g. Site Engineer"
-              value={roleName}
-              onChange={(e) => setRoleName(e.target.value)}
-              className="px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 dark:bg-overall_bg-dark dark:text-white focus:outline-none focus:ring-2 focus:ring-darkest-blue"
-            />
-          </div>
-          <div className="flex flex-col gap-2">
-            <label className="text-sm font-semibold text-gray-700 dark:text-gray-300">
-              Description
-            </label>
-            <input
-              type="text"
-              placeholder="e.g. Manages site operations and labor"
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              className="px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 dark:bg-overall_bg-dark dark:text-white focus:outline-none focus:ring-2 focus:ring-darkest-blue"
-            />
-          </div>
-        </div>
-      </div>
-
-      {/* Permissions Table Section */}
-      <div className="bg-white dark:bg-layout-dark rounded-xl shadow-sm flex-1 overflow-hidden flex flex-col">
-        <div className="p-4 border-b dark:border-gray-700 bg-gray-50 dark:bg-gray-800 flex items-center justify-between">
-            <h3 className="font-bold text-lg dark:text-white">Permissions Configuration</h3>
-            <span className="text-xs text-gray-500">Define what this role can access</span>
+    <div className="flex flex-col h-screen overflow-hidden bg-slate-50 dark:bg-overall_bg-dark font-layout-font">
+      
+      {/* Sticky Header */}
+      <div className="px-6 py-4 bg-white/80 dark:bg-layout-dark/90 backdrop-blur-md border-b dark:border-gray-800 flex justify-between items-center z-20 sticky top-0">
+        <div className="flex items-center gap-3">
+           <div className="p-2 bg-blue-50 dark:bg-blue-900/20 rounded-lg text-darkest-blue dark:text-blue-400">
+             <FiShield size={20} />
+           </div>
+           <div>
+             <h1 className="text-xl font-bold text-gray-800 dark:text-white leading-tight">Create New Role</h1>
+             <p className="text-xs text-gray-500 dark:text-gray-400">Define access for {MODULES_CONFIG.length} modules</p>
+           </div>
         </div>
         
-        {/* Table Header */}
-        <div className="grid grid-cols-6 gap-4 p-4 border-b dark:border-gray-700 bg-gray-100 dark:bg-gray-900 font-semibold text-sm text-gray-700 dark:text-gray-300 sticky top-0 z-10">
-          <div className="col-span-2">Module Name</div>
-          <div className="text-center">Read</div>
-          <div className="text-center">Create</div>
-          <div className="text-center">Edit</div>
-          <div className="text-center">Delete</div>
+        <div className="flex gap-3">
+          <button onClick={() => navigate("/settings/roles")} className="px-4 py-2 rounded-lg text-sm border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition-all font-medium flex items-center gap-2">
+            <FiX /> Cancel
+          </button>
+          <button onClick={handleSave} disabled={loading} className={`px-6 py-2 rounded-lg text-sm text-white shadow-md shadow-blue-500/20 transition-all font-medium flex items-center gap-2 ${loading ? "bg-gray-400" : "bg-darkest-blue hover:bg-blue-900 active:scale-95"}`}>
+            {loading ? <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div> : <FiSave />}
+            Save Role
+          </button>
         </div>
+      </div>
 
-        {/* Scrollable List */}
-        <div className="overflow-y-auto flex-1 p-2">
-          {MODULES_CONFIG.map((module) => (
-            <div key={module.key} className="mb-2 border rounded-lg dark:border-gray-700 overflow-hidden">
-              
-              {/* Parent Module Row */}
-              <div 
-                className={`grid grid-cols-6 gap-4 p-3 items-center ${
-                    module.hasSubModules ? 'bg-gray-50 dark:bg-gray-800 cursor-pointer' : 'bg-white dark:bg-layout-dark'
-                }`}
-                onClick={() => module.hasSubModules && toggleModule(module.key)}
-              >
-                <div className="col-span-2 flex items-center gap-2 font-medium text-darkest-blue dark:text-blue-400">
-                  {module.hasSubModules && (
-                    <span className="text-gray-500">
-                      {expandedModules[module.key] ? <FiChevronDown /> : <FiChevronRight />}
-                    </span>
-                  )}
-                  {module.label}
-                </div>
+      {/* Content */}
+      <div className="flex-1 overflow-y-auto p-4 md:p-6 no-scrollbar">
+        <div className="max-w-7xl mx-auto flex flex-col gap-6">
 
-                {/* If it's a simple module (like Dashboard), show checkboxes here */}
-                {!module.hasSubModules ? (
-                   ACTIONS.map((action) => (
-                    <div key={action} className="flex justify-center">
-                        <Checkbox 
-                            checked={isChecked(module.key, null, action)} 
-                            onChange={() => handlePermissionChange(module.key, null, action)}
+          {/* Form & Stats */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div className="lg:col-span-2 bg-white dark:bg-layout-dark p-5 rounded-xl border border-gray-100 dark:border-gray-800 shadow-sm">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                    <div className="space-y-1.5">
+                        <label className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">Role Name <span className="text-red-500">*</span></label>
+                        <input
+                            type="text"
+                            placeholder="e.g. Site Manager"
+                            value={roleName}
+                            onChange={(e) => setRoleName(e.target.value)}
+                            className="w-full px-4 py-2.5 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all text-sm"
                         />
                     </div>
-                  ))
-                ) : (
-                    <div className="col-span-4 text-xs text-gray-400 italic text-right pr-4">
-                        Click to expand sub-modules
+                    <div className="space-y-1.5">
+                        <label className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">Description</label>
+                        <input
+                            type="text"
+                            placeholder="Responsibilities..."
+                            value={description}
+                            onChange={(e) => setDescription(e.target.value)}
+                            className="w-full px-4 py-2.5 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all text-sm"
+                        />
                     </div>
-                )}
-              </div>
-
-              {/* SubModules List (Accordion Body) */}
-              {module.hasSubModules && expandedModules[module.key] && (
-                <div className="bg-white dark:bg-layout-dark border-t dark:border-gray-700">
-                  {module.subModules.map((sub) => (
-                    <div key={sub.key} className="grid grid-cols-6 gap-4 p-3 items-center border-b last:border-0 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
-                      <div className="col-span-2 pl-10 text-sm text-gray-600 dark:text-gray-300">
-                        {sub.label}
-                      </div>
-                      
-                      {ACTIONS.map((action) => (
-                        <div key={action} className="flex justify-center">
-                          <Checkbox 
-                            checked={isChecked(module.key, sub.key, action)}
-                            onChange={() => handlePermissionChange(module.key, sub.key, action)}
-                          />
-                        </div>
-                      ))}
-                    </div>
-                  ))}
                 </div>
-              )}
             </div>
-          ))}
+
+            <div className="bg-gradient-to-br from-darkest-blue to-blue-900 p-5 rounded-xl shadow-lg text-white flex flex-col justify-between relative overflow-hidden">
+                <div className="absolute top-0 right-0 p-4 opacity-10"><FiShield size={80} /></div>
+                <div className="flex justify-between items-end">
+                    <div>
+                        <h3 className="text-sm font-medium opacity-80 uppercase tracking-wider flex items-center gap-2">Modules Access</h3>
+                        <div className="mt-1 text-3xl font-bold flex items-baseline gap-1">
+                            {stats.modulesWithAccess} <span className="text-sm font-normal opacity-60">/ {MODULES_CONFIG.length}</span>
+                        </div>
+                    </div>
+                    <div className="text-right">
+                         <h3 className="text-sm font-medium opacity-80 uppercase tracking-wider">Total Perms</h3>
+                        <div className="mt-1 text-3xl font-bold">{stats.totalPerms}</div>
+                    </div>
+                </div>
+                <div className="mt-4 pt-4 border-t border-white/10 flex items-center gap-2 text-xs opacity-80">
+                   <FiInfo /> Grant access carefully
+                </div>
+            </div>
+          </div>
+
+          {/* Permissions Grid */}
+          <div className="space-y-4">
+             <div className="flex items-center justify-between px-1">
+                 <h3 className="text-sm font-bold text-gray-700 dark:text-gray-200 uppercase tracking-wider flex items-center gap-2">
+                    <FiGrid /> Permissions Configuration
+                 </h3>
+             </div>
+
+             <div className="grid grid-cols-1 gap-4">
+                {MODULES_CONFIG.map((module) => {
+                  const isFullySelected = isModuleFullySelected(module);
+                  return (
+                    <div key={module.key} className={`bg-white dark:bg-layout-dark rounded-xl border transition-all duration-200 ${
+                      expandedModules[module.key] ? "border-blue-300 dark:border-blue-800 shadow-md ring-1 ring-blue-500/20" : "border-gray-100 dark:border-gray-800 hover:border-gray-300"
+                    }`}>
+                      
+                      {/* Module Header */}
+                      <div 
+                          className="p-3 sm:p-4 flex items-center justify-between cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors rounded-t-xl"
+                          onClick={() => toggleModuleExpand(module.key)}
+                      >
+                          <div className="flex items-center gap-3">
+                              <div className={`p-2 rounded-lg transition-colors ${expandedModules[module.key] ? 'bg-blue-100 text-blue-700' : 'bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400'}`}>
+                                  {module.icon ? <span className="text-lg">{module.icon}</span> : <FiShield />}
+                              </div>
+                              <span className="font-bold text-gray-800 dark:text-gray-100 text-sm sm:text-base">{module.label}</span>
+                          </div>
+
+                          <div className="flex items-center gap-3">
+                              <button 
+                                  onClick={(e) => { e.stopPropagation(); toggleFullModuleAccess(module); }}
+                                  className={`text-[10px] sm:text-xs font-semibold px-3 py-1.5 rounded transition-all flex items-center gap-1.5
+                                    ${isFullySelected 
+                                        ? "bg-blue-100 text-blue-700 hover:bg-blue-200" 
+                                        : "bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-300"
+                                    }`}
+                              >
+                                  {isFullySelected ? (
+                                      <><FiCheckSquare /> Unselect All</>
+                                  ) : (
+                                      <><span className="w-3 h-3 border border-gray-400 rounded-sm"></span> Select All</>
+                                  )}
+                              </button>
+                              <FiChevronDown className={`text-gray-400 transition-transform duration-300 ${expandedModules[module.key] ? 'rotate-180' : ''}`} />
+                          </div>
+                      </div>
+
+                      {/* Permissions Body */}
+                      {(!module.hasSubModules || expandedModules[module.key]) && (
+                          <div className="border-t border-gray-100 dark:border-gray-800 p-3 sm:p-4 bg-gray-50/30 dark:bg-overall_bg-dark/20">
+                              
+                              <div className="grid grid-cols-12 gap-2 mb-2 px-3">
+                                  <div className="col-span-4 text-[10px] font-bold text-gray-400 uppercase tracking-wider">Sub-Module</div>
+                                  {ACTIONS.map(action => (
+                                      <div key={action.key} className="col-span-2 text-center text-[10px] font-bold text-gray-400 uppercase tracking-wider">{action.label}</div>
+                                  ))}
+                              </div>
+
+                              <div className="space-y-1">
+                                  {module.hasSubModules ? (
+                                      module.subModules.map((sub) => (
+                                          <PermissionRow 
+                                              key={sub.key} 
+                                              label={sub.label} 
+                                              moduleKey={module.key} 
+                                              subModuleKey={sub.key}
+                                              isChecked={isChecked}
+                                              onChange={handlePermissionChange}
+                                          />
+                                      ))
+                                  ) : (
+                                      <PermissionRow 
+                                          label={module.label} 
+                                          moduleKey={module.key} 
+                                          subModuleKey={null}
+                                          isChecked={isChecked}
+                                          onChange={handlePermissionChange}
+                                          isDashboard={module.key === 'dashboard'} // Prop to hide other checkboxes
+                                      />
+                                  )}
+                              </div>
+                          </div>
+                      )}
+                    </div>
+                  );
+                })}
+             </div>
+          </div>
         </div>
       </div>
     </div>
   );
 };
 
-// --- Custom Checkbox Component for cleaner code ---
-const Checkbox = ({ checked, onChange }) => (
-    <div 
-        onClick={(e) => {
-            e.stopPropagation();
-            onChange();
-        }}
-        className={`w-6 h-6 rounded border cursor-pointer flex items-center justify-center transition-all ${
-            checked 
-                ? "bg-darkest-blue border-darkest-blue" 
-                : "border-gray-300 dark:border-gray-500 bg-white dark:bg-transparent"
-        }`}
-    >
-        {checked && <FiCheck size={16} className="text-white" />}
+// Row Component
+const PermissionRow = ({ label, moduleKey, subModuleKey, isChecked, onChange, isDashboard }) => (
+    <div className="grid grid-cols-12 gap-2 items-center py-2 px-3 bg-white dark:bg-layout-dark rounded-md border border-gray-100 dark:border-gray-700/50 hover:border-gray-300 dark:hover:border-gray-600 transition-all group">
+        <div className="col-span-4 text-xs font-medium text-gray-600 dark:text-gray-300 group-hover:text-darkest-blue dark:group-hover:text-blue-300 truncate pr-2">
+            {label}
+        </div>
+        
+        {ACTIONS.map((action) => {
+            // Dashboard only allows 'read'
+            if (isDashboard && action.key !== 'read') {
+                return <div key={action.key} className="col-span-2"></div>;
+            }
+
+            const active = isChecked(moduleKey, subModuleKey, action.key);
+            return (
+                <div key={action.key} className="col-span-2 flex justify-center">
+                    <div 
+                        onClick={() => onChange(moduleKey, subModuleKey, action.key)}
+                        className={`
+                            w-5 h-5 sm:w-6 sm:h-6 rounded cursor-pointer flex items-center justify-center transition-all duration-200 border
+                            ${active 
+                                ? `${action.color} border-transparent shadow-sm scale-105` 
+                                : "bg-gray-50 dark:bg-gray-800 border-gray-200 dark:border-gray-600 hover:border-gray-300"
+                            }
+                        `}
+                    >
+                        {active && <FiCheck className="text-xs sm:text-sm" strokeWidth={3} />}
+                    </div>
+                </div>
+            )
+        })}
     </div>
 );
 

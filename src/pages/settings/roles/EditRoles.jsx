@@ -1,290 +1,422 @@
-import React, { useEffect, useState } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
-import Title from "../../../components/Title";
+import React, { useState, useEffect, useMemo } from "react";
+import { useLocation, useNavigate, useParams } from "react-router-dom";
 import axios from "axios";
 import { API } from "../../../constant";
 import { toast } from "react-toastify";
 
-const EditRoles = ({ item }) => {
-  const [roleName, setRoleName] = useState("");
-  const [createdBy, setCreatedBy] = useState("System");
-  const [selectedSettings, setSelectedSettings] = useState({});
-  const [permissions, setPermissions] = useState({});
+import { 
+  FiChevronDown, 
+  FiCheck, 
+  FiShield, 
+  FiInfo,
+  FiSave,
+  FiX,
+  FiGrid,
+  FiCheckSquare,
+  FiLoader
+} from "react-icons/fi";
+import { Menus } from "../../../helperConfigData/helperData";
+
+// --- Constants ---
+const ACTIONS = [
+  { key: "read", label: "Read", color: "bg-blue-50 text-blue-600 border-blue-200" },
+  { key: "create", label: "Create", color: "bg-emerald-50 text-emerald-600 border-emerald-200" },
+  { key: "edit", label: "Edit", color: "bg-amber-50 text-amber-600 border-amber-200" },
+  { key: "delete", label: "Delete", color: "bg-rose-50 text-rose-600 border-rose-200" },
+];
+
+const EditRoles = () => {
   const navigate = useNavigate();
-  const { state } = useLocation();
-  const roleId = state?.item.role_id;
+  const location = useLocation();
+  
+  // Try to get role_id from navigation state first, fallback to URL params if you have a route like /edit/:id
+  // Assuming route is passed via state based on your previous code
+  const roleIdFromState = location.state?.item?.role_id;
+  
+  const [roleName, setRoleName] = useState("");
+  const [description, setDescription] = useState("");
   const [loading, setLoading] = useState(false);
+  const [fetching, setFetching] = useState(true);
+  const [permissions, setPermissions] = useState({});
+  const [expandedModules, setExpandedModules] = useState({});
 
-  const settingsOptions = [
-    "Dashboard",
-    "Tender",
-    "Projects",
-    "Purchase",
-    "Site",
-    "HR",
-    "Finance",
-    "Reports",
-    "Settings",
-  ];
+  // --- 1. Transform Menus to Module Config ---
+  const MODULES_CONFIG = useMemo(() => {
+    return Menus.map(menu => ({
+        key: menu.module,
+        label: menu.title,
+        icon: menu.icon,
+        hasSubModules: !!menu.nested && menu.nested.length > 0,
+        subModules: menu.nested ? menu.nested.map(sub => ({
+            key: sub.subModule,
+            label: sub.title
+        })) : []
+    }));
+  }, []);
 
-  const permissionOptions = [
-    "All",
-    "View",
-    "Create",
-    "Edit",
-    "Delete",
-    "Download",
-  ];
+  // --- 2. Fetch Existing Data ---
   useEffect(() => {
-    if (roleId) {
-      fetchExistingRoles();
+    if (!roleIdFromState) {
+        toast.error("Invalid Role ID");
+        navigate("/settings/roles");
+        return;
     }
-  }, [roleId]);
+    fetchRoleDetails();
+  }, [roleIdFromState]);
 
-  const fetchExistingRoles = async () => {
+  const fetchRoleDetails = async () => {
     try {
-      const response = await axios.get(
-        `${API}/role/getbyroleid?roleId=${roleId}`
-      );
-
-      setRoleName(response.data.data.role_name); // Set the existing role name
-      const accessLevelsArr = response.data.data.accessLevels || [];
-      const perms = {};
-      const selected = {};
-      accessLevelsArr.forEach((item) => {
-        selected[item.feature] = true;
-        perms[item.feature] = item.permissions;
-      });
-      console.log(selected);
-
-      setSelectedSettings(selected);
-      setPermissions(perms);
+      setFetching(true);
+      // Endpoint: Get specific Role Details
+      const response = await axios.get(`${API}/role/getbyId/${roleIdFromState}`, { withCredentials: true });
+      
+      const roleData = response.data.data; // Adjust based on your actual API response structure
+      
+      if (roleData) {
+        setRoleName(roleData.roleName);
+        setDescription(roleData.description || "");
+        // Directly set the nested permissions object from DB to State
+        // Assuming DB stores it exactly how we send it: { tender: { clients: { read: true } } }
+        setPermissions(roleData.permissions || {});
+      }
     } catch (error) {
-      console.log(error);
+      console.error("Fetch Error:", error);
+      toast.error("Failed to load role details");
+    } finally {
+      setFetching(false);
     }
   };
 
-  const toggleSetting = (setting) => {
-    setSelectedSettings((prev) => ({
-      ...prev,
-      [setting]: !prev[setting],
-    }));
+  // --- 3. Logic Helpers (Same as AddRoles) ---
 
+  const toggleModuleExpand = (moduleKey) => {
+    setExpandedModules((prev) => ({ ...prev, [moduleKey]: !prev[moduleKey] }));
+  };
+
+  const isChecked = (moduleKey, subModuleKey, actionKey) => {
+    if (subModuleKey) {
+      return permissions[moduleKey]?.[subModuleKey]?.[actionKey] === true;
+    }
+    return permissions[moduleKey]?.[actionKey] === true;
+  };
+
+  const handlePermissionChange = (moduleKey, subModuleKey, actionKey) => {
     setPermissions((prev) => {
-      if (prev[setting]) {
-        const updated = { ...prev };
-        delete updated[setting];
-        return updated;
+      const updatedModule = { ...(prev[moduleKey] || {}) };
+
+      if (subModuleKey) {
+        const updatedSubModule = { ...(updatedModule[subModuleKey] || {}) };
+        updatedSubModule[actionKey] = !updatedSubModule[actionKey];
+        updatedModule[subModuleKey] = updatedSubModule;
+      } else {
+        if (moduleKey === 'dashboard' && actionKey !== 'read') return prev;
+        updatedModule[actionKey] = !updatedModule[actionKey];
       }
-      return { ...prev, [setting]: [] };
+
+      return { ...prev, [moduleKey]: updatedModule };
     });
   };
 
-  // Handle Permission Changes
-  const handlePermissionChange = (setting, permission, checked) => {
+  const isModuleFullySelected = (module) => {
+    const modPerms = permissions[module.key];
+    if (!modPerms) return false;
+
+    if (module.hasSubModules) {
+      return module.subModules.every(sub => {
+         return ACTIONS.every(act => modPerms[sub.key]?.[act.key] === true);
+      });
+    } else {
+      if(module.key === 'dashboard') return modPerms['read'] === true;
+      return ACTIONS.every(act => modPerms[act.key] === true);
+    }
+  };
+
+  const toggleFullModuleAccess = (module) => {
+    const isFull = isModuleFullySelected(module);
+    const targetState = !isFull; 
+
     setPermissions((prev) => {
-      let updatedPermissions = prev[setting] || [];
+      const updatedModule = { ...(prev[module.key] || {}) };
+      const actionsObj = {};
+      ACTIONS.forEach(a => actionsObj[a.key] = targetState);
 
-      if (permission === "All") {
-        updatedPermissions = checked ? permissionOptions.slice(1) : [];
+      if (module.hasSubModules) {
+        module.subModules.forEach(sub => {
+          updatedModule[sub.key] = actionsObj;
+        });
       } else {
-        updatedPermissions = checked
-          ? [...updatedPermissions, permission]
-          : updatedPermissions.filter((p) => p !== permission);
-
-        if (!checked) {
-          updatedPermissions = updatedPermissions.filter((p) => p !== "All");
+        if(module.key === 'dashboard') {
+             updatedModule['read'] = targetState;
+        } else {
+             Object.assign(updatedModule, actionsObj);
         }
       }
 
-      if (updatedPermissions.length === permissionOptions.length - 1) {
-        updatedPermissions = ["All", ...updatedPermissions];
-      }
-
-      return { ...prev, [setting]: updatedPermissions };
+      return { ...prev, [module.key]: updatedModule };
     });
   };
 
-  const handleSave = async () => {
-    const accessLevels = Object.entries(permissions).map(
-      ([feature, perms]) => ({
-        feature,
-        permissions: perms,
-      })
-    );
-    const roleAccessLevel = {
-      role_name: roleName,
-      accessLevels,
-      status: "active",
-    };
-
-    try {
-       setLoading(true);
-      const response = await axios.put(
-        `${API}/role/updatebyroleid?roleId=${roleId}`,
-        roleAccessLevel
-      );
-      if (response.status === 200) {
-        navigate("/settings/roles");
-        toast.success("Role Updated Successfully");  
-      }
-
-    } catch (error) {
-      console.log(error);
-       setLoading(false);
+  const handleUpdate = async () => {
+    if (!roleName.trim()) {
+        toast.error("Role Name is required");
+        return;
     }
-
-    // console.log("Saved role:", {
-    //   roleName,
-    //   createdBy,
-    //   permissions,
-    // });
+    
+    const payload = { roleName, description, permissions };
+    
+    try {
+      setLoading(true);
+      // Endpoint: Update Role Permissions/Name
+      const response = await axios.put(`${API}/role/update/${roleIdFromState}`, payload, { withCredentials: true });
+      
+      if (response.data.status) {
+        toast.success("Role updated successfully!");
+        navigate("/settings/roles");
+      }
+    } catch (error) {
+      toast.error(error.response?.data?.message || "Failed to update role");
+    } finally {
+      setLoading(false);
+    }
   };
 
+  // Stats Logic
+  const stats = useMemo(() => {
+    let totalPerms = 0;
+    let modulesWithAccess = 0;
+
+    Object.keys(permissions).forEach(modKey => {
+      const mod = permissions[modKey];
+      let hasAccess = false;
+      const countTrue = (obj) => {
+        if(!obj) return;
+        Object.values(obj).forEach(val => {
+          if (val === true) {
+            totalPerms++;
+            hasAccess = true;
+          } else if (typeof val === 'object') {
+            countTrue(val);
+          }
+        });
+      };
+      countTrue(mod);
+      if (hasAccess) modulesWithAccess++;
+    });
+
+    return { totalPerms, modulesWithAccess };
+  }, [permissions]);
+
+  if (fetching) {
+      return (
+          <div className="h-screen flex flex-col items-center justify-center bg-slate-50 dark:bg-overall_bg-dark text-gray-500">
+              <FiLoader className="animate-spin text-3xl mb-3 text-darkest-blue" />
+              <p>Loading Role Configuration...</p>
+          </div>
+      );
+  }
+
   return (
-    <>
-      <div className="flex justify-between items-center  mb-2">
-        <Title
-          title="Settings"
-          sub_title="Role Access"
-          page_title="Edit role Access"
-        />
+    <div className="flex flex-col h-screen overflow-hidden bg-slate-50 dark:bg-overall_bg-dark font-layout-font">
+      
+      {/* Sticky Header */}
+      <div className="px-6 py-4 bg-white/80 dark:bg-layout-dark/90 backdrop-blur-md border-b dark:border-gray-800 flex justify-between items-center z-20 sticky top-0">
+        <div className="flex items-center gap-3">
+           <div className="p-2 bg-amber-50 dark:bg-amber-900/20 rounded-lg text-amber-600 dark:text-amber-400">
+             <FiShield size={20} />
+           </div>
+           <div>
+             <h1 className="text-xl font-bold text-gray-800 dark:text-white leading-tight">Edit Role: {roleName}</h1>
+             <p className="text-xs text-gray-500 dark:text-gray-400">Modify access for {MODULES_CONFIG.length} modules</p>
+           </div>
+        </div>
+        
         <div className="flex gap-3">
-          <p
-            onClick={() => navigate("/settings/roles")}
-            className="cursor-pointer  border dark:border-white border-darkest-blue px-8 py-2 rounded-sm"
-          >
-            Cancel
-          </p>
-          <button
-            disabled={loading}
-            onClick={handleSave}
-            className={`cursor-pointer px-6 text-white rounded ${
-              loading ? "bg-gray-500 cursor-not-allowed" : "bg-darkest-blue"
-            }`}
-          >
-            {loading ? "Saving..." : "Save"}
+          <button onClick={() => navigate("/settings/roles")} className="px-4 py-2 rounded-lg text-sm border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition-all font-medium flex items-center gap-2">
+            <FiX /> Cancel
+          </button>
+          <button onClick={handleUpdate} disabled={loading} className={`px-6 py-2 rounded-lg text-sm text-white shadow-md shadow-amber-500/20 transition-all font-medium flex items-center gap-2 ${loading ? "bg-gray-400" : "bg-darkest-blue hover:bg-blue-900 active:scale-95"}`}>
+            {loading ? <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div> : <FiSave />}
+            Update Changes
           </button>
         </div>
       </div>
-      <div className="flex items-center  gap-10 mb-4">
-        <span className="font-semibold ">Role name</span>
-        <input
-          type="text"
-          value={roleName}
-          onChange={(e) => setRoleName(e.target.value)}
-          className="  px-3 py-1.5 rounded-md outline-none dark:bg-layout-dark bg-white text-black dark:text-white"
-        />
-        <span className="font-semibold ">Created By</span>
-        <input
-          type="text"
-          value={createdBy}
-          onChange={(e) => setCreatedBy(e.target.value)}
-          className="  px-3 py-1.5 rounded-md outline-none dark:bg-layout-dark dark:text-white bg-white text-black "
-        />
-      </div>
 
-      <div className="dark:bg-layout-dark bg-white p-10  rounded-xl  ">
-        <div className="grid grid-cols-3 gap-2 ">
-          <div className="border-r-2 p-3 h-80">
-            <h2 className="text-lg font-medium mb-4 w-1/2 text-center">
-              Settings
-            </h2>
-            {settingsOptions.map((setting) => (
-              <div key={setting} className="flex items-center  mb-3">
-                <label className="flex items-center gap-2  cursor-pointer">
-                  <label className="relative flex items-center cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={!!selectedSettings[setting]}
-                      onChange={() => toggleSetting(setting)}
-                      className="appearance-none w-5 h-5 border-2 dark:border-white border-darkest-blue rounded-md checked:bg-darkest-blue  checked:border-transparent focus:outline-none transition-all duration-200"
-                    />
-                    {/* Custom Checkmark */}
-                    <span className="absolute w-5 h-5 flex justify-center items-center pointer-events-none">
-                      {selectedSettings[setting] && (
-                        <svg
-                          className="w-10 h-4 text-white"
-                          fill="none"
-                          stroke="currentColor"
-                          strokeWidth="3"
-                          viewBox="0 0 24 24"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            d="M5 13l4 4L19 7"
-                          ></path>
-                        </svg>
-                      )}
-                    </span>
-                  </label>
+      {/* Content */}
+      <div className="flex-1 overflow-y-auto p-4 md:p-6 no-scrollbar">
+        <div className="max-w-7xl mx-auto flex flex-col gap-6">
 
-                  {setting}
-                </label>
-              </div>
-            ))}
+          {/* Form & Stats */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div className="lg:col-span-2 bg-white dark:bg-layout-dark p-5 rounded-xl border border-gray-100 dark:border-gray-800 shadow-sm">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                    <div className="space-y-1.5">
+                        <label className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">Role Name <span className="text-red-500">*</span></label>
+                        <input
+                            type="text"
+                            placeholder="e.g. Site Manager"
+                            value={roleName}
+                            onChange={(e) => setRoleName(e.target.value)}
+                            className="w-full px-4 py-2.5 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all text-sm"
+                        />
+                    </div>
+                    <div className="space-y-1.5">
+                        <label className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">Description</label>
+                        <input
+                            type="text"
+                            placeholder="Responsibilities..."
+                            value={description}
+                            onChange={(e) => setDescription(e.target.value)}
+                            className="w-full px-4 py-2.5 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all text-sm"
+                        />
+                    </div>
+                </div>
+            </div>
+
+            <div className="bg-gradient-to-br from-darkest-blue to-blue-900 p-5 rounded-xl shadow-lg text-white flex flex-col justify-between relative overflow-hidden">
+                <div className="absolute top-0 right-0 p-4 opacity-10"><FiShield size={80} /></div>
+                <div className="flex justify-between items-end">
+                    <div>
+                        <h3 className="text-sm font-medium opacity-80 uppercase tracking-wider flex items-center gap-2">Modules Access</h3>
+                        <div className="mt-1 text-3xl font-bold flex items-baseline gap-1">
+                            {stats.modulesWithAccess} <span className="text-sm font-normal opacity-60">/ {MODULES_CONFIG.length}</span>
+                        </div>
+                    </div>
+                    <div className="text-right">
+                         <h3 className="text-sm font-medium opacity-80 uppercase tracking-wider">Total Perms</h3>
+                        <div className="mt-1 text-3xl font-bold">{stats.totalPerms}</div>
+                    </div>
+                </div>
+                <div className="mt-4 pt-4 border-t border-white/10 flex items-center gap-2 text-xs opacity-80">
+                   <FiInfo /> Editing existing role configuration
+                </div>
+            </div>
           </div>
 
-          <div className="p-4">
-            <h2 className="text-lg font-medium mb-3">Permissions</h2>
-            {settingsOptions.map((setting) => (
-              <div key={setting} className=" flex items-center">
-                {selectedSettings[setting] ? (
-                  <div className="flex items-center justify-between p-2 rounded-md">
-                    <div className="flex gap-4 w-3/4">
-                      {permissionOptions.map((perm) => (
-                        <label
-                          key={perm}
-                          className="flex items-center gap-4 cursor-pointer text-sm"
-                        >
-                          <input
-                            type="checkbox"
-                            checked={
-                              permissions[setting]?.includes(perm) || false
-                            }
-                            onChange={(e) =>
-                              handlePermissionChange(
-                                setting,
-                                perm,
-                                e.target.checked
-                              )
-                            }
-                            className="appearance-none w-5 h-5 border-2 dark:border-white border-darkest-blue rounded-md checked:bg-darkest-blue checked:border-transparent focus:outline-none transition-all duration-200"
-                          />
-                          {/* Custom Checkmark */}
-                          <span className="absolute w-5 h-5 flex justify-center items-center pointer-events-none">
-                            {permissions[setting]?.includes(perm) && (
-                              <svg
-                                className="w-10 h-4 text-white"
-                                fill="none"
-                                stroke="currentColor"
-                                strokeWidth="3"
-                                viewBox="0 0 24 24"
+          {/* Permissions Grid */}
+          <div className="space-y-4">
+             <div className="flex items-center justify-between px-1">
+                 <h3 className="text-sm font-bold text-gray-700 dark:text-gray-200 uppercase tracking-wider flex items-center gap-2">
+                    <FiGrid /> Permissions Configuration
+                 </h3>
+             </div>
+
+             <div className="grid grid-cols-1 gap-4">
+                {MODULES_CONFIG.map((module) => {
+                  const isFullySelected = isModuleFullySelected(module);
+                  return (
+                    <div key={module.key} className={`bg-white dark:bg-layout-dark rounded-xl border transition-all duration-200 ${
+                      expandedModules[module.key] ? "border-blue-300 dark:border-blue-800 shadow-md ring-1 ring-blue-500/20" : "border-gray-100 dark:border-gray-800 hover:border-gray-300"
+                    }`}>
+                      
+                      {/* Module Header */}
+                      <div 
+                          className="p-3 sm:p-4 flex items-center justify-between cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors rounded-t-xl"
+                          onClick={() => toggleModuleExpand(module.key)}
+                      >
+                          <div className="flex items-center gap-3">
+                              <div className={`p-2 rounded-lg transition-colors ${expandedModules[module.key] ? 'bg-blue-100 text-blue-700' : 'bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400'}`}>
+                                  {module.icon ? <span className="text-lg">{module.icon}</span> : <FiShield />}
+                              </div>
+                              <span className="font-bold text-gray-800 dark:text-gray-100 text-sm sm:text-base">{module.label}</span>
+                          </div>
+
+                          <div className="flex items-center gap-3">
+                              <button 
+                                  onClick={(e) => { e.stopPropagation(); toggleFullModuleAccess(module); }}
+                                  className={`text-[10px] sm:text-xs font-semibold px-3 py-1.5 rounded transition-all flex items-center gap-1.5
+                                    ${isFullySelected 
+                                        ? "bg-blue-100 text-blue-700 hover:bg-blue-200" 
+                                        : "bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-300"
+                                    }`}
                               >
-                                <path
-                                  strokeLinecap="round"
-                                  strokeLinejoin="round"
-                                  d="M5 13l4 4L19 7"
-                                ></path>
-                              </svg>
-                            )}
-                          </span>
-                          {perm}
-                        </label>
-                      ))}
+                                  {isFullySelected ? (
+                                      <><FiCheckSquare /> Unselect All</>
+                                  ) : (
+                                      <><span className="w-3 h-3 border border-gray-400 rounded-sm"></span> Select All</>
+                                  )}
+                              </button>
+                              <FiChevronDown className={`text-gray-400 transition-transform duration-300 ${expandedModules[module.key] ? 'rotate-180' : ''}`} />
+                          </div>
+                      </div>
+
+                      {/* Permissions Body */}
+                      {(!module.hasSubModules || expandedModules[module.key]) && (
+                          <div className="border-t border-gray-100 dark:border-gray-800 p-3 sm:p-4 bg-gray-50/30 dark:bg-overall_bg-dark/20">
+                              
+                              <div className="grid grid-cols-12 gap-2 mb-2 px-3">
+                                  <div className="col-span-4 text-[10px] font-bold text-gray-400 uppercase tracking-wider">Sub-Module</div>
+                                  {ACTIONS.map(action => (
+                                      <div key={action.key} className="col-span-2 text-center text-[10px] font-bold text-gray-400 uppercase tracking-wider">{action.label}</div>
+                                  ))}
+                              </div>
+
+                              <div className="space-y-1">
+                                  {module.hasSubModules ? (
+                                      module.subModules.map((sub) => (
+                                          <PermissionRow 
+                                              key={sub.key} 
+                                              label={sub.label} 
+                                              moduleKey={module.key} 
+                                              subModuleKey={sub.key}
+                                              isChecked={isChecked}
+                                              onChange={handlePermissionChange}
+                                          />
+                                      ))
+                                  ) : (
+                                      <PermissionRow 
+                                          label={module.label} 
+                                          moduleKey={module.key} 
+                                          subModuleKey={null}
+                                          isChecked={isChecked}
+                                          onChange={handlePermissionChange}
+                                          isDashboard={module.key === 'dashboard'} 
+                                      />
+                                  )}
+                              </div>
+                          </div>
+                      )}
                     </div>
-                  </div>
-                ) : (
-                  <div className="h-9"></div> // Keeps spacing even when unchecked
-                )}
-              </div>
-            ))}
+                  );
+                })}
+             </div>
           </div>
         </div>
       </div>
-    </>
+    </div>
   );
 };
+
+// Row Component
+const PermissionRow = ({ label, moduleKey, subModuleKey, isChecked, onChange, isDashboard }) => (
+    <div className="grid grid-cols-12 gap-2 items-center py-2 px-3 bg-white dark:bg-layout-dark rounded-md border border-gray-100 dark:border-gray-700/50 hover:border-gray-300 dark:hover:border-gray-600 transition-all group">
+        <div className="col-span-4 text-xs font-medium text-gray-600 dark:text-gray-300 group-hover:text-darkest-blue dark:group-hover:text-blue-300 truncate pr-2">
+            {label}
+        </div>
+        
+        {ACTIONS.map((action) => {
+            if (isDashboard && action.key !== 'read') {
+                return <div key={action.key} className="col-span-2"></div>;
+            }
+
+            const active = isChecked(moduleKey, subModuleKey, action.key);
+            return (
+                <div key={action.key} className="col-span-2 flex justify-center">
+                    <div 
+                        onClick={() => onChange(moduleKey, subModuleKey, action.key)}
+                        className={`
+                            w-5 h-5 sm:w-6 sm:h-6 rounded cursor-pointer flex items-center justify-center transition-all duration-200 border
+                            ${active 
+                                ? `${action.color} border-transparent shadow-sm scale-105` 
+                                : "bg-gray-50 dark:bg-gray-800 border-gray-200 dark:border-gray-600 hover:border-gray-300"
+                            }
+                        `}
+                    >
+                        {active && <FiCheck className="text-xs sm:text-sm" strokeWidth={3} />}
+                    </div>
+                </div>
+            )
+        })}
+    </div>
+);
 
 export default EditRoles;
