@@ -18,7 +18,7 @@ import {
 import { ChevronLeft, ChevronRight, Save, Calendar as CalendarIcon, Loader2, Edit2, Lock } from "lucide-react";
 import { API } from "../../../../../../constant";
 import axios from "axios";
-import { useProject } from "../../../../ProjectContext";
+import { useProject } from "../../../../../../context/ProjectContext";
 import { toast } from "react-toastify";
 
 // --- HELPERS ---
@@ -123,7 +123,7 @@ const DailyProjects = () => {
     setUpdates(prev => ({ ...prev, [key]: value }));
   };
 
-const handleSave = async () => {
+  const handleSave = async () => {
     const payloadArray = Object.entries(updates).map(([key, value]) => {
       const [rowIndexStr, dateStr] = key.split('_');
       return { row_index: Number(rowIndexStr), date: `${dateStr}T00:00:00.000Z`, quantity: Number(value) };
@@ -141,7 +141,7 @@ const handleSave = async () => {
       console.log(res.data);
 
       // Check res.data.status OR res.data.data.success based on your structure
-      if (res.data.status === true || (res.data.data && res.data.data.success === true)) { 
+      if (res.data.status === true || (res.data.data && res.data.data.success === true)) {
         toast.success(`Updated ${validUpdates.length} entries`);
         setUpdates({});
         setIsEditing(false);

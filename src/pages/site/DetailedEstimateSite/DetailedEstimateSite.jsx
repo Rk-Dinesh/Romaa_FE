@@ -8,7 +8,7 @@ import GeneralAbstract from "../../projects/Detailed estimate/general abstract/G
 import BOQProject from "../../projects/Detailed estimate/BOQProjects/BOQProject";
 import NewInletDet from "../../projects/Detailed estimate/new inlet det/NewInletDet";
 import NewInletAbs from "../../projects/Detailed estimate/new inlet abs/NewInletAbs";
-import { useProject } from "../../projects/ProjectContext";
+import { useProject } from "../../../context/ProjectContext";
 
 
 const DetailedEstimateSite = () => {
@@ -71,11 +71,10 @@ const DetailedEstimateSite = () => {
         {tabs.map(({ id, label }) => (
           <p
             key={id}
-            className={`first-letter:uppercase px-4 py-2.5 rounded-lg text-sm cursor-pointer ${
-              activeTab === id
+            className={`first-letter:uppercase px-4 py-2.5 rounded-lg text-sm cursor-pointer ${activeTab === id
                 ? "bg-darkest-blue text-white"
                 : "dark:bg-layout-dark dark:text-white bg-white text-darkest-blue"
-            }`}
+              }`}
             onClick={() => setActiveTab(id)}
           >
             {label}

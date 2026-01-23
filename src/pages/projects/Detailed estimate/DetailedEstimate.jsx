@@ -8,7 +8,7 @@ import GeneralAbstract from "./general abstract/GeneralAbstract";
 import BOQProject from "./BOQProjects/BOQProject";
 import NewInletDet from "./new inlet det/NewInletDet";
 import NewInletAbs from "./new inlet abs/NewInletAbs";
-import { useProject } from "../ProjectContext";
+import { useProject } from "../../../context/ProjectContext";
 
 const DetailedEstimate = () => {
   const { tenderId } = useProject();
@@ -42,7 +42,7 @@ const DetailedEstimate = () => {
             label: `${item.heading} Detailed`,
             component: <NewInletDet name={item.detailedKey} />,
           },
-          
+
         ]);
 
         setTabs((prev) => [
@@ -71,11 +71,10 @@ const DetailedEstimate = () => {
         {tabs.map(({ id, label }) => (
           <p
             key={id}
-            className={`first-letter:uppercase px-4 py-2.5 rounded-lg text-sm cursor-pointer ${
-              activeTab === id
+            className={`first-letter:uppercase px-4 py-2.5 rounded-lg text-sm cursor-pointer ${activeTab === id
                 ? "bg-darkest-blue text-white"
                 : "dark:bg-layout-dark dark:text-white bg-white text-darkest-blue"
-            }`}
+              }`}
             onClick={() => setActiveTab(id)}
           >
             {label}

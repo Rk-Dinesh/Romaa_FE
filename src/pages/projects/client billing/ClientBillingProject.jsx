@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import Filters from "../../../components/Filters";
 import Table from "../../../components/Table";
-import { useProject } from '../ProjectContext';
+import { useProject } from '../../../context/ProjectContext';
 import axios from "axios";
 import { API } from "../../../constant";
 import ViewClBillProjects from "./ViewClBillProjects";
@@ -13,15 +13,18 @@ import UploadBill from "./UploadBill";
 const Columns = [
   { label: "Bill No", key: "bill_id" },
 
-  { label: "Date", key: "bill_date",
+  {
+    label: "Date", key: "bill_date",
     render: (item) => item.bill_date ? new Date(item.bill_date).toLocaleDateString("en-GB").replace(/\//g, "-") : "-"
-   },
-  { label: "Total", key: "grand_total",
+  },
+  {
+    label: "Total", key: "grand_total",
     render: (item) => item.grand_total ? item.grand_total.toFixed(2) : "-"
-   },
-  { label: "Total Upto Date Amount ", key: "total_upto_date_amount",
+  },
+  {
+    label: "Total Upto Date Amount ", key: "total_upto_date_amount",
     render: (item) => item.total_upto_date_amount ? item.total_upto_date_amount.toFixed(2) : "-"
-   },
+  },
   { label: "Status ", key: "status" },
 ];
 

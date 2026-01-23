@@ -8,7 +8,7 @@ import { RiDeleteBinLine } from "react-icons/ri";
 import { TbFileExport } from "react-icons/tb";
 import { BiFilterAlt } from "react-icons/bi";
 import Pagination from "./Pagination";
-import { useSearch } from "./SearchBar";
+import { useSearch } from "../context/SearchBar";
 import { useNavigate } from "react-router-dom";
 import { IoClose } from "react-icons/io5";
 import Loader from "./Loader";
@@ -83,7 +83,7 @@ const Table = ({
   id2Key,
   name = "no data",
   onRowClick,
-  pagination=true,
+  pagination = true,
   freeze,
   freezeButtonLabel,
   freezeButtonIcon,
@@ -205,7 +205,7 @@ const Table = ({
           )}
           {freeze && (
             <Button
-             button_name={freezeButtonLabel}
+              button_name={freezeButtonLabel}
               button_icon={freezeButtonIcon}
               bgColor="dark:bg-layout-dark bg-white"
               textColor="dark:text-white text-darkest-blue"
@@ -452,8 +452,8 @@ const Table = ({
           itemsPerPage={itemsPerPage}
           currentPage={currentPage}
           setCurrentPage={setCurrentPage}
-      />
-      )}
+        />
+      )}
       {AddModal && showAdd && (
         <AddModal onclose={() => setShowAdd(false)} onSuccess={onSuccess} />
       )}

@@ -3,7 +3,7 @@ import axios from "axios";
 import { toast } from "react-toastify";
 import { FaTruckMonster, FaGasPump } from "react-icons/fa";
 import { API } from "../../../constant";
-import { useProject } from "../ProjectContext";
+import { useProject } from "../../../context/ProjectContext";
 import Title from "../../../components/Title";
 
 const ProjectMaterailQty = () => {
@@ -112,8 +112,8 @@ const ProjectMaterailQty = () => {
           {/* Check if it's a number to format, else string */}
           {Number.isFinite(Number(value))
             ? Number(value).toLocaleString("en-IN", {
-                maximumFractionDigits: 2,
-              })
+              maximumFractionDigits: 2,
+            })
             : value || "-"}
         </span>
       );
@@ -149,21 +149,19 @@ const ProjectMaterailQty = () => {
       <div className="flex gap-2">
         <button
           onClick={() => !isEditing && setActiveTab("consumable_material")}
-          className={`text-xs px-3 py-1.5 rounded border ${
-            activeTab === "consumable_material"
+          className={`text-xs px-3 py-1.5 rounded border ${activeTab === "consumable_material"
               ? "bg-blue-50 border-blue-200 text-blue-700"
               : "bg-gray-50 text-gray-600"
-          }`}
+            }`}
         >
           Consumable Material
         </button>
         <button
           onClick={() => !isEditing && setActiveTab("bulk_material")}
-          className={`text-xs px-3 py-1.5 rounded border ${
-            activeTab === "bulk_material"
+          className={`text-xs px-3 py-1.5 rounded border ${activeTab === "bulk_material"
               ? "bg-orange-50 border-orange-200 text-orange-700"
               : "bg-gray-50 text-gray-600"
-          }`}
+            }`}
         >
           Bulk Material
         </button>

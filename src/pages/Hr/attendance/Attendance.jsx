@@ -8,7 +8,7 @@ import { Check, X } from "lucide-react";
 import { HiArrowsUpDown } from "react-icons/hi2";
 import Pagination from "../../../components/Pagination";
 import { useNavigate } from "react-router-dom";
-import { useSearch } from "../../../components/SearchBar";
+import { useSearch } from "../../../context/SearchBar";
 import Filters from "../../../components/Filters";
 
 const getDaysInMonth = (month, year) => {
@@ -55,7 +55,7 @@ const Attendance = () => {
 
     const filtered = attendance.filter((item) => {
       const matchesSearch = item.name.toLowerCase().includes(lowerSearchTerm);
-      const matchesDate = true; 
+      const matchesDate = true;
 
       return matchesSearch && matchesDate;
     });
@@ -124,7 +124,7 @@ const Attendance = () => {
                   {days.map((day, i) => (
                     <td key={i} className="px-2">
                       {row.attendance[day.date] ? (
-                        <Check className="text-green-600 stroke-3" size={16}/>
+                        <Check className="text-green-600 stroke-3" size={16} />
                       ) : (
                         <X className="text-red-600 stroke-3" size={16} />
                       )}

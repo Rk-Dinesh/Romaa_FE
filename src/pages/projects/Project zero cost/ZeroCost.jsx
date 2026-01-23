@@ -7,21 +7,21 @@ import { API } from '../../../constant';
 import { useParams } from 'react-router-dom';
 import { useEffect, useState } from 'react';
 import { toast } from 'react-toastify';
-import { useProject } from '../ProjectContext';
+import { useProject } from '../../../context/ProjectContext';
 
 const customerColumns = [
   { label: "Item Code", key: "item_name" },
   { label: "Item Description", key: "description" },
   { label: "Quantity", key: "quantity" },
   { label: "Units", key: "unit" },
-  { label: "Final Rate", key: "n_rate",formatter: (value) => new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0, minimumFractionDigits: 0 }).format(value) },
-  { label: "Amount", key: "n_amount",formatter: (value) => new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0, minimumFractionDigits: 0 }).format(value) },
+  { label: "Final Rate", key: "n_rate", formatter: (value) => new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0, minimumFractionDigits: 0 }).format(value) },
+  { label: "Amount", key: "n_amount", formatter: (value) => new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0, minimumFractionDigits: 0 }).format(value) },
 ];
 
 const ZeroCost = () => {
   const { tenderId } = useProject();
 
-  
+
 
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -65,25 +65,25 @@ const ZeroCost = () => {
 
   return (
     <>
-    <Table
-      title="BOQ Cost"
-      subtitle={`Tender: ${tenderId}`}
-      endpoint={items}
-      columns={customerColumns}
-     // EditModal={true}       
-      exportModal={false}
-     // DeleteModal={DeleteModal}
-     // deletetitle="Zero Cost"
-      totalPages={totalPages}
-      currentPage={currentPage}
-      setCurrentPage={setCurrentPage}
-      onUpdated={fetchZeroCost}
-      onSuccess={fetchZeroCost}
-      //onDelete={handleDeleteZeroCostItem}
-      idKey="item_code"
-  
-    />
-    
+      <Table
+        title="BOQ Cost"
+        subtitle={`Tender: ${tenderId}`}
+        endpoint={items}
+        columns={customerColumns}
+        // EditModal={true}       
+        exportModal={false}
+        // DeleteModal={DeleteModal}
+        // deletetitle="Zero Cost"
+        totalPages={totalPages}
+        currentPage={currentPage}
+        setCurrentPage={setCurrentPage}
+        onUpdated={fetchZeroCost}
+        onSuccess={fetchZeroCost}
+        //onDelete={handleDeleteZeroCostItem}
+        idKey="item_code"
+
+      />
+
     </>
   )
 }

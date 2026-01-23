@@ -9,7 +9,7 @@ import {
   EllipsisVertical
 } from "lucide-react";
 import { TbFileExport } from "react-icons/tb";
-import { useProject } from "../../../../ProjectContext";
+import { useProject } from "../../../../../../context/ProjectContext";
 import { API } from "../../../../../../constant";
 import Button from "../../../../../../components/Button";
 import UploadScheduleModal from "../../UploadScheduleModal";
@@ -213,7 +213,7 @@ const ProjectSchedule = () => {
                 Status & Tracking
               </th>
               <th rowSpan={2} className="border-b border-l border-gray-300 dark:border-gray-700 p-1 text-center bg-gray-100 dark:bg-gray-800 sticky right-0 top-0 z-50 shadow-[-2px_0_5px_-2px_rgba(0,0,0,0.1)]">
-                <EllipsisVertical/>
+                <EllipsisVertical />
               </th>
             </tr>
 

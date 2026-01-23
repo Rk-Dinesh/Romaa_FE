@@ -2,9 +2,10 @@ import React, { useState, useEffect } from "react";
 import { ChevronDown, ChevronUp, Plus } from "lucide-react";
 import axios from "axios";
 import AddPhaseModal from "./AddWBS";
-import { useProject } from "../ProjectContext";
+
 import { API } from "../../../constant";
 import { toast } from "react-toastify";
+import { useProject } from "../../../context/ProjectContext";
 
 const WBSTable = ({ name }) => {
   console.log(name);

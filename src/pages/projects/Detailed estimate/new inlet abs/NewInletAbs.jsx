@@ -5,7 +5,7 @@ import { useParams } from "react-router-dom";
 import { toast } from "react-toastify";
 import { API } from "../../../../constant";
 import Table from "../../../../components/Table";
-import { useProject } from "../../ProjectContext";
+import { useProject } from "../../../../context/ProjectContext";
 
 const NewInletAbsColumns = [
   { label: "Abstract ID", key: "abstract_id" },
@@ -27,7 +27,7 @@ const NewInletAbs = ({ name }) => {
       const res = await axios.get(
         `${API}/detailedestimate/getdatacustomhead?tender_id=${tenderId}&nametype=${name}`
       );
-  
+
       setAbstract(res.data.data || []);
     } catch (err) {
       toast.error("Failed to fetch tenders");
@@ -43,7 +43,7 @@ const NewInletAbs = ({ name }) => {
       loading={loading}
       contentMarginTop="mt-0"
       pagination={false}
-     // UploadModal={abstract.length > 0 ? null : UploadAbstract}
+      // UploadModal={abstract.length > 0 ? null : UploadAbstract}
       endpoint={abstract}
       columns={NewInletAbsColumns}
       // routepoint={"viewnewinletabs"}

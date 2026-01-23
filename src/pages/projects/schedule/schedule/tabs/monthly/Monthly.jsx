@@ -1,16 +1,16 @@
 import React, { useEffect, useState, useMemo } from "react";
 import axios from "axios";
 import { format } from "date-fns";
-import { 
-  BarChart2, 
-  Loader2, 
-  AlertCircle, 
+import {
+  BarChart2,
+  Loader2,
+  AlertCircle,
   CalendarDays,
   ArrowRight,
-  ChevronDown 
+  ChevronDown
 } from "lucide-react";
-import { API } from "../../../../../../constant"; 
-import { useProject } from "../../../../ProjectContext"; 
+import { API } from "../../../../../../constant";
+import { useProject } from "../../../../../../context/ProjectContext";
 
 // --- HELPERS ---
 
@@ -22,7 +22,7 @@ const flattenStructure = (nodes) => {
   const traverse = (node, level) => {
     // If it has a row_index, it's a renderable row.
     if (node.row_index !== undefined) {
-      flatList.push({ ...node, level }); 
+      flatList.push({ ...node, level });
     }
     if (node.items && Array.isArray(node.items)) node.items.forEach(child => traverse(child, level + 1));
     if (node.tasks && Array.isArray(node.tasks)) node.tasks.forEach(child => traverse(child, level + 1));
@@ -30,9 +30,9 @@ const flattenStructure = (nodes) => {
   };
 
   if (Array.isArray(nodes)) {
-    nodes.forEach(node => traverse(node, 0)); 
+    nodes.forEach(node => traverse(node, 0));
   }
-  
+
   return flatList.sort((a, b) => a.row_index - b.row_index);
 };
 
@@ -59,7 +59,7 @@ const MonthlyProjects = () => {
   // --- State ---
   const [selectedYear, setSelectedYear] = useState(today.getFullYear());
   const [selectedMonth, setSelectedMonth] = useState(today.getMonth());
-  const [rows, setRows] = useState([]); 
+  const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(false);
 
   // --- Constants ---
@@ -95,15 +95,15 @@ const MonthlyProjects = () => {
 
     return rows.map((item) => {
       // 1. Find the specific Month Object in the 'schedule_data' array
-      const monthData = item.schedule_data?.find(m => 
+      const monthData = item.schedule_data?.find(m =>
         m.month_name === targetMonthName && m.year === selectedYear
       );
 
       // 2. Extract Metrics directly
-      const metrics = monthData?.metrics || { 
-        achieved_quantity: 0, 
-        planned_quantity: 0, 
-        lag_quantity: 0 
+      const metrics = monthData?.metrics || {
+        achieved_quantity: 0,
+        planned_quantity: 0,
+        lag_quantity: 0
       };
 
       const planned = metrics.planned_quantity || 0;
@@ -128,11 +128,11 @@ const MonthlyProjects = () => {
 
   return (
     <div className="flex flex-col h-full bg-white dark:bg-layout-dark rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden font-roboto-flex text-sm">
-      
+
       {/* --- Header Control Bar --- */}
       <div className="bg-gray-50 dark:bg-gray-800/50 border-b border-gray-200 dark:border-gray-700 px-6 py-4">
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-          
+
           <div className="flex items-center gap-3">
             <div className="p-2 bg-purple-100 dark:bg-purple-900/30 rounded-lg text-purple-600 dark:text-purple-400">
               <BarChart2 size={18} />
@@ -157,9 +157,9 @@ const MonthlyProjects = () => {
               </select>
               <ChevronDown size={14} className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
             </div>
-            
+
             <div className="w-px h-4 bg-gray-300 dark:bg-gray-600"></div>
-            
+
             <div className="relative">
               <select
                 value={selectedYear}
@@ -194,7 +194,7 @@ const MonthlyProjects = () => {
 
 // --- Sub-Component: Table ---
 const MonthlyTable = ({ data, monthName }) => {
-  
+
   if (!data || data.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center h-full min-h-[300px] text-gray-400">
@@ -211,10 +211,10 @@ const MonthlyTable = ({ data, monthName }) => {
           <tr>
             {/* Sticky Index */}
             <th className="py-3 px-4 text-[11px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider text-center w-[50px] bg-gray-50 dark:bg-gray-800 sticky left-0 z-50">#</th>
-            
+
             {/* Sticky Description */}
             <th className="py-3 px-4 text-[11px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider border-b border-gray-200 dark:border-gray-700 min-w-[300px] bg-gray-50 dark:bg-gray-800 sticky left-[50px] z-50 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)]">Description</th>
-            
+
             <th className="py-3 px-4 text-[11px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider text-center w-[60px]">Unit</th>
             <th className="py-3 px-4 text-[11px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider text-right w-[80px]">Total Qty</th>
             <th className="py-2.5 px-3 text-[10px] font-bold text-indigo-600 dark:text-indigo-400 uppercase tracking-wider text-right bg-indigo-50/50 dark:bg-indigo-900/20 w-[90px] border-l border-gray-200 dark:border-gray-700">Executed</th>
@@ -222,7 +222,7 @@ const MonthlyTable = ({ data, monthName }) => {
 
             {/* Monthly Metrics Section (Purple Theme) */}
             <th className="py-2.5 px-3 text-[10px] font-bold text-purple-700 dark:text-purple-400 uppercase tracking-wider text-right w-[110px] bg-purple-50/30 dark:bg-purple-900/10">
-               {monthName} Plan
+              {monthName} Plan
             </th>
             <th className="py-2.5 px-3 text-[10px] font-bold text-emerald-700 dark:text-emerald-400 uppercase tracking-wider text-right w-[110px] bg-emerald-50/30 dark:bg-emerald-900/10">
               Achieved
@@ -245,7 +245,7 @@ const MonthlyTable = ({ data, monthName }) => {
 
             // Row Visibility
             const rowClass = row.level === 0 ? "bg-gray-50/50 dark:bg-gray-800/30" : "hover:bg-gray-50 dark:hover:bg-gray-800/50";
-            
+
             // Lag Color
             const isLagging = row.display_lag > 0.01;
             const lagColor = isLagging ? "text-red-600 dark:text-red-400 font-bold" : "text-gray-400 dark:text-gray-500";
@@ -256,7 +256,7 @@ const MonthlyTable = ({ data, monthName }) => {
 
             return (
               <tr key={row._id || row.row_index} className={`group ${rowClass} transition-colors`}>
-                
+
                 {/* Sticky Index */}
                 <td className="sticky left-0 z-30 bg-white dark:bg-layout-dark border-r border-gray-200 dark:border-gray-700 py-3 px-4 text-center text-xs text-slate-400 group-hover:bg-gray-50 dark:group-hover:bg-gray-800">
                   {row.row_index}
@@ -264,23 +264,23 @@ const MonthlyTable = ({ data, monthName }) => {
 
                 {/* Sticky Description with Indentation */}
                 <td className="sticky left-[50px] z-30 bg-white dark:bg-layout-dark border-r border-gray-200 dark:border-gray-700 py-3 px-4 group-hover:bg-gray-50 dark:group-hover:bg-gray-800 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)]">
-                   <div className="flex flex-col" style={{ paddingLeft: `${indentPx}px` }}>
-                      <span className={`${textStyle} truncate max-w-[350px] text-xs`} title={name}>{name}</span>
-                      
-                      {/* Dates inside Description for context */}
-                      <div className="flex items-center gap-1 text-[9px] text-gray-400 mt-0.5 ml-0.5 font-normal">
-                         <CalendarDays size={9} />
-                         <span>{startDate}</span>
-                         <ArrowRight size={8} />
-                         <span>{endDate}</span>
-                      </div>
-                   </div>
+                  <div className="flex flex-col" style={{ paddingLeft: `${indentPx}px` }}>
+                    <span className={`${textStyle} truncate max-w-[350px] text-xs`} title={name}>{name}</span>
+
+                    {/* Dates inside Description for context */}
+                    <div className="flex items-center gap-1 text-[9px] text-gray-400 mt-0.5 ml-0.5 font-normal">
+                      <CalendarDays size={9} />
+                      <span>{startDate}</span>
+                      <ArrowRight size={8} />
+                      <span>{endDate}</span>
+                    </div>
+                  </div>
                 </td>
 
                 <td className="py-2.5 px-3 text-center"><span className="inline-block px-2 py-0.5 rounded bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 text-[10px] font-medium">{row.unit}</span></td>
-                
+
                 <td className="py-2.5 px-3 text-right font-medium text-gray-700 dark:text-gray-300">{row.quantity?.toLocaleString()}</td>
-                
+
                 <td className="py-2.5 px-3 text-right font-bold text-indigo-700 dark:text-indigo-300 bg-indigo-50/10 dark:bg-indigo-900/5">
                   {row.executed_quantity > 0 ? row.executed_quantity.toLocaleString() : "-"}
                 </td>
@@ -290,13 +290,13 @@ const MonthlyTable = ({ data, monthName }) => {
 
                 {/* Monthly Metrics */}
                 <td className="py-2.5 px-3 text-right font-medium text-purple-700 dark:text-purple-300 border-l border-gray-100 dark:border-gray-800 bg-purple-50/10">
-                  {row.display_planned > 0 ? row.display_planned.toLocaleString(undefined, {minimumFractionDigits: 0, maximumFractionDigits: 2}) : "-"}
+                  {row.display_planned > 0 ? row.display_planned.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 2 }) : "-"}
                 </td>
                 <td className="py-2.5 px-3 text-right font-bold text-emerald-700 dark:text-emerald-400 bg-emerald-50/10">
-                  {row.display_achieved > 0 ? row.display_achieved.toLocaleString(undefined, {minimumFractionDigits: 0, maximumFractionDigits: 2}) : "-"}
+                  {row.display_achieved > 0 ? row.display_achieved.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 2 }) : "-"}
                 </td>
                 <td className={`py-2.5 px-3 text-right border-r border-gray-200 dark:border-gray-700 ${lagColor} bg-orange-50/10`}>
-                  {row.display_lag === 0 || Math.abs(row.display_lag) < 0.01 ? "-" : row.display_lag.toLocaleString(undefined, {minimumFractionDigits: 0, maximumFractionDigits: 2})}
+                  {row.display_lag === 0 || Math.abs(row.display_lag) < 0.01 ? "-" : row.display_lag.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 2 })}
                 </td>
 
                 {/* Status */}

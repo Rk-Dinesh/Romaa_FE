@@ -1,5 +1,5 @@
 import { Sun } from "lucide-react";
-import { useTheme } from "../components/ThemeContext"; 
+import { useTheme } from "../context/ThemeContext";
 import { TbMoonStars } from "react-icons/tb";
 
 const ThemeToggle = () => {

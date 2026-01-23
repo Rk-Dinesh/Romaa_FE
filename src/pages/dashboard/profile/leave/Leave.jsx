@@ -8,7 +8,7 @@ import { Check, X } from "lucide-react";
 import { HiArrowsUpDown } from "react-icons/hi2";
 import Pagination from "../../../../components/Pagination";
 import { useNavigate } from "react-router-dom";
-import { useSearch } from "../../../../components/SearchBar";
+import { useSearch } from "../../../../context/SearchBar";
 import Filters from "../../../../components/Filters";
 
 const getDaysInMonth = (month, year) => {

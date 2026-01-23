@@ -6,7 +6,7 @@ import { TbFileExport } from "react-icons/tb";
 import Loader from "../../../../components/Loader";
 import Button from "../../../../components/Button";
 import { API } from "../../../../constant";
-import { useProject } from "../../ProjectContext";
+import { useProject } from "../../../../context/ProjectContext";
 
 
 const BoqProjectsColumns = [
@@ -68,16 +68,16 @@ const NewInletDet = ({ name }) => {
         <Loader />
       ) : (
         <>
-          { detailedEstimate.length === 0 &&
-          <div className="flex justify-end mb-2">
-            <Button
-              button_icon={<TbFileExport size={22} />}
-              button_name="Upload"
-              bgColor="dark:bg-layout-dark bg-white"
-              textColor="dark:text-white text-darkest-blue"
-              onClick={() => setShowUpload(true)}
-            />
-          </div>
+          {detailedEstimate.length === 0 &&
+            <div className="flex justify-end mb-2">
+              <Button
+                button_icon={<TbFileExport size={22} />}
+                button_name="Upload"
+                bgColor="dark:bg-layout-dark bg-white"
+                textColor="dark:text-white text-darkest-blue"
+                onClick={() => setShowUpload(true)}
+              />
+            </div>
           }
 
           {/* ✅ ONLY TABLE SCROLLS */}
@@ -158,7 +158,7 @@ const NewInletDet = ({ name }) => {
         </>
       )}
 
-     
+
     </div>
   );
 };

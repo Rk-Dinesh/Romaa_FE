@@ -6,7 +6,7 @@ import Table from "../../components/Table";
 import { API } from "../../constant";
 import axios from "axios";
 import { toast } from "react-toastify";
-import { useProject } from "./ProjectContext";
+import { useProject } from "../../context/ProjectContext";
 import { useNavigate } from "react-router-dom";
 
 const Columns = [
@@ -27,7 +27,7 @@ const Columns = [
 ];
 
 const Project = () => {
-const { setTenderId } = useProject();
+  const { setTenderId } = useProject();
 
   const navigate = useNavigate();
   const [projects, SetProjects] = useState([]);
@@ -67,9 +67,9 @@ const { setTenderId } = useProject();
     fetchProjects();
   }, [currentPage, searchTerm, filterParams]);
   const handleRowClick = (project) => {
-  setTenderId(project.tender_id);
-  toast.success(`Selected Project: ${project.tender_project_name}`);
-};
+    setTenderId(project.tender_id);
+    toast.success(`Selected Project: ${project.tender_project_name}`);
+  };
 
   return (
     <Table

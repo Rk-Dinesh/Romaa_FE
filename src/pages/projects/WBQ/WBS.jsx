@@ -6,7 +6,7 @@ import {
   FolderOpen, FileText, Hash,
   Download, Upload, Plus, MoreHorizontal, LayoutList
 } from "lucide-react";
-import { useProject } from "../ProjectContext";
+import { useProject } from "../../../context/ProjectContext";
 import { API } from "../../../constant";
 import UploadWBS from "./UploadWBS";
 import { Loader2 } from "lucide-react";
@@ -171,19 +171,19 @@ const WBS = () => {
           </div>
         </div>
         <div className="flex gap-2">
-           <Button
-             button_icon={<TbFileExport size={22} />}
-             button_name="Upload"
-             bgColor="dark:bg-layout-dark bg-white"
-             textColor="dark:text-white text-darkest-blue"
-             onClick={() => setShowUpload(true)}
-           />
+          <Button
+            button_icon={<TbFileExport size={22} />}
+            button_name="Upload"
+            bgColor="dark:bg-layout-dark bg-white"
+            textColor="dark:text-white text-darkest-blue"
+            onClick={() => setShowUpload(true)}
+          />
         </div>
       </div>
 
       {/* --- Data Grid --- */}
       <div className="flex-1 overflow-hidden flex flex-col relative bg-white">
-        
+
         {/* --- Header --- */}
         <div className="grid grid-cols-12 gap-0 bg-gray-100 dark:bg-gray-800 border-b border-gray-300 dark:border-gray-700 text-sm font-bold text-gray-600 dark:text-gray-300 sticky top-0 z-20 py-1.5">
           {/* New Column: No. */}
@@ -215,7 +215,7 @@ const WBS = () => {
 
               return (
                 <div key={row.id} className={`grid grid-cols-12 gap-0 group hover:bg-blue-50 dark:hover:bg-blue-900/10 transition-colors ${bgClass} ${borderClass} min-h-[36px]`}>
-                  
+
                   {/* 1. Row Index Column (New) */}
                   <div className="col-span-1 px-2 py-2 flex items-center justify-center border-r border-gray-100 dark:border-gray-800 text-xs text-gray-400 font-mono">
                     {row.row_index || "-"}

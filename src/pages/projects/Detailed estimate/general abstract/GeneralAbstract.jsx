@@ -3,7 +3,7 @@ import axios from "axios";
 import { useEffect, useState } from "react";
 import Table from "../../../../components/Table";
 import { API } from "../../../../constant";
-import { useProject } from "../../ProjectContext";
+import { useProject } from "../../../../context/ProjectContext";
 
 const Columns = [
   { label: "Abstract ", key: "heading" },

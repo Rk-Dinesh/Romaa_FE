@@ -5,7 +5,7 @@ import { LuLandPlot } from "react-icons/lu";
 import AddSite from "./AddSite";
 import { useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
-import { useProject } from "../projects/ProjectContext";
+import { useProject } from "../../context/ProjectContext";
 import { toast } from "react-toastify";
 import { API } from "../../constant";
 import axios from "axios";
@@ -13,9 +13,10 @@ const Columns = [
   { label: "Project ID", key: "workOrder_id" },
   { label: "Site Name", key: "tender_project_name" },
   { label: "Category", key: "tender_type" },
-  { label: "Date", key: "tender_start_date",
-     render: (item) => item.tender_start_date ? new Date(item.tender_start_date).toLocaleDateString() : "-"
-   },
+  {
+    label: "Date", key: "tender_start_date",
+    render: (item) => item.tender_start_date ? new Date(item.tender_start_date).toLocaleDateString() : "-"
+  },
   { label: "Assigned To", key: "tender_contact_person" },
   { label: "Status", key: "tender_status" },
 ];

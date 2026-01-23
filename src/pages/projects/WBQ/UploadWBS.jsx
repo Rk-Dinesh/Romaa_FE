@@ -2,7 +2,7 @@ import axios from "axios";
 import React, { useState, useRef } from "react";
 import { IoClose } from "react-icons/io5";
 import { toast } from "react-toastify";
-import { useProject } from "../ProjectContext";
+import { useProject } from "../../../context/ProjectContext";
 import { API } from "../../../constant";
 
 // const sampleCSv = `description,unit,quantity
@@ -43,7 +43,7 @@ const UploadWBS = ({ onclose, onSuccess }) => {
   const [files, setFiles] = useState([]);
   const [saving, setSaving] = useState(false);
   const inputRef = useRef(null);
- const { tenderId } = useProject(); 
+  const { tenderId } = useProject();
 
   const handleFiles = (selectedFiles) => {
     const fileArray = Array.from(selectedFiles);

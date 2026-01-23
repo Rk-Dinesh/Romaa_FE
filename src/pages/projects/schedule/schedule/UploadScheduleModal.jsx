@@ -2,7 +2,7 @@ import axios from "axios";
 import React, { useState, useRef, useEffect } from "react";
 import { IoClose } from "react-icons/io5";
 import { toast } from "react-toastify";
-import { useProject } from "../../ProjectContext";
+import { useProject } from "../../../../context/ProjectContext";
 import { API } from "../../../../constant";
 import { format } from "date-fns";
 
@@ -68,9 +68,9 @@ const UploadScheduleModal = ({ onClose, onSuccess }) => {
         safeDescription,
         item.unit,
         item.quantity,
-        formatDate(item.start_date),       
-        formatDate(item.end_date),         
-        formatDate(item.revised_end_date), 
+        formatDate(item.start_date),
+        formatDate(item.end_date),
+        formatDate(item.revised_end_date),
       ].join(",");
     });
 
@@ -119,7 +119,7 @@ const UploadScheduleModal = ({ onClose, onSuccess }) => {
       setSaving(true);
       const formData = new FormData();
       formData.append("tender_id", tenderId);
-      
+
       // Pass file
       if (files.length === 1) {
         formData.append("file", files[0]);
@@ -225,20 +225,20 @@ const UploadScheduleModal = ({ onClose, onSuccess }) => {
             </button> */}
 
             <div className="flex gap-3 justify-end">
-                <button
+              <button
                 type="button"
                 onClick={onClose}
                 className="px-5 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-400"
-                >
+              >
                 Cancel
-                </button>
-                <button
+              </button>
+              <button
                 type="submit"
                 disabled={files.length === 0 || saving}
                 className="py-2 cursor-pointer px-6 bg-darkest-blue hover:bg-blue-700 text-white rounded disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                >
+              >
                 {saving ? "Uploading..." : "Upload"}
-                </button>
+              </button>
             </div>
           </div>
         </form>

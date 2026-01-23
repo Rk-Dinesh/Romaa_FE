@@ -1,7 +1,7 @@
 import LOGO from "../assets/images/romaa logo.png";
 import { Search } from "lucide-react";
 import { HiOutlineBell } from "react-icons/hi";
-import { useSearch } from "../components/SearchBar";
+import { useSearch } from "../context/SearchBar";
 import ThemeToggle from "../components/ThemeToggle";
 import { HiOutlineTicket } from "react-icons/hi";
 import { useNavigate } from "react-router-dom";

@@ -837,3 +837,149 @@ will do an multiple entry of work done.if it has 5 entires it to be stored inarr
 ondaily entry new workdone _id will be genreated as common
 i want to store it under particular tenderId,
 
+// Important
+
+Here is the robust, production-ready `verifyJWT` middleware.
+
+I have also included a bonus `verifyPermission` middleware. You will need **both** to implement the security architecture we discussed (Login Authentication + RBAC Authorization).
+
+### 1. The Middleware Code (`middleware/auth.middleware.js`)
+
+```javascript
+import jwt from "jsonwebtoken";
+import { User } from "../models/employee.model.js"; // Adjust path to your User/Employee model
+
+// --- 1. Authentication Middleware (Who are you?) ---
+export const verifyJWT = async (req, res, next) => {
+  try {
+    // Get token from Cookie OR Header (Bearer token)
+    const token =
+      req.cookies?.accessToken ||
+      req.header("Authorization")?.replace("Bearer ", "");
+
+    if (!token) {
+      return res.status(401).json({ status: false, message: "Unauthorized request" });
+    }
+
+    // Verify Token
+    const decodedToken = jwt.verify(token, process.env.ACCESS_TOKEN_SECRET);
+
+    // Find User & Populate Role (Crucial for RBAC)
+    const user = await User.findById(decodedToken._id)
+      .select("-password -refreshToken") // Exclude sensitive fields
+      .populate("role"); // We need the role permissions attached to req.user
+
+    if (!user) {
+      return res.status(401).json({ status: false, message: "Invalid Access Token" });
+    }
+
+    // Attach user to request object
+    req.user = user;
+    next();
+    
+  } catch (error) {
+    return res.status(401).json({ status: false, message: error.message || "Invalid Access Token" });
+  }
+};
+
+// --- 2. Authorization Middleware (Are you allowed to do this?) ---
+// Usage: verifyPermission('tender', 'tenders', 'create')
+export const verifyPermission = (module, subModule, action = "read") => {
+  return (req, res, next) => {
+    try {
+      if (!req.user || !req.user.role) {
+        return res.status(403).json({ status: false, message: "Access Denied: No Role Assigned" });
+      }
+
+      const permissions = req.user.role.permissions;
+
+      // 1. Check if Module exists
+      if (!permissions[module]) {
+        return res.status(403).json({ status: false, message: "Access Denied: Module Restricted" });
+      }
+
+      // 2. Check Permission Logic
+      let hasAccess = false;
+
+      if (!subModule) {
+        // Simple Module (e.g. Dashboard)
+        hasAccess = permissions[module][action] === true;
+      } else {
+        // Nested Module (e.g. Tender -> Clients)
+        // Check if submodule exists first
+        if (permissions[module][subModule]) {
+          hasAccess = permissions[module][subModule][action] === true;
+        }
+      }
+
+      if (!hasAccess) {
+        return res.status(403).json({ 
+          status: false, 
+          message: `Access Denied: You do not have '${action}' permission for ${module}/${subModule || ""}` 
+        });
+      }
+
+      next();
+    } catch (error) {
+      return res.status(500).json({ status: false, message: "Authorization Error" });
+    }
+  };
+};
+
+```
+
+---
+
+### 2. How to Protect Your Routes
+
+Now, update your routes file to inject these guards.
+
+**Example: `employee.routes.js**`
+
+```javascript
+import { Router } from "express";
+import { verifyJWT, verifyPermission } from "../middleware/auth.middleware.js";
+import { 
+  createEmployee, 
+  getAllEmployees, 
+  deleteEmployee 
+} from "./employee.controller.js";
+
+const employeeRoute = Router();
+
+// 1. Public Routes (No Protection)
+employeeRoute.post("/login", login); 
+
+// 2. Protected Routes (Need Valid Token)
+// Apply verifyJWT to all routes below this line
+employeeRoute.use(verifyJWT); 
+
+// 3. RBAC Protected Routes (Need Specific Role Permissions)
+
+// Only HR with 'Read' access can list employees
+employeeRoute.get("/list", 
+  verifyPermission("hr", "employee", "read"), 
+  getAllEmployees
+);
+
+// Only HR with 'Create' access can add employees
+employeeRoute.post("/add", 
+  verifyPermission("hr", "employee", "create"), 
+  createEmployee
+);
+
+// Only HR with 'Delete' access can remove employees
+employeeRoute.delete("/:employeeId", 
+  verifyPermission("hr", "employee", "delete"), 
+  deleteEmployee
+);
+
+export default employeeRoute;
+
+```
+
+### 3. Checklist for Implementation
+
+1. **Environment Variables:** Ensure `ACCESS_TOKEN_SECRET` is set in your `.env` file.
+2. **Cookie Parser:** Ensure you have `app.use(cookieParser())` in your main `index.js` or `app.js` so `req.cookies` works.
+3. **Frontend:** Your Frontend must send `withCredentials: true` in Axios requests or include the Bearer token in the header.
