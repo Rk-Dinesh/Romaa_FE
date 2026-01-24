@@ -54,7 +54,6 @@ import ViewCalendar from "../pages/dashboard/ViewCalendar";
 import Login from "../pages/auth/Login";
 import ForgotPassword from "../pages/auth/ForgotPassword";
 import User from "../pages/settings/user/User";
-import EditUser from "../pages/settings/user/EditUser";
 import Roles from "../pages/settings/roles/Roles";
 import Master from "../pages/settings/master/Master";
 import AddRoles from "../pages/settings/roles/AddRoles";
@@ -165,6 +164,7 @@ import TenderZeroCost from "../pages/tender/tenders/view tenders/zero cost/Tende
 import ViewWorkDone from "../pages/site/WorkDone/ViewWorkDone";
 import AssetDetails from "../pages/settings/assets/machinery/AssetDetails";
 import ProtectedRoute from "../pages/auth/protectedRoute";
+import ViewUser from "../pages/settings/user/ViewUser";
 
 const AppRoutes = () => {
   return (
@@ -532,7 +532,7 @@ const AppRoutes = () => {
           <Route path="/settings">
             <Route path="user">
               <Route index element={<User />} />
-              <Route path="edituser" element={<EditUser />} />
+              <Route path="viewuser" element={<ViewUser />} />
             </Route>
             <Route path="roles">
               <Route index element={<Roles />} />

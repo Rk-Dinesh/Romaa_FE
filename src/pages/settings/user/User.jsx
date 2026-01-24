@@ -8,6 +8,7 @@ import axios from "axios";
 import { API } from "../../../constant";
 import EditUser from "./EditUser";
 import DeleteUser from "./DeleteUser";
+import ViewUser from "./ViewUser";
 
 const UserColumns = [
  { label: "Employee ID", key: "employeeId" },
@@ -56,6 +57,8 @@ const User = () => {
         pagetitle="User"
         endpoint={users}
         columns={UserColumns}
+        ViewModal={true}
+        routepoint={"viewuser"}
         AddModal={AddUser}
         EditModal={EditUser}
         DeleteModal={DeleteUser}
