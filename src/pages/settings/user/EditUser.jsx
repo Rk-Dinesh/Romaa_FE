@@ -1,334 +1,231 @@
 import React, { useEffect, useState } from "react";
-import { useForm } from "react-hook-form";
+import { useForm, useWatch } from "react-hook-form";
 import { yupResolver } from "@hookform/resolvers/yup";
 import * as yup from "yup";
-import { useLocation, useNavigate } from "react-router-dom";
-import axios from "axios";
 import { API } from "../../../constant";
+import axios from "axios";
 import { toast } from "react-toastify";
+import { IoClose } from "react-icons/io5";
 import { 
-  FiUser, 
-  FiBriefcase, 
-  FiMapPin, 
+  FiUserPlus, 
   FiShield, 
-  FiPhone, 
-  FiSave,
-  FiArrowLeft,
-  FiActivity
+  FiUserCheck, 
+  FiSave, 
+  FiChevronDown,
+  FiAlertCircle,
+  FiUser,
+  FiMail,
+  FiBriefcase
 } from "react-icons/fi";
 
 // --- Validation Schema ---
 const schema = yup.object().shape({
-  name: yup.string().required("Name is required"),
-  email: yup.string().email("Invalid email").required("Email is required"),
-  phone: yup.string().required("Phone is required"),
-  role: yup.string().required("Role is required"), // Stores Role ID
-  status: yup.string().required("Status is required"),
-  
-  designation: yup.string().required("Designation is required"),
-  dateOfJoining: yup.string().required("Date is required"),
-  
-  // Flattened Address
-  address_street: yup.string().required("Street is required"),
-  address_city: yup.string().required("City is required"),
-  address_state: yup.string().required("State is required"),
-  address_pincode: yup.string().required("Pincode is required"),
-
-  // Flattened Emergency
-  emergency_name: yup.string().required("Contact Name is required"),
-  emergency_relationship: yup.string().required("Relation is required"),
-  emergency_phone: yup.string().required("Emergency Phone is required"),
-
-  // Flattened ID Proof
-  id_proof_type: yup.string().required("ID Type is required"),
-  id_proof_number: yup.string().required("ID Number is required"),
+  role: yup.string().required("Please select a new role"),
 });
 
-const EditUser = () => {
-  const location = useLocation();
-  const navigate = useNavigate();
-  const userData = location.state?.item;
-
+// ✅ Receive 'item' directly from the Table component
+const EditUser = ({ item, onclose, onUpdated }) => {
   const [loading, setLoading] = useState(false);
   const [roles, setRoles] = useState([]);
+
+  // Use 'item' passed from parent, fallback to empty object to prevent crashes
+  const user = item || {};
 
   const {
     register,
     handleSubmit,
-    reset,
+    control,
     formState: { errors },
+    reset // Need reset to update form when item changes
   } = useForm({
     resolver: yupResolver(schema),
+    defaultValues: {
+      role: user.role?._id || user.role || "" 
+    }
   });
 
-  // --- 1. Fetch Roles for Dropdown ---
+  // --- 1. Reset Form when Modal Opens/Item Changes ---
   useEffect(() => {
-    const fetchRoles = async () => {
+    if (user) {
+      reset({
+        role: user.role?._id || user.role || "" 
+      });
+    }
+  }, [user, reset]);
+
+  const selectedRoleId = useWatch({ control, name: "role" }); 
+
+  // --- 2. Fetch Roles ---
+  useEffect(() => {
+    const fetchData = async () => {
       try {
         const res = await axios.get(`${API}/role/listForDropdown`, { withCredentials: true });
         setRoles(res.data.data || []);
       } catch (err) {
-        console.error("Error fetching roles", err);
+        console.error("Fetch error:", err);
+        toast.error("Failed to load roles");
       }
     };
-    fetchRoles();
+    fetchData();
   }, []);
-
-  // --- 2. Populate Form Data ---
-  useEffect(() => {
-    if (userData) {
-      // Convert ISO Date to YYYY-MM-DD for input field
-      const formattedDate = userData.dateOfJoining 
-        ? new Date(userData.dateOfJoining).toISOString().split('T')[0] 
-        : "";
-
-      reset({
-        name: userData.name,
-        email: userData.email,
-        phone: userData.phone,
-        
-        // Map the Role Object to just the ID for the dropdown
-        role: userData.role?._id || "", 
-        status: userData.status,
-        
-        designation: userData.designation,
-        dateOfJoining: formattedDate,
-
-        // Flatten Address
-        address_street: userData.address?.street,
-        address_city: userData.address?.city,
-        address_state: userData.address?.state,
-        address_pincode: userData.address?.pincode,
-
-        // Flatten Emergency
-        emergency_name: userData.emergencyContact?.name,
-        emergency_relationship: userData.emergencyContact?.relationship,
-        emergency_phone: userData.emergencyContact?.phone,
-
-        // Flatten ID Proof
-        id_proof_type: userData.idProof?.type,
-        id_proof_number: userData.idProof?.number,
-      });
-    }
-  }, [userData, reset]);
 
   // --- 3. Submit Handler ---
   const onSubmit = async (data) => {
     try {
       setLoading(true);
       
-      // Re-structure data for backend
-      const payload = {
-        name: data.name,
-        email: data.email,
-        phone: data.phone,
-        role: data.role, // Sending the Role ID
-        status: data.status,
-        designation: data.designation,
-        dateOfJoining: data.dateOfJoining,
-        
-        address: {
-            street: data.address_street,
-            city: data.address_city,
-            state: data.address_state,
-            pincode: data.address_pincode
-        },
-        emergencyContact: {
-            name: data.emergency_name,
-            relationship: data.emergency_relationship,
-            phone: data.emergency_phone
-        },
-        idProof: {
-            type: data.id_proof_type,
-            number: data.id_proof_number
-        }
+      const payload = { 
+        employeeId: user.employeeId, 
+        roleId: data.role 
       };
 
-      await axios.put(`${API}/employee/update/${userData.employeeId}`, payload, { withCredentials: true });
-      
-      toast.success("User updated successfully");
-      navigate(-1); // Go back
-    } catch (error) {
-      console.error(error);
-      toast.error(error.response?.data?.message || "Failed to update user");
+      await axios.put(
+        `${API}/employee/role/re-assign`, 
+        payload, 
+        { withCredentials: true }
+      );
+
+      toast.success("User role updated successfully!");
+      if (onUpdated) onUpdated();
+      onclose();
+    } catch (err) {
+      console.error("Error updating user:", err);
+      toast.error(err.response?.data?.message || "Failed to update role");
     } finally {
       setLoading(false);
     }
   };
 
-  if (!userData) return <div className="p-10 text-center">No user data found.</div>;
+  // Helper for Role Description
+  const selectedRoleDescription = roles.find(r => r._id === selectedRoleId)?.description;
+
+  if (!user.employeeId) return null; // Don't render if no data
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-overall_bg-dark font-layout-font pb-20">
+    // --- 1. Overlay (Fixed Modal Wrapper) ---
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4 font-layout-font animation-fade-in">
       
-      {/* --- Sticky Header --- */}
-      <div className="sticky top-0 z-20 bg-white/80 dark:bg-layout-dark/90 backdrop-blur-md border-b border-gray-200 dark:border-gray-800 px-6 py-4 flex justify-between items-center shadow-sm">
-        <div className="flex items-center gap-4">
-          <button onClick={() => navigate(-1)} className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
-            <FiArrowLeft className="text-xl text-gray-600 dark:text-gray-300" />
-          </button>
+      {/* --- 2. Modal Container --- */}
+      <div className="bg-white dark:bg-gray-900 w-full max-w-lg rounded-2xl shadow-2xl flex flex-col overflow-hidden border border-gray-200 dark:border-gray-800 transform transition-all scale-100">
+        
+        {/* --- Header --- */}
+        <div className="px-6 py-5 border-b border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-900 flex justify-between items-center">
           <div>
-            <h1 className="text-xl font-bold text-gray-900 dark:text-white leading-none">Edit User</h1>
-            <p className="text-xs text-gray-500 mt-1">Updating profile for {userData.employeeId}</p>
+            <h2 className="text-lg font-bold text-gray-800 dark:text-white flex items-center gap-2">
+              <span className="p-2 bg-blue-50 text-blue-600 rounded-lg dark:bg-blue-900/20 dark:text-blue-400">
+                <FiUserPlus size={20} />
+              </span>
+              Reassign User Role
+            </h2>
+            <p className="text-xs text-gray-500 mt-1 ml-11">Modify system access level</p>
           </div>
+          
+          <button 
+            onClick={onclose} 
+            className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-400 hover:text-gray-600 transition-colors"
+          >
+            <IoClose size={22} />
+          </button>
         </div>
-        <button
-          onClick={handleSubmit(onSubmit)}
-          disabled={loading}
-          className="px-6 py-2.5 bg-darkest-blue hover:bg-blue-900 text-white rounded-xl font-medium shadow-lg shadow-blue-500/20 flex items-center gap-2 transition-all active:scale-95 disabled:opacity-70 disabled:cursor-not-allowed"
-        >
-          {loading ? <span className="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full"></span> : <FiSave size={18} />}
-          <span>Save Changes</span>
-        </button>
-      </div>
 
-      {/* --- Form Content --- */}
-      <div className="max-w-7xl mx-auto px-6 py-8">
-        <form className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-
-          {/* Column 1: Identity & Role */}
-          <div className="space-y-6">
-            <div className="bg-white dark:bg-layout-dark p-6 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-800">
-               <h3 className="text-sm font-bold text-blue-600 uppercase tracking-wider mb-5 flex items-center gap-2 border-b pb-2 dark:border-gray-700">
-                  <FiUser /> Identity
-               </h3>
-               <div className="space-y-4">
-                  <Input label="Full Name" name="name" register={register} error={errors.name} />
-                  <Input label="Email Address" name="email" register={register} error={errors.email} />
-                  <Input label="Phone Number" name="phone" register={register} error={errors.phone} />
-               </div>
+        {/* --- Body --- */}
+        <div className="p-6 overflow-y-auto max-h-[70vh]">
+          <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+            
+            {/* 1. User Identity Card (Read Only) */}
+            <div className="bg-gray-50 dark:bg-gray-800/50 rounded-xl p-4 border border-gray-100 dark:border-gray-700">
+                <div className="flex items-start gap-4">
+                    <div className="h-12 w-12 min-w-[3rem] rounded-full bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 flex items-center justify-center text-xl font-bold text-gray-500 dark:text-gray-300">
+                        {user.name?.charAt(0).toUpperCase() || <FiUser />}
+                    </div>
+                    <div className="flex-1">
+                        <h3 className="text-sm font-bold text-gray-900 dark:text-white">{user.name}</h3>
+                        <p className="text-xs text-gray-500 dark:text-gray-400 font-mono mb-3">{user.employeeId}</p>
+                        
+                        <div className="grid grid-cols-2 gap-2">
+                            <div className="flex items-center gap-2 text-xs text-gray-600 dark:text-gray-300 bg-white dark:bg-gray-800 px-2 py-1.5 rounded border border-gray-200 dark:border-gray-700">
+                                <FiBriefcase className="text-gray-400" />
+                                <span className="truncate">{user.designation || "N/A"}</span>
+                            </div>
+                            <div className="flex items-center gap-2 text-xs text-gray-600 dark:text-gray-300 bg-white dark:bg-gray-800 px-2 py-1.5 rounded border border-gray-200 dark:border-gray-700">
+                                <FiShield className="text-gray-400" />
+                                {/* Show Role Name safely */}
+                                <span className="truncate font-medium text-blue-600 dark:text-blue-400">
+                                    {user.role?.roleName || "No Role"}
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div className="mt-3 pt-3 border-t border-gray-200 dark:border-gray-700 flex items-center gap-2 text-xs text-gray-500">
+                    <FiMail /> {user.email}
+                </div>
             </div>
 
-            <div className="bg-white dark:bg-layout-dark p-6 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-800">
-               <h3 className="text-sm font-bold text-amber-600 uppercase tracking-wider mb-5 flex items-center gap-2 border-b pb-2 dark:border-gray-700">
-                  <FiShield /> Access Control
-               </h3>
-               <div className="space-y-4">
-                  {/* Role Dropdown */}
-                  <div>
-                    <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">System Role</label>
-                    <select 
+            {/* 2. Role Selection */}
+            <div className="space-y-2">
+              <label className="text-xs font-bold text-gray-500 uppercase tracking-wider flex items-center gap-1">
+                  Assign New Role
+              </label>
+              <div className="relative group">
+                  <select 
                       {...register("role")}
-                      className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2.5 text-sm bg-white dark:bg-gray-800 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none transition-all"
-                    >
-                      <option value="">Select Role</option>
+                      className="w-full border border-gray-300 dark:border-gray-700 rounded-xl px-4 py-3 text-sm bg-white dark:bg-gray-800 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 transition-all appearance-none cursor-pointer hover:border-gray-400"
+                  >
+                      <option value="">-- Select Authority Level --</option>
                       {roles.map((role) => (
-                        <option key={role._id} value={role._id}>{role.roleName}</option>
+                          <option key={role._id} value={role._id}>
+                              {role.roleName}
+                          </option>
                       ))}
-                    </select>
-                    {errors.role && <p className="text-red-500 text-[10px] mt-1">{errors.role.message}</p>}
+                  </select>
+                  <div className="absolute inset-y-0 right-0 flex items-center px-4 pointer-events-none text-gray-400 group-hover:text-gray-600">
+                      <FiChevronDown />
                   </div>
-
-                  <Select 
-                    label="Account Status" 
-                    name="status" 
-                    register={register} 
-                    error={errors.status}
-                    options={["Active", "Inactive", "Suspended"]} 
-                  />
-               </div>
-            </div>
-          </div>
-
-          {/* Column 2: Job & Address */}
-          <div className="space-y-6">
-            <div className="bg-white dark:bg-layout-dark p-6 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-800">
-               <h3 className="text-sm font-bold text-emerald-600 uppercase tracking-wider mb-5 flex items-center gap-2 border-b pb-2 dark:border-gray-700">
-                  <FiBriefcase /> Job Details
-               </h3>
-               <div className="space-y-4">
-                  <Input label="Designation" name="designation" register={register} error={errors.designation} />
-                  <Input label="Date of Joining" type="date" name="dateOfJoining" register={register} error={errors.dateOfJoining} />
-                  <Input label="Employee ID" value={userData.employeeId} disabled={true} />
-               </div>
-            </div>
-
-            <div className="bg-white dark:bg-layout-dark p-6 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-800">
-               <h3 className="text-sm font-bold text-purple-600 uppercase tracking-wider mb-5 flex items-center gap-2 border-b pb-2 dark:border-gray-700">
-                  <FiMapPin /> Address
-               </h3>
-               <div className="space-y-4">
-                  <Input label="Street / Building" name="address_street" register={register} error={errors.address_street} />
-                  <div className="grid grid-cols-2 gap-4">
-                    <Input label="City" name="address_city" register={register} error={errors.address_city} />
-                    <Input label="Pincode" name="address_pincode" register={register} error={errors.address_pincode} />
+              </div>
+              {errors.role && (
+                <p className="text-red-500 text-xs flex items-center gap-1 mt-1">
+                  <FiAlertCircle /> {errors.role.message}
+                </p>
+              )}
+              
+              {/* Role Hint */}
+              {selectedRoleDescription && (
+                  <div className="mt-2 text-xs text-gray-500 dark:text-gray-400 bg-blue-50 dark:bg-blue-900/10 p-3 rounded-lg border border-blue-100 dark:border-blue-900/30 italic">
+                      "<span className="font-semibold not-italic text-gray-700 dark:text-gray-300">{selectedRoleDescription}</span>"
                   </div>
-                  <Input label="State" name="address_state" register={register} error={errors.address_state} />
-               </div>
-            </div>
-          </div>
-
-          {/* Column 3: Emergency & ID */}
-          <div className="space-y-6">
-             <div className="bg-white dark:bg-layout-dark p-6 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-800">
-               <h3 className="text-sm font-bold text-rose-600 uppercase tracking-wider mb-5 flex items-center gap-2 border-b pb-2 dark:border-gray-700">
-                  <FiActivity /> Emergency Contact
-               </h3>
-               <div className="space-y-4">
-                  <Input label="Contact Name" name="emergency_name" register={register} error={errors.emergency_name} />
-                  <Input label="Relationship" name="emergency_relationship" register={register} error={errors.emergency_relationship} />
-                  <Input label="Phone Number" name="emergency_phone" register={register} error={errors.emergency_phone} />
-               </div>
+              )}
             </div>
 
-            <div className="bg-white dark:bg-layout-dark p-6 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-800">
-               <h3 className="text-sm font-bold text-gray-600 uppercase tracking-wider mb-5 flex items-center gap-2 border-b pb-2 dark:border-gray-700">
-                  <FiShield /> Legal ID
-               </h3>
-               <div className="space-y-4">
-                  <Select 
-                    label="ID Type" 
-                    name="id_proof_type" 
-                    register={register} 
-                    error={errors.id_proof_type}
-                    options={["Aadhar", "PAN", "Passport", "Voter ID"]} 
-                  />
-                  <Input label="ID Number" name="id_proof_number" register={register} error={errors.id_proof_number} />
-               </div>
+            {/* --- Footer Buttons --- */}
+            <div className="pt-6 border-t border-gray-100 dark:border-gray-800 flex justify-end gap-3">
+              <button
+                type="button"
+                onClick={onclose}
+                className="px-6 py-2.5 text-sm font-medium text-gray-600 bg-white border border-gray-300 rounded-xl hover:bg-gray-50 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-700 dark:hover:bg-gray-700 transition-all"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                disabled={loading}
+                className="px-8 py-2.5 text-sm font-bold text-white bg-darkest-blue rounded-xl hover:bg-blue-900 shadow-lg shadow-blue-500/30 flex items-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed transition-all active:scale-95"
+              >
+                {loading ? (
+                  <div className="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full"></div>
+                ) : (
+                  <FiSave size={16} />
+                )}
+                {loading ? "Updating..." : "Update Access"}
+              </button>
             </div>
-          </div>
 
-        </form>
+          </form>
+        </div>
+        
       </div>
     </div>
   );
 };
-
-// --- Reusable Input Component ---
-const Input = ({ label, name, type = "text", register, error, disabled, value }) => (
-  <div className="w-full">
-    <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">{label}</label>
-    <input 
-      type={type} 
-      {...(register ? register(name) : {})} 
-      disabled={disabled}
-      defaultValue={value}
-      className={`w-full border rounded-lg px-3 py-2.5 text-sm transition-all outline-none
-        ${disabled 
-          ? "bg-gray-100 dark:bg-gray-800 text-gray-500 border-gray-200 dark:border-gray-700 cursor-not-allowed" 
-          : "bg-white dark:bg-gray-800 text-gray-900 dark:text-white border-gray-300 dark:border-gray-600 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
-        }
-      `}
-    />
-    {error && <p className="text-red-500 text-[10px] mt-1">{error.message}</p>}
-  </div>
-);
-
-// --- Reusable Select Component ---
-const Select = ({ label, name, register, error, options }) => (
-  <div className="w-full">
-    <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">{label}</label>
-    <select 
-      {...register(name)} 
-      className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2.5 text-sm bg-white dark:bg-gray-800 dark:text-white focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all"
-    >
-      <option value="">Select...</option>
-      {options.map((opt, i) => (
-        <option key={i} value={opt}>{opt}</option>
-      ))}
-    </select>
-    {error && <p className="text-red-500 text-[10px] mt-1">{error.message}</p>}
-  </div>
-);
 
 export default EditUser;

@@ -338,7 +338,7 @@ const Table = ({
                               onClick={() => {
                                 if (editroutepoint) {
                                   navigate(`${editroutepoint}`, {
-                                    state: { item },
+                                    state: { item:item },
                                   });
                                 }
                                 if (EditModal === true) {
@@ -462,6 +462,7 @@ const Table = ({
           onclose={() => setShowEdit(false)}
           item={selectedItem}
           onUpdated={onUpdated}
+          
         />
       )}
       {ViewModal && showView && (

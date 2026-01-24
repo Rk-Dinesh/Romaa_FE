@@ -1,22 +1,23 @@
 import Filters from "../../../components/Filters";
 import Table from "../../../components/Table";
 import { RiUserAddLine } from "react-icons/ri";
-import DeleteModal from "../../../components/DeleteModal";
 import AddUser from "./AddUser";
 import { useEffect, useState } from "react";
 import { toast } from "react-toastify";
 import axios from "axios";
 import { API } from "../../../constant";
+import EditUser from "./EditUser";
+import DeleteUser from "./DeleteUser";
 
 const UserColumns = [
  { label: "Employee ID", key: "employeeId" },
   { label: "Name", key: "name" },
   { label: "Designation", key: "designation" },
-  { label: "Role Id", key: "role", 
+  { label: "Role Id", key: "role_id", 
     render: (item) =>
       `${item.role?.role_id || ""}`,
   },
-  { label: "Role Name", key: "role", 
+  { label: "Role Name", key: "roleName", 
     render: (item) =>
       `${item.role?.roleName || ""}`,
   },
@@ -56,15 +57,16 @@ const User = () => {
         endpoint={users}
         columns={UserColumns}
         AddModal={AddUser}
-        EditModal={true}
-        editroutepoint={"edituser"}
+        EditModal={EditUser}
+        DeleteModal={DeleteUser}
         FilterModal={Filters}
         addButtonLabel="Add User"
         addButtonIcon={<RiUserAddLine size={23} />}
         onUpdated={fetchUsers}
         onSuccess={fetchUsers}
+        onDelete={fetchUsers}
         loading={loading}
-        
+      
       />
     </div>
   );
