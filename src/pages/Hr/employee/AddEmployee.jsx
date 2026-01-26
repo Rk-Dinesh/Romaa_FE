@@ -22,11 +22,6 @@ const schema = Yup.object().shape({
   phone: Yup.string().required("Phone is required"),
 
   userType: Yup.string().oneOf(["Office", "Site"]).required("User Type required"),
-  assignedProject: Yup.string().when("userType", {
-    is: "Site",
-    then: (schema) => schema.required("Project is required"),
-    otherwise: (schema) => schema.notRequired(),
-  }),
   designation: Yup.string().required("Designation required"),
   dateOfJoining: Yup.date().required("Date required"),
 
@@ -142,16 +137,6 @@ const AddEmployee = ({ onclose, onSuccess }) => {
             <Input label="Designation *" name="designation" register={register} error={errors.designation} placeholder="e.g. Site Engineer" />
             <Input label="Date of Joining *" type="date" name="dateOfJoining" register={register} error={errors.dateOfJoining} />
             <Select label="Work Type *" name="userType" register={register} error={errors.userType} options={["Office", "Site"]} />
-
-            {/* Conditional Project Field */}
-            {userType === "Site" ? (
-              <Select label="Assign Project *" name="assignedProject" register={register} error={errors.assignedProject}
-                options={projects.map(p => ({ label: p.name, value: p._id }))}
-                isObject={true}
-              />
-            ) : (
-              <div className="hidden md:block"></div> // Spacer to keep grid alignment
-            )}
 
             {/* 3. Address Section */}
             <div className={sectionHeaderClass}>
