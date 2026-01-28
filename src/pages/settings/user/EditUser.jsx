@@ -15,12 +15,14 @@ import {
   FiAlertCircle,
   FiUser,
   FiMail,
-  FiBriefcase
+  FiBriefcase,
+  FiMonitor
 } from "react-icons/fi";
 
 // --- Validation Schema ---
 const schema = yup.object().shape({
   role: yup.string().required("Please select a new role"),
+  accessMode: yup.string().required("Please select an access mode"),
 });
 
 // ✅ Receive 'item' directly from the Table component
@@ -40,7 +42,8 @@ const EditUser = ({ item, onclose, onUpdated }) => {
   } = useForm({
     resolver: yupResolver(schema),
     defaultValues: {
-      role: user.role?._id || user.role || "" 
+      role: user.role?._id || user.role || "",
+      accessMode: user.accessMode || "" 
     }
   });
 
@@ -48,7 +51,8 @@ const EditUser = ({ item, onclose, onUpdated }) => {
   useEffect(() => {
     if (user) {
       reset({
-        role: user.role?._id || user.role || "" 
+        role: user.role?._id || user.role || "",
+        accessMode: user.accessMode || ""
       });
     }
   }, [user, reset]);
@@ -76,7 +80,8 @@ const EditUser = ({ item, onclose, onUpdated }) => {
       
       const payload = { 
         employeeId: user.employeeId, 
-        roleId: data.role 
+        roleId: data.role,
+        accessMode: data.accessMode
       };
 
       await axios.put(
@@ -85,12 +90,12 @@ const EditUser = ({ item, onclose, onUpdated }) => {
         { withCredentials: true }
       );
 
-      toast.success("User role updated successfully!");
+      toast.success("User access updated successfully!");
       if (onUpdated) onUpdated();
       onclose();
     } catch (err) {
       console.error("Error updating user:", err);
-      toast.error(err.response?.data?.message || "Failed to update role");
+      toast.error(err.response?.data?.message || "Failed to update access");
     } finally {
       setLoading(false);
     }
@@ -117,7 +122,7 @@ const EditUser = ({ item, onclose, onUpdated }) => {
               </span>
               Reassign User Role
             </h2>
-            <p className="text-xs text-gray-500 mt-1 ml-11">Modify system access level</p>
+            <p className="text-xs text-gray-500 mt-1 ml-11">Modify role and platform access</p>
           </div>
           
           <button 
@@ -149,7 +154,6 @@ const EditUser = ({ item, onclose, onUpdated }) => {
                             </div>
                             <div className="flex items-center gap-2 text-xs text-gray-600 dark:text-gray-300 bg-white dark:bg-gray-800 px-2 py-1.5 rounded border border-gray-200 dark:border-gray-700">
                                 <FiShield className="text-gray-400" />
-                                {/* Show Role Name safely */}
                                 <span className="truncate font-medium text-blue-600 dark:text-blue-400">
                                     {user.role?.roleName || "No Role"}
                                 </span>
@@ -162,40 +166,71 @@ const EditUser = ({ item, onclose, onUpdated }) => {
                 </div>
             </div>
 
-            {/* 2. Role Selection */}
-            <div className="space-y-2">
-              <label className="text-xs font-bold text-gray-500 uppercase tracking-wider flex items-center gap-1">
-                  Assign New Role
-              </label>
-              <div className="relative group">
-                  <select 
-                      {...register("role")}
-                      className="w-full border border-gray-300 dark:border-gray-700 rounded-xl px-4 py-3 text-sm bg-white dark:bg-gray-800 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 transition-all appearance-none cursor-pointer hover:border-gray-400"
-                  >
-                      <option value="">-- Select Authority Level --</option>
-                      {roles.map((role) => (
-                          <option key={role._id} value={role._id}>
-                              {role.roleName}
-                          </option>
-                      ))}
-                  </select>
-                  <div className="absolute inset-y-0 right-0 flex items-center px-4 pointer-events-none text-gray-400 group-hover:text-gray-600">
-                      <FiChevronDown />
+            {/* 2. Form Fields Grid */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                
+                {/* Role Selection */}
+                <div className="space-y-2">
+                  <label className="text-xs font-bold text-gray-500 uppercase tracking-wider flex items-center gap-1">
+                      <FiShield className="text-emerald-500" /> Assign New Role
+                  </label>
+                  <div className="relative group">
+                      <select 
+                          {...register("role")}
+                          className="w-full border border-gray-300 dark:border-gray-700 rounded-xl px-4 py-3 text-sm bg-white dark:bg-gray-800 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 transition-all appearance-none cursor-pointer hover:border-gray-400"
+                      >
+                          <option value="">-- Select Role --</option>
+                          {roles.map((role) => (
+                              <option key={role._id} value={role._id}>
+                                  {role.roleName}
+                              </option>
+                          ))}
+                      </select>
+                      <div className="absolute inset-y-0 right-0 flex items-center px-4 pointer-events-none text-gray-400 group-hover:text-gray-600">
+                          <FiChevronDown />
+                      </div>
                   </div>
-              </div>
-              {errors.role && (
-                <p className="text-red-500 text-xs flex items-center gap-1 mt-1">
-                  <FiAlertCircle /> {errors.role.message}
-                </p>
-              )}
-              
-              {/* Role Hint */}
-              {selectedRoleDescription && (
-                  <div className="mt-2 text-xs text-gray-500 dark:text-gray-400 bg-blue-50 dark:bg-blue-900/10 p-3 rounded-lg border border-blue-100 dark:border-blue-900/30 italic">
-                      "<span className="font-semibold not-italic text-gray-700 dark:text-gray-300">{selectedRoleDescription}</span>"
+                  {errors.role && (
+                    <p className="text-red-500 text-xs flex items-center gap-1 mt-1">
+                      <FiAlertCircle /> {errors.role.message}
+                    </p>
+                  )}
+                </div>
+
+                {/* Access Mode Selection */}
+                <div className="space-y-2">
+                  <label className="text-xs font-bold text-gray-500 uppercase tracking-wider flex items-center gap-1">
+                      <FiMonitor className="text-purple-500" /> Access Mode
+                  </label>
+                  <div className="relative group">
+                      <select 
+                          {...register("accessMode")}
+                          className="w-full border border-gray-300 dark:border-gray-700 rounded-xl px-4 py-3 text-sm bg-white dark:bg-gray-800 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-purple-500/50 focus:border-purple-500 transition-all appearance-none cursor-pointer hover:border-gray-400"
+                      >
+                          <option value="">-- Select Platform --</option>
+                          <option value="WEBSITE">Website Only</option>
+                          <option value="MOBILE">Mobile App Only</option>
+                          <option value="BOTH">Both (Web & Mobile)</option>
+                      </select>
+                      <div className="absolute inset-y-0 right-0 flex items-center px-4 pointer-events-none text-gray-400 group-hover:text-gray-600">
+                          <FiChevronDown />
+                      </div>
                   </div>
-              )}
+                  {errors.accessMode && (
+                    <p className="text-red-500 text-xs flex items-center gap-1 mt-1">
+                      <FiAlertCircle /> {errors.accessMode.message}
+                    </p>
+                  )}
+                </div>
+
             </div>
+              
+            {/* Role Hint */}
+            {selectedRoleDescription && (
+                <div className="mt-0 text-xs text-gray-500 dark:text-gray-400 bg-blue-50 dark:bg-blue-900/10 p-3 rounded-lg border border-blue-100 dark:border-blue-900/30 italic">
+                    "<span className="font-semibold not-italic text-gray-700 dark:text-gray-300">{selectedRoleDescription}</span>"
+                </div>
+            )}
 
             {/* --- Footer Buttons --- */}
             <div className="pt-6 border-t border-gray-100 dark:border-gray-800 flex justify-end gap-3">

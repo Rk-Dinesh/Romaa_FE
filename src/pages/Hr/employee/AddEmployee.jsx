@@ -24,6 +24,7 @@ const schema = Yup.object().shape({
   userType: Yup.string().oneOf(["Office", "Site"]).required("User Type required"),
   designation: Yup.string().required("Designation required"),
   dateOfJoining: Yup.date().required("Date required"),
+  employeeReference: Yup.string(),
 
   address_street: Yup.string().required("Street required"),
   address_city: Yup.string().required("City required"),
@@ -69,6 +70,7 @@ const AddEmployee = ({ onclose, onSuccess }) => {
         status: "Active",
         userType: data.userType,
         dateOfJoining: data.dateOfJoining,
+        employeeReference: data.employeeReference,
         address: {
           street: data.address_street,
           city: data.address_city,
@@ -137,6 +139,7 @@ const AddEmployee = ({ onclose, onSuccess }) => {
             <Input label="Designation *" name="designation" register={register} error={errors.designation} placeholder="e.g. Site Engineer" />
             <Input label="Date of Joining *" type="date" name="dateOfJoining" register={register} error={errors.dateOfJoining} />
             <Select label="Work Type *" name="userType" register={register} error={errors.userType} options={["Office", "Site"]} />
+            <Input label="Employee Reference" name="employeeReference" register={register} error={errors.employeeReference} placeholder="e.g. John Doe" />
 
             {/* 3. Address Section */}
             <div className={sectionHeaderClass}>

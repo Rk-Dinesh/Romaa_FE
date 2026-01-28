@@ -9,7 +9,7 @@ const Assets = () => {
   const [activeTab, setActiveTab] = useState("Machinery");
   const [openForm, setOpenForm] = useState(false);
 
-  const tabs = ["Machinery", "Trucks", "Equipment"];
+  const tabs = ["Machinery",  "Equipment"];
 
   // Submit Machinery Form to API
   const handleMachinerySubmit = async (data) => {

@@ -130,12 +130,14 @@ const ViewUser = () => {
                                         ? <span className="px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700 text-[10px] font-bold border border-emerald-200">ACTIVE</span>
                                         : <span className="px-2 py-0.5 rounded-full bg-gray-100 text-gray-600 text-[10px] font-bold border border-gray-200">INACTIVE</span>
                                     }
+                                    
                                 </h1>
 
                                 <div className="flex items-center gap-3 text-xs text-gray-500 dark:text-gray-400 mt-0.5">
                                     <span className="font-mono">{user.employeeId}</span>
                                     <span>•</span>
                                     <span>{user.designation}</span>
+                                    <span className="font-semibold text-xs italic text-gray-900 dark:text-white">{user.accessMode || "No Access Mode"}</span>
                                 </div>
                             </div>
 
@@ -177,6 +179,7 @@ const ViewUser = () => {
                                 <DetailItem icon={<FiPhone className="text-gray-400" />} label="Phone" value={user.phone} isLink prefix="tel:" />
                                 <DetailItem icon={<FiCalendar className="text-gray-400" />} label="Joined Date" value={formatDate(user.dateOfJoining)} />
                                 <DetailItem icon={<FiUser className="text-gray-400" />} label="User Type" value={user.userType} />
+                                
                             </div>
 
 
@@ -185,7 +188,7 @@ const ViewUser = () => {
                             <span className=" w-3/4 px-3 py-1.5 rounded-lg text-xs font-bold bg-indigo-50 text-indigo-700 border border-indigo-100 dark:bg-indigo-900/30 dark:text-indigo-300 dark:border-indigo-800 flex items-center gap-2">
                                 <FiShield /> {user.role?.roleName || "No Role"}
                             </span>
-                            <span className="font-semibold text-xs italic text-gray-900 dark:text-white">{user.designation || "No Designation"}</span>
+                            <span className="font-semibold text-xs italic text-gray-900 dark:text-white">{user.designation || "No Designation"}</span><br />
                         </div>
 
 

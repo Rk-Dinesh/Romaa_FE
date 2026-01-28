@@ -15,19 +15,19 @@ const TABS = [
   "Bill Abstract",
   "Bill Detailed",
   "Steel 1000MT",
-  "Steel 1000MT Detailed",
   "Steel 1500MT",
-  "Steel 1500MT Detailed",
 ];
 
 const ViewClBillProjects = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const [activeTab, setActiveTab] = useState("Comparative");
-  const rowData = location.state?.item;
+  const rowData = location.state?.item;  
   const tenderId = rowData.tender_id;
   const billId = rowData.bill_id;
   const billSequence = rowData.bill_sequence;
+  const status = rowData.status;
+  
 
   const renderTabContent = () => {
     switch (activeTab) {
@@ -51,7 +51,7 @@ const ViewClBillProjects = () => {
         return (
           <div className="animate-fade-in">
             {/* Pass IDs to the Table Component */}
-            <BillDetailedTable tenderId={tenderId} billId={billId} abstractName="Abstract Estimate" billSequence={billSequence}/>
+            <BillDetailedTable tenderId={tenderId} billId={billId} abstractName="Abstract Estimate" billSequence={billSequence} status={status}/>
           </div>
         );
       case "Steel 1000MT":
@@ -61,25 +61,11 @@ const ViewClBillProjects = () => {
             <p>Content for <span className="font-bold">{activeTab}</span> will go here.</p>
           </div>
         );
-      case "Steel 1000MT Detailed":
-        return (
-          <div className="animate-fade-in">
-            {/* Pass IDs to the Table Component */}
-            <BillDetailedTable tenderId={tenderId} billId={billId} abstractName="Steel 1000MT" billSequence={billSequence}/>
-          </div>
-        );
       case "Steel 1500MT":
         return (
           <div className="flex flex-col items-center justify-center h-40 text-gray-500 animate-fade-in">
             <div className="text-4xl mb-2 opacity-20">📄</div>
             <p>Content for <span className="font-bold">{activeTab}</span> will go here.</p>
-          </div>
-        );
-      case "Steel 1500MT Detailed":
-        return (
-          <div className="animate-fade-in">
-            {/* Pass IDs to the Table Component */}
-            <BillDetailedTable tenderId={tenderId} billId={billId} abstractName="Steel 1500MT" billSequence={billSequence}/>
           </div>
         );
 

@@ -62,10 +62,10 @@ const Roles = () => {
       addroutepoint={"addroles"}
       EditModal={true}
       editroutepoint={"editroles"}
-      DeleteModal={DeleteModal}
-      deletetitle="role"
+      // DeleteModal={DeleteModal}
+      // deletetitle="role"
       idKey="role_id"
-      onDelete={handleDelete}
+      // onDelete={handleDelete}
       FilterModal={Filters}
       addButtonLabel="Add Roles"
       addButtonIcon={<RiUserAddLine size={23} />}

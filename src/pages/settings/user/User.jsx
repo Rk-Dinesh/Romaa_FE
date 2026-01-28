@@ -22,7 +22,10 @@ const UserColumns = [
     render: (item) =>
       `${item.role?.roleName || ""}`,
   },
-  
+  { label: "Access Mode", key: "accessMode", 
+    render: (item) =>
+      `${item.accessMode || ""}`,
+  },
   { label: "Email", key: "email"  },
   { label: "Status", key: "status" },
 ];

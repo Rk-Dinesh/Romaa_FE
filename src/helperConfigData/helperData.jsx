@@ -602,12 +602,6 @@ export const Menus = [
         subModule: "roles",
       },
       {
-        title: "Master",
-        icon: <RiGroupLine size={23} />,
-        to: "/settings/master",
-        subModule: "master",
-      },
-      {
         title: "Assets",
         icon: <RiGroupLine size={23} />,
         to: "/settings/assets",

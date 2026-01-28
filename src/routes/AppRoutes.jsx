@@ -55,7 +55,6 @@ import Login from "../pages/auth/Login";
 import ForgotPassword from "../pages/auth/ForgotPassword";
 import User from "../pages/settings/user/User";
 import Roles from "../pages/settings/roles/Roles";
-import Master from "../pages/settings/master/Master";
 import AddRoles from "../pages/settings/roles/AddRoles";
 import EditRoles from "../pages/settings/roles/EditRoles";
 import SecurityDeposit from "../pages/tender/security deposit/SecurityDeposit";
@@ -539,7 +538,6 @@ const AppRoutes = () => {
               <Route path="editroles" element={<EditRoles />} />
               <Route path="addroles" element={<AddRoles />} />
             </Route>
-            <Route path="master" element={<Master />} />
 
             <Route path="assets" >
               <Route index element={<Assets />} />

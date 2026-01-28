@@ -175,12 +175,13 @@ const EditEmployee = ({ onUpdated, onclose }) => {
             <Input label="Full Name" name="name" register={register} error={errors.name} />
             <Input label="Email ID" name="contact_email" register={register} error={errors.contact_email} />
             <Input label="Mobile No" name="contact_phone" register={register} error={errors.contact_phone} />
-            <Input label="Designation" name="designation" register={register} error={errors.designation} />
+            
 
             {/* 2. Job Info */}
             <div className={sectionHeaderClass}>
                 <FiBriefcase /> Job Details
             </div>
+            <Input label="Designation" name="designation" register={register} error={errors.designation} />
             <Input label="Date of Joining" type="date" name="dateOfJoining" register={register} error={errors.dateOfJoining} />
             
             {/* 3. Address Section */}

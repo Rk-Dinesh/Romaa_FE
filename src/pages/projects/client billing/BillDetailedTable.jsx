@@ -6,7 +6,7 @@ import { TbFileExport } from "react-icons/tb";
 import Button from "../../../components/Button";
 import UploadDetail from "./UploadDetail";
 
-const BillDetailedTable = ({ tenderId, billId, abstractName, billSequence }) => {
+const BillDetailedTable = ({ tenderId, billId, abstractName, billSequence, status }) => {
     const [loading, setLoading] = useState(true);
     const [detailedData, setDetailedData] = useState(null);
     const [error, setError] = useState(null);
@@ -96,23 +96,19 @@ const BillDetailedTable = ({ tenderId, billId, abstractName, billSequence }) => 
 
     return (
         <>
-            {!detailedData ? (
+            
                 <>
-                    {abstractName !== "Abstract Estimate" && (
+                    {abstractName === "Abstract Estimate" && status !== "Approved" && (
                         <div className="flex justify-end mb-4">
                             <Button
                                 onClick={() => setUploadDetail(true)}
-                                button_name="Upload"
+                                button_name="Update Details"
                                 button_icon={<TbFileExport size={20} />}
                             />
                         </div>
                     )}
-                    <div className="flex flex-col items-center justify-center h-40 text-gray-500 animate-fade-in">
-                        <div className="text-4xl mb-2 opacity-20">📄</div>
-                        <p>Detailed for <span className="font-bold">{abstractName}</span> Not Found.</p>
-                    </div>
                 </>
-            ) : (
+      
                 <div className="border border-gray-400 shadow-sm bg-white overflow-hidden font-sans text-sm">
                     <div className="overflow-x-auto">
                         <table className="w-full border-collapse min-w-[1200px]">
@@ -169,7 +165,7 @@ const BillDetailedTable = ({ tenderId, billId, abstractName, billSequence }) => 
                         </table>
                     </div>
                 </div>
-            )}
+         
 
             {uploadDetail && (
                 <UploadDetail

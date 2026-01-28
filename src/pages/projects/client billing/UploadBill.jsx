@@ -93,7 +93,7 @@ const UploadBill = ({ onclose, onSuccess }) => {
                 </button>
 
                 <h2 className="text-xl font-semibold text-gray-800 mb-4 select-none">
-                    Upload Files
+                 Upload Client Bill Details in Excel Format
                 </h2>
 
                 <form

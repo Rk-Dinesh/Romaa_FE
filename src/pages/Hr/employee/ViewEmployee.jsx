@@ -83,6 +83,7 @@ const ViewEmployee = () => {
                 <InfoBlock label="Full Name" value={employee.name} />
                 <InfoBlock label="Email (Login)" value={employee.email} />
                 <InfoBlock label="Phone" value={employee.phone} />
+                <InfoBlock label="Employee Reference" value={employee.employeeReference || "N/A"} />
                 
                 <div className="flex flex-col space-y-1">
                   <span className="text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">Role</span>
@@ -98,7 +99,7 @@ const ViewEmployee = () => {
                     {employee.status}
                   </span>
                 </div>
-              </div>
+              </div> 
             </div>
 
             {/* --- Section 2: Job Details --- */}

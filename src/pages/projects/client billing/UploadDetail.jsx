@@ -52,6 +52,7 @@ const UploadDetail = ({ onclose, onSuccess, abstractName, bill_sequence }) => {
             formData.append("abstract_name", abstractName);
             formData.append("user_sequence", bill_sequence);
             formData.append("created_by_user", "user_id_here");
+            
 
 
             if (files.length === 1) {
@@ -95,7 +96,7 @@ const UploadDetail = ({ onclose, onSuccess, abstractName, bill_sequence }) => {
                 </button>
 
                 <h2 className="text-xl font-semibold text-gray-800 mb-4 select-none">
-                    Upload Files
+                    Update the Bill Details
                 </h2>
 
                 <form
