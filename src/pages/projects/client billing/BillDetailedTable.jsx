@@ -22,7 +22,7 @@ const BillDetailedTable = ({ tenderId, billId, abstractName, billSequence, statu
             if (res.data.status) {
                 setDetailedData(res.data.data);
             } else {
-                setDetailedData(null); 
+                setDetailedData(null);
             }
         } catch (err) {
             setError("Error loading detailed bill.");
@@ -96,83 +96,84 @@ const BillDetailedTable = ({ tenderId, billId, abstractName, billSequence, statu
 
     return (
         <>
-            
-                <>
-                    {abstractName === "Abstract Estimate" && status !== "Approved" && (
-                        <div className="flex justify-end mb-4">
-                            <Button
-                                onClick={() => setUploadDetail(true)}
-                                button_name="Update Details"
-                                button_icon={<TbFileExport size={20} />}
-                            />
-                        </div>
-                    )}
-                </>
-      
-                <div className="border border-gray-400 shadow-sm bg-white overflow-hidden font-sans text-sm">
-                    <div className="overflow-x-auto">
-                        <table className="w-full border-collapse min-w-[1200px]">
-                            <thead className="bg-green-100/50 text-gray-900 font-bold border-b-2 border-gray-400">
-                                <tr>
-                                    <th className="p-2 border-r border-gray-400 w-16 text-center">Code</th>
-                                    <th className="p-2 border-r border-gray-400 text-left min-w-[300px]">Description</th>
-                                    <th className="p-2 border-r border-gray-400 w-16 text-center">Nos</th>
-                                    <th className="p-2 border-r border-gray-400 w-20 text-right">Length</th>
-                                    <th className="p-2 border-r border-gray-400 w-20 text-right">Breadth</th>
-                                    <th className="p-2 border-r border-gray-400 w-20 text-right">Depth</th>
-                                    <th className="p-2 border-r border-gray-400 w-24 text-right bg-green-200/50">Quantity</th>
-                                    <th className="p-2 border-r border-gray-400 w-16 text-center">Unit</th>
-                                    <th className="p-2 w-24 text-center">Mbook</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {Object.entries(groupByDay(detailedData.items)).map(([day, items]) => (
-                                    <React.Fragment key={day}>
-                                        <tr className="bg-blue-100/80 border-b border-gray-300">
-                                            <td colSpan="11" className="p-2 font-bold text-blue-800 uppercase tracking-wide">
-                                                {day}
-                                            </td>
-                                        </tr>
-                                        {items.map((item) => (
-                                            <React.Fragment key={item._id}>
-                                                <tr className="border-b border-gray-300 bg-white">
-                                                    <td className="p-2 border-r border-gray-300 text-center font-bold text-red-600 bg-red-50/20">
-                                                        {item.item_code}
-                                                    </td>
-                                                    <td className="p-2 border-r border-gray-300 font-bold text-red-600 bg-red-50/20">
-                                                        {item.item_name}
-                                                    </td>
-                                                    <td className="border-r border-gray-300"></td>
-                                                    <td className="border-r border-gray-300"></td>
-                                                    <td className="border-r border-gray-300"></td>
-                                                    <td className="border-r border-gray-300"></td>
-                                                    <td className="p-2 border-r border-gray-300 text-right font-bold text-red-600 bg-red-50/20">
-                                                        {formatQty(item.quantity)}
-                                                    </td>
-                                                    <td className="p-2 border-r border-gray-300 text-center font-bold text-red-600 bg-red-50/20">
-                                                        {item.unit}
-                                                    </td>
-                                                    <td className="p-2 text-center text-red-600 font-medium bg-red-50/20">
-                                                        {item.mb_book_ref}
-                                                    </td>
-                                                </tr>
-                                                {item.details && renderDetails(item.details)}
-                                            </React.Fragment>
-                                        ))}
-                                    </React.Fragment>
-                                ))}
-                            </tbody>
-                        </table>
+
+            <>
+                {abstractName === "Abstract Estimate" && status !== "Approved" && (
+                    <div className="flex justify-end mb-4">
+                        <Button
+                            onClick={() => setUploadDetail(true)}
+                            button_name="Update Details"
+                            button_icon={<TbFileExport size={20} />}
+                        />
                     </div>
+                )}
+            </>
+
+            <div className="border border-gray-400 shadow-sm bg-white overflow-hidden font-sans text-sm">
+                <div className="overflow-x-auto">
+                    <table className="w-full border-collapse min-w-[1200px]">
+                        <thead className="bg-green-100/50 text-gray-900 font-bold border-b-2 border-gray-400">
+                            <tr>
+                                <th className="p-2 border-r border-gray-400 w-16 text-center">Code</th>
+                                <th className="p-2 border-r border-gray-400 text-left min-w-[300px]">Description</th>
+                                <th className="p-2 border-r border-gray-400 w-16 text-center">Nos</th>
+                                <th className="p-2 border-r border-gray-400 w-20 text-right">Length</th>
+                                <th className="p-2 border-r border-gray-400 w-20 text-right">Breadth</th>
+                                <th className="p-2 border-r border-gray-400 w-20 text-right">Depth</th>
+                                <th className="p-2 border-r border-gray-400 w-24 text-right bg-green-200/50">Quantity</th>
+                                <th className="p-2 border-r border-gray-400 w-16 text-center">Unit</th>
+                                <th className="p-2 w-24 text-center">Mbook</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {Object.entries(groupByDay(detailedData.items)).map(([day, items]) => (
+                                <React.Fragment key={day}>
+                                    <tr className="bg-blue-100/80 border-b border-gray-300">
+                                        <td colSpan="11" className="p-2 font-bold text-blue-800 uppercase tracking-wide">
+                                            {day}
+                                        </td>
+                                    </tr>
+                                    {items.map((item) => (
+                                        <React.Fragment key={item._id}>
+                                            <tr className="border-b border-gray-300 bg-white">
+                                                <td className="p-2 border-r border-gray-300 text-center font-bold text-red-600 bg-red-50/20">
+                                                    {item.item_code}
+                                                </td>
+                                                <td className="p-2 border-r border-gray-300 font-bold text-red-600 bg-red-50/20">
+                                                    {item.item_name}
+                                                </td>
+                                                <td className="border-r border-gray-300"></td>
+                                                <td className="border-r border-gray-300"></td>
+                                                <td className="border-r border-gray-300"></td>
+                                                <td className="border-r border-gray-300"></td>
+                                                <td className="p-2 border-r border-gray-300 text-right font-bold text-red-600 bg-red-50/20">
+                                                    {formatQty(item.quantity)}
+                                                </td>
+                                                <td className="p-2 border-r border-gray-300 text-center font-bold text-red-600 bg-red-50/20">
+                                                    {item.unit}
+                                                </td>
+                                                <td className="p-2 text-center text-red-600 font-medium bg-red-50/20">
+                                                    {item.mb_book_ref}
+                                                </td>
+                                            </tr>
+                                            {item.details && renderDetails(item.details)}
+                                        </React.Fragment>
+                                    ))}
+                                </React.Fragment>
+                            ))}
+                        </tbody>
+                    </table>
                 </div>
-         
+            </div>
+
 
             {uploadDetail && (
                 <UploadDetail
                     onSuccess={fetchData}
                     onclose={handleClose}
-                    abstractName={abstractName}
+                    bill_id={billId}
                     bill_sequence={billSequence}
+                    abstractName={abstractName}
                 />
             )}
         </>

@@ -10,12 +10,11 @@ ABS001,EARTH WORK,Laying and curing concrete for foundation,"M20 grade, 28-day c
 ABS002,Refilling,Brick work in cement mortar 1:6,"First class bricks, modular size 225×112×75mm, 1:6 cement mortar mix",m2,380,60,50,38.95,Proper alignment required,Superstructure
 `;
 
-const UploadDetail = ({ onclose, onSuccess, abstractName, bill_sequence }) => {
+const UploadDetail = ({ onclose, onSuccess, abstractName, bill_sequence, bill_id }) => {
     const [files, setFiles] = useState([]);
     const [saving, setSaving] = useState(false);
     const inputRef = useRef(null);
     const { tenderId } = useProject();
-    console.log(tenderId, abstractName, bill_sequence);
 
     const handleFiles = (selectedFiles) => {
         const fileArray = Array.from(selectedFiles);
@@ -49,8 +48,9 @@ const UploadDetail = ({ onclose, onSuccess, abstractName, bill_sequence }) => {
             const formData = new FormData();
             // Append required fields (replace with actual values or props)
             formData.append("tender_id", tenderId);
-            formData.append("abstract_name", abstractName);
+            formData.append("bill_id", bill_id);
             formData.append("user_sequence", bill_sequence);
+            formData.append("abstract_name", abstractName);
             formData.append("created_by_user", "user_id_here");
             
 
@@ -58,9 +58,16 @@ const UploadDetail = ({ onclose, onSuccess, abstractName, bill_sequence }) => {
             if (files.length === 1) {
                 // Single file upload
                 formData.append("file", files[0]);
-                await axios.post(`${API}/billing/upload-csv`, formData, {
-                    headers: { "Content-Type": "multipart/form-data" },
-                });
+                if(abstractName === "Abstract Estimate"){
+                    await axios.post(`${API}/billing/upload-csv`, formData, {
+                        headers: { "Content-Type": "multipart/form-data" },
+                    });
+                }
+                else{
+                    await axios.post(`${API}/steelestimate/upload-csv`, formData, {
+                        headers: { "Content-Type": "multipart/form-data" },
+                    });
+                }
             }
             if (onSuccess) onSuccess();
             if (onclose) onclose();

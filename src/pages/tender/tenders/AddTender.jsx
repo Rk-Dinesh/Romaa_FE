@@ -3,10 +3,10 @@ import { useForm } from "react-hook-form";
 import { yupResolver } from "@hookform/resolvers/yup";
 import * as yup from "yup";
 import { IoClose, IoSaveOutline } from "react-icons/io5";
-import { InputField } from "../../../components/InputField";
 import axios from "axios";
 import { API } from "../../../constant";
 import { toast } from "react-toastify";
+import { InputFieldTender } from "../../../components/InputFieldTender";
 
 // --- VALIDATION SCHEMA ---
 const schema = yup.object().shape({
@@ -119,11 +119,11 @@ const AddTender = ({ onclose, onSuccess }) => {
             
             {/* Full Width Name */}
             <div className="col-span-2">
-              <InputField label="Tender Name" name="tender_name" placeholder="Enter tender name" register={register} errors={errors} />
+              <InputFieldTender label="Tender Name" name="tender_name" placeholder="Enter tender name" register={register} errors={errors} />
             </div>
             
             <div className="col-span-1">
-              <InputField 
+              <InputFieldTender 
                 label="Tender Type" 
                 type="select" 
                 name="tender_type" 
@@ -137,18 +137,18 @@ const AddTender = ({ onclose, onSuccess }) => {
               />
             </div>
             <div className="col-span-1">
-              <InputField label="Estimated Value (₹)" name="tender_value" type="number" register={register} errors={errors} />
+              <InputFieldTender label="Estimated Value (₹)" name="tender_value" type="number" register={register} errors={errors} />
             </div>
 
             <div className="col-span-2">
-               <InputField label="Description" type="textarea" name="tender_description" placeholder="Scope of work..." register={register} errors={errors} />
+               <InputFieldTender label="Description" type="textarea" name="tender_description" placeholder="Scope of work..." register={register} errors={errors} />
             </div>
 
             {/* 2. Client Info */}
             <SectionHeader title="Client Information" />
             
             <div className="col-span-1">
-              <InputField 
+              <InputFieldTender 
                 label="Client ID" 
                 type="select" 
                 name="client_id" 
@@ -158,7 +158,7 @@ const AddTender = ({ onclose, onSuccess }) => {
               />
             </div>
             <div className="col-span-1">
-              <InputField 
+              <InputFieldTender 
                 label="Client Name" 
                 type="select" 
                 name="client_name" 
@@ -169,61 +169,61 @@ const AddTender = ({ onclose, onSuccess }) => {
             </div>
 
             <div className="col-span-1">
-              <InputField label="Contact Person" name="tender_contact_person" register={register} errors={errors} />
+              <InputFieldTender label="Contact Person" name="tender_contact_person" register={register} errors={errors} />
             </div>
             <div className="col-span-1">
-              <InputField label="Phone Number" name="tender_contact_phone" type="number" register={register} errors={errors} />
+              <InputFieldTender label="Phone Number" name="tender_contact_phone" type="number" register={register} errors={errors} />
             </div>
             <div className="col-span-2">
-              <InputField label="Email Address" name="tender_contact_email" type="email" register={register} errors={errors} />
+              <InputFieldTender label="Email Address" name="tender_contact_email" type="email" register={register} errors={errors} />
             </div>
 
             {/* 3. Timeline */}
             <SectionHeader title="Schedule & EMD" />
 
             <div className="col-span-1">
-               <InputField label="Published Date" name="tender_start_date" type="date" register={register} errors={errors} />
+               <InputFieldTender label="Published Date" name="tender_start_date" type="date" register={register} errors={errors} />
             </div>
             <div className="col-span-1">
-               <InputField label="Bid Submission Due" name="tender_end_date" type="date" register={register} errors={errors} />
-            </div>
-
-            <div className="col-span-1">
-               <InputField label="Duration" name="tender_duration" placeholder="e.g. 12 Months" register={register} errors={errors} />
-            </div>
-            <div className="col-span-1">
-               <InputField label="Completion Target" name="consider_completion_duration" placeholder="e.g. 10 Months" register={register} errors={errors} />
+               <InputFieldTender label="Bid Submission Due" name="tender_end_date" type="date" register={register} errors={errors} />
             </div>
 
             <div className="col-span-1">
-               <InputField label="EMD Amount (₹)" name="emd.emd_amount" type="number" register={register} errors={errors} />
+               <InputFieldTender label="Duration" name="tender_duration" placeholder="e.g. 12 Months" register={register} errors={errors} />
             </div>
             <div className="col-span-1">
-               <InputField label="EMD Validity" name="emd.emd_validity" type="date" register={register} errors={errors} />
+               <InputFieldTender label="Completion Target" name="consider_completion_duration" placeholder="e.g. 10 Months" register={register} errors={errors} />
+            </div>
+
+            <div className="col-span-1">
+               <InputFieldTender label="EMD Amount (₹)" name="emd.emd_amount" type="number" register={register} errors={errors} />
+            </div>
+            <div className="col-span-1">
+               <InputFieldTender label="EMD Validity" name="emd.emd_validity" type="date" register={register} errors={errors} />
             </div>
 
             {/* 4. Location */}
             <SectionHeader title="Site Location" />
 
             <div className="col-span-1">
-               <InputField label="City" name="tender_location.city" register={register} errors={errors} />
+               <InputFieldTender label="City" name="tender_location.city" register={register} errors={errors} />
             </div>
             <div className="col-span-1">
-               <InputField label="State" name="tender_location.state" register={register} errors={errors} />
-            </div>
-
-            <div className="col-span-1">
-               <InputField label="Pincode" name="tender_location.pincode" register={register} errors={errors} />
-            </div>
-            <div className="col-span-1">
-               <InputField label="Country" name="tender_location.country" register={register} errors={errors} />
+               <InputFieldTender label="State" name="tender_location.state" register={register} errors={errors} />
             </div>
 
             <div className="col-span-1">
-               <InputField label="Latitude" name="site_location.latitude" type="number" register={register} errors={errors} />
+               <InputFieldTender label="Pincode" name="tender_location.pincode" register={register} errors={errors} />
             </div>
             <div className="col-span-1">
-               <InputField label="Longitude" name="site_location.longitude" type="number" register={register} errors={errors} />
+               <InputFieldTender label="Country" name="tender_location.country" register={register} errors={errors} />
+            </div>
+
+            <div className="col-span-1">
+               <InputFieldTender label="Latitude" name="site_location.latitude" type="number" register={register} errors={errors} />
+            </div>
+            <div className="col-span-1">
+               <InputFieldTender label="Longitude" name="site_location.longitude" type="number" register={register} errors={errors} />
             </div>
 
           </form>

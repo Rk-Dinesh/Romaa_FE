@@ -8,6 +8,7 @@ import Button from "../../../components/Button";
 import ComparativeTable from "./ComparativeTable";
 import BillAbstractTable from "./BillAbstractTable";
 import BillDetailedTable from "./BillDetailedTable";
+import SteelDetailedTable from "./SteelDetailedTable";
 
 // Define the tabs list
 const TABS = [
@@ -56,19 +57,16 @@ const ViewClBillProjects = () => {
         );
       case "Steel 1000MT":
         return (
-          <div className="flex flex-col items-center justify-center h-40 text-gray-500 animate-fade-in">
-            <div className="text-4xl mb-2 opacity-20">📄</div>
-            <p>Content for <span className="font-bold">{activeTab}</span> will go here.</p>
+          <div className="animate-fade-in">
+            <SteelDetailedTable tenderId={tenderId} billId={billId} abstractName="Steel 1000MT" billSequence={billSequence} status={status}/>
           </div>
         );
       case "Steel 1500MT":
         return (
-          <div className="flex flex-col items-center justify-center h-40 text-gray-500 animate-fade-in">
-            <div className="text-4xl mb-2 opacity-20">📄</div>
-            <p>Content for <span className="font-bold">{activeTab}</span> will go here.</p>
+          <div className="animate-fade-in">
+            <SteelDetailedTable tenderId={tenderId} billId={billId} abstractName="Steel 1500MT" billSequence={billSequence} status={status}/>
           </div>
         );
-
       default:
         return (
           <div className="flex flex-col items-center justify-center h-40 text-gray-500 animate-fade-in">

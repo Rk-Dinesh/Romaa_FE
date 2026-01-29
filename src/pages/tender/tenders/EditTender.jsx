@@ -1,198 +1,307 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { yupResolver } from "@hookform/resolvers/yup";
 import * as yup from "yup";
+import { IoClose, IoSaveOutline } from "react-icons/io5";
 import axios from "axios";
-import { IoClose } from "react-icons/io5";
 import { API } from "../../../constant";
-import { InputField } from "../../../components/InputField";
 import { toast } from "react-toastify";
+import { InputFieldTender } from "../../../components/InputFieldTender";
 
-// ✅ Validation Schema (matches AddTender)
+// --- VALIDATION SCHEMA (Same as AddTender) ---
 const schema = yup.object().shape({
   tender_name: yup.string().required("Tender Name is required"),
   tender_start_date: yup.date().required("Published Date is required"),
-  tender_type: yup
-    .string()
-    .oneOf(["item rate contarct", "percentage", "lumpsum"], "Invalid Tender Type")
-    .required("Tender Type is required"),
+  tender_type: yup.string().required("Tender Type is required"),
   client_id: yup.string().required("Client ID is required"),
   client_name: yup.string().required("Client Name is required"),
   tender_contact_person: yup.string().required("Contact Person is required"),
-  tender_contact_phone: yup
-    .string()
-    .matches(/^[0-9]{10}$/, "Phone Number must be exactly 10 digits")
-    .required("Phone Number is required"),
-  tender_contact_email: yup
-    .string()
-    .email("Invalid email")
-    .required("Contact Email is required"),
-
-  // Nested location schema
+  tender_contact_phone: yup.string().matches(/^[0-9]{10}$/, "10 digits required").required("Phone is required"),
+  tender_contact_email: yup.string().email("Invalid email").required("Email is required"),
   tender_location: yup.object({
     city: yup.string().required("City is required"),
     state: yup.string().required("State is required"),
     country: yup.string().required("Country is required"),
-    pincode: yup
-      .string()
-      .matches(/^[0-9]{6}$/, "Pincode must be 6 digits")
-      .required("Pincode is required"),
+    pincode: yup.string().matches(/^[0-9]{6}$/, "6 digits required").required("Pincode is required"),
   }),
-
-  tender_duration: yup.string().required("Project Duration is required"),
-  tender_value: yup
-    .number()
-    .typeError("Proposal Cost must be a number")
-    .positive("Proposal Cost must be a positive number")
-    .required("Proposal Cost is required"),
+  tender_duration: yup.string().required("Duration is required"),
+  consider_completion_duration: yup.string().required("Completion Duration is required"),
+  tender_value: yup.number().typeError("Must be a number").positive().required("Cost is required"),
   tender_end_date: yup.date().required("Due Date is required"),
-
-  // Nested EMD schema
   emd: yup.object({
-    emd_amount: yup
-      .number()
-      .typeError("EMD must be a number")
-      .required("EMD is required"),
-    emd_validity: yup.date().required("EMD Expiry Date is required"),
+    emd_amount: yup.number().typeError("Must be a number").required("EMD is required"),
+    emd_validity: yup.date().required("Expiry Date is required"),
   }),
-
-  tender_description: yup
-    .string()
-    .max(500, "Description cannot exceed 500 characters")
-    .required("Description is required"),
+  tender_description: yup.string().max(500).required("Description is required"),
+  site_location: yup.object({
+    latitude: yup.number().typeError("Num required").required("Lat required"),
+    longitude: yup.number().typeError("Num required").required("Lng required"),
+  }),
 });
+
+// --- TEXT-ONLY HEADER ---
+const SectionHeader = ({ title }) => (
+  <div className="col-span-2 mt-4 mb-2 pb-1 border-b border-gray-200 dark:border-gray-700">
+    <h3 className="text-xs font-bold text-blue-600 dark:text-blue-400 uppercase tracking-widest">
+      {title}
+    </h3>
+  </div>
+);
+
+// Helper to format date for input (YYYY-MM-DD)
+const formatDate = (dateString) => {
+  if (!dateString) return "";
+  return new Date(dateString).toISOString().split("T")[0];
+};
 
 const EditTender = ({ item, onclose, onUpdated }) => {
   const [loading, setLoading] = useState(false);
+  const [clients, setClients] = useState([]);
 
-  // Pre-fill values from item
-  const { register, handleSubmit, formState: { errors } } = useForm({
+  // 1. Fetch Clients (Needed for Dropdowns & Auto-fill)
+  useEffect(() => {
+    axios.get(`${API}/client/getallclients`)
+      .then((res) => setClients(res.data.data))
+      .catch((err) => console.error("Error fetching clients", err));
+  }, []);
+
+  // 2. Initialize Form with Default Values from 'item'
+  const { register, handleSubmit, setValue, watch, formState: { errors } } = useForm({
     resolver: yupResolver(schema),
     defaultValues: {
       tender_name: item.tender_name,
-      tender_start_date: item.tender_start_date
-        ? new Date(item.tender_start_date).toISOString().split("T")[0]
-        : "",
       tender_type: item.tender_type,
+      tender_value: item.tender_value,
+      tender_description: item.tender_description,
+      
       client_id: item.client_id,
       client_name: item.client_name,
       tender_contact_person: item.tender_contact_person,
       tender_contact_phone: item.tender_contact_phone,
       tender_contact_email: item.tender_contact_email,
+
+      // Dates
+      tender_start_date: formatDate(item.tender_start_date),
+      tender_end_date: formatDate(item.tender_end_date),
+      
+      tender_duration: item.tender_duration,
+      consider_completion_duration: item.consider_completion_duration,
+
+      // Nested Objects
       tender_location: {
         city: item.tender_location?.city,
         state: item.tender_location?.state,
         country: item.tender_location?.country,
         pincode: item.tender_location?.pincode,
       },
-      tender_duration: item.tender_duration,
-      tender_value: item.tender_value,
-      tender_end_date: item.tender_end_date
-        ? new Date(item.tender_end_date).toISOString().split("T")[0]
-        : "",
       emd: {
         emd_amount: item.emd?.emd_amount,
-        emd_validity: item.emd?.emd_validity
-          ? new Date(item.emd.emd_validity).toISOString().split("T")[0]
-          : "",
+        emd_validity: formatDate(item.emd?.emd_validity),
       },
-      tender_description: item.tender_description,
+      site_location: {
+        latitude: item.site_location?.latitude,
+        longitude: item.site_location?.longitude,
+      }
     }
   });
 
+  // 3. Client Auto-fill Logic (Same as AddTender)
+  const selectedClientId = watch("client_id");
+  const selectedClientName = watch("client_name");
+
+  useEffect(() => {
+    if (selectedClientId && clients.length > 0) {
+      const found = clients.find((c) => c.client_id === selectedClientId);
+      if (found && found.client_name !== selectedClientName) {
+        setValue("client_name", found.client_name, { shouldValidate: true });
+      }
+    }
+  }, [selectedClientId, clients, setValue]);
+
+  useEffect(() => {
+    if (selectedClientName && clients.length > 0) {
+      const found = clients.find((c) => c.client_name === selectedClientName);
+      if (found && found.client_id !== selectedClientId) {
+        setValue("client_id", found.client_id, { shouldValidate: true });
+      }
+    }
+  }, [selectedClientName, clients, setValue]);
+
+  // 4. Submit Handler
   const onSubmit = async (data) => {
     try {
       setLoading(true);
       await axios.put(`${API}/tender/updatetender/${item.tender_id}`, data);
+      toast.success("Tender updated successfully ✅");
       if (onUpdated) onUpdated();
       onclose();
-      toast.success("Tender updated successfully ✅");
     } catch (err) {
-      console.error("Update failed", err);
-      alert("Failed to update tender. Please try again.");
+      console.error(err);
+      toast.error(err.response?.data?.message || "Failed to update tender");
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div
-      className="font-roboto-flex fixed inset-0 grid justify-center items-center backdrop-blur-xs backdrop-grayscale-50 drop-shadow-lg z-20"
-      onClick={onclose}
-    >
-      <div
-        className="mx-2 shadow-lg py-2 dark:bg-overall_bg-dark bg-white rounded-md lg:w-[900px] md:w-[600px] w-96"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <p
-          onClick={onclose}
-          disabled={loading}
-          className="place-self-end cursor-pointer dark:bg-overall_bg-dark bg-white rounded-full -mx-2 -my-3"
-        >
-          <IoClose className="size-[24px]" />
-        </p>
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 font-layout-font">
+      
+      {/* Modal Container */}
+      <div className="bg-white dark:bg-gray-900 w-full max-w-4xl rounded-lg shadow-2xl flex flex-col max-h-[90vh] border border-gray-200 dark:border-gray-800">
+        
+        {/* --- Header --- */}
+        <div className="flex justify-between items-center px-6 py-4 bg-gray-50 dark:bg-gray-800/50 border-b border-gray-200 dark:border-gray-700">
+          <div>
+            <h1 className="text-lg font-bold text-gray-800 dark:text-white">Edit Tender Details</h1>
+            <p className="text-xs text-gray-500 mt-0.5">Update project information</p>
+          </div>
+          <button onClick={onclose} className="text-gray-400 hover:text-gray-600 transition-colors">
+            <IoClose size={24} />
+          </button>
+        </div>
 
-        <h1 className="text-center font-medium text-2xl py-2">Edit Tender</h1>
-
-        <form onSubmit={handleSubmit(onSubmit)}>
-          <div className="grid lg:grid-cols-2 md:grid-cols-1 gap-4 px-6 py-6">
-            {/* Left column */}
-            <div className="space-y-4">
-              <InputField label="Tender Name" name="tender_name" register={register} errors={errors} placeholder="Enter tender name" />
-              <InputField label="Tender Published Date" name="tender_start_date" type="date" register={register} errors={errors} />
-              <InputField
-                label="Tender Type"
-                type="select"
-                name="tender_type"
-                register={register}
+        {/* --- Form Body --- */}
+        <div className="flex-1 overflow-y-auto px-8 py-6 custom-scrollbar">
+          <form id="editTenderForm" onSubmit={handleSubmit(onSubmit)} className="grid grid-cols-2 gap-x-8 gap-y-4">
+            
+            {/* 1. Project Info */}
+            <SectionHeader title="Project Details" />
+            
+            <div className="col-span-2">
+              <InputFieldTender label="Tender Name" name="tender_name" placeholder="Enter tender name" register={register} errors={errors} />
+            </div>
+            
+            <div className="col-span-1">
+              <InputFieldTender 
+                label="Tender Type" 
+                type="select" 
+                name="tender_type" 
+                register={register} 
                 errors={errors}
                 options={[
-                  { value: "item rate contarct", label: "Item Rate contract" },
+                  { value: "item rate contarct", label: "Item Rate" },
                   { value: "percentage", label: "Percentage" },
                   { value: "lumpsum", label: "Lumpsum" },
                 ]}
               />
-              <InputField label="Client ID" name="client_id" register={register} errors={errors} placeholder="Enter client ID" />
-              <InputField label="Client Name" name="client_name" register={register} errors={errors} placeholder="Enter client name" />
-              <InputField label="Contact Person" name="tender_contact_person" register={register} errors={errors} placeholder="Enter contact person" />
-              <InputField label="Phone Number" name="tender_contact_phone" register={register} errors={errors} placeholder="Enter phone number" type="number"/>
-              <InputField label="Contact Email" name="tender_contact_email" type="email" register={register} errors={errors} placeholder="Enter contact email" />
-              <InputField label="City" name="tender_location.city" register={register} errors={errors} placeholder="Enter city" />
+            </div>
+            <div className="col-span-1">
+              <InputFieldTender label="Estimated Value (₹)" name="tender_value" type="number" register={register} errors={errors} />
             </div>
 
-            {/* Right column */}
-            <div className="space-y-4">
-              <InputField label="State" name="tender_location.state" register={register} errors={errors} placeholder="Enter state" />
-              <InputField label="Country" name="tender_location.country" register={register} errors={errors} placeholder="Enter country" />
-              <InputField label="Pincode" name="tender_location.pincode" register={register} errors={errors} placeholder="Enter pincode" />
-              <InputField label="Project Duration" name="tender_duration" register={register} errors={errors} placeholder="Enter duration" />
-              <InputField label="Tender Value" name="tender_value" register={register} errors={errors} placeholder="Enter cost" type="number"/>
-              <InputField label="Due Date" name="tender_end_date" type="date" register={register} errors={errors} />
-              <InputField label="EMD Value" name="emd.emd_amount" register={register} errors={errors} placeholder="Enter EMD Value" type="number"/>
-              <InputField label="EMD Expiry Date" name="emd.emd_validity" type="date" register={register} errors={errors} />
-              <InputField label="Description" type="textarea" name="tender_description" register={register} errors={errors} placeholder="Enter description" />
+            <div className="col-span-2">
+               <InputFieldTender label="Description" type="textarea" name="tender_description" placeholder="Scope of work..." register={register} errors={errors} />
             </div>
-          </div>
 
-          {/* Actions */}
-          <div className="mx-5 text-xs flex lg:justify-end gap-2 mb-4">
-            <button
-              type="button"
-              onClick={onclose}
-              disabled={loading}
-              className="cursor-pointer border border-darkest-blue dark:border-white px-6 py-2 rounded"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              disabled={loading}
-              className={`cursor-pointer px-6 text-white rounded ${loading ? "bg-gray-500 cursor-not-allowed" : "bg-darkest-blue"}`}
-            >
-              {loading ? "Saving..." : "Save"}
-            </button>
-          </div>
-        </form>
+            {/* 2. Client Info */}
+            <SectionHeader title="Client Information" />
+            
+            <div className="col-span-1">
+              <InputFieldTender 
+                label="Client ID" 
+                type="select" 
+                name="client_id" 
+                register={register} 
+                errors={errors}
+                options={clients.map(c => ({ value: c.client_id, label: c.client_id }))}
+              />
+            </div>
+            <div className="col-span-1">
+              <InputFieldTender 
+                label="Client Name" 
+                type="select" 
+                name="client_name" 
+                register={register} 
+                errors={errors}
+                options={clients.map(c => ({ value: c.client_name, label: c.client_name }))}
+              />
+            </div>
+
+            <div className="col-span-1">
+              <InputFieldTender label="Contact Person" name="tender_contact_person" register={register} errors={errors} />
+            </div>
+            <div className="col-span-1">
+              <InputFieldTender label="Phone Number" name="tender_contact_phone" type="number" register={register} errors={errors} />
+            </div>
+            <div className="col-span-2">
+              <InputFieldTender label="Email Address" name="tender_contact_email" type="email" register={register} errors={errors} />
+            </div>
+
+            {/* 3. Timeline & Finance */}
+            <SectionHeader title="Schedule & EMD" />
+
+            <div className="col-span-1">
+               <InputFieldTender label="Published Date" name="tender_start_date" type="date" register={register} errors={errors} />
+            </div>
+            <div className="col-span-1">
+               <InputFieldTender label="Bid Submission Due" name="tender_end_date" type="date" register={register} errors={errors} />
+            </div>
+
+            <div className="col-span-1">
+               <InputFieldTender label="Duration" name="tender_duration" placeholder="e.g. 12 Months" register={register} errors={errors} />
+            </div>
+            <div className="col-span-1">
+               <InputFieldTender label="Completion Target" name="consider_completion_duration" placeholder="e.g. 10 Months" register={register} errors={errors} />
+            </div>
+
+            <div className="col-span-1">
+               <InputFieldTender label="EMD Amount (₹)" name="emd.emd_amount" type="number" register={register} errors={errors} />
+            </div>
+            <div className="col-span-1">
+               <InputFieldTender label="EMD Validity" name="emd.emd_validity" type="date" register={register} errors={errors} />
+            </div>
+
+            {/* 4. Location */}
+            <SectionHeader title="Site Location" />
+
+            <div className="col-span-1">
+               <InputFieldTender label="City" name="tender_location.city" register={register} errors={errors} />
+            </div>
+            <div className="col-span-1">
+               <InputFieldTender label="State" name="tender_location.state" register={register} errors={errors} />
+            </div>
+
+            <div className="col-span-1">
+               <InputFieldTender label="Pincode" name="tender_location.pincode" register={register} errors={errors} />
+            </div>
+            <div className="col-span-1">
+               <InputFieldTender label="Country" name="tender_location.country" register={register} errors={errors} />
+            </div>
+
+            <div className="col-span-1">
+               <InputFieldTender label="Latitude" name="site_location.latitude" type="number" register={register} errors={errors} />
+            </div>
+            <div className="col-span-1">
+               <InputFieldTender label="Longitude" name="site_location.longitude" type="number" register={register} errors={errors} />
+            </div>
+
+          </form>
+        </div>
+
+        {/* --- Footer --- */}
+        <div className="px-6 py-4 bg-gray-50 dark:bg-gray-800/50 border-t border-gray-200 dark:border-gray-700 flex justify-end gap-3 rounded-b-lg">
+          <button
+            type="button"
+            onClick={onclose}
+            disabled={loading}
+            className="px-6 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded hover:bg-gray-50 transition-colors dark:bg-gray-800 dark:text-gray-300 dark:border-gray-700"
+          >
+            Cancel
+          </button>
+          <button
+            type="submit"
+            form="editTenderForm"
+            disabled={loading}
+            className="px-8 py-2 text-sm font-bold text-white bg-darkest-blue hover:bg-blue-900 rounded shadow-sm flex items-center gap-2 transition-all disabled:opacity-70 disabled:cursor-not-allowed"
+          >
+            {loading ? "Updating..." : (
+              <>
+                 <IoSaveOutline size={16} /> Update Tender
+              </>
+            )}
+          </button>
+        </div>
+
       </div>
     </div>
   );

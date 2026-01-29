@@ -2,11 +2,13 @@ import React, { useState } from "react";
 import { useForm } from "react-hook-form";
 import { yupResolver } from "@hookform/resolvers/yup";
 import * as yup from "yup";
+import { IoClose, IoSaveOutline } from "react-icons/io5";
 import axios from "axios";
-import { IoClose } from "react-icons/io5";
-import { API } from "../../../constant";
 import { toast } from "react-toastify";
+import { InputFieldTender } from "../../../components/InputFieldTender";
+import { API } from "../../../constant";
 
+// --- VALIDATION SCHEMA ---
 const schema = yup.object().shape({
   client_name: yup.string().required("Client Name is required"),
   pan_no: yup.string().required("PAN Number is required"),
@@ -16,7 +18,10 @@ const schema = yup.object().shape({
     .string()
     .matches(/^[0-9]{10}$/, "Phone number must be 10 digits")
     .required("Phone Number is required"),
-  contact_email: yup.string().email("Invalid email").required("Email ID is required"),
+  contact_email: yup
+    .string()
+    .email("Invalid Email")
+    .required("Email ID is required"),
   city: yup.string().required("City is required"),
   state: yup.string().required("State is required"),
   country: yup.string().required("Country is required"),
@@ -26,26 +31,24 @@ const schema = yup.object().shape({
     .required("Pincode is required"),
 });
 
-const InputField = ({ label, name, register, errors, placeholder, type = "text" }) => (
-  <div className="grid grid-cols-8 items-center gap-4">
-    <label className="col-span-3 text-sm font-medium">{label}</label>
-    <input
-      type={type}
-      placeholder={placeholder}
-      {...register(name)}
-      className={`col-span-5 border dark:border-border-dark-grey border-input-bordergrey rounded-lg outline-none py-2 px-2 placeholder:text-xs placeholder:font-light placeholder-black dark:placeholder-white ${
-        errors[name] ? "border-red-500" : ""
-      }`}
-    />
-    {errors[name] && (
-      <p className="text-red-500 text-xs col-span-8 text-end">{errors[name].message}</p>
-    )}
+// --- SECTION HEADER ---
+const SectionHeader = ({ title }) => (
+  <div className="col-span-2 mt-4 mb-2 pb-1 border-b border-gray-200 dark:border-gray-700">
+    <h3 className="text-xs font-bold text-blue-600 dark:text-blue-400 uppercase tracking-widest">
+      {title}
+    </h3>
   </div>
 );
 
 const EditClients = ({ item, onclose, onUpdated }) => {
-   const [loading, setLoading] = useState(false);
-  const { register, handleSubmit, formState: { errors } } = useForm({
+  const [loading, setLoading] = useState(false);
+
+  // Initialize Form with Item Data
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+  } = useForm({
     resolver: yupResolver(schema),
     defaultValues: {
       client_name: item.client_name,
@@ -54,6 +57,7 @@ const EditClients = ({ item, onclose, onUpdated }) => {
       gstin: item.gstin,
       contact_phone: item.contact_phone,
       contact_email: item.contact_email,
+      // Map nested address object to flat form fields
       city: item.address?.city,
       state: item.address?.state,
       country: item.address?.country,
@@ -63,7 +67,7 @@ const EditClients = ({ item, onclose, onUpdated }) => {
 
   const onSubmit = async (data) => {
     try {
-       setLoading(true);
+      setLoading(true);
       const payload = {
         client_name: data.client_name,
         pan_no: data.pan_no,
@@ -80,79 +84,110 @@ const EditClients = ({ item, onclose, onUpdated }) => {
       };
 
       await axios.put(`${API}/client/updateclient/${item.client_id}`, payload);
-     
-      if (onUpdated) onUpdated(); 
-      onclose();
+      
       toast.success("Client updated successfully ✅");
+      if (onUpdated) onUpdated();
+      onclose();
     } catch (err) {
       console.error("Update failed", err);
-      alert("Failed to update client. Please try again.");
-    }finally {
-      setLoading(false); 
+      toast.error(err.response?.data?.message || "Failed to update client");
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
-    <div
-      className="font-roboto-flex fixed inset-0 grid justify-center items-center backdrop-blur-xs backdrop-grayscale-50 drop-shadow-lg z-20"
-      onClick={onclose} 
-    >
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 font-layout-font">
+      
+      {/* Modal Container */}
+      <div className="bg-white dark:bg-gray-900 w-full max-w-4xl rounded-lg shadow-2xl flex flex-col max-h-[90vh] border border-gray-200 dark:border-gray-800">
+        
+        {/* --- Header --- */}
+        <div className="flex justify-between items-center px-6 py-4 bg-gray-50 dark:bg-gray-800/50 border-b border-gray-200 dark:border-gray-700">
+          <div>
+            <h1 className="text-lg font-bold text-gray-800 dark:text-white">Edit Client Details</h1>
+            <p className="text-xs text-gray-500 mt-0.5">Update business information</p>
+          </div>
+          <button onClick={onclose} className="text-gray-400 hover:text-gray-600 transition-colors">
+            <IoClose size={24} />
+          </button>
+        </div>
 
-      <div
-        className="mx-2 shadow-lg py-2 dark:bg-overall_bg-dark bg-white rounded-md lg:w-[900px] md:w-[500px] w-96"
-        onClick={(e) => e.stopPropagation()} 
-      >
-
-        <p
-          onClick={onclose}
-          className="place-self-end cursor-pointer dark:bg-overall_bg-dark bg-white rounded-full lg:-mx-4 md:-mx-4 -mx-2 lg:-my-6 md:-my-5 -my-3 lg:shadow-md md:shadow-md shadow-none lg:py-2.5 md:py-2.5 py-0 lg:px-2.5 md:px-2.5 px-0"
-        >
-          <IoClose className="size-[24px]" />
-        </p>
-
-        <h1 className="text-center font-medium text-2xl py-2">Edit Client</h1>
-
-        <form onSubmit={handleSubmit(onSubmit)}>
-          <div className="grid lg:grid-cols-2 md:grid-cols-1 gap-4 px-6 py-6">
-            <div className="space-y-4">
-              <InputField label="Client Name" name="client_name" register={register} errors={errors} placeholder="Enter client name" />
-              <InputField label="PAN no" name="pan_no" register={register} errors={errors} placeholder="Enter PAN no" />
-              <InputField label="CIN no" name="cin_no" register={register} errors={errors} placeholder="Enter CIN no" />
-              <InputField label="GSTIN" name="gstin" register={register} errors={errors} placeholder="Enter GSTIN" />
-              <InputField label="Phone number" name="contact_phone" type="text" register={register} errors={errors} placeholder="Enter phone number" />
-              <InputField label="Email" name="contact_email" type="email" register={register} errors={errors} placeholder="Enter email ID" />
+        {/* --- Form Body --- */}
+        <div className="flex-1 overflow-y-auto px-8 py-6 custom-scrollbar">
+          <form id="editClientForm" onSubmit={handleSubmit(onSubmit)} className="grid grid-cols-2 gap-x-8 gap-y-4">
+            
+            {/* 1. Corporate Identity */}
+            <SectionHeader title="Corporate Identity" />
+            
+            <div className="col-span-2">
+              <InputFieldTender label="Client Name" name="client_name" placeholder="Enter full client name" register={register} errors={errors} />
+            </div>
+            
+            <div className="col-span-1">
+               <InputFieldTender label="PAN Number" name="pan_no" placeholder="Enter PAN" register={register} errors={errors} />
+            </div>
+            <div className="col-span-1">
+               <InputFieldTender label="GST Number" name="gstin" placeholder="Enter GSTIN" register={register} errors={errors} />
+            </div>
+            <div className="col-span-1">
+               <InputFieldTender label="CIN Number" name="cin_no" placeholder="Enter CIN" register={register} errors={errors} />
             </div>
 
-            <div className="space-y-4">
-              <InputField label="City" name="city" register={register} errors={errors} placeholder="Enter city" />
-              <InputField label="State" name="state" register={register} errors={errors} placeholder="Enter state" />
-              <InputField label="Country" name="country" register={register} errors={errors} placeholder="Enter country" />
-              <InputField label="Pincode" name="pincode" register={register} errors={errors} placeholder="Enter pincode" />
-            </div>
-          </div>
+            {/* 2. Contact Details */}
+            <SectionHeader title="Contact Information" />
 
-          <div className="mx-5 text-xs flex lg:justify-end md:justify-center justify-center gap-2 mb-4">
-            <button
-              type="button"
-              onClick={onclose}
-              className="cursor-pointer border border-darkest-blue dark:border-white dark:text-white text-darkest-blue px-6 py-2 rounded"
-              disabled={loading}
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              disabled={loading} 
-              className={`cursor-pointer px-6 rounded text-white ${
-                loading
-                  ? "bg-gray-500 cursor-not-allowed"
-                  : "bg-darkest-blue"
-              }`}
-            >
-              {loading ? "Saving..." : "Save"}
-            </button>
-          </div>
-        </form>
+            <div className="col-span-1">
+               <InputFieldTender label="Phone Number" name="contact_phone" type="number" placeholder="10-digit mobile" register={register} errors={errors} />
+            </div>
+            <div className="col-span-1">
+               <InputFieldTender label="Email Address" name="contact_email" type="email" placeholder="official@company.com" register={register} errors={errors} />
+            </div>
+
+            {/* 3. Address Details */}
+            <SectionHeader title="Billing Address" />
+
+            <div className="col-span-1">
+               <InputFieldTender label="City" name="city" placeholder="Enter city" register={register} errors={errors} />
+            </div>
+            <div className="col-span-1">
+               <InputFieldTender label="State" name="state" placeholder="Enter state" register={register} errors={errors} />
+            </div>
+
+            <div className="col-span-1">
+               <InputFieldTender label="Pincode" name="pincode" placeholder="6-digit pincode" register={register} errors={errors} />
+            </div>
+            <div className="col-span-1">
+               <InputFieldTender label="Country" name="country" placeholder="Enter country" register={register} errors={errors} />
+            </div>
+
+          </form>
+        </div>
+
+        {/* --- Footer --- */}
+        <div className="px-6 py-4 bg-gray-50 dark:bg-gray-800/50 border-t border-gray-200 dark:border-gray-700 flex justify-end gap-3 rounded-b-lg">
+          <button
+            type="button"
+            onClick={onclose}
+            disabled={loading}
+            className="px-6 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded hover:bg-gray-50 transition-colors dark:bg-gray-800 dark:text-gray-300 dark:border-gray-700"
+          >
+            Cancel
+          </button>
+          <button
+            type="submit"
+            form="editClientForm"
+            disabled={loading}
+            className="px-8 py-2 text-sm font-bold text-white bg-darkest-blue hover:bg-blue-900 rounded shadow-sm flex items-center gap-2 transition-all disabled:opacity-70 disabled:cursor-not-allowed"
+          >
+            {loading ? "Updating..." : (
+              <>
+                 <IoSaveOutline size={16} /> Update Client
+              </>
+            )}
+          </button>
+        </div>
+
       </div>
     </div>
   );
