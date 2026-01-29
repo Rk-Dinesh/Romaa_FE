@@ -106,7 +106,6 @@ import ContractorBill from "../pages/finanace/contractor_bill/ContractorBill";
 import InternalBankTransfer from "../pages/finanace/internal_bank_transfer/InternalBankTransfer";
 import LedgerEntry from "../pages/finanace/ledger_entry/LedgerEntry";
 import ViewLedgerEntry from "../pages/finanace/ledger_entry/ViewLedgerEntry";
-import ResentPassword from "../pages/auth/ResentPassword";
 import ViewP_L from "../pages/reports/p&l/ViewP_L";
 import Overall_expenses from "../pages/finanace/overall_expenses/Overall_expenses";
 import NMR from "../pages/Hr/nmr/NMR";
@@ -164,6 +163,7 @@ import ViewWorkDone from "../pages/site/WorkDone/ViewWorkDone";
 import AssetDetails from "../pages/settings/assets/machinery/AssetDetails";
 import ProtectedRoute from "../pages/auth/protectedRoute";
 import ViewUser from "../pages/settings/user/ViewUser";
+import ResetPassword from "../pages/auth/ResetPassword";
 
 const AppRoutes = () => {
   return (
@@ -171,7 +171,7 @@ const AppRoutes = () => {
       <Routes>
         <Route path="" element={<Login />} />
         <Route path="/forgotpassword" element={<ForgotPassword />} />
-        <Route path="/resetpassword" element={<ResentPassword />} />
+        <Route path="/resetpassword" element={<ResetPassword />} />
         <Route path="/projects/woissuance/requestform/:tenderId/:requestId" element={<WorkOrderRequestForm />} />
         <Route path="/purchase/enquiryform/:tenderId/:requestId" element={<EnquiryForm />} />
         

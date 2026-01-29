@@ -6,9 +6,11 @@ import ThemeToggle from "../components/ThemeToggle";
 import { HiOutlineTicket } from "react-icons/hi";
 import { useNavigate } from "react-router-dom";
 import LOGO_D from "../assets/images/romaadark.png";
+import { useAuth } from "../context/AuthContext";
 
 const Headers = () => {
   const { searchTerm, setSearchTerm } = useSearch();
+  const { user } = useAuth();
   const navigate = useNavigate();
   return (
     <div className=" w-full z-10 font-roboto-flex flex justify-between items-center dark:bg-layout-dark   pt-2 px-2 h-1/12">
@@ -35,7 +37,7 @@ const Headers = () => {
       </div>
       <div className="flex justify-center lg:p-2 md:p-2 p-1.5 lg:gap-3 md:gap-2 gap-1.5  items-center text-center  rounded-full">
         <div className=" flex  items-center gap-2 text-sm font-extralight text-nowrap  dark:text-white text-darkest-blue ">
-          Profile name
+          {user?.name}
           <div className="">
             <button
               className=" dark:bg-overall_bg-dark bg-light-blue  dark:text-white text-darkest-blue font-medium w-9 h-9 text-sm rounded-full flex items-center justify-center"
@@ -43,7 +45,7 @@ const Headers = () => {
                 navigate("/dashboard/profile");
               }}
             >
-              KA
+              {user?.name.charAt(0).toUpperCase()}
             </button>
           </div>
         </div>

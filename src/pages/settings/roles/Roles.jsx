@@ -6,14 +6,46 @@ import DeleteModal from "../../../components/DeleteModal";
 import axios from "axios";
 import { API } from "../../../constant";
 import { toast } from "react-toastify";
+import { FiLayers, FiShield } from "react-icons/fi";
 
 const RoleColumns = [
   { label: "Role ID", key: "role_id" },
   { label: "Name", key: "roleName" },
   { label: "Description", key: "description" },
-  { label: "Modules", key: "moduleAccess" },
-  { label: "Permissions", key: "totalPermissions" },
+  { label: "Modules", key: "moduleAccess" ,render: (row) => getModule(row.moduleAccess)},
+  { label: "Permissions", key: "totalPermissions" ,render: (row) => getPermission(row.totalPermissions)},
 ];
+
+const getModule = (moduleAccess) => {
+  // Logic: If it's an object, count the keys. If number, use it.
+  const count = typeof moduleAccess === 'object' && moduleAccess !== null 
+    ? Object.keys(moduleAccess).length 
+    : (moduleAccess || 0);
+
+  return (
+    <div className="flex items-center gap-2">
+      <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-indigo-50 border border-indigo-100 text-indigo-700 dark:bg-indigo-900/20 dark:border-indigo-800 dark:text-indigo-300">
+        <FiLayers size={14} className="flex-shrink-0" />
+        <span className="text-xs font-bold">{count}</span>
+        <span className="text-[10px] font-semibold opacity-80 uppercase tracking-wide ml-0.5">Modules</span>
+      </div>
+    </div>
+  );
+};
+
+const getPermission = (permissionAccess) => {
+  const count = permissionAccess || 0;
+
+  return (
+    <div className="flex items-center gap-2">
+      <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-emerald-50 border border-emerald-100 text-emerald-700 dark:bg-emerald-900/20 dark:border-emerald-800 dark:text-emerald-300">
+        <FiShield size={14} className="flex-shrink-0" />
+        <span className="text-xs font-bold">{count}</span>
+        <span className="text-[10px] font-semibold opacity-80 uppercase tracking-wide ml-0.5">Access</span>
+      </div>
+    </div>
+  );
+};
 
 const Roles = () => {
   const [roles, setRoles] = useState([]);
