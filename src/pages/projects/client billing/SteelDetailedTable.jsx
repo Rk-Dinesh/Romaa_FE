@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import axios from "axios";
 import { Loader2, AlertCircle } from "lucide-react";
 import { API } from "../../../constant";
@@ -9,10 +9,9 @@ import UploadDetail from "./UploadDetail";
 const SteelDetailedTable = ({ tenderId, billId, abstractName, billSequence, status }) => {
     const [loading, setLoading] = useState(true);
     const [detailedData, setDetailedData] = useState(null);
-    const [error, setError] = useState(null);
     const [uploadDetail, setUploadDetail] = useState(false);
 
-    const fetchData = async () => {
+    const fetchData = useCallback(async () => {
         try {
             setLoading(true);
             const res = await axios.get(
@@ -24,19 +23,20 @@ const SteelDetailedTable = ({ tenderId, billId, abstractName, billSequence, stat
             } else {
                 setDetailedData(null);
             }
-        } catch (err) {
+        } catch (error) {
+            console.log(error);
             // Don't show error screen for 404/No Data, just set data to null
             setDetailedData(null);
         } finally {
             setLoading(false);
         }
-    };
+    }, [tenderId, billId, abstractName, billSequence]);
 
     useEffect(() => {
         if (tenderId && billId) {
             fetchData();
         }
-    }, [tenderId, billId, abstractName, billSequence]);
+    }, [fetchData, tenderId, billId]);
 
     const handleClose = () => {
         setUploadDetail(false);

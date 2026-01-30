@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React from "react";
 import { useForm, Controller } from "react-hook-form";
 import { yupResolver } from "@hookform/resolvers/yup";
 import * as Yup from "yup";
@@ -30,7 +30,7 @@ const schema = Yup.object().shape({
   // Tracking
   trackingMode: Yup.string().required("Tracking Mode is required"),
   lastReading: Yup.number().typeError("Must be number").min(0).default(0),
-  
+
   // Operational
   projectId: Yup.string().required("Project ID is required"),
   currentSite: Yup.string().required("Current Site is required"),
@@ -38,7 +38,7 @@ const schema = Yup.object().shape({
   // GPS (Conditional validation handled in UI logic usually, or loose here)
   gps: Yup.object().shape({
     isInstalled: Yup.boolean(),
-    deviceId: Yup.string().when('isInstalled', {
+    deviceId: Yup.string().when("isInstalled", {
       is: true,
       then: (schema) => schema.required("Device ID is required"),
     }),
@@ -62,8 +62,6 @@ const schema = Yup.object().shape({
 });
 
 const Machinery = ({ onclose }) => {
-  const [gpsEnabled, setGpsEnabled] = useState(false);
-
   const {
     register,
     handleSubmit,
@@ -75,22 +73,23 @@ const Machinery = ({ onclose }) => {
       gps: { isInstalled: false },
       trackingMode: "HOURS",
       fuelType: "Diesel",
-      assetCategory: "Heavy Earthmover"
-    }
+      assetCategory: "Heavy Earthmover",
+    },
   });
 
   // Watch GPS toggle to show/hide fields
   const isGpsInstalled = watch("gps.isInstalled");
 
-  const inputClass = "w-full border border-gray-300 dark:border-gray-600 rounded px-3 py-2 mt-1 text-sm bg-gray-50 dark:bg-gray-800 dark:text-white focus:outline-none focus:border-blue-500";
+  const inputClass =
+    "w-full border border-gray-300 dark:border-gray-600 rounded px-3 py-2 mt-1 text-sm bg-gray-50 dark:bg-gray-800 dark:text-white focus:outline-none focus:border-blue-500";
   const labelClass = "font-medium text-xs text-gray-700 dark:text-gray-300";
   const errorClass = "text-red-500 text-[10px] mt-0.5";
-  const sectionHeaderClass = "col-span-full text-sm font-bold text-blue-600 dark:text-blue-400 border-b border-gray-200 dark:border-gray-700 pb-1 mt-4 mb-2";
+  const sectionHeaderClass =
+    "col-span-full text-sm font-bold text-blue-600 dark:text-blue-400 border-b border-gray-200 dark:border-gray-700 pb-1 mt-4 mb-2";
 
   const handleCreateAsset = async (formData) => {
     try {
       // Show loading toast
-    
 
       // Prepare Payload (Ensure types match Schema)
       const payload = {
@@ -100,14 +99,14 @@ const Machinery = ({ onclose }) => {
         fuelTankCapacity: Number(formData.fuelTankCapacity),
         purchaseCost: Number(formData.purchaseCost),
         lastReading: Number(formData.lastReading || 0),
-        
+
         // Handle GPS Object Structure
         gps: {
           isInstalled: formData.gps?.isInstalled || false,
           deviceId: formData.gps?.deviceId || "",
-          provider: formData.gps?.provider || ""
+          provider: formData.gps?.provider || "",
         },
-        
+
         // Handle Dates (Ensure valid Date objects or ISO strings)
         compliance: {
           insurancePolicyNo: formData.compliance?.insurancePolicyNo,
@@ -115,14 +114,17 @@ const Machinery = ({ onclose }) => {
           fitnessCertExpiry: formData.compliance?.fitnessCertExpiry || null,
           pollutionCertExpiry: formData.compliance?.pollutionCertExpiry || null,
           roadTaxExpiry: formData.compliance?.roadTaxExpiry || null,
-        }
+        },
       };
 
       // API Call
-      const response = await axios.post(`${API}/machineryasset/createasset`,payload );
+      const response = await axios.post(
+        `${API}/machineryasset/createasset`,
+        payload,
+      );
 
       if (response.status) {
-        toast.success("Asset created successfully!" , { toastId });
+        toast.success("Asset created successfully!");
         onclose(); // Close Modal
       } else {
         throw new Error(response.message);
@@ -135,29 +137,43 @@ const Machinery = ({ onclose }) => {
   return (
     <div className="font-roboto-flex fixed inset-0 flex justify-center items-center backdrop-blur-sm bg-black/30 z-50 overflow-y-auto py-10">
       <div className="dark:bg-gray-900 bg-white rounded-xl shadow-2xl w-[900px] max-h-[90vh] overflow-y-auto scrollbar-thin scrollbar-thumb-gray-400">
-        
         {/* Header */}
         <div className="sticky top-0 bg-white dark:bg-gray-900 z-10 px-6 py-4 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
-          <h2 className="text-lg font-bold text-gray-800 dark:text-white">Add New Machinery Asset</h2>
-          <button onClick={onclose} className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full transition-colors">
+          <h2 className="text-lg font-bold text-gray-800 dark:text-white">
+            Add New Machinery Asset
+          </h2>
+          <button
+            onClick={onclose}
+            className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full transition-colors"
+          >
             <IoClose className="size-6 text-gray-500" />
           </button>
         </div>
 
-        <form onSubmit={handleSubmit(handleCreateAsset)} className="p-6 grid grid-cols-1 md:grid-cols-4 gap-4">
-          
+        <form
+          onSubmit={handleSubmit(handleCreateAsset)}
+          className="p-6 grid grid-cols-1 md:grid-cols-4 gap-4"
+        >
           {/* --- 1. Basic Identity --- */}
           <div className={sectionHeaderClass}>1. Basic Identity & Location</div>
-          
+
           <div>
             <label className={labelClass}>Asset ID *</label>
-            <input {...register("assetId")} placeholder="e.g. EX-01" className={inputClass} />
+            <input
+              {...register("assetId")}
+              placeholder="e.g. EX-01"
+              className={inputClass}
+            />
             <p className={errorClass}>{errors.assetId?.message}</p>
           </div>
 
           <div>
             <label className={labelClass}>Asset Name *</label>
-            <input {...register("assetName")} placeholder="e.g. Hitachi Zaxis" className={inputClass} />
+            <input
+              {...register("assetName")}
+              placeholder="e.g. Hitachi Zaxis"
+              className={inputClass}
+            />
             <p className={errorClass}>{errors.assetName?.message}</p>
           </div>
 
@@ -174,19 +190,30 @@ const Machinery = ({ onclose }) => {
 
           <div>
             <label className={labelClass}>Asset Type *</label>
-            <input {...register("assetType")} placeholder="e.g. Excavator" className={inputClass} />
+            <select {...register("assetType")} className={inputClass}>
+              <option value="OWN ASSET">Own Asset</option>
+              <option value="RENTAL ASSET">Rental Asset</option>
+            </select>
             <p className={errorClass}>{errors.assetType?.message}</p>
           </div>
 
           <div>
             <label className={labelClass}>Project ID *</label>
-            <input {...register("projectId")} placeholder="Project Code" className={inputClass} />
+            <input
+              {...register("projectId")}
+              placeholder="Project Code"
+              className={inputClass}
+            />
             <p className={errorClass}>{errors.projectId?.message}</p>
           </div>
 
           <div>
             <label className={labelClass}>Current Site *</label>
-            <input {...register("currentSite")} placeholder="Location Name" className={inputClass} />
+            <input
+              {...register("currentSite")}
+              placeholder="Location Name"
+              className={inputClass}
+            />
             <p className={errorClass}>{errors.currentSite?.message}</p>
           </div>
 
@@ -219,7 +246,11 @@ const Machinery = ({ onclose }) => {
 
           <div>
             <label className={labelClass}>Mfg Year</label>
-            <input type="number" {...register("manufacturingYear")} className={inputClass} />
+            <input
+              type="number"
+              {...register("manufacturingYear")}
+              className={inputClass}
+            />
             <p className={errorClass}>{errors.manufacturingYear?.message}</p>
           </div>
 
@@ -234,7 +265,11 @@ const Machinery = ({ onclose }) => {
 
           <div>
             <label className={labelClass}>Tank Capacity (L)</label>
-            <input type="number" {...register("fuelTankCapacity")} className={inputClass} />
+            <input
+              type="number"
+              {...register("fuelTankCapacity")}
+              className={inputClass}
+            />
           </div>
 
           {/* --- 3. Tracking & GPS --- */}
@@ -251,17 +286,26 @@ const Machinery = ({ onclose }) => {
 
           <div>
             <label className={labelClass}>Initial Reading</label>
-            <input type="number" {...register("lastReading")} className={inputClass} />
+            <input
+              type="number"
+              {...register("lastReading")}
+              className={inputClass}
+            />
           </div>
 
           <div className="flex items-center mt-6">
-            <input 
-              type="checkbox" 
+            <input
+              type="checkbox"
               id="gpsCheck"
-              {...register("gps.isInstalled")} 
+              {...register("gps.isInstalled")}
               className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500"
             />
-            <label htmlFor="gpsCheck" className="ml-2 text-sm text-gray-700 dark:text-gray-300 font-medium">GPS Installed?</label>
+            <label
+              htmlFor="gpsCheck"
+              className="ml-2 text-sm text-gray-700 dark:text-gray-300 font-medium"
+            >
+              GPS Installed?
+            </label>
           </div>
 
           {isGpsInstalled && (
@@ -283,27 +327,46 @@ const Machinery = ({ onclose }) => {
 
           <div>
             <label className={labelClass}>Insurance Policy No</label>
-            <input {...register("compliance.insurancePolicyNo")} className={inputClass} />
+            <input
+              {...register("compliance.insurancePolicyNo")}
+              className={inputClass}
+            />
           </div>
 
           <div>
             <label className={labelClass}>Insurance Expiry</label>
-            <input type="date" {...register("compliance.insuranceExpiry")} className={inputClass} />
+            <input
+              type="date"
+              {...register("compliance.insuranceExpiry")}
+              className={inputClass}
+            />
           </div>
 
           <div>
             <label className={labelClass}>Fitness Cert (FC) Expiry</label>
-            <input type="date" {...register("compliance.fitnessCertExpiry")} className={inputClass} />
+            <input
+              type="date"
+              {...register("compliance.fitnessCertExpiry")}
+              className={inputClass}
+            />
           </div>
 
           <div>
             <label className={labelClass}>Pollution (PUC) Expiry</label>
-            <input type="date" {...register("compliance.pollutionCertExpiry")} className={inputClass} />
+            <input
+              type="date"
+              {...register("compliance.pollutionCertExpiry")}
+              className={inputClass}
+            />
           </div>
 
           <div>
             <label className={labelClass}>Road Tax Expiry</label>
-            <input type="date" {...register("compliance.roadTaxExpiry")} className={inputClass} />
+            <input
+              type="date"
+              {...register("compliance.roadTaxExpiry")}
+              className={inputClass}
+            />
           </div>
 
           {/* --- 5. Financials --- */}
@@ -311,13 +374,21 @@ const Machinery = ({ onclose }) => {
 
           <div>
             <label className={labelClass}>Purchase Date *</label>
-            <input type="date" {...register("purchaseDate")} className={inputClass} />
+            <input
+              type="date"
+              {...register("purchaseDate")}
+              className={inputClass}
+            />
             <p className={errorClass}>{errors.purchaseDate?.message}</p>
           </div>
 
           <div>
             <label className={labelClass}>Purchase Cost *</label>
-            <input type="number" {...register("purchaseCost")} className={inputClass} />
+            <input
+              type="number"
+              {...register("purchaseCost")}
+              className={inputClass}
+            />
             <p className={errorClass}>{errors.purchaseCost?.message}</p>
           </div>
 
@@ -330,12 +401,11 @@ const Machinery = ({ onclose }) => {
             <label className={labelClass}>Invoice No</label>
             <input {...register("invoiceNumber")} className={inputClass} />
           </div>
-
         </form>
 
         {/* Footer Actions */}
         <div className="sticky bottom-0 bg-gray-50 dark:bg-gray-800 px-6 py-4 border-t border-gray-200 dark:border-gray-700 flex justify-end gap-3 rounded-b-xl">
-          <button 
+          <button
             type="button"
             onClick={onclose}
             className="px-5 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 dark:bg-gray-700 dark:text-gray-200 dark:border-gray-600 dark:hover:bg-gray-600"
@@ -349,11 +419,9 @@ const Machinery = ({ onclose }) => {
             Save Asset
           </button>
         </div>
-
       </div>
     </div>
   );
 };
 
 export default Machinery;
-

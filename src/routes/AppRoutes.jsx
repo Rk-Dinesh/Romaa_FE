@@ -79,7 +79,6 @@ import ViewStockRegisterSite from "../pages/site/StockRegister/ViewStockRegister
 import PurchaseRequestSite from "../pages/site/PurchaseRequest/PurchaseRequestSite";
 import ViewPurchaseRequestSite from "../pages/site/PurchaseRequest/ViewPurchaseRequestSite";
 import SiteAsset from "../pages/site/SiteAssest/SiteAsset";
-import ViewSiteAssest from "../pages/site/SiteAssest/ViewSiteAssest";
 import WeeklyBilling from "../pages/site/WeeklyBilling/WeeklyBilling";
 import ProjectDashboard from "../pages/reports/project_dashboard/ProjectDashboard";
 import WorkAnalysis from "../pages/reports/work_analysis/WorkAnalysis";
@@ -154,7 +153,6 @@ import { ToastContainer } from "react-toastify";
 import WorkOrderRequestForm from "../pages/projects/Wo issuance/work order request/WorkOrderRequestForm";
 import EnquiryForm from "../pages/purchase/purchase enquiry/EnquiryForm";
 import Assets from "../pages/settings/assets/Assets";
-import ViewProjectAssest from "../pages/projects/project assets/Viewprojectassest";
 import EMDTrackingTable from "../pages/tender/emd/viewEMDTracking";
 import SecurityDepositTrackingTable from "../pages/tender/security deposit/viewSDTracking";
 import TenderDetailedEstimate from "../pages/tender/tenders/view tenders/detailed estimate/TenderDetailedEstimate";
@@ -291,7 +289,7 @@ const AppRoutes = () => {
             <Route path="projectsstocks" element={<StockProject />} />
             <Route path="projectsassets">
               <Route index element={<ProjectAsset />} />
-              <Route path="viewprojectassest" element={<ViewProjectAssest />} />
+              <Route path="details/:assetId" element={<AssetDetails />} />
             </Route>
           </Route>
           <Route path="/purchase">
@@ -334,7 +332,10 @@ const AppRoutes = () => {
             </Route>
             <Route path="machinerytracking" element={<MachineryTracking />} />
             <Route path="purchasestocks" element={<PurchaseStocks />} />
-            <Route path="purchaseassets" element={<PurchaseAssets />} />
+            <Route path="purchaseassets"  >
+              <Route index element={<PurchaseAssets />} />
+              <Route path="details/:assetId" element={<AssetDetails />} />
+            </Route>
           </Route>
           <Route path="/site">
             <Route index element={<Site />} />
@@ -417,7 +418,7 @@ const AppRoutes = () => {
             </Route>
             <Route path="siteassets">
               <Route index element={<SiteAsset />} />
-              <Route path="viewsiteassest" element={<ViewSiteAssest />} />
+              <Route path="details/:assetId" element={<AssetDetails />} />
             </Route>
             <Route path="weeklybillingsite" element={<WeeklyBilling />} />
           </Route>

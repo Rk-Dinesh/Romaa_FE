@@ -436,6 +436,8 @@ const MachineryTable = () => {
                   </div>
                 </>
               )}
+
+            
             </div>
 
             {/* Footer */}

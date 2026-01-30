@@ -1,13 +1,11 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import Filters from "../../../components/Filters";
 import Table from "../../../components/Table";
 import { useProject } from '../../../context/ProjectContext';
 import axios from "axios";
 import { API } from "../../../constant";
-import ViewClBillProjects from "./ViewClBillProjects";
 import UploadBill from "./UploadBill";
-
-
+import { toast } from "react-toastify";
 
 
 const Columns = [
@@ -35,23 +33,24 @@ const ClientBillingProject = () => {
   const [loading, setLoading] = useState(false);
 
 
-  const fetchBilling = async () => {
+  const fetchBilling = useCallback(async () => {
     if (!tenderId) return;
     setLoading(true);
     try {
       const res = await axios.get(`${API}/clientbilling/api/history/${tenderId}`);
 
       setItems(res.data.data || []);
-    } catch (err) {
+    } catch (error) {
+      console.log(error);
       toast.error("Failed to fetch  items");
     } finally {
       setLoading(false);
     }
-  };
+  }, [tenderId]);
 
   useEffect(() => {
     fetchBilling();
-  }, [tenderId]);
+  }, [fetchBilling]);
 
   return (
     <Table
@@ -65,6 +64,7 @@ const ClientBillingProject = () => {
       FilterModal={Filters}
       UploadModal={UploadBill}
       onSuccess={fetchBilling}
+      loading={loading}
     />
   );
 };

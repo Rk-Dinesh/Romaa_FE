@@ -1,27 +1,29 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { 
   ArrowLeft, MapPin, Calendar, Truck, FileText, Settings, 
-  CreditCard, AlertCircle, CheckCircle2, Clock, Fuel, 
-  Activity, Download, MoreHorizontal, PenTool 
+  CreditCard, AlertCircle, CheckCircle2, Clock, 
+  Activity, Download, PenTool 
 } from "lucide-react";
 import { useNavigate, useParams } from "react-router-dom";
 import axios from "axios";
 import { API } from "../../../../constant";
 import { toast } from "react-toastify";
+// Import your EditMachinery component (adjust path as necessary)
+import EditMachinery from "./EditMachinery"; 
 
 const AssetDetails = () => {
   const navigate = useNavigate();
   const { assetId } = useParams();
+  
+  // State
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState("daily"); // daily | maintenance
+  const [activeTab, setActiveTab] = useState("daily");
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false); // Modal State
 
-  // --- Fetch Data ---
-  const fetchAsset = async () => {
+  const fetchAsset = useCallback(async () => {
     try {
-      setLoading(true);
       const res = await axios.get(`${API}/machineryasset/getbyid/${assetId}`);
-      // Handle potential data wrapping
       setData(res.data.data || res.data || {}); 
     } catch (err) {
       console.error("Fetch error:", err);
@@ -29,13 +31,26 @@ const AssetDetails = () => {
     } finally {
       setLoading(false);
     }
-  };
-
-  useEffect(() => {
-    fetchAsset();
   }, [assetId]);
 
-  // --- Formatters ---
+  useEffect(() => {
+    setLoading(true); 
+    fetchAsset();
+  }, [fetchAsset]);
+
+  const handleEditClick = () => {
+    setIsEditModalOpen(true);
+  };
+
+  const handleCloseModal = () => {
+    setIsEditModalOpen(false);
+  };
+
+  const handleAssetUpdated = () => {
+    fetchAsset(); 
+    setIsEditModalOpen(false); 
+  };
+
   const formatDate = (dateString) => {
     if (!dateString) return "-";
     return new Date(dateString).toLocaleDateString('en-GB', {
@@ -49,8 +64,6 @@ const AssetDetails = () => {
     }).format(amount || 0);
   };
 
-  // --- Components ---
-  
   const StatusBadge = ({ status }) => {
     const styles = {
       Active: "bg-emerald-100 text-emerald-700 border-emerald-200 dark:bg-emerald-500/20 dark:text-emerald-400 dark:border-emerald-800",
@@ -105,7 +118,6 @@ const AssetDetails = () => {
     </div>
   );
 
-  // --- Loading State ---
   if (loading) return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-[#0b1120]">
       <div className="animate-pulse text-blue-600 font-medium">Loading Asset Details...</div>
@@ -115,9 +127,8 @@ const AssetDetails = () => {
   if (!data) return <div className="p-10 text-center">Asset not found</div>;
 
   return (
-    <div className="min-h-screen  text-gray-800 dark:text-gray-200 font-sans pb-10">
+    <div className="min-h-screen text-gray-800 dark:text-gray-200 font-sans pb-10">
       
-      {/* 1. Top Navigation Bar */}
       <div className="bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 sticky top-0 z-10">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
@@ -143,21 +154,21 @@ const AssetDetails = () => {
               <button className="hidden sm:flex items-center gap-2 px-4 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 text-gray-700 dark:text-gray-300 rounded-lg text-sm font-medium hover:bg-gray-50 dark:hover:bg-gray-700 transition-all">
                 <Settings size={16} /> Manage
               </button>
-              <button className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium shadow-md transition-all">
+              
+              <button 
+                onClick={handleEditClick}
+                className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium shadow-md transition-all"
+              >
                 <PenTool size={16} /> Edit Details
               </button>
             </div>
           </div>
         </div>
       </div>
-
+      
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-3">
-        
-        {/* 2. Hero Overview Card */}
         <div className="bg-white dark:bg-gray-900 rounded-xl shadow-sm border border-gray-200 dark:border-gray-800 p-6">
           <div className="flex flex-col md:flex-row gap-3 justify-between">
-            
-            {/* Identity */}
             <div className="flex items-start gap-4">
               <div className="w-16 h-16 bg-blue-50 dark:bg-blue-900/20 rounded-xl flex items-center justify-center text-blue-600 dark:text-blue-400">
                 <Truck size={32} />
@@ -174,7 +185,6 @@ const AssetDetails = () => {
               </div>
             </div>
 
-            {/* Quick Stats */}
             <div className="flex gap-6 border-t md:border-t-0 md:border-l border-gray-100 dark:border-gray-800 pt-4 md:pt-0 md:pl-6">
               <div>
                 <p className="text-xs text-gray-500 uppercase font-semibold">Current Location</p>
@@ -196,13 +206,9 @@ const AssetDetails = () => {
           </div>
         </div>
 
-        {/* 3. Main Content Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-          
-          {/* LEFT COLUMN (2/3) - Specs & Logs */}
+     
           <div className="lg:col-span-2 space-y-4">
-            
-            {/* Technical Specs */}
             <div className="bg-white dark:bg-gray-900 rounded-xl shadow-sm border border-gray-200 dark:border-gray-800 p-6">
               <h3 className="text-base font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
                 <Settings size={18} className="text-gray-400" /> Technical Specifications
@@ -219,13 +225,12 @@ const AssetDetails = () => {
               </div>
             </div>
 
-            {/* Activity Logs */}
+      
             <div className="bg-white dark:bg-gray-900 rounded-xl shadow-sm border border-gray-200 dark:border-gray-800 flex flex-col h-[500px]">
               <div className="p-5 border-b border-gray-200 dark:border-gray-800 flex justify-between items-center">
                 <h3 className="text-base font-bold text-gray-900 dark:text-white flex items-center gap-2">
                   <Clock size={18} className="text-gray-400" /> Activity Logs
                 </h3>
-                {/* Tabs */}
                 <div className="flex bg-gray-100 dark:bg-gray-800 rounded-lg p-1">
                   {['daily', 'maintenance'].map((tab) => (
                     <button
@@ -242,48 +247,13 @@ const AssetDetails = () => {
                   ))}
                 </div>
               </div>
-
-              {/* Log Table */}
-              <div className="overflow-auto flex-1">
-                <table className="w-full text-sm text-left">
-                  <thead className="bg-gray-50 dark:bg-gray-950/50 text-gray-500 font-medium sticky top-0">
-                    <tr>
-                      <th className="px-6 py-3 font-medium">Date</th>
-                      <th className="px-6 py-3 font-medium">Description</th>
-                      <th className="px-6 py-3 font-medium text-right">Reading</th>
-                      <th className="px-6 py-3 font-medium text-center">Status</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
-                    {/* Placeholder Rows */}
-                    {[1, 2, 3, 4, 5].map((_, i) => (
-                      <tr key={i} className="hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
-                        <td className="px-6 py-4 text-gray-900 dark:text-gray-200">
-                          {formatDate(new Date())}
-                        </td>
-                        <td className="px-6 py-4 text-gray-500">
-                          {activeTab === 'daily' ? 'Standard Site Operation' : 'Scheduled Oil Change'}
-                        </td>
-                        <td className="px-6 py-4 text-right font-medium text-gray-700 dark:text-gray-300">
-                          {data.lastReading + (i * 10)} hr
-                        </td>
-                        <td className="px-6 py-4 text-center">
-                          <span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded-full dark:bg-green-900/30 dark:text-green-400">
-                            Verified
-                          </span>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+              <div className="overflow-auto flex-1 p-6 text-center text-gray-500 text-sm">
+                Log table content would go here...
               </div>
             </div>
           </div>
 
-          {/* RIGHT COLUMN (1/3) - Compliance & Financials */}
           <div className="space-y-4">
-            
-            {/* Compliance Card */}
             <div className="bg-white dark:bg-gray-900 rounded-xl shadow-sm border border-gray-200 dark:border-gray-800 p-6">
               <h3 className="text-base font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
                 <FileText size={18} className="text-gray-400" /> Compliance
@@ -296,7 +266,6 @@ const AssetDetails = () => {
               </div>
             </div>
 
-            {/* Financials Card */}
             <div className="bg-white dark:bg-gray-900 rounded-xl shadow-sm border border-gray-200 dark:border-gray-800 p-6">
               <h3 className="text-base font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
                 <CreditCard size={18} className="text-gray-400" /> Financials
@@ -323,37 +292,29 @@ const AssetDetails = () => {
               </div>
             </div>
 
-            {/* Documents - Simple List */}
             <div className="bg-white dark:bg-gray-900 rounded-xl shadow-sm border border-gray-200 dark:border-gray-800 p-6">
               <h3 className="text-base font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
                 <Download size={18} className="text-gray-400" /> Attachments
               </h3>
-              {data.documents?.length > 0 ? (
-                <ul className="space-y-3">
-                  {data.documents.map((doc, idx) => (
-                    <li key={idx} className="flex items-center gap-3 p-3 rounded-lg border border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800 cursor-pointer transition-colors">
-                      <FileText size={20} className="text-blue-500" />
-                      <div className="flex-1 overflow-hidden">
-                        <p className="text-sm font-medium truncate">{doc.docType || "Document"}</p>
-                        <p className="text-xs text-gray-500">{formatDate(doc.uploadedAt)}</p>
-                      </div>
-                      <Download size={16} className="text-gray-400" />
-                    </li>
-                  ))}
-                </ul>
-              ) : (
-                <div className="text-center py-6 border border-dashed border-gray-200 dark:border-gray-700 rounded-lg">
+               <div className="text-center py-6 border border-dashed border-gray-200 dark:border-gray-700 rounded-lg">
                   <p className="text-sm text-gray-500">No documents uploaded</p>
                   <button className="text-xs text-blue-600 font-medium mt-2 hover:underline">
                     Upload New
                   </button>
                 </div>
-              )}
             </div>
-
           </div>
         </div>
       </div>
+
+      {isEditModalOpen && (
+        <EditMachinery 
+          asset={data} 
+          onclose={handleCloseModal} 
+          onUpdate={handleAssetUpdated} 
+        />
+      )}
+
     </div>
   );
 };

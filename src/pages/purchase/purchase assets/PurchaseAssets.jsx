@@ -10,34 +10,30 @@ const PurchaseAssets = () => {
   const [loading, setLoading] = useState(false);
   const [assets, setAssets] = useState([])
 
-  
+  const Columns = [
+    {label:"AssetId",key:"assetId"},
+    { label: "Asset Name", key: "assetName" },
+    { label: "Asset Type", key: "assetType" },
+    { label: "CurrentSite", key: "currentSite" },
+    { label: "Status", key: "currentStatus" },
+  ];
 
-const Columns = [
-  {label:"AssetId",key:"assetId"},
-  { label: "Asset Name ", key: "assetName" },
-  { label: "Asset Type", key: "assetType" },
-  { label: "Site Location", key: "location" ,    render: (item) => `${item.currentSite?.location || ""}`,},
-  { label: "Assigned to",  key: "siteName" ,    render: (item) => `${item.currentSite?.siteName || ""}`, },
- 
-        { label: "Date", key: "date",  render: (item) => `${new Date(item.currentSite?.assignedDate).toLocaleDateString() || ""}`,},
-        { label: "Status", key: "status", render: (item) => `${item.currentStatus || "" }`,},
-];
-
-    const fetchAssets = async () => {
-        try {
-            setLoading(true)
-            const res = await axios.get(`${API}/machineryasset/api/allmachinery-assets`) 
-            setAssets(res.data.data)
-        } catch (err) {
-            console.error("Error fetching assets:", err)
-        } finally {
-            setLoading(false)
-        }
-    }
-
-    useEffect(() => {
-        fetchAssets()
-    }, [])
+  useEffect(() => {
+    const fetchAssetsByTender = async () => {
+      try {
+        setLoading(true);
+        const res = await axios.get(
+          `${API}/machineryasset/getall/assets`,
+        );
+        setAssets(res.data.data);
+      } catch (err) {
+        console.error("Error fetching assets:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchAssetsByTender();
+  }, []);
   return (
     <Table
       title={"Purchase Management"}
@@ -47,6 +43,10 @@ const Columns = [
       columns={Columns}
        EditModal={false}
       FilterModal={Filters}
+      ViewModal={true}
+      loading={loading}
+      idKey="assetId"
+      routepoint="details"
     />
   );
 };
