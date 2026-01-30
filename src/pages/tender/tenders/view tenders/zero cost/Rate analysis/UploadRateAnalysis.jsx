@@ -4,19 +4,9 @@ import { IoClose } from "react-icons/io5";
 import { API } from "../../../../../../constant";
 import { useParams } from "react-router-dom";
 import { toast } from "react-toastify";
+import SampleRAExcel from "./RANEW.xlsx";
 
-const sampleCSv = `itemNo,category,description,unit,working_quantity,rate
-ABS001,MAIN_ITEM,,Cum,855.36,
-ABS001,MY-M,Hire JCB,Month,2,80000
-ABS001,MY-M,Tractor,Month,1,45000
-ABS001,MY-F,Diesel,Lit,1275,96
-ABS001,MP-C,Blasting,Points,1100,180
-ABS001,MP-NMR,Helpers,Nos,60,700
-ABS002,MAIN_ITEM,,Cum,684.288,
-ABS002,MY-M,Hire JCB,Month,0.5,80000
-ABS002,MY-F,Diesel,Lit,112.5,96
-ABS002,MP-NMR,Helpers,Nos,15,700
-`;
+
 const UploadRateAnalysis = ({ onclose, onSuccess }) => {
   const [files, setFiles] = useState([]);
   const [saving, setSaving] = useState(false);
@@ -57,25 +47,29 @@ const UploadRateAnalysis = ({ onclose, onSuccess }) => {
       formData.append("tender_id", tender_id);
       formData.append("created_by_user", "user_id_here");
 
+      let res;
       if (files.length === 1) {
         // Single file upload
         formData.append("file", files[0]);
-        await axios.post(`${API}/rateanalysis/uploadcsv`, formData, {
+        res = await axios.post(`${API}/rateanalysis/uploadcsv`, formData, {
           headers: { "Content-Type": "multipart/form-data" },
         });
       }
 
-      if (res.data.status) {
+      if (res?.data?.status) {
         if (onSuccess) onSuccess();
         if (onclose) onclose();
         toast.success("Files uploaded successfully");
-      } else {
-        toast.error(res.data.message || "Failed to upload files");
-
+      } else if (res) {
+        toast.error(res.data?.message || "Failed to upload files");
       }
       setSaving(false);
     } catch (error) {
-      if (error.response && error.response.data && error.response.data.message) {
+      if (
+        error.response &&
+        error.response.data &&
+        error.response.data.message
+      ) {
         toast.error(error.response.data.message);
         if (onclose) onclose();
       } else {
@@ -85,12 +79,10 @@ const UploadRateAnalysis = ({ onclose, onSuccess }) => {
     }
   };
 
-  const downloadSampleCsv = () => {
-    const blob = new Blob([sampleCSv], { type: "text/csv;charset=utf-8;" });
-    const url = URL.createObjectURL(blob);
+const downloadSampleFile = () => {
     const link = document.createElement("a");
-    link.href = url;
-    link.setAttribute("download", "sample_boq.csv");
+    link.href = SampleRAExcel;
+    link.setAttribute("download", "RANEW.xlsx");
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -174,11 +166,11 @@ const UploadRateAnalysis = ({ onclose, onSuccess }) => {
           <div className="flex justify-end gap-4">
             <button
               type="button"
-              onClick={downloadSampleCsv}
+              onClick={downloadSampleFile}
               className="px-5 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-400"
             >
               {" "}
-              Download Sample CSV{" "}
+              Download Sample File{" "}
             </button>
             <button
               type="button"

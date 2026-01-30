@@ -4,17 +4,16 @@ import { IoClose } from "react-icons/io5";
 import { useParams } from "react-router-dom";
 import { API } from "../../../../../../constant";
 import { toast } from "react-toastify";
+import SampleAbstractExcel from "./DetailEstimate.xlsx";
 
-const sampleCSv = `abstract_id,description,unit,quantity,rate,amount,
-ABS001,Concrete Work,m3,10,2500,25000,
-ABS002,Brick Masonry,m2,5,10,50,
-`; 
 
 const UploadAbstract = ({ onclose, onSuccess, name }) => {
   const [files, setFiles] = useState([]);
   const [saving, setSaving] = useState(false);
   const inputRef = useRef(null);
   const { tender_id } = useParams();
+  const nametype = name.replace(/abstract$/i, "");
+
 
   const handleFiles = (selectedFiles) => {
     const fileArray = Array.from(selectedFiles);
@@ -46,13 +45,13 @@ const UploadAbstract = ({ onclose, onSuccess, name }) => {
     try {
       setSaving(true);
       const formData = new FormData();
-      formData.append("nametype", name);
+      formData.append("nametype", nametype);
       formData.append("created_by_user", "user_id_here");
 
       if (files.length === 1) {
         formData.append("file", files[0]);
         const res = await axios.post(
-          `${API}/detailedestimate/bulkinsertcustomhead?tender_id=${tender_id}`,
+          `${API}/detailedestimate/bulkinsertcustomheadnew?tender_id=${tender_id}`,
           formData,
           {
             headers: { "Content-Type": "multipart/form-data" },
@@ -82,12 +81,10 @@ const UploadAbstract = ({ onclose, onSuccess, name }) => {
     }
   };
 
-  const downloadSampleCsv = () => {
-    const blob = new Blob([sampleCSv], { type: "text/csv;charset=utf-8;" });
-    const url = URL.createObjectURL(blob);
+const downloadSampleFile = () => {
     const link = document.createElement("a");
-    link.href = url;
-    link.setAttribute("download", "sample_abstract.csv");
+    link.href = SampleAbstractExcel;
+    link.setAttribute("download", "Detail Estimate.xlsx");
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -171,11 +168,11 @@ const UploadAbstract = ({ onclose, onSuccess, name }) => {
           <div className="flex justify-end gap-4">
             <button
               type="button"
-              onClick={downloadSampleCsv}
+              onClick={downloadSampleFile}
               className="px-5 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-400"
             >
               {" "}
-              Download Sample CSV{" "}
+              Download Sample File{" "}
             </button>
             <button
               type="button"

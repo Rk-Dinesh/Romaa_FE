@@ -4,11 +4,8 @@ import { IoClose } from "react-icons/io5";
 import { API } from "../../../../../constant";
 import { useParams } from "react-router-dom";
 import { toast } from "react-toastify";
+import SampleBidExcel from "./NewBid.xlsx";
 
-const sampleCSv = `item_id,item_name,description,specifications,unit,quantity,base_rate,q_rate,n_rate,remarks,work_section
-ABS001,EARTH WORK,Laying and curing concrete for foundation,"M20 grade, 28-day curing, compressive strength 20 N/mm²",m3,1011,250,230,199.90,Use M20 mix,Foundation
-ABS002,Refilling,Brick work in cement mortar 1:6,"First class bricks, modular size 225×112×75mm, 1:6 cement mortar mix",m2,380,60,50,38.95,Proper alignment required,Superstructure
-`;
 
 const UploadBid = ({ onclose, onSuccess }) => {
   const [files, setFiles] = useState([]);
@@ -67,12 +64,10 @@ const UploadBid = ({ onclose, onSuccess }) => {
     }
   };
 
-  const downloadSampleCsv = () => {
-    const blob = new Blob([sampleCSv], { type: "text/csv;charset=utf-8;" });
-    const url = URL.createObjectURL(blob);
+const downloadSampleFile = () => {
     const link = document.createElement("a");
-    link.href = url;
-    link.setAttribute("download", "sample_bid.csv");
+    link.href = SampleBidExcel;
+    link.setAttribute("download", "New Bid.xlsx");
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -156,11 +151,11 @@ const UploadBid = ({ onclose, onSuccess }) => {
           <div className="flex justify-end gap-4">
             <button
               type="button"
-              onClick={downloadSampleCsv}
+              onClick={downloadSampleFile}
               className="px-5 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-400"
             >
               {" "}
-              Download Sample CSV{" "}
+              Download Sample File{" "}
             </button>
             <button
               type="button"

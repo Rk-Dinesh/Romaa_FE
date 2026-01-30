@@ -4,11 +4,8 @@ import { IoClose } from "react-icons/io5";
 import { API } from "../../../constant";
 import { toast } from "react-toastify";
 import { useProject } from "../../../context/ProjectContext";
+import SampleBillAbstractExcel from "./BILLABSTRACT.xlsx";
 
-const sampleCSv = `item_id,item_name,description,specifications,unit,quantity,base_rate,q_rate,n_rate,remarks,work_section
-ABS001,EARTH WORK,Laying and curing concrete for foundation,"M20 grade, 28-day curing, compressive strength 20 N/mm²",m3,1011,250,230,199.90,Use M20 mix,Foundation
-ABS002,Refilling,Brick work in cement mortar 1:6,"First class bricks, modular size 225×112×75mm, 1:6 cement mortar mix",m2,380,60,50,38.95,Proper alignment required,Superstructure
-`;
 
 const UploadBill = ({ onclose, onSuccess }) => {
     const [files, setFiles] = useState([]);
@@ -69,16 +66,14 @@ const UploadBill = ({ onclose, onSuccess }) => {
         }
     };
 
-    const downloadSampleCsv = () => {
-        const blob = new Blob([sampleCSv], { type: "text/csv;charset=utf-8;" });
-        const url = URL.createObjectURL(blob);
-        const link = document.createElement("a");
-        link.href = url;
-        link.setAttribute("download", "sample_bill.csv");
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-    };
+const downloadSampleFile = () => {
+    const link = document.createElement("a");
+    link.href = SampleBillAbstractExcel;
+    link.setAttribute("download", "BILL ABSTRACT.xlsx");
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
 
     return (
         <div className="font-roboto-flex fixed inset-0 grid justify-center items-center backdrop-blur-xs backdrop-grayscale-50  drop-shadow-lg z-20">
@@ -158,11 +153,11 @@ const UploadBill = ({ onclose, onSuccess }) => {
                     <div className="flex justify-end gap-4">
                         <button
                             type="button"
-                            onClick={downloadSampleCsv}
+                            onClick={downloadSampleFile}
                             className="px-5 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-400"
                         >
                             {" "}
-                            Download Sample CSV{" "}
+                            Download Sample File{" "}
                         </button>
                         <button
                             type="button"
