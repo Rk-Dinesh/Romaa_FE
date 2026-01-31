@@ -11,10 +11,11 @@ import EditTender from "./EditTender";
 // ✅ Columns - match TenderModel fields
 const TenderColumns = [
   { label: "Tender ID", key: "tender_id" },
-  { label: "Name", key: "tender_name" },
+  { label: "Name", key: "tender_name" ,className: "text-left"},
   {
     label: "Location",
     key: "tender_location",
+    className: "text-left",
     render: (item) =>
       `${item.tender_location?.city || ""}, ${item.tender_location?.state || ""}, ${
         item.tender_location?.country || ""

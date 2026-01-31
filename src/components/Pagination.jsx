@@ -47,7 +47,7 @@ const Pagination = ({
   };
 
   return (
-    <div className="flex justify-between items-center h-1/12 px-3 whitespace-nowrap overflow-auto no-scrollbar ">
+    <div className="flex justify-between items-center  px-3 whitespace-nowrap overflow-auto no-scrollbar ">
       <div className="text-sm font-normal dark:text-white text-darkest-blue">
         <p className="">{displayText}</p>
       </div>
