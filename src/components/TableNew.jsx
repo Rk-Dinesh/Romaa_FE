@@ -359,16 +359,19 @@ const Table = ({
                           )}
                           {(ViewModal || routepoint) && (
                             <button
-                              onClick={(e) => {
-                                e.stopPropagation();
+                              onClick={() => {
                                 if (routepoint) {
+                                  // Persist the selected item in localStorage if idKey is present
                                   if (idKey) {
                                     localStorage.setItem(
                                       `selected${idKey}`,
                                       JSON.stringify(item),
                                     );
                                   }
+
+                                  // Navigate based on presence of idKey and id2Key and routepoint param placeholder
                                   if (idKey && id2Key) {
+                                    // If have two keys, navigate with both params appended
                                     navigate(
                                       `${routepoint}/${item[idKey]}/${item[id2Key]}`,
                                       { state: { item } },
@@ -377,19 +380,24 @@ const Table = ({
                                     idKey &&
                                     routepoint.includes(`:${idKey}`)
                                   ) {
+                                    // If routepoint contains param placeholder ":idKey", replace it
                                     const url = routepoint.replace(
                                       `:${idKey}`,
                                       item[idKey],
                                     );
                                     navigate(url, { state: { item } });
                                   } else if (idKey) {
+                                    // Otherwise append idKey param manually
                                     navigate(`${routepoint}/${item[idKey]}`, {
                                       state: { item },
                                     });
                                   } else {
+                                    // No params, just navigate with state
                                     navigate(routepoint, { state: { item } });
                                   }
                                 }
+
+                                // Handle modal view toggle state based on ViewModal prop
                                 if (ViewModal === true) {
                                   setShowView(false);
                                 } else {
