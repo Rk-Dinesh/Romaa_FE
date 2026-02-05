@@ -5,6 +5,7 @@ import { API } from "../../../constant";
 import { toast } from "react-toastify";
 import { useProject } from "../../../context/ProjectContext";
 import SampleSteelAbstractExcel from "./STEELABSTRACT.xlsx";
+import SampleBillAbstractExcel from "./BILLABSTRACT.xlsx";
 
 
 const UploadDetail = ({ onclose, onSuccess, abstractName, bill_sequence, bill_id }) => {
@@ -78,8 +79,14 @@ const UploadDetail = ({ onclose, onSuccess, abstractName, bill_sequence, bill_id
 
 const downloadSampleFile = () => {
     const link = document.createElement("a");
-    link.href = SampleSteelAbstractExcel;
-    link.setAttribute("download", "STEEL ABSTRACT.xlsx");
+    if(abstractName === "Abstract Estimate"){
+        link.href = SampleBillAbstractExcel;
+        link.setAttribute("download", "BILL ABSTRACT.xlsx");
+    }
+    else{
+        link.href = SampleSteelAbstractExcel;
+        link.setAttribute("download", "STEEL ABSTRACT.xlsx");
+    }
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);

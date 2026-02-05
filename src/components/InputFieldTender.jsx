@@ -11,6 +11,7 @@ export const InputFieldTender = ({
   disabled = false,
   rows = 3, // Only for type="textarea"
   className = "",
+  step,
   ...rest // Capture other props like onChange, maxLength, etc.
 }) => {
   // 1. Base styles shared across all inputs
@@ -87,6 +88,7 @@ export const InputFieldTender = ({
           id={name}
           type={type}
           placeholder={placeholder}
+          step={step}
           disabled={disabled}
           {...register(name)}
           {...rest}

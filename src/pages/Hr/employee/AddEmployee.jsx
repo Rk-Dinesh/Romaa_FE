@@ -1,5 +1,5 @@
-import React, { useState } from "react";
-import { useForm, useWatch } from "react-hook-form";
+import React, { useState, useEffect, useRef } from "react";
+import { useForm } from "react-hook-form";
 import { yupResolver } from "@hookform/resolvers/yup";
 import * as Yup from "yup";
 import { IoClose } from "react-icons/io5";
@@ -9,7 +9,11 @@ import {
   FiMapPin,
   FiShield,
   FiSave,
-  FiPhone
+  FiPhone,
+  FiDollarSign,
+  FiCalendar,
+  FiChevronDown,
+  FiSearch
 } from "react-icons/fi";
 import { toast } from "react-toastify";
 import { API } from "../../../constant";
@@ -23,6 +27,9 @@ const schema = Yup.object().shape({
 
   userType: Yup.string().oneOf(["Office", "Site"]).required("User Type required"),
   designation: Yup.string().required("Designation required"),
+  department: Yup.string().required("Department required"),
+  hrStatus: Yup.string().required("HR Status required"),
+  reportsTo: Yup.string().nullable(), // Allow null initially
   dateOfJoining: Yup.date().required("Date required"),
   employeeReference: Yup.string(),
 
@@ -37,28 +44,74 @@ const schema = Yup.object().shape({
   emergency_name: Yup.string().required("Contact Name required"),
   emergency_relationship: Yup.string().required("Relation required"),
   emergency_phone: Yup.string().required("Phone required"),
+
+  leave_pl: Yup.number().typeError("Must be a number").min(0, "Cannot be negative").default(0),
+  leave_cl: Yup.number().typeError("Must be a number").min(0, "Cannot be negative").default(12),
+  leave_sl: Yup.number().typeError("Must be a number").min(0, "Cannot be negative").default(12),
+
+  basicSalary: Yup.number().typeError("Must be a number").positive("Must be positive").required("Basic Salary is required"),
+  accountHolderName: Yup.string().required("Account Holder Name is required"),
+  bankName: Yup.string().required("Bank Name is required"),
+  accountNumber: Yup.string().required("Account Number is required"),
+  ifscCode: Yup.string().required("IFSC Code is required"),
+  panNumber: Yup.string().required("PAN Number is required"),
+  uanNumber: Yup.string(),
 });
 
 const AddEmployee = ({ onclose, onSuccess }) => {
   const [loading, setLoading] = useState(false);
+  const [managers, setManagers] = useState([]); // State for API data
 
-  // Mock Data
-  const [projects] = useState([
-    { _id: "prj001", name: "Skyline Towers" },
-    { _id: "prj002", name: "Metro Phase 1" }
-  ]);
+  // Construction-oriented Departments
+  const departments = [
+    "Project",
+    "Planning",
+    "Site",
+    "Purchase",
+    "Human Resources",
+    "Finance",
+    "Safety/EHS",
+    "QA/QC"
+  ];
+
+  // --- Fetch Managers from API ---
+  useEffect(() => {
+    const fetchManagers = async () => {
+      try {
+        const response = await axios.get(`${API}/employee/assigned`, { withCredentials: true });
+        // Assuming API response structure matches your sample
+        if (response.data && response.data.data) {
+          const formattedManagers = response.data.data.map((emp) => ({
+            value: emp._id,
+            label: `${emp.name} (${emp.employeeId})` // Show Name + ID
+          }));
+          setManagers(formattedManagers);
+        }
+      } catch (error) {
+        console.error("Error fetching managers:", error);
+        toast.error("Failed to load manager list");
+      }
+    };
+    fetchManagers();
+  }, []);
 
   const {
     register,
     handleSubmit,
-    control,
+    setValue, // Needed for custom select
+    watch,    // Needed to display selected value in custom select
     formState: { errors },
   } = useForm({
     resolver: yupResolver(schema),
-    defaultValues: { userType: "Office" }
+    defaultValues: {
+      userType: "Office",
+      hrStatus: "Probation",
+      leave_pl: 0,
+      leave_cl: 12,
+      leave_sl: 12,
+      reportsTo: ""
+    }
   });
-
-  const userType = useWatch({ control, name: "userType" });
 
   const sectionHeaderClass = "col-span-full text-sm font-bold text-blue-600 dark:text-blue-400 border-b border-gray-200 dark:border-gray-700 pb-1 mt-4 mb-2 flex items-center gap-2";
 
@@ -68,9 +121,11 @@ const AddEmployee = ({ onclose, onSuccess }) => {
       const payload = {
         ...data,
         status: "Active",
-        userType: data.userType,
-        dateOfJoining: data.dateOfJoining,
-        employeeReference: data.employeeReference,
+        
+        department: data.department,
+        hrStatus: data.hrStatus,
+        reportsTo: data.reportsTo || null,
+
         address: {
           street: data.address_street,
           city: data.address_city,
@@ -85,6 +140,20 @@ const AddEmployee = ({ onclose, onSuccess }) => {
           name: data.emergency_name,
           relationship: data.emergency_relationship,
           phone: data.emergency_phone
+        },
+        leaveBalance: {
+          PL: data.leave_pl,
+          CL: data.leave_cl,
+          SL: data.leave_sl
+        },
+        payroll: {
+          basicSalary: data.basicSalary,
+          accountHolderName: data.accountHolderName,
+          bankName: data.bankName,
+          accountNumber: data.accountNumber,
+          ifscCode: data.ifscCode,
+          panNumber: data.panNumber,
+          uanNumber: data.uanNumber
         }
       };
 
@@ -111,7 +180,7 @@ const AddEmployee = ({ onclose, onSuccess }) => {
               <span className="p-2 bg-blue-100 text-blue-600 rounded-lg"><FiUser className="text-xl" /></span>
               New Employee Onboarding
             </h2>
-            <p className="text-xs text-gray-500 mt-1 ml-11">Register new staff details</p>
+            <p className="text-xs text-gray-500 mt-1 ml-11">Register new staff details for HRMS</p>
           </div>
           <button onClick={onclose} className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-500 transition-all">
             <IoClose size={24} />
@@ -124,24 +193,68 @@ const AddEmployee = ({ onclose, onSuccess }) => {
 
             {/* 1. Identity Section */}
             <div className={sectionHeaderClass}>
-              <FiShield /> Identity & Access
+              <FiShield /> Identity & Contact
             </div>
 
             <Input label="Full Name *" name="name" register={register} error={errors.name} placeholder="John Doe" />
             <Input label="Email ID *" type="email" name="email" register={register} error={errors.email} placeholder="john@company.com" />
             <Input label="Mobile No *" type="phone" name="phone" register={register} error={errors.phone} placeholder="9876543210" />
 
-            {/* 2. Job Profile Section */}
+            {/* 2. Job Profile & HR Section */}
             <div className={sectionHeaderClass}>
-              <FiBriefcase /> Job Profile
+              <FiBriefcase /> Job Profile & Reporting
             </div>
 
+            <Select label="Department *" name="department" register={register} error={errors.department} options={departments} />
             <Input label="Designation *" name="designation" register={register} error={errors.designation} placeholder="e.g. Site Engineer" />
             <Input label="Date of Joining *" type="date" name="dateOfJoining" register={register} error={errors.dateOfJoining} />
+            
             <Select label="Work Type *" name="userType" register={register} error={errors.userType} options={["Office", "Site"]} />
-            <Input label="Employee Reference" name="employeeReference" register={register} error={errors.employeeReference} placeholder="e.g. John Doe" />
+            <Select label="HR Status *" name="hrStatus" register={register} error={errors.hrStatus} options={["Probation", "Confirmed", "Notice Period"]} />
+            
+            {/* UPDATED: Searchable Select for Reports To */}
+            <SearchableSelect 
+              label="Reports To (Manager)" 
+              name="reportsTo" 
+              options={managers} 
+              setValue={setValue} 
+              watch={watch}
+              error={errors.reportsTo}
+              placeholder="Search Manager..."
+            />
 
-            {/* 3. Address Section */}
+            <Input label="Employee Reference" name="employeeReference" register={register} error={errors.employeeReference} placeholder="e.g. John Doe" />
+            <div className="md:col-span-2"></div>
+
+            {/* 3. Leave Allocation */}
+            <div className={sectionHeaderClass}>
+              <FiCalendar /> Leave Allocation (Current Year)
+            </div>
+
+            <Input label="PL (Privilege Leave) *" type="number" name="leave_pl" register={register} error={errors.leave_pl} />
+            <Input label="CL (Casual Leave) *" type="number" name="leave_cl" register={register} error={errors.leave_cl} />
+            <Input label="SL (Sick Leave) *" type="number" name="leave_sl" register={register} error={errors.leave_sl} />
+
+
+            {/* 4. Payroll & Bank Details */}
+            <div className={sectionHeaderClass}>
+              <FiDollarSign /> Payroll & Bank Details
+            </div>
+
+            <Input label="Basic Salary (₹) *" type="number" name="basicSalary" register={register} error={errors.basicSalary} placeholder="0.00" />
+            <Input label="Account Holder Name *" name="accountHolderName" register={register} error={errors.accountHolderName} />
+            <Input label="Bank Name *" name="bankName" register={register} error={errors.bankName} placeholder="e.g. HDFC Bank" />
+
+            <Input label="Account Number *" name="accountNumber" register={register} error={errors.accountNumber} />
+            <Input label="IFSC Code *" name="ifscCode" register={register} error={errors.ifscCode} placeholder="HDFC0001234" />
+            <div className="md:col-span-1"></div>
+
+            <Input label="PAN Number *" name="panNumber" register={register} error={errors.panNumber} placeholder="ABCDE1234F" />
+            <Input label="UAN Number (PF)" name="uanNumber" register={register} error={errors.uanNumber} placeholder="12-digit UAN" />
+            <div className="md:col-span-1"></div>
+
+
+            {/* 5. Address Section */}
             <div className={sectionHeaderClass}>
               <FiMapPin /> Residential Address
             </div>
@@ -151,21 +264,17 @@ const AddEmployee = ({ onclose, onSuccess }) => {
             </div>
             <Input label="City *" name="address_city" register={register} error={errors.address_city} />
             <Input label="Pincode *" name="address_pincode" register={register} error={errors.address_pincode} />
+            <Input label="State *" name="address_state" register={register} error={errors.address_state} />
 
-            {/* Just filling the row nicely */}
-            <div className="md:col-span-1">
-              <Input label="State *" name="address_state" register={register} error={errors.address_state} />
-            </div>
 
-            {/* 4. Legal & Emergency Section */}
+            {/* 6. Legal & Emergency Section */}
             <div className={sectionHeaderClass}>
-              <FiShield /> Legal Document
+              <FiShield /> Legal Documents
             </div>
 
-            <Select label="ID Proof Type *" name="id_proof_type" register={register} error={errors.id_proof_type} options={["Aadhar", "PAN", "Passport", "Voter ID"]} />
+            <Select label="ID Proof Type *" name="id_proof_type" register={register} error={errors.id_proof_type} options={["Aadhar", "Passport", "Voter ID"]} />
             <Input label="ID Proof Number *" name="id_proof_number" register={register} error={errors.id_proof_number} placeholder="XXXX-XXXX-XXXX" />
-
-            <div className="md:col-span-2"></div> {/* Spacer */}
+            <div className="md:col-span-1"></div>
 
             <div className={sectionHeaderClass}>
               <FiPhone />  Emergency Contact
@@ -201,7 +310,8 @@ const AddEmployee = ({ onclose, onSuccess }) => {
   );
 };
 
-// --- Reusable Components (Same style as Machinery) ---
+// --- Reusable Components ---
+
 const Input = ({ label, name, type = "text", register, error, placeholder }) => (
   <div className="w-full">
     <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">{label}</label>
@@ -230,5 +340,91 @@ const Select = ({ label, name, register, error, options, isObject = false }) => 
     {error && <p className="text-red-500 text-[10px] mt-0.5">{error.message}</p>}
   </div>
 );
+
+// --- New Component: Searchable Select ---
+const SearchableSelect = ({ label, name, options, setValue, watch, error, placeholder }) => {
+  const [isOpen, setIsOpen] = useState(false);
+  const [searchTerm, setSearchTerm] = useState("");
+  const wrapperRef = useRef(null);
+
+  const selectedValue = watch(name);
+  const selectedLabel = options.find((opt) => opt.value === selectedValue)?.label || "";
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    function handleClickOutside(event) {
+      if (wrapperRef.current && !wrapperRef.current.contains(event.target)) {
+        setIsOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [wrapperRef]);
+
+  // Filter options based on search term
+  const filteredOptions = options.filter((opt) =>
+    opt.label.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  return (
+    <div className="w-full relative" ref={wrapperRef}>
+      <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">{label}</label>
+      
+      {/* Input Display Area */}
+      <div
+        className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 text-sm bg-gray-50 dark:bg-gray-800 dark:text-white focus:outline-none focus:border-blue-500 cursor-pointer flex justify-between items-center"
+        onClick={() => setIsOpen(!isOpen)}
+      >
+        <span className={!selectedLabel ? "text-gray-400" : ""}>
+          {selectedLabel || placeholder || "Select..."}
+        </span>
+        <FiChevronDown className="text-gray-500" />
+      </div>
+
+      {/* Dropdown Menu */}
+      {isOpen && (
+        <div className="absolute z-50 w-full mt-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg max-h-60 overflow-hidden flex flex-col">
+          {/* Search Input */}
+          <div className="p-2 border-b border-gray-100 dark:border-gray-700 flex items-center gap-2">
+            <FiSearch className="text-gray-400" />
+            <input
+              type="text"
+              className="w-full text-sm bg-transparent outline-none text-gray-700 dark:text-gray-200"
+              placeholder="Search..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              autoFocus
+            />
+          </div>
+
+          {/* Options List */}
+          <div className="overflow-y-auto flex-1">
+            {filteredOptions.length > 0 ? (
+              filteredOptions.map((opt) => (
+                <div
+                  key={opt.value}
+                  className={`px-3 py-2 text-sm cursor-pointer hover:bg-blue-50 dark:hover:bg-blue-900/30 ${
+                    selectedValue === opt.value ? "bg-blue-50 dark:bg-blue-900/30 font-medium text-blue-600 dark:text-blue-400" : "text-gray-700 dark:text-gray-200"
+                  }`}
+                  onClick={() => {
+                    setValue(name, opt.value);
+                    setIsOpen(false);
+                    setSearchTerm("");
+                  }}
+                >
+                  {opt.label}
+                </div>
+              ))
+            ) : (
+              <div className="px-3 py-2 text-xs text-gray-500 text-center">No results found</div>
+            )}
+          </div>
+        </div>
+      )}
+      
+      {error && <p className="text-red-500 text-[10px] mt-0.5">{error.message}</p>}
+    </div>
+  );
+};
 
 export default AddEmployee;

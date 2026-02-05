@@ -17,7 +17,6 @@ import PurchaseBill from "../pages/purchase/purchase bill/PurchaseBill";
 import MachineryTracking from "../pages/purchase/machinery tracking/MachineryTracking";
 import Site from "../pages/site/Site";
 import Employee from "../pages/Hr/employee/Employee";
-import Leave from "../pages/Hr/leave/Leave";
 import PayRoll from "../pages/Hr/payroll/PayRoll";
 import ContractNmr from "../pages/Hr/contract & Nmr/ContractNmr";
 import ViewEmployee from "../pages/Hr/employee/ViewEmployee";
@@ -162,6 +161,7 @@ import AssetDetails from "../pages/settings/assets/machinery/AssetDetails";
 import ProtectedRoute from "../pages/auth/protectedRoute";
 import ViewUser from "../pages/settings/user/ViewUser";
 import ResetPassword from "../pages/auth/ResetPassword";
+import LeaveManagement from "../pages/Hr/leave/LeaveManagement";
 
 const AppRoutes = () => {
   return (
@@ -429,7 +429,7 @@ const AppRoutes = () => {
               <Route path="editemployee" element={<EditEmployee />} />
             </Route>
             <Route path="attendance" element={<Attendance />} />
-            <Route path="leave" element={<Leave />} />
+            <Route path="leave" element={<LeaveManagement />} />
             <Route path="payroll">
               <Route index element={<PayRoll />} />
               <Route path="viewpayroll" element={<ViewPayroll />} />

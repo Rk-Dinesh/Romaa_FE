@@ -20,13 +20,8 @@ const Leave = () => {
       pagetitle="Leave"
       columns={Columns}
       endpoint={Leavedata}
-      Datecontent={true}
-      AddModal={true}
-      EditModal={true}
       ViewModal={true}
       FilterModal={Filters}
-      addButtonLabel="Request Leave"
-      addButtonIcon={<TbDoorExit size={24}/>}
     />
   );
 };

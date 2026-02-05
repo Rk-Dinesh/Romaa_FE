@@ -15,8 +15,7 @@ const TABS = [
   "Comparative",
   "Bill Abstract",
   "Bill Detailed",
-  "Steel 1000MT",
-  "Steel 1500MT",
+  "Steel",
 ];
 
 const ViewClBillProjects = () => {
@@ -55,16 +54,10 @@ const ViewClBillProjects = () => {
             <BillDetailedTable tenderId={tenderId} billId={billId} abstractName="Abstract Estimate" billSequence={billSequence} status={status}/>
           </div>
         );
-      case "Steel 1000MT":
+      case "Steel":
         return (
           <div className="animate-fade-in">
             <SteelDetailedTable tenderId={tenderId} billId={billId} abstractName="Steel 1000MT" billSequence={billSequence} status={status}/>
-          </div>
-        );
-      case "Steel 1500MT":
-        return (
-          <div className="animate-fade-in">
-            <SteelDetailedTable tenderId={tenderId} billId={billId} abstractName="Steel 1500MT" billSequence={billSequence} status={status}/>
           </div>
         );
       default:

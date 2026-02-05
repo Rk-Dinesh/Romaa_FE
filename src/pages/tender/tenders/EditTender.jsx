@@ -269,10 +269,10 @@ const EditTender = ({ item, onclose, onUpdated }) => {
             </div>
 
             <div className="col-span-1">
-               <InputFieldTender label="Latitude" name="site_location.latitude" type="number" register={register} errors={errors} />
+               <InputFieldTender label="Latitude" name="site_location.latitude" type="number" step="0.000001" register={register} errors={errors}  />
             </div>
             <div className="col-span-1">
-               <InputFieldTender label="Longitude" name="site_location.longitude" type="number" register={register} errors={errors} />
+               <InputFieldTender label="Longitude" name="site_location.longitude" type="number" step="0.000001" register={register} errors={errors} />
             </div>
 
           </form>
