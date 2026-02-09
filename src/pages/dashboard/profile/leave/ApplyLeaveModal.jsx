@@ -17,7 +17,7 @@ const ApplyLeaveModal = ({ isOpen, onClose, onSuccess, user }) => {
   const [dateError, setDateError] = useState("");
   const [timeError, setTimeError] = useState("");
 
-  const [formData, setFormData] = useState({
+const initialFormState = {
     leaveType: "CL",
     requestType: "Full Day",
     fromDate: "",
@@ -26,7 +26,17 @@ const ApplyLeaveModal = ({ isOpen, onClose, onSuccess, user }) => {
     totalDays: 0,
     fromTime: "",
     toTime: ""
-  });
+  };
+
+  const [formData, setFormData] = useState(initialFormState);
+
+  const handleClose = () => {
+    setFormData(initialFormState); // Reset Form
+    setDateError("");              // Clear Errors
+    setTimeError("");
+    setOverlapHolidays([]);        // Clear Holiday warnings
+    onClose();                     // Trigger Parent Close
+  };
 
   // --- 1. Load Data ---
   useEffect(() => {
@@ -51,7 +61,13 @@ const ApplyLeaveModal = ({ isOpen, onClose, onSuccess, user }) => {
       }
       fetchHolidays();
     }
-  }, [isOpen, viewYear, formData.leaveType, user]);
+  }, [isOpen, viewYear]);
+
+  useEffect(() => {
+      if (user && user.leaveBalance && isOpen) {
+          setBalance(user.leaveBalance[formData.leaveType] || 0);
+      }
+  }, [isOpen, user, formData.leaveType]);
 
   // --- 2. Smart Calculation ---
   const calculateSmartDays = (start, end, type) => {
@@ -113,6 +129,11 @@ const ApplyLeaveModal = ({ isOpen, onClose, onSuccess, user }) => {
         newData.requestType = "Short Leave";
         // Permissions are single day, so sync dates
         if(newData.fromDate) newData.toDate = newData.fromDate;
+    }
+
+    if (name === "leaveType" && value === "CompOff") {
+        // Force Request Type to Full Day
+        newData.requestType = "Full Day";
     }
     
     // Update Balance Display
@@ -216,7 +237,7 @@ const ApplyLeaveModal = ({ isOpen, onClose, onSuccess, user }) => {
       await axios.post(`${API}/leave/apply`, payload, { withCredentials: true });
       toast.success("Request Submitted Successfully!");
       onSuccess();
-      onClose();
+     handleClose();
     } catch (error) {
       toast.error(error.response?.data?.message || "Failed to apply");
     } finally {
@@ -246,6 +267,7 @@ const ApplyLeaveModal = ({ isOpen, onClose, onSuccess, user }) => {
                             <option value="SL">Sick Leave (SL)</option>
                             <option value="PL">Privilege Leave (PL)</option>
                             <option value="LWP">Loss of Pay (LWP)</option>
+                            <option value="CompOff">Compensatory Leave (CompOff)</option>
                             <option value="Permission" className="font-bold text-blue-600">Permission</option>
                         </select>
                     </div>
@@ -256,8 +278,8 @@ const ApplyLeaveModal = ({ isOpen, onClose, onSuccess, user }) => {
                             value={formData.requestType} 
                             onChange={handleChange} 
                             // Lock this if Permission is selected
-                            disabled={formData.leaveType === "Permission"}
-                            className={`w-full border border-gray-300 rounded-lg p-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none ${formData.leaveType === "Permission" ? "bg-gray-100 cursor-not-allowed" : ""}`}
+                            disabled={formData.leaveType === "Permission" || formData.leaveType === "CompOff"}
+                            className={`w-full border border-gray-300 rounded-lg p-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none ${formData.leaveType === "Permission" || formData.leaveType === "CompOff" ? "bg-gray-100 cursor-not-allowed" : ""}`}
                         >
                             <option value="Full Day">Full Day</option>
                             <option value="First Half">First Half</option>
@@ -338,7 +360,7 @@ const ApplyLeaveModal = ({ isOpen, onClose, onSuccess, user }) => {
                 </div>
 
                 <div className="pt-2 flex gap-3 justify-end mt-auto">
-                    <button type="button" onClick={onClose} className="px-4 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg">Cancel</button>
+                    <button type="button" onClick={handleClose} className="px-4 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg">Cancel</button>
                     <button 
                         type="submit" 
                         // Disable if: Loading OR Date Error OR Time Error OR (Regular Leave AND Insufficient Balance)
