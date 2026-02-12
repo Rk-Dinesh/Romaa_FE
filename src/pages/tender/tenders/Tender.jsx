@@ -1,32 +1,45 @@
+import React, { useState } from "react";
 import { HiOutlineClipboardList } from "react-icons/hi";
-import { useEffect, useState } from "react";
-import { API } from "../../../constant";
-import { toast } from "react-toastify";
-import axios from "axios";
 import Filters from "../../../components/Filters";
 import Table from "../../../components/Table";
 import AddTender from "./AddTender";
 import EditTender from "./EditTender";
+import { useDebounce } from "../../../hooks/useDebounce";
+import { useTenders } from "./hooks/useTenders";
 
-// ✅ Columns - match TenderModel fields
+// ✅ Columns Definition (Static)
 const TenderColumns = [
   { label: "Tender ID", key: "tender_id" },
-  { label: "Name", key: "tender_name" ,className: "text-left"},
+  { label: "Name", key: "tender_name", className: "text-left" },
   {
     label: "Location",
     key: "tender_location",
     className: "text-left",
     render: (item) =>
-      `${item.tender_location?.city || ""}, ${item.tender_location?.state || ""}, ${
-        item.tender_location?.country || ""
-      } - ${item.tender_location?.pincode || ""}`,
+      item.tender_location
+        ? `${item.tender_location.city || ""}, ${item.tender_location.state || ""}`
+        : "-",
   },
   {
     label: "Submission Date",
     key: "tender_start_date",
-    render: (item) => item.tender_start_date ? new Date(item.tender_start_date).toLocaleDateString("en-GB").replace(/\//g, "-") : "-"
+    render: (item) =>
+      item.tender_start_date
+        ? new Date(item.tender_start_date)
+            .toLocaleDateString("en-GB")
+            .replace(/\//g, "-")
+        : "-",
   },
-  { label: "Budget", key: "tender_value" , formatter: (value) => new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0, minimumFractionDigits: 0 }).format(value) },
+  {
+    label: "Budget",
+    key: "tender_value",
+    formatter: (value) =>
+      new Intl.NumberFormat("en-IN", {
+        style: "currency",
+        currency: "INR",
+        maximumFractionDigits: 0,
+      }).format(value),
+  },
   {
     label: "Status",
     key: "tender_status",
@@ -46,63 +59,57 @@ const TenderColumns = [
 ];
 
 const Tender = () => {
-  const [tenders, setTenders] = useState([]);
-  const [loading, setLoading] = useState(false);
-  const [searchTerm, setSearchTerm] = useState("");
+  // 1. UI State
   const [currentPage, setCurrentPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(0);
+  const [searchTerm, setSearchTerm] = useState("");
   const [filterParams, setFilterParams] = useState({
     fromdate: "",
     todate: "",
   });
 
-  const fetchTenders = async () => {
-    setLoading(true);
-    try {
-      const res = await axios.get(`${API}/tender/gettenders`, {
-        params: {
-          page: currentPage,
-          limit: 10,
-          search: searchTerm,
-          fromdate: filterParams.fromdate,
-          todate: filterParams.todate
-        }
-      });
-      setTenders(res.data.data);
-      setTotalPages(res.data.totalPages);
-    } catch (err) {
-      toast.error("Failed to fetch tenders");
-    } finally {
-      setLoading(false);
-    }
-  };
+  // 2. Debounce Search (Wait 500ms after typing)
+  const debouncedSearch = useDebounce(searchTerm, 500);
 
-  useEffect(() => {
-    fetchTenders();
-  }, [currentPage, searchTerm, filterParams]);
+  // 3. Data Fetching Hook (Automatic Caching & Refetching)
+  const { data, isLoading, isFetching, refetch } = useTenders({
+    page: currentPage,
+    limit: 10,
+    search: debouncedSearch, // Pass the delayed search term
+    fromdate: filterParams.fromdate,
+    todate: filterParams.todate,
+  });
 
   return (
     <Table
       title="Tender Management"
       subtitle="Tender"
       pagetitle="Tenders Management"
-      loading={loading}
-      endpoint={tenders}
+      // State & Data
+      loading={isLoading} // Initial load
+      isRefreshing={isFetching} // Background update
+      endpoint={data?.data || []} // The Array
+      totalPages={data?.totalPages || 0}
+      // Controls
+      currentPage={currentPage}
+      setCurrentPage={setCurrentPage}
+      // Search (Update local state instantly, hook handles debounce)
+      search={searchTerm}
+      setSearch={setSearchTerm}
+      // Filters
+      filterParams={filterParams}
+      setFilterParams={setFilterParams}
+      FilterModal={Filters}
+      // Actions
       columns={TenderColumns}
       AddModal={AddTender}
       EditModal={EditTender}
       routepoint={"viewtender"}
-      FilterModal={Filters}
       addButtonLabel="Add Tender"
       addButtonIcon={<HiOutlineClipboardList size={24} />}
-      totalPages={totalPages}
-      currentPage={currentPage}
-      setCurrentPage={setCurrentPage}
-      filterParams={filterParams}
-      setFilterParams={setFilterParams}
-      onUpdated={fetchTenders} // so table reloads after add/edit/delete
-      onSuccess={fetchTenders}
-      idKey='tender_id'
+      idKey="tender_id"
+      // Refetch on actions
+      onUpdated={refetch}
+      onSuccess={refetch}
     />
   );
 };

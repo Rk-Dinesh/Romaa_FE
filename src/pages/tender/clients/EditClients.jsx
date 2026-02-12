@@ -1,14 +1,13 @@
-import React, { useState } from "react";
+import React from "react";
 import { useForm } from "react-hook-form";
 import { yupResolver } from "@hookform/resolvers/yup";
 import * as yup from "yup";
 import { IoClose, IoSaveOutline } from "react-icons/io5";
-import axios from "axios";
-import { toast } from "react-toastify";
 import { InputFieldTender } from "../../../components/InputFieldTender";
-import { API } from "../../../constant";
+import { useEditClient } from "./hooks/useClients";
 
-// --- VALIDATION SCHEMA ---
+
+// --- VALIDATION SCHEMA (Unchanged) ---
 const schema = yup.object().shape({
   client_name: yup.string().required("Client Name is required"),
   pan_no: yup.string().required("PAN Number is required"),
@@ -41,9 +40,14 @@ const SectionHeader = ({ title }) => (
 );
 
 const EditClients = ({ item, onclose, onUpdated }) => {
-  const [loading, setLoading] = useState(false);
+  
+  // 1. Setup Mutation Hook
+  const { mutate: updateClient, isPending } = useEditClient({
+    onSuccess: onUpdated,
+    onClose: onclose
+  });
 
-  // Initialize Form with Item Data
+  // 2. Initialize Form
   const {
     register,
     handleSubmit,
@@ -65,35 +69,25 @@ const EditClients = ({ item, onclose, onUpdated }) => {
     },
   });
 
-  const onSubmit = async (data) => {
-    try {
-      setLoading(true);
-      const payload = {
-        client_name: data.client_name,
-        pan_no: data.pan_no,
-        cin_no: data.cin_no,
-        gstin: data.gstin,
-        contact_phone: data.contact_phone,
-        contact_email: data.contact_email,
-        address: {
-          city: data.city,
-          state: data.state,
-          country: data.country,
-          pincode: data.pincode,
-        },
-      };
+  // 3. Submit Handler
+  const onSubmit = (data) => {
+    const payload = {
+      client_name: data.client_name,
+      pan_no: data.pan_no,
+      cin_no: data.cin_no,
+      gstin: data.gstin,
+      contact_phone: data.contact_phone,
+      contact_email: data.contact_email,
+      address: {
+        city: data.city,
+        state: data.state,
+        country: data.country,
+        pincode: data.pincode,
+      },
+    };
 
-      await axios.put(`${API}/client/updateclient/${item.client_id}`, payload);
-      
-      toast.success("Client updated successfully ✅");
-      if (onUpdated) onUpdated();
-      onclose();
-    } catch (err) {
-      console.error("Update failed", err);
-      toast.error(err.response?.data?.message || "Failed to update client");
-    } finally {
-      setLoading(false);
-    }
+    // Trigger the mutation
+    updateClient({ id: item.client_id, payload });
   };
 
   return (
@@ -169,7 +163,7 @@ const EditClients = ({ item, onclose, onUpdated }) => {
           <button
             type="button"
             onClick={onclose}
-            disabled={loading}
+            disabled={isPending}
             className="px-6 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded hover:bg-gray-50 transition-colors dark:bg-gray-800 dark:text-gray-300 dark:border-gray-700"
           >
             Cancel
@@ -177,10 +171,10 @@ const EditClients = ({ item, onclose, onUpdated }) => {
           <button
             type="submit"
             form="editClientForm"
-            disabled={loading}
+            disabled={isPending}
             className="px-8 py-2 text-sm font-bold text-white bg-darkest-blue hover:bg-blue-900 rounded shadow-sm flex items-center gap-2 transition-all disabled:opacity-70 disabled:cursor-not-allowed"
           >
-            {loading ? "Updating..." : (
+            {isPending ? "Updating..." : (
               <>
                  <IoSaveOutline size={16} /> Update Client
               </>

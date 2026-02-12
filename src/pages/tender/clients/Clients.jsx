@@ -1,107 +1,72 @@
+import React, { useState } from "react";
+import { LuUserRoundSearch } from "react-icons/lu";
 import Filters from "../../../components/Filters";
 import Table from "../../../components/Table";
-import { LuUserRoundSearch } from "react-icons/lu";
-import { CustomerData } from "../../../components/Data";
+import AddClients from "./AddClients";
 import EditClients from "./EditClients";
 import ViewClients from "./ViewClients";
-import AddClients from "./AddClients";
-import { useEffect, useState } from "react";
-import { API } from "../../../constant";
-import { toast } from "react-toastify";
-import axios from "axios";
-import Loader from "../../../components/Loader";
+import { useClients } from "./hooks/useClients";
+import { useDebounce } from "../../../hooks/useDebounce";
 
 const ClientColumns = [
   { label: "Client ID", key: "client_id" },
   { label: "Name", key: "client_name" },
   {
     label: "Address",
-    key: "address", // This won't be directly accessed, we use render instead
+    key: "address",
     render: (item) =>
-      `${item.address?.city || ""}, ${item.address?.state || ""}, ${
-        item.address?.country || ""
-      } - ${item.address?.pincode || ""}`,
+      item.address
+        ? `${item.address.city || ""}, ${item.address.state || ""}`
+        : "-",
   },
   { label: "Phone", key: "contact_phone" },
   { label: "Email", key: "contact_email" },
-  
 ];
 
 const Clients = () => {
-  const [clients, setClients] = useState([]);
-  const [loading, setLoading] = useState(false);
-  const [searchTerm, setSearchTerm] = useState("");
+  // 1. Local State
   const [currentPage, setCurrentPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(0);
-  const [filterParams, setFilterParams] = useState({
-    fromdate: "",
-    todate: "",
+  const [searchTerm, setSearchTerm] = useState("");
+  const [filterParams, setFilterParams] = useState({ fromdate: "", todate: "" });
+
+  // 2. Debounce Search
+  const debouncedSearch = useDebounce(searchTerm, 500);
+
+  // 3. Fetch Data (Cached & Optimized)
+  const { 
+    data, 
+    isLoading, 
+    isFetching, 
+    refetch 
+  } = useClients({
+    page: currentPage,
+    limit: 10,
+    search: debouncedSearch,
+    fromdate: filterParams.fromdate,
+    todate: filterParams.todate,
   });
 
-  // const fetchClients = async () => {
-  //   setLoading(true);
-  //   try {
-  //     const res = await axios.get(`${API}/client/getclients`, {
-  //       params: {
-  //         page: currentPage,
-  //         limit: 10,
-  //         search: searchTerm,
-  //         fromdate: filterParams.fromdate,
-  //         todate: filterParams.todate,
-  //       },
-  //     });
-
-  //     setClients(res.data.data);
-  //     setTotalPages(res.data.totalPages);
-  //   } catch (err) {
-  //     toast.error("Failed to fetch clients");
-  //   } finally {
-  //     setLoading(false);
-  //   }
-  // };
-
-  const fetchClients = async () => {
-  setLoading(true);
-
-  // start timer for minimum 2s delay
-  const minDelay = new Promise((resolve) => setTimeout(resolve, 2000));
-
-  try {
-    const resPromise = axios.get(`${API}/client/getclients`, {
-      params: {
-        page: currentPage,
-        limit: 10,
-        search: searchTerm,
-        fromdate: filterParams.fromdate,
-        todate: filterParams.todate,
-      },
-    });
-
-    // wait for both API + 2s
-    const [res] = await Promise.all([resPromise, minDelay]);
-
-    setClients(res.data.data);
-    setTotalPages(res.data.totalPages);
-  } catch (err) {
-    toast.error("Failed to fetch clients");
-  } finally {
-    setLoading(false);
-  }
-};
-
-
-  useEffect(() => {
-    fetchClients();
-  }, [currentPage, searchTerm, filterParams]);
-
   return (
-  
     <Table
       title="Tender Management"
       subtitle="Client"
       pagetitle="Clients Management"
-      endpoint={clients}
-      loading={loading}
+      
+      // Data Props
+      loading={isLoading}
+      isRefreshing={isFetching}
+      endpoint={data?.data || []}
+      totalPages={data?.totalPages || 0}
+      
+      // Controls
+      currentPage={currentPage}
+      setCurrentPage={setCurrentPage}
+      search={searchTerm}
+      setSearch={setSearchTerm}
+      filterParams={filterParams}
+      setFilterParams={setFilterParams}
+      
+      // Modals & Actions
       columns={ClientColumns}
       AddModal={AddClients}
       EditModal={EditClients}
@@ -109,15 +74,11 @@ const Clients = () => {
       FilterModal={Filters}
       addButtonLabel="Add Client"
       addButtonIcon={<LuUserRoundSearch size={24} />}
-      totalPages={totalPages}
-      currentPage={currentPage}
-      setCurrentPage={setCurrentPage}
-      filterParams={filterParams}
-      setFilterParams={setFilterParams}
-      onUpdated={fetchClients}
-      onSuccess={fetchClients}
-    />
       
+      // Refresh Trigger
+      onUpdated={refetch}
+      onSuccess={refetch}
+    />
   );
 };
 

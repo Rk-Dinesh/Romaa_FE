@@ -1,14 +1,14 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { yupResolver } from "@hookform/resolvers/yup";
 import * as yup from "yup";
 import { IoClose, IoSaveOutline } from "react-icons/io5";
-import axios from "axios";
-import { API } from "../../../constant";
-import { toast } from "react-toastify";
 import { InputFieldTender } from "../../../components/InputFieldTender";
+import { useAddTender } from "./hooks/useTenders";
+import { useAllClients } from "../clients/hooks/useClients";
 
-// --- VALIDATION SCHEMA ---
+
+// --- VALIDATION SCHEMA (Unchanged) ---
 const schema = yup.object().shape({
   tender_name: yup.string().required("Tender Name is required"),
   tender_start_date: yup.date().required("Published Date is required"),
@@ -39,7 +39,6 @@ const schema = yup.object().shape({
   }),
 });
 
-// --- TEXT-ONLY HEADER ---
 const SectionHeader = ({ title }) => (
   <div className="col-span-2 mt-4 mb-2 pb-1 border-b border-gray-200 dark:border-gray-700">
     <h3 className="text-xs font-bold text-blue-600 dark:text-blue-400 uppercase tracking-widest">
@@ -49,20 +48,20 @@ const SectionHeader = ({ title }) => (
 );
 
 const AddTender = ({ onclose, onSuccess }) => {
-  const [loading, setLoading] = useState(false);
-  const [clients, setClients] = useState([]);
+  // 1. Fetch Clients (Cached)
+  const { data: clients = [] } = useAllClients();
 
-  useEffect(() => {
-    axios.get(`${API}/client/getallclients`)
-      .then((res) => setClients(res.data.data))
-      .catch((err) => console.error(err));
-  }, []);
+  // 2. Setup Mutation
+  const { mutate: addTender, isPending } = useAddTender({ 
+    onSuccess, 
+    onClose: onclose 
+  });
 
   const { register, handleSubmit, setValue, watch, formState: { errors } } = useForm({
     resolver: yupResolver(schema),
   });
 
-  // Client Auto-fill Logic
+  // 3. Auto-fill Logic (Using cached clients)
   const selectedClientId = watch("client_id");
   const selectedClientName = watch("client_name");
 
@@ -80,44 +79,27 @@ const AddTender = ({ onclose, onSuccess }) => {
     }
   }, [selectedClientName, setValue, clients]);
 
-  const onSubmit = async (data) => {
-    try {
-      setLoading(true);
-      await axios.post(`${API}/tender/addtender`, data);
-      toast.success("Tender created successfully ✅");
-      if (onSuccess) onSuccess();
-      onclose();
-    } catch (err) {
-      toast.error(err.response?.data?.message || "Failed to create tender");
-    } finally {
-      setLoading(false);
-    }
+  const onSubmit = (data) => {
+    addTender(data); // Trigger the mutation
   };
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 font-layout-font">
-      
-      {/* Modal Container */}
       <div className="bg-white dark:bg-gray-900 w-full max-w-4xl rounded-lg shadow-2xl flex flex-col max-h-[90vh] border border-gray-200 dark:border-gray-800">
         
-        {/* --- Header --- */}
+        {/* Header */}
         <div className="flex justify-between items-center px-6 py-4 bg-gray-50 dark:bg-gray-800/50 border-b border-gray-200 dark:border-gray-700">
-          <div>
-            <h1 className="text-lg font-bold text-gray-800 dark:text-white">New Tender Entry</h1>
-          </div>
+          <h1 className="text-lg font-bold text-gray-800 dark:text-white">New Tender Entry</h1>
           <button onClick={onclose} className="text-gray-400 hover:text-gray-600 transition-colors">
             <IoClose size={24} />
           </button>
         </div>
 
-        {/* --- Form Body --- */}
+        {/* Body */}
         <div className="flex-1 overflow-y-auto px-8 py-6 custom-scrollbar">
           <form id="tenderForm" onSubmit={handleSubmit(onSubmit)} className="grid grid-cols-2 gap-x-8 gap-y-4">
             
-            {/* 1. Project Info */}
             <SectionHeader title="Project Details" />
-            
-            {/* Full Width Name */}
             <div className="col-span-2">
               <InputFieldTender label="Tender Name" name="tender_name" placeholder="Enter tender name" register={register} errors={errors} />
             </div>
@@ -139,14 +121,11 @@ const AddTender = ({ onclose, onSuccess }) => {
             <div className="col-span-1">
               <InputFieldTender label="Estimated Value (₹)" name="tender_value" type="number" register={register} errors={errors} />
             </div>
-
             <div className="col-span-2">
                <InputFieldTender label="Description" type="textarea" name="tender_description" placeholder="Scope of work..." register={register} errors={errors} />
             </div>
 
-            {/* 2. Client Info */}
             <SectionHeader title="Client Information" />
-            
             <div className="col-span-1">
               <InputFieldTender 
                 label="Client ID" 
@@ -167,7 +146,6 @@ const AddTender = ({ onclose, onSuccess }) => {
                 options={clients.map(c => ({ value: c.client_name, label: c.client_name }))}
               />
             </div>
-
             <div className="col-span-1">
               <InputFieldTender label="Contact Person" name="tender_contact_person" register={register} errors={errors} />
             </div>
@@ -178,23 +156,19 @@ const AddTender = ({ onclose, onSuccess }) => {
               <InputFieldTender label="Email Address" name="tender_contact_email" type="email" register={register} errors={errors} />
             </div>
 
-            {/* 3. Timeline */}
             <SectionHeader title="Schedule & EMD" />
-
             <div className="col-span-1">
                <InputFieldTender label="Published Date" name="tender_start_date" type="date" register={register} errors={errors} />
             </div>
             <div className="col-span-1">
                <InputFieldTender label="Bid Submission Due" name="tender_end_date" type="date" register={register} errors={errors} />
             </div>
-
             <div className="col-span-1">
                <InputFieldTender label="Duration" name="tender_duration" placeholder="e.g. 12 Months" register={register} errors={errors} />
             </div>
             <div className="col-span-1">
                <InputFieldTender label="Completion Target" name="consider_completion_duration" placeholder="e.g. 10 Months" register={register} errors={errors} />
             </div>
-
             <div className="col-span-1">
                <InputFieldTender label="EMD Amount (₹)" name="emd.emd_amount" type="number" register={register} errors={errors} />
             </div>
@@ -202,23 +176,19 @@ const AddTender = ({ onclose, onSuccess }) => {
                <InputFieldTender label="EMD Validity" name="emd.emd_validity" type="date" register={register} errors={errors} />
             </div>
 
-            {/* 4. Location */}
             <SectionHeader title="Site Location" />
-
             <div className="col-span-1">
                <InputFieldTender label="City" name="tender_location.city" register={register} errors={errors} />
             </div>
             <div className="col-span-1">
                <InputFieldTender label="State" name="tender_location.state" register={register} errors={errors} />
             </div>
-
             <div className="col-span-1">
                <InputFieldTender label="Pincode" name="tender_location.pincode" register={register} errors={errors} />
             </div>
             <div className="col-span-1">
                <InputFieldTender label="Country" name="tender_location.country" register={register} errors={errors} />
             </div>
-
             <div className="col-span-1">
                <InputFieldTender label="Latitude" name="site_location.latitude" type="number" register={register} errors={errors} />
             </div>
@@ -229,11 +199,11 @@ const AddTender = ({ onclose, onSuccess }) => {
           </form>
         </div>
 
-        {/* --- Footer --- */}
+        {/* Footer */}
         <div className="px-6 py-4 bg-gray-50 dark:bg-gray-800/50 border-t border-gray-200 dark:border-gray-700 flex justify-end gap-3 rounded-b-lg">
           <button
             onClick={onclose}
-            disabled={loading}
+            disabled={isPending}
             className="px-6 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded hover:bg-gray-50 transition-colors dark:bg-gray-800 dark:text-gray-300 dark:border-gray-700"
           >
             Cancel
@@ -241,10 +211,10 @@ const AddTender = ({ onclose, onSuccess }) => {
           <button
             type="submit"
             form="tenderForm"
-            disabled={loading}
+            disabled={isPending}
             className="px-8 py-2 text-sm font-bold text-white bg-darkest-blue hover:bg-blue-900 rounded shadow-sm flex items-center gap-2 transition-all disabled:opacity-70 disabled:cursor-not-allowed"
           >
-            {loading ? "Saving..." : (
+            {isPending ? "Saving..." : (
               <>
                  <IoSaveOutline size={16} /> Save Tender
               </>

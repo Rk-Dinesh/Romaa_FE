@@ -1,17 +1,15 @@
-import React, { useState } from "react";
+import React from "react";
 import { useForm } from "react-hook-form";
 import { yupResolver } from "@hookform/resolvers/yup";
 import * as yup from "yup";
 import { IoClose, IoSaveOutline } from "react-icons/io5";
-import axios from "axios";
-import { toast } from "react-toastify";
 import { InputFieldTender } from "../../../components/InputFieldTender";
-import { API } from "../../../constant";
+import { useAddClient } from "./hooks/useClients";
 
-// --- VALIDATION SCHEMA ---
+// --- VALIDATION SCHEMA (Unchanged) ---
 const schema = yup.object().shape({
   client_name: yup.string().required("Client Name is required"),
-  pan_no: yup.string(), // Optional in schema, handled in payload
+  pan_no: yup.string(),
   cin_no: yup.string(),
   gstin: yup.string(),
   contact_phone: yup
@@ -41,21 +39,25 @@ const SectionHeader = ({ title }) => (
 );
 
 const AddClients = ({ onclose, onSuccess }) => {
+  // 1. Setup Mutation Hook
+  const { mutate: addClient, isPending } = useAddClient({
+    onSuccess,
+    onClose: onclose
+  });
+
   const {
     register,
     handleSubmit,
     formState: { errors },
-    reset,
   } = useForm({
     resolver: yupResolver(schema),
   });
 
-  const [saving, setSaving] = useState(false);
-
-  const onSubmit = async (data) => {
+  // 2. Submit Handler
+  const onSubmit = (data) => {
     const payload = {
       client_name: data.client_name,
-      pan_no: data.pan_no || "PAN", // Defaulting as per original logic
+      pan_no: data.pan_no || "PAN",
       cin_no: data.cin_no || "CIN",
       gstin: data.gstin || "GSTIN",
       contact_email: data.contact_email,
@@ -67,21 +69,11 @@ const AddClients = ({ onclose, onSuccess }) => {
         pincode: data.pincode,
       },
       status: "ACTIVE",
-      created_by_user: "admin", // Ideally get this from Auth Context
+      created_by_user: "admin", 
     };
 
-    setSaving(true);
-    try {
-      await axios.post(`${API}/client/addclient`, payload);
-      toast.success("Client added successfully ✅");
-      reset();
-      if (onSuccess) onSuccess();
-      onclose();
-    } catch (error) {
-      toast.error(error.response?.data?.message || "Failed to add client ❌");
-    } finally {
-      setSaving(false);
-    }
+    // Trigger Mutation
+    addClient(payload);
   };
 
   return (
@@ -118,11 +110,6 @@ const AddClients = ({ onclose, onSuccess }) => {
             <div className="col-span-1">
                <InputFieldTender label="GST Number" name="gstin" placeholder="Enter GSTIN" register={register} errors={errors} />
             </div>
-            {/* Optional CIN Field (Uncomment if needed)
-            <div className="col-span-1">
-               <InputFieldTender label="CIN Number" name="cin_no" register={register} errors={errors} />
-            </div> 
-            */}
 
             {/* 2. Contact Details */}
             <SectionHeader title="Contact Information" />
@@ -159,7 +146,7 @@ const AddClients = ({ onclose, onSuccess }) => {
           <button
             type="button"
             onClick={onclose}
-            disabled={saving}
+            disabled={isPending}
             className="px-6 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded hover:bg-gray-50 transition-colors dark:bg-gray-800 dark:text-gray-300 dark:border-gray-700"
           >
             Cancel
@@ -167,10 +154,10 @@ const AddClients = ({ onclose, onSuccess }) => {
           <button
             type="submit"
             form="addClientForm"
-            disabled={saving}
+            disabled={isPending}
             className="px-8 py-2 text-sm font-bold text-white bg-darkest-blue hover:bg-blue-900 rounded shadow-sm flex items-center gap-2 transition-all disabled:opacity-70 disabled:cursor-not-allowed"
           >
-            {saving ? "Saving..." : (
+            {isPending ? "Saving..." : (
               <>
                  <IoSaveOutline size={16} /> Save Client
               </>

@@ -1,11 +1,11 @@
-import Table from "../../../components/Table";
-import axios from "axios";
-import { API } from "../../../constant";
-import { useEffect, useState } from "react";
+import React from "react";
 import { useParams } from "react-router-dom";
+import Table from "../../../components/Table";
+import { useEMDTracking } from "../tenders/hooks/useTenders";
 
+
+// ✅ Static Columns
 const trackingColumns = [
- 
   { label: "Note", key: "emd_note" },
   {
     label: "Amount Collected",
@@ -29,7 +29,6 @@ const trackingColumns = [
         minimumFractionDigits: 0,
       }).format(value || 0),
   },
-  // { label: "Collected By", key: "amount_collected_by" },
   {
     label: "Collected Date",
     key: "amount_collected_date",
@@ -43,35 +42,24 @@ const trackingColumns = [
 
 const EMDTrackingTable = () => {
   const { tender_id } = useParams();
-   const [tracking, setTracking] = useState([]);
-  const [loading, setLoading] = useState(false);
 
-  const fetchTracking = async () => {
-    if (!tender_id) return;
-    setLoading(true);
-    try {
-      const res = await axios.get(`${API}/tender/emdtracking/${tender_id}`);
-      // backend: res.json({ emdTracking: [...] })
-      setTracking(res.data.emdTracking || []);
-    } catch (e) {
-      console.error("Failed to fetch EMD tracking", e);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchTracking();
-  }, [tender_id]);
+  // 1. Fetch Data (Cached)
+  const { data: tracking = [], isLoading } = useEMDTracking(tender_id);
 
   return (
     <Table
       title="EMD Tracking"
       subtitle={tender_id}
       pagetitle="EMD Collection History"
-      loading={loading}
+      
+      // Data
+      loading={isLoading}
       endpoint={tracking}
       columns={trackingColumns}
+      
+      // Disable unrelated features for this view
+      addButtonLabel={null} // Hides Add button
+      search={""} // Hides search if not needed, or add state back if you want search
     />
   );
 };
