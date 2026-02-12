@@ -83,7 +83,7 @@ const Materials = () => {
         items: items
       };
 
-      const res = await axios.put(`${API}/raquantities/update/${tender_id}/${activeTab}`, payload);
+      const res = await axios.put(`${API}/raquantities/quantites/update/${tender_id}/${activeTab}`, payload);
 
       if (res.status === 200) {
         toast.success(`${activeTab} updated successfully`);
@@ -211,6 +211,7 @@ const Materials = () => {
                 <tr>
                   <th className="p-2 text-left font-semibold text-gray-600 dark:text-white">SI.No</th>
                   <th className="p-2 text-left font-semibold text-gray-600 dark:text-white">Item Description</th>
+                  <th className="p-2 text-left font-semibold text-gray-600 dark:text-white">Res Group</th>
                   <th className="p-2 text-center font-semibold text-gray-600 dark:text-white">Unit</th>
                   <th className="p-2 text-right font-semibold text-gray-600 dark:text-white">Qty</th>
                   <th className="p-2 text-right font-semibold text-gray-600 dark:text-white">Rate</th>
@@ -236,6 +237,13 @@ const Materials = () => {
                     <td className="p-2.5 text-left align-middle">
                       <div className="font-medium text-gray-700 dark:text-gray-200">
                         {item.item_description || "-"}
+                      </div>
+                    </td>
+
+                    {/* Resource Group */}
+                    <td className="p-2.5 text-left align-middle">
+                      <div className="font-medium text-gray-700 dark:text-gray-200">
+                        {item.resouceGroup || "-"}
                       </div>
                     </td>
 

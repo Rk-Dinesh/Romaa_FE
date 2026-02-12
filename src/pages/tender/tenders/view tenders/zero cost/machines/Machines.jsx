@@ -216,6 +216,7 @@ const Machines = () => {
                 <tr>
                   <th className="p-2 text-left font-semibold text-gray-600 dark:text-white">SI.No</th>
                   <th className="p-2 text-left font-semibold text-gray-600 dark:text-white">Item Description</th>
+                  <th className="p-2 text-left font-semibold text-gray-600 dark:text-white">Res Group</th>
                   <th className="p-2 text-center font-semibold text-gray-600 dark:text-white">Unit</th>
                   <th className="p-2 text-right font-semibold text-gray-600 dark:text-white">Qty</th>
                   <th className="p-2 text-right font-semibold text-gray-600 dark:text-white">Rate</th>
@@ -241,6 +242,13 @@ const Machines = () => {
                     <td className="p-2.5 text-left align-middle">
                       <div className="font-medium text-gray-700 dark:text-gray-200">
                         {item.item_description || "-"}
+                      </div>
+                    </td>
+
+                    {/* Res Group */}
+                    <td className="p-2.5 text-left align-middle">
+                      <div className="font-medium text-gray-700 dark:text-gray-200">
+                        {item.resouceGroup || "-"}
                       </div>
                     </td>
 

@@ -22,6 +22,7 @@ const groupLinesByCategory = (lines = []) => {
       rate: line.rate,
       amount: line.amount,
       finalRate: line.total_rate,
+      resouceGroup: line.resouceGroup,
     });
   });
 
@@ -264,14 +265,12 @@ rateAnalysis.forEach((item) => {
         rate: line.rate,
         amount: line.amount,
         total_rate: line.finalRate || 0,
-        category: categoryGroup.category
+        category: categoryGroup.category,
+        resouceGroup:line.resouceGroup
       });
     });
   });
 });
-
-
-    
 
     await axios.put(`${API}/rateanalysis/updaterateanalysis/${tender_id}`, { work_items: payload });
     toast.success("Rate Analysis updated successfully");
