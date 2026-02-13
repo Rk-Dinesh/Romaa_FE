@@ -8,6 +8,7 @@ import { useAuth } from "../../../context/AuthContext";
 import { FiLogOut, FiUser, FiCalendar, FiFileText } from "react-icons/fi";
 import { toast } from "react-toastify";
 import { API } from "../../../constant";
+import Attendance from "./attendance/Attendance";
 
 const Profile = () => {
   const [activeTab, setActiveTab] = useState("profile");
@@ -31,6 +32,7 @@ const Profile = () => {
   const tabs = [
     { id: "profile", label: "Profile Overview", icon: <FiUser /> },
     { id: "leave", label: "Leave Management", icon: <FiCalendar /> },
+    {id:"attendance",label:"Attendance",icon:<FiCalendar />},
     { id: "document", label: "Documents", icon: <FiFileText /> },
   ];
 
@@ -65,6 +67,13 @@ const Profile = () => {
         return (
           <div className="h-full p-2 md:p-4">
             <Leave />
+          </div>
+        );
+      case "attendance":
+        return (
+          <div className="h-full overflow-y-auto custom-scrollbar p-2 md:p-4">
+             {/* We pass userData if needed, though the component fetches its own stats */}
+            <Attendance />
           </div>
         );
       case "document":
