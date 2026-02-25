@@ -1,18 +1,161 @@
-import React, { useState, useEffect } from "react";
-import { IoClose } from "react-icons/io5";
+import React, { useState, useEffect, useRef } from "react";
+import { IoClose, IoSearch } from "react-icons/io5";
 import { toast } from "react-toastify";
 import axios from "axios";
 import { API } from "../../../constant";
 
-const initialMaterial = { materialName: "", quantity: "", unit: "" };
+// --- INITIAL STATES ---
+const initialMaterial = {
+  materialName: "",
+  quantity: "",
+  unit: "",
+  // New HSN Fields
+  hsnSac: "",
+  type: "",
+  shortDescription: "",
+  taxStructure: { igst: 0, cgst: 0, sgst: 0, cess: 0 },
+};
+
 const initialVendor = { vendorId: "", vendorName: "" };
 
+// --- HSN AUTOCOMPLETE COMPONENT ---
+const HsnAutocomplete = ({ isReadOnly, material, onSelect }) => {
+  const [searchTerm, setSearchTerm] = useState("");
+  const [options, setOptions] = useState([]);
+  const [isOpen, setIsOpen] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const wrapperRef = useRef(null);
+
+  // Sync internal input with parent state
+  useEffect(() => {
+    if (material.hsnSac) {
+      // Show Code + Short Desc if available, else just Code
+      const label = material.shortDescription
+        ? `${material.hsnSac} - ${material.shortDescription}`
+        : material.hsnSac;
+      setSearchTerm(label);
+    } else {
+      setSearchTerm("");
+    }
+  }, [material.hsnSac, material.shortDescription]);
+
+  // Handle clicking outside to close dropdown
+  useEffect(() => {
+    function handleClickOutside(event) {
+      if (wrapperRef.current && !wrapperRef.current.contains(event.target)) {
+        setIsOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  // API Call
+  const searchHsn = async (query) => {
+    setLoading(true);
+    try {
+      const res = await axios.get(`${API}/hsn/getall?search=${query}&limit=10`);
+      setOptions(res.data?.data || []);
+      setIsOpen(true);
+    } catch (error) {
+      console.error("Failed to fetch HSN codes", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Debounce Logic
+  useEffect(() => {
+    if (!isOpen || !searchTerm) return;
+    const delayDebounceFn = setTimeout(() => {
+      searchHsn(searchTerm);
+    }, 500);
+    return () => clearTimeout(delayDebounceFn);
+  }, [searchTerm]);
+
+  const handleSelect = (item) => {
+    setSearchTerm(`${item.code} - ${item.shortDescription || item.description}`);
+    setIsOpen(false);
+    onSelect({
+      hsnSac: item.code,
+      type: item.type,
+      shortDescription: item.shortDescription || item.description,
+      taxStructure: item.taxStructure || { igst: 0, cgst: 0, sgst: 0, cess: 0 },
+    });
+  };
+
+  if (isReadOnly) {
+    return (
+      <span className="text-gray-800 dark:text-gray-200 text-xs">
+        {material.hsnSac ? `${material.hsnSac}` : "-"}
+      </span>
+    );
+  }
+
+  return (
+    <div className="relative w-full" ref={wrapperRef}>
+      <div className="relative flex items-center">
+        <input
+          type="text"
+          value={searchTerm}
+          onClick={() => {
+            setIsOpen(true);
+            if (!options.length && searchTerm) searchHsn(searchTerm);
+          }}
+          onChange={(e) => {
+            setSearchTerm(e.target.value);
+            setIsOpen(true);
+            // Clear parent state if input is cleared
+            if (e.target.value === "") {
+              onSelect({
+                hsnSac: "",
+                type: "",
+                shortDescription: "",
+                taxStructure: { igst: 0, cgst: 0, sgst: 0, cess: 0 },
+              });
+            }
+          }}
+          className="w-full bg-transparent border-b border-transparent hover:border-gray-300 dark:hover:border-gray-600 focus:border-blue-500 outline-none text-gray-800 dark:text-gray-200 py-1 transition-colors pr-6 text-xs"
+          placeholder="Search Code..."
+        />
+        <IoSearch className="absolute right-1 text-gray-400" size={14} />
+      </div>
+
+      {isOpen && (
+        <ul className="absolute z-50 w-full min-w-[250px] mt-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-md shadow-lg max-h-48 overflow-y-auto text-xs">
+          {loading ? (
+            <li className="p-2 text-gray-500 text-center">Loading...</li>
+          ) : options.length > 0 ? (
+            options.map((item) => (
+              <li
+                key={item._id}
+                onClick={() => handleSelect(item)}
+                className="p-2 hover:bg-blue-50 dark:hover:bg-gray-700 cursor-pointer border-b border-gray-100 dark:border-gray-700 last:border-none"
+              >
+                <div className="font-bold text-gray-800 dark:text-gray-200">
+                  {item.code} <span className="text-[10px] text-blue-500 ml-1">({item.type})</span>
+                </div>
+                <div className="text-gray-500 dark:text-gray-400 truncate">
+                  {item.shortDescription || item.description}
+                </div>
+              </li>
+            ))
+          ) : (
+            <li className="p-2 text-gray-500 text-center">No results found</li>
+          )}
+        </ul>
+      )}
+    </div>
+  );
+};
+
+// --- MAIN COMPONENT ---
 const CreateEnquiry = ({ onclose, onSuccess }) => {
-  const [entryType, setEntryType] = useState(""); 
+  const [entryType, setEntryType] = useState("");
 
   const [projects, setProjects] = useState([]);
   const [requests, setRequests] = useState([]);
-  const [projectVendors, setProjectVendors] = useState([]); 
+  const [projectVendors, setProjectVendors] = useState([]);
 
   // Selected values
   const [projectId, setProjectId] = useState("");
@@ -46,11 +189,10 @@ const CreateEnquiry = ({ onclose, onSuccess }) => {
     }
   };
 
-  /** FETCH VENDORS FOR PROJECT (FIXED) */
+  /** FETCH VENDORS FOR PROJECT */
   const loadVendors = async (id) => {
     try {
       const res = await axios.get(`${API}/permittedvendor/getvendor/${id}`);
-      // FIX: Access the nested 'permitted_vendors' array
       setProjectVendors(res.data?.data?.permitted_vendors || []);
     } catch (err) {
       console.error("Failed to load vendors", err);
@@ -76,22 +218,18 @@ const CreateEnquiry = ({ onclose, onSuccess }) => {
     setRequestId("");
     setRequests([]);
     resetForm();
-    
+
     if (id) {
-        loadVendors(id);
+      loadVendors(id);
     }
 
     if (entryType !== "existing") return;
 
     try {
-      const res = await axios.get(
-        `${API}/purchaseorderrequest/api/getbyId/${id}`
-      );
-
+      const res = await axios.get(`${API}/purchaseorderrequest/api/getbyId/${id}`);
       const pendingRequests = (res.data?.data || []).filter(
         (r) => r.status === "Request Raised"
       );
-
       setRequests(pendingRequests);
     } catch {
       toast.error("No Purchase Requests Found");
@@ -115,15 +253,25 @@ const CreateEnquiry = ({ onclose, onSuccess }) => {
       setSiteLocation(d.siteDetails?.location || "");
       setSiteIncharge(d.siteDetails?.siteIncharge || "");
       setRequiredByDate(d.requiredByDate?.substring(0, 10) || "");
-      setMaterials(d.materialsRequired || [{ ...initialMaterial }]);
+
+      // Map existing materials and ensure HSN defaults are set if missing from DB
+      if (d.materialsRequired && d.materialsRequired.length > 0) {
+        const mappedMaterials = d.materialsRequired.map((m) => ({
+          ...initialMaterial,
+          ...m,
+          taxStructure: m.taxStructure || { igst: 0, cgst: 0, sgst: 0, cess: 0 },
+        }));
+        setMaterials(mappedMaterials);
+      } else {
+        setMaterials([{ ...initialMaterial }]);
+      }
     } catch {
       toast.error("Failed to load request details");
     }
   };
 
   /** MATERIAL ROW HANDLERS */
-  const handleAddRow = () =>
-    setMaterials([...materials, { ...initialMaterial }]);
+  const handleAddRow = () => setMaterials([...materials, { ...initialMaterial }]);
 
   const handleDeleteRow = (index) => {
     if (materials.length === 1) return;
@@ -136,8 +284,15 @@ const CreateEnquiry = ({ onclose, onSuccess }) => {
     setMaterials(updated);
   };
 
+  // Handle HSN Selection
+  const handleHsnSelect = (i, hsnData) => {
+    const updated = [...materials];
+    updated[i] = { ...updated[i], ...hsnData };
+    setMaterials(updated);
+  };
+
   /** VENDOR ROW HANDLERS */
-  const handleAddVendor = () => 
+  const handleAddVendor = () =>
     setSelectedVendors([...selectedVendors, { ...initialVendor }]);
 
   const handleDeleteVendor = (index) => {
@@ -151,11 +306,11 @@ const CreateEnquiry = ({ onclose, onSuccess }) => {
 
     // Auto-fill Logic
     if (field === "vendorId") {
-        const vendor = projectVendors.find(v => v.vendor_id === value);
-        if (vendor) updated[i].vendorName = vendor.vendor_name;
+      const vendor = projectVendors.find((v) => v.vendor_id === value);
+      if (vendor) updated[i].vendorName = vendor.vendor_name;
     } else if (field === "vendorName") {
-        const vendor = projectVendors.find(v => v.vendor_name === value);
-        if (vendor) updated[i].vendorId = vendor.vendor_id;
+      const vendor = projectVendors.find((v) => v.vendor_name === value);
+      if (vendor) updated[i].vendorId = vendor.vendor_id;
     }
 
     setSelectedVendors(updated);
@@ -165,8 +320,11 @@ const CreateEnquiry = ({ onclose, onSuccess }) => {
   const handleSubmit = async () => {
     if (!projectId) return toast.warning("Project is required");
 
-    const validVendors = selectedVendors.filter(v => v.vendorId && v.vendorName);
-    if (validVendors.length === 0) return toast.warning("At least one valid vendor is required");
+    const validVendors = selectedVendors.filter(
+      (v) => v.vendorId && v.vendorName
+    );
+    if (validVendors.length === 0)
+      return toast.warning("At least one valid vendor is required");
 
     const payload = {
       projectId,
@@ -180,22 +338,25 @@ const CreateEnquiry = ({ onclose, onSuccess }) => {
       requiredByDate,
       materialsRequired: materials,
       status: "Quotation Requested",
-      permittedVendor: validVendors.map(v => ({
-          vendorId: v.vendorId,
-          vendorName: v.vendorName
-      }))
+      permittedVendor: validVendors.map((v) => ({
+        vendorId: v.vendorId,
+        vendorName: v.vendorName,
+      })),
     };
+
+    console.log("payload", payload);
+    
 
     try {
       if (entryType === "existing") {
-        if (!requestId)
-          return toast.warning("Select Request ID for existing entry");
+        if (!requestId) return toast.warning("Select Request ID for existing entry");
 
         await axios.put(
           `${API}/purchaseorderrequest/api/updateStatus/${requestId}`,
-          { 
-              status: "Quotation Requested",
-              permittedVendor: payload.permittedVendor 
+          {
+            status: "Quotation Requested",
+            permittedVendor: payload.permittedVendor,
+            materialsRequired: payload.materialsRequired,
           }
         );
       } else {
@@ -212,10 +373,10 @@ const CreateEnquiry = ({ onclose, onSuccess }) => {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-      <div className="bg-white dark:bg-gray-900 w-full max-w-4xl rounded-xl shadow-2xl relative max-h-[90vh] overflow-y-auto border border-gray-200 dark:border-gray-700">
+      <div className="bg-white dark:bg-gray-900 w-full max-w-5xl rounded-xl shadow-2xl relative max-h-[90vh] overflow-y-auto border border-gray-200 dark:border-gray-700">
         
         {/* HEADER */}
-        <div className="flex justify-between items-center px-6 py-5 border-b border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-900 sticky top-0 z-10">
+        <div className="flex justify-between items-center px-6 py-5 border-b border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-900 sticky top-0 z-[60]">
           <div>
             <h2 className="text-xl font-bold text-gray-800 dark:text-white">
               Create Enquiry
@@ -233,11 +394,12 @@ const CreateEnquiry = ({ onclose, onSuccess }) => {
         </div>
 
         <div className="p-6 space-y-6">
-          
           {/* TOP CONTROLS */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <div>
-              <label className="block text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase mb-1">Entry Type</label>
+              <label className="block text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase mb-1">
+                Entry Type
+              </label>
               <select
                 value={entryType}
                 onChange={(e) => {
@@ -249,21 +411,33 @@ const CreateEnquiry = ({ onclose, onSuccess }) => {
                 }}
                 className="w-full bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-md px-3 py-2 text-sm text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none"
               >
-                <option value="" className="dark:bg-gray-800">Select</option>
-                <option value="manual" className="dark:bg-gray-800">Manual Entry</option>
-                <option value="existing" className="dark:bg-gray-800">Existing Request</option>
+                <option value="" className="dark:bg-gray-800">
+                  Select
+                </option>
+                <option value="manual" className="dark:bg-gray-800">
+                  Manual Entry
+                </option>
+                <option value="existing" className="dark:bg-gray-800">
+                  Existing Request
+                </option>
               </select>
             </div>
 
             <div>
-              <label className="block text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase mb-1">Project</label>
+              <label className="block text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase mb-1">
+                Project
+              </label>
               <select
                 value={projectId}
                 onChange={(e) => handleProjectSelect(e.target.value)}
                 disabled={isReadOnly}
-                className={`w-full bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-md px-3 py-2 text-sm text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none ${isReadOnly ? 'cursor-not-allowed opacity-70' : ''}`}
+                className={`w-full bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-md px-3 py-2 text-sm text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none ${
+                  isReadOnly ? "cursor-not-allowed opacity-70" : ""
+                }`}
               >
-                <option value="" className="dark:bg-gray-800">Select Project</option>
+                <option value="" className="dark:bg-gray-800">
+                  Select Project
+                </option>
                 {projects.map((p, i) => (
                   <option key={i} value={p.tender_id} className="dark:bg-gray-800">
                     {p.tender_id}
@@ -275,13 +449,17 @@ const CreateEnquiry = ({ onclose, onSuccess }) => {
             {/* Conditional Request ID */}
             {entryType === "existing" && projectId && (
               <div>
-                <label className="block text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase mb-1">Request ID</label>
+                <label className="block text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase mb-1">
+                  Request ID
+                </label>
                 <select
                   value={requestId}
                   onChange={(e) => handleRequestSelect(e.target.value)}
                   className="w-full bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-md px-3 py-2 text-sm text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none"
                 >
-                  <option value="" className="dark:bg-gray-800">Select Request</option>
+                  <option value="" className="dark:bg-gray-800">
+                    Select Request
+                  </option>
                   {requests.map((r, i) => (
                     <option key={i} value={r.requestId} className="dark:bg-gray-800">
                       {r.requestId}
@@ -297,92 +475,103 @@ const CreateEnquiry = ({ onclose, onSuccess }) => {
           {/* SELECT VENDORS SECTION */}
           <div>
             <div className="flex justify-between items-center mb-3">
-                <h3 className="text-sm font-bold text-gray-800 dark:text-gray-200 flex items-center gap-2">
-                    <span className="w-1 h-4 bg-green-500 rounded-full"></span> Select Vendors
-                </h3>
-                <button onClick={handleAddVendor} className="text-xs font-medium text-blue-600 dark:text-blue-400 hover:underline flex items-center gap-1">
-                    + Add Vendor
-                </button>
+              <h3 className="text-sm font-bold text-gray-800 dark:text-gray-200 flex items-center gap-2">
+                <span className="w-1 h-4 bg-green-500 rounded-full"></span> Select Vendors
+              </h3>
+              <button onClick={handleAddVendor} className="text-xs font-medium text-blue-600 dark:text-blue-400 hover:underline flex items-center gap-1">
+                + Add Vendor
+              </button>
             </div>
 
             <div className="overflow-x-auto rounded-lg border border-gray-200 dark:border-gray-700 mb-6">
-                <table className="w-full text-sm text-left">
-                    <thead className="bg-gray-50 dark:bg-gray-800/50 text-gray-500 dark:text-gray-400 text-xs uppercase font-semibold">
-                        <tr>
-                            <th className="px-4 py-3 w-12 text-center">#</th>
-                            <th className="px-4 py-3">Vendor ID</th>
-                            <th className="px-4 py-3">Vendor Name</th>
-                            <th className="px-4 py-3 w-20 text-center">Action</th>
-                        </tr>
-                    </thead>
-                    <tbody className="divide-y divide-gray-200 dark:divide-gray-800">
-                        {selectedVendors.map((row, i) => (
-                            <tr key={i} className="bg-white dark:bg-gray-900 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
-                                <td className="px-4 py-3 text-center text-gray-400">{i + 1}</td>
-                                
-                                {/* Vendor ID Select */}
-                                <td className="px-4 py-3">
-                                    <select
-                                        value={row.vendorId}
-                                        onChange={(e) => handleVendorChange(i, "vendorId", e.target.value)}
-                                        className="w-full bg-transparent border-b border-transparent hover:border-gray-300 dark:hover:border-gray-600 focus:border-blue-500 outline-none text-gray-800 dark:text-gray-200 py-1 transition-colors"
-                                    >
-                                        <option value="" className="dark:bg-gray-800">Select ID</option>
-                                        {/* SAFE CHECK: Check if projectVendors is array */}
-                                        {Array.isArray(projectVendors) && projectVendors.map((v, idx) => (
-                                            <option key={v.vendor_id || idx} value={v.vendor_id} className="dark:bg-gray-800">{v.vendor_id}</option>
-                                        ))}
-                                    </select>
-                                </td>
-
-                                {/* Vendor Name Select */}
-                                <td className="px-4 py-3">
-                                    <select
-                                        value={row.vendorName}
-                                        onChange={(e) => handleVendorChange(i, "vendorName", e.target.value)}
-                                        className="w-full bg-transparent border-b border-transparent hover:border-gray-300 dark:hover:border-gray-600 focus:border-blue-500 outline-none text-gray-800 dark:text-gray-200 py-1 transition-colors"
-                                    >
-                                        <option value="" className="dark:bg-gray-800">Select Name</option>
-                                        {/* SAFE CHECK: Check if projectVendors is array */}
-                                        {Array.isArray(projectVendors) && projectVendors.map((v, idx) => (
-                                            <option key={v.vendor_id || idx} value={v.vendor_name} className="dark:bg-gray-800">{v.vendor_name}</option>
-                                        ))}
-                                    </select>
-                                </td>
-
-                                <td className="px-4 py-3 text-center">
-                                    {selectedVendors.length > 1 && (
-                                        <button onClick={() => handleDeleteVendor(i)} className="text-gray-400 hover:text-red-500 transition-colors">
-                                            <IoClose size={18} />
-                                        </button>
-                                    )}
-                                </td>
-                            </tr>
-                        ))}
-                    </tbody>
-                </table>
+              <table className="w-full text-sm text-left">
+                <thead className="bg-gray-50 dark:bg-gray-800/50 text-gray-500 dark:text-gray-400 text-xs uppercase font-semibold">
+                  <tr>
+                    <th className="px-4 py-3 w-12 text-center">#</th>
+                    <th className="px-4 py-3">Vendor ID</th>
+                    <th className="px-4 py-3">Vendor Name</th>
+                    <th className="px-4 py-3 w-20 text-center">Action</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-200 dark:divide-gray-800">
+                  {selectedVendors.map((row, i) => (
+                    <tr key={i} className="bg-white dark:bg-gray-900 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
+                      <td className="px-4 py-3 text-center text-gray-400">{i + 1}</td>
+                      <td className="px-4 py-3">
+                        <select
+                          value={row.vendorId}
+                          onChange={(e) => handleVendorChange(i, "vendorId", e.target.value)}
+                          className="w-full bg-transparent border-b border-transparent hover:border-gray-300 dark:hover:border-gray-600 focus:border-blue-500 outline-none text-gray-800 dark:text-gray-200 py-1 transition-colors"
+                        >
+                          <option value="" className="dark:bg-gray-800">Select ID</option>
+                          {Array.isArray(projectVendors) &&
+                            projectVendors.map((v, idx) => (
+                              <option key={v.vendor_id || idx} value={v.vendor_id} className="dark:bg-gray-800">
+                                {v.vendor_id}
+                              </option>
+                            ))}
+                        </select>
+                      </td>
+                      <td className="px-4 py-3">
+                        <select
+                          value={row.vendorName}
+                          onChange={(e) => handleVendorChange(i, "vendorName", e.target.value)}
+                          className="w-full bg-transparent border-b border-transparent hover:border-gray-300 dark:hover:border-gray-600 focus:border-blue-500 outline-none text-gray-800 dark:text-gray-200 py-1 transition-colors"
+                        >
+                          <option value="" className="dark:bg-gray-800">Select Name</option>
+                          {Array.isArray(projectVendors) &&
+                            projectVendors.map((v, idx) => (
+                              <option key={v.vendor_id || idx} value={v.vendor_name} className="dark:bg-gray-800">
+                                {v.vendor_name}
+                              </option>
+                            ))}
+                        </select>
+                      </td>
+                      <td className="px-4 py-3 text-center">
+                        {selectedVendors.length > 1 && (
+                          <button
+                            onClick={() => handleDeleteVendor(i)}
+                            className="text-gray-400 hover:text-red-500 transition-colors"
+                          >
+                            <IoClose size={18} />
+                          </button>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
           </div>
 
           <hr className="border-gray-200 dark:border-gray-800" />
 
+          {/* TITLE & DESCRIPTION */}
           <div className="grid grid-cols-1 gap-4">
             <div>
-              <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Title</label>
+              <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">
+                Title
+              </label>
               <input
                 value={title}
                 readOnly={isReadOnly}
                 onChange={(e) => setTitle(e.target.value)}
-                className={`w-full bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-md px-3 py-2 text-sm text-gray-900 dark:text-white focus:ring-1 focus:ring-blue-500 outline-none ${isReadOnly ? 'cursor-not-allowed bg-gray-50 dark:bg-gray-800/50' : ''}`}
+                className={`w-full bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-md px-3 py-2 text-sm text-gray-900 dark:text-white focus:ring-1 focus:ring-blue-500 outline-none ${
+                  isReadOnly ? "cursor-not-allowed bg-gray-50 dark:bg-gray-800/50" : ""
+                }`}
               />
             </div>
             <div>
-              <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Description</label>
+              <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">
+                Description
+              </label>
               <textarea
                 value={description}
                 readOnly={isReadOnly}
                 onChange={(e) => setDescription(e.target.value)}
-                className={`w-full bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-md px-3 py-2 text-sm text-gray-900 dark:text-white focus:ring-1 focus:ring-blue-500 outline-none resize-none ${isReadOnly ? 'cursor-not-allowed bg-gray-50 dark:bg-gray-800/50' : ''}`}
+                className={`w-full bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-md px-3 py-2 text-sm text-gray-900 dark:text-white focus:ring-1 focus:ring-blue-500 outline-none resize-none ${
+                  isReadOnly ? "cursor-not-allowed bg-gray-50 dark:bg-gray-800/50" : ""
+                }`}
                 rows={2}
               />
             </div>
@@ -390,7 +579,7 @@ const CreateEnquiry = ({ onclose, onSuccess }) => {
 
           {/* SITE DETAILS SECTION */}
           <div>
-            <h3 className="text-sm font-bold text-gray-800 dark:text-gray-200 mb-3 flex items-center gap-2">
+            <h3 className="text-sm font-bold text-gray-800 dark:text-gray-200 mb-3 mt-4 flex items-center gap-2">
               <span className="w-1 h-4 bg-blue-500 rounded-full"></span> Site Details
             </h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -400,7 +589,9 @@ const CreateEnquiry = ({ onclose, onSuccess }) => {
                   value={siteName}
                   readOnly={isReadOnly}
                   onChange={(e) => setSiteName(e.target.value)}
-                  className={`w-full bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-md px-3 py-2 text-sm text-gray-900 dark:text-white focus:ring-1 focus:ring-blue-500 outline-none ${isReadOnly ? 'cursor-not-allowed bg-gray-50 dark:bg-gray-800/50' : ''}`}
+                  className={`w-full bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-md px-3 py-2 text-sm text-gray-900 dark:text-white focus:ring-1 focus:ring-blue-500 outline-none ${
+                    isReadOnly ? "cursor-not-allowed bg-gray-50 dark:bg-gray-800/50" : ""
+                  }`}
                 />
               </div>
               <div>
@@ -409,7 +600,9 @@ const CreateEnquiry = ({ onclose, onSuccess }) => {
                   value={siteLocation}
                   readOnly={isReadOnly}
                   onChange={(e) => setSiteLocation(e.target.value)}
-                  className={`w-full bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-md px-3 py-2 text-sm text-gray-900 dark:text-white focus:ring-1 focus:ring-blue-500 outline-none ${isReadOnly ? 'cursor-not-allowed bg-gray-50 dark:bg-gray-800/50' : ''}`}
+                  className={`w-full bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-md px-3 py-2 text-sm text-gray-900 dark:text-white focus:ring-1 focus:ring-blue-500 outline-none ${
+                    isReadOnly ? "cursor-not-allowed bg-gray-50 dark:bg-gray-800/50" : ""
+                  }`}
                 />
               </div>
               <div>
@@ -418,7 +611,9 @@ const CreateEnquiry = ({ onclose, onSuccess }) => {
                   value={siteIncharge}
                   readOnly={isReadOnly}
                   onChange={(e) => setSiteIncharge(e.target.value)}
-                  className={`w-full bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-md px-3 py-2 text-sm text-gray-900 dark:text-white focus:ring-1 focus:ring-blue-500 outline-none ${isReadOnly ? 'cursor-not-allowed bg-gray-50 dark:bg-gray-800/50' : ''}`}
+                  className={`w-full bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-md px-3 py-2 text-sm text-gray-900 dark:text-white focus:ring-1 focus:ring-blue-500 outline-none ${
+                    isReadOnly ? "cursor-not-allowed bg-gray-50 dark:bg-gray-800/50" : ""
+                  }`}
                 />
               </div>
               <div>
@@ -428,7 +623,9 @@ const CreateEnquiry = ({ onclose, onSuccess }) => {
                   value={requiredByDate}
                   readOnly={isReadOnly}
                   onChange={(e) => setRequiredByDate(e.target.value)}
-                  className={`w-full bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-md px-3 py-2 text-sm text-gray-900 dark:text-white focus:ring-1 focus:ring-blue-500 outline-none ${isReadOnly ? 'cursor-not-allowed bg-gray-50 dark:bg-gray-800/50' : ''}`}
+                  className={`w-full bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-md px-3 py-2 text-sm text-gray-900 dark:text-white focus:ring-1 focus:ring-blue-500 outline-none ${
+                    isReadOnly ? "cursor-not-allowed bg-gray-50 dark:bg-gray-800/50" : ""
+                  }`}
                 />
               </div>
             </div>
@@ -442,7 +639,7 @@ const CreateEnquiry = ({ onclose, onSuccess }) => {
               <h3 className="text-sm font-bold text-gray-800 dark:text-gray-200 flex items-center gap-2">
                 <span className="w-1 h-4 bg-purple-500 rounded-full"></span> Materials Required
               </h3>
-              
+
               {!isReadOnly && (
                 <button
                   onClick={handleAddRow}
@@ -453,63 +650,90 @@ const CreateEnquiry = ({ onclose, onSuccess }) => {
               )}
             </div>
 
-            <div className="overflow-x-auto rounded-lg border border-gray-200 dark:border-gray-700">
+            <div className="overflow-x-auto rounded-lg border border-gray-200 dark:border-gray-700 pb-32">
               <table className="w-full text-sm text-left">
                 <thead className="bg-gray-50 dark:bg-gray-800/50 text-gray-500 dark:text-gray-400 text-xs uppercase font-semibold">
                   <tr>
-                    <th className="px-4 py-3 w-12 text-center">#</th>
-                    <th className="px-4 py-3 min-w-[200px]">Material Name</th>
+                    <th className="px-4 py-3 w-10 text-center">#</th>
+                    <th className="px-4 py-3 min-w-[180px]">Material Name</th>
+                    {/* HSN Column */}
+                    <th className="px-4 py-3 min-w-[220px]">HSN/SAC Code</th>
                     <th className="px-4 py-3 w-32">Qty</th>
                     <th className="px-4 py-3 w-24">Unit</th>
-                    {!isReadOnly && <th className="px-4 py-3 w-20 text-center">Action</th>}
+                    {!isReadOnly && <th className="px-4 py-3 w-16 text-center">Act</th>}
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-200 dark:divide-gray-800">
                   {materials.map((row, i) => (
-                    <tr key={i} className="bg-white dark:bg-gray-900 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
+                    <tr
+                      key={i}
+                      className="bg-white dark:bg-gray-900 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors"
+                    >
                       <td className="px-4 py-3 text-center text-gray-400">{i + 1}</td>
-                      
-                      <td className="px-4 py-3">
+
+                      <td className="px-4 py-3 align-top">
                         {isReadOnly ? (
-                          <span className="text-gray-800 dark:text-gray-200">{row.materialName}</span>
+                          <span className="text-gray-800 dark:text-gray-200 block mt-1">
+                            {row.materialName}
+                          </span>
                         ) : (
                           <input
                             value={row.materialName}
                             onChange={(e) => handleMaterialChange(i, "materialName", e.target.value)}
-                            className="w-full bg-transparent border-b border-transparent hover:border-gray-300 dark:hover:border-gray-600 focus:border-blue-500 outline-none text-gray-800 dark:text-gray-200 py-1 transition-colors"
+                            className="w-full bg-transparent border-b border-transparent hover:border-gray-300 dark:hover:border-gray-600 focus:border-blue-500 outline-none text-gray-800 dark:text-gray-200 py-1 transition-colors text-xs"
                             placeholder="Enter material name"
                           />
                         )}
                       </td>
 
-                      <td className="px-4 py-3">
+                      {/* HSN COLUMN (Always Editable via Dropdown) */}
+                      <td className="px-4 py-3 align-top">
+                        <HsnAutocomplete
+                          // KEY CHANGE: Set to false so it's ALWAYS editable, even if row is from existing request
+                          isReadOnly={false}
+                          material={row}
+                          onSelect={(hsnData) => handleHsnSelect(i, hsnData)}
+                        />
+                        {row.hsnSac && (
+                          <div className="text-[10px] text-gray-400 mt-1 pl-1">
+                            GST: {(row.taxStructure?.igst || 0) + (row.taxStructure?.cess || 0)}%  | CGST: {(row.taxStructure?.cgst || 0)}% | SGST: {(row.taxStructure?.sgst || 0)}%
+                          </div>
+                        )}
+                      </td>
+
+                      <td className="px-4 py-3 align-top">
                         {isReadOnly ? (
-                          <span className="text-gray-800 dark:text-gray-200">{row.quantity}</span>
+                          <span className="text-gray-800 dark:text-gray-200 block mt-1">
+                            {row.quantity}
+                          </span>
                         ) : (
                           <input
+                            type="number"
                             value={row.quantity}
                             onChange={(e) => handleMaterialChange(i, "quantity", e.target.value)}
-                            className="w-full bg-transparent border-b border-transparent hover:border-gray-300 dark:hover:border-gray-600 focus:border-blue-500 outline-none text-gray-800 dark:text-gray-200 py-1 transition-colors"
+                            className="w-full bg-transparent border-b border-transparent hover:border-gray-300 dark:hover:border-gray-600 focus:border-blue-500 outline-none text-gray-800 dark:text-gray-200 py-1 transition-colors text-xs"
                             placeholder="0.00"
                           />
                         )}
                       </td>
 
-                      <td className="px-4 py-3">
+                      <td className="px-4 py-3 align-top">
                         {isReadOnly ? (
-                          <span className="text-gray-800 dark:text-gray-200">{row.unit}</span>
+                          <span className="text-gray-800 dark:text-gray-200 block mt-1">
+                            {row.unit}
+                          </span>
                         ) : (
                           <input
                             value={row.unit}
                             onChange={(e) => handleMaterialChange(i, "unit", e.target.value)}
-                            className="w-full bg-transparent border-b border-transparent hover:border-gray-300 dark:hover:border-gray-600 focus:border-blue-500 outline-none text-gray-800 dark:text-gray-200 py-1 transition-colors"
+                            className="w-full bg-transparent border-b border-transparent hover:border-gray-300 dark:hover:border-gray-600 focus:border-blue-500 outline-none text-gray-800 dark:text-gray-200 py-1 transition-colors text-xs"
                             placeholder="Unit"
                           />
                         )}
                       </td>
 
                       {!isReadOnly && (
-                        <td className="px-4 py-3 text-center">
+                        <td className="px-4 py-3 text-center align-top pt-4">
                           {materials.length > 1 && (
                             <button
                               onClick={() => handleDeleteRow(i)}
@@ -529,7 +753,7 @@ const CreateEnquiry = ({ onclose, onSuccess }) => {
           </div>
 
           {/* FOOTER ACTIONS */}
-          <div className="flex justify-end gap-3 pt-4">
+          <div className="flex justify-end gap-3 pt-4 border-t border-gray-200 dark:border-gray-800">
             <button
               onClick={onclose}
               className="px-5 py-2.5 rounded-lg border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 text-sm font-medium transition-all"
@@ -543,7 +767,6 @@ const CreateEnquiry = ({ onclose, onSuccess }) => {
               Save Enquiry
             </button>
           </div>
-
         </div>
       </div>
     </div>

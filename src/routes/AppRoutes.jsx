@@ -2,6 +2,7 @@ import { Suspense, lazy } from "react";
 import { Routes, Route } from "react-router-dom";
 import { ToastContainer } from "react-toastify";
 import Loader from "../components/Loader"; // Importing the Loader component
+import HsnMaster from "../pages/settings/hsnmaster/HsnMaster";
 
 // --- LAZY LOAD IMPORTS ---
 
@@ -570,6 +571,9 @@ const AppRoutes = () => {
                 <Route path="assets" >
                   <Route index element={<Assets />} />
                   <Route path="details/:assetId" element={<AssetDetails />} />
+                </Route>
+                <Route path="hsnmaster" >
+                  <Route index element={<HsnMaster />} />
                 </Route>
               </Route>
             </Route>

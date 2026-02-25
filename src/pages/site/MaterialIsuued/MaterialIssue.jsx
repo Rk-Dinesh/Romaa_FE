@@ -75,7 +75,7 @@ const handleView = (itemId) => {
         </div>
 
            <Button
-              button_name=" Add Material Received"
+              button_name=" Add Material Issue"
               button_icon={<TbPlus size={18} />}
               onClick={() => setIsAddModalOpen(true)}
               className="bg-blue-600 hover:bg-blue-700 text-white shadow-sm"

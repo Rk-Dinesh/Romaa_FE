@@ -607,6 +607,12 @@ export const Menus = [
         to: "/settings/assets",
         subModule: "assets",
       },
+      {
+        title: "HSN Master",
+        icon: <TbFileDelta size={23} />,
+        to: "/settings/hsnmaster",
+        subModule: "hsn_sac",
+      }
     ],
   },
 ];

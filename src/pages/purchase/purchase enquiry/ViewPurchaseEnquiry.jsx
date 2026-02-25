@@ -385,6 +385,11 @@ const ViewPurchaseEnquiry = () => {
                           <span className="text-xs bg-gray-100 dark:bg-gray-800 px-2 py-0.5 rounded text-gray-600 dark:text-gray-400">
                             Qty: <strong>{reqMat.quantity}</strong> {reqMat.unit}
                           </span>
+                          {reqMat.hsnSac && (
+                          <div className="text-[10px] text-gray-400 mt-1 pl-1">
+                            GST: {(reqMat.taxStructure?.igst || 0) + (reqMat.taxStructure?.cess || 0)}%  | CGST: {(reqMat.taxStructure?.cgst || 0)}% | SGST: {(reqMat.taxStructure?.sgst || 0)}%
+                          </div>
+                        )}
                         </div>
                       </td>
                       {quotations.map((vendor) => {

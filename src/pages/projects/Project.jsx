@@ -1,13 +1,11 @@
-import { useEffect, useState } from "react";
-import { projectdata } from "../../components/Data";
+import React, { useState } from "react";
 import Filters from "../../components/Filters";
 import ProgressBar from "../../components/ProgressBar";
 import Table from "../../components/Table";
-import { API } from "../../constant";
-import axios from "axios";
 import { toast } from "react-toastify";
 import { useProject } from "../../context/ProjectContext";
-import { useNavigate } from "react-router-dom";
+import { useProjects } from "./hooks/useProjects";
+import { useDebounce } from "../../hooks/useDebounce";
 
 const Columns = [
   { label: "Project ID", key: "workOrder_id" },
@@ -20,52 +18,41 @@ const Columns = [
   {
     label: "Status",
     key: "status",
-
-    render: (percentage) => <ProgressBar percentage={percentage.status} />,
+    render: (item) => <ProgressBar percentage={item.status} />,
   },
   { label: "Budget", key: "tender_value" },
 ];
 
 const Project = () => {
   const { setTenderId } = useProject();
+ 
 
-  const navigate = useNavigate();
-  const [projects, SetProjects] = useState([]);
-  const [loading, setLoading] = useState(false);
-  const [searchTerm, setSearchTerm] = useState("");
+  // 1. Local State for Controls
   const [currentPage, setCurrentPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(0);
+  const [searchTerm, setSearchTerm] = useState("");
   const [filterParams, setFilterParams] = useState({
     fromdate: "",
     todate: "",
   });
 
-  const fetchProjects = async () => {
-    setLoading(true);
-    try {
-      const res = await axios.get(`${API}/tender/gettendersworkorder`, {
-        params: {
-          page: currentPage,
-          limit: 10,
-          search: searchTerm,
-          fromdate: filterParams.fromdate,
-          todate: filterParams.todate,
-        },
-      });
+  // 2. Debounce Search (Prevents spamming the API on every keystroke)
+  const debouncedSearch = useDebounce(searchTerm, 500);
 
-      SetProjects(res.data.data);
+  // 3. Fetch Data (Cached & Optimized via TanStack Query)
+  const { 
+    data, 
+    isLoading, 
+    isFetching, 
+    refetch 
+  } = useProjects({
+    page: currentPage,
+    limit: 10,
+    search: debouncedSearch,
+    fromdate: filterParams.fromdate,
+    todate: filterParams.todate,
+  });
 
-      setTotalPages(res.data.totalPages);
-    } catch (err) {
-      toast.error("Failed to fetch tenders");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchProjects();
-  }, [currentPage, searchTerm, filterParams]);
+  // Row Click Handler
   const handleRowClick = (project) => {
     setTenderId(project.tender_id);
     toast.success(`Selected Project: ${project.tender_project_name}`);
@@ -73,15 +60,33 @@ const Project = () => {
 
   return (
     <Table
-      loading={loading}
       title="Projects Management"
       subtitle="Project"
       pagetitle="Project Table"
-      endpoint={projects}
+
+      // Data Props mapping from React Query
+      loading={isLoading}
+      isRefreshing={isFetching}
+      endpoint={data?.data || []}
+      totalPages={data?.totalPages || 0}
+
+      // State Controls
+      currentPage={currentPage}
+      setCurrentPage={setCurrentPage}
+      search={searchTerm}
+      setSearch={setSearchTerm}
+      filterParams={filterParams}
+      setFilterParams={setFilterParams}
+
+      // Modals, Columns & Actions
       columns={Columns}
-      routepoint={"zerocost"}
       FilterModal={Filters}
       onRowClick={handleRowClick}
+      routepoint={"zerocost"}
+      
+      // Refresh Triggers (if you add mutations later)
+      onUpdated={refetch}
+      onSuccess={refetch}
     />
   );
 };
