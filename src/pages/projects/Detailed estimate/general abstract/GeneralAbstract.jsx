@@ -1,14 +1,13 @@
-
-import axios from "axios";
-import { useEffect, useState } from "react";
+import React from "react";
 import Table from "../../../../components/Table";
-import { API } from "../../../../constant";
 import { useProject } from "../../../../context/ProjectContext";
+import { useGeneralAbstract } from "../../hooks/useProjects";
+
 
 const Columns = [
-  { label: "Abstract ", key: "heading" },
+  { label: "Abstract", key: "heading" },
   {
-    label: "Abstract Amount ",
+    label: "Abstract Amount",
     key: "total_amount",
     formatter: (value) =>
       new Intl.NumberFormat("en-IN", {
@@ -16,30 +15,35 @@ const Columns = [
         currency: "INR",
         maximumFractionDigits: 0,
         minimumFractionDigits: 0,
-      }).format(value),
+      }).format(value || 0),
   },
 ];
 
 const GeneralAbstract = () => {
   const { tenderId } = useProject();
-  const [generalAbstractdata, setGeneralAbstractdata] = useState([]);
-  const getGeneralAbstractdata = async () => {
-    try {
-      const res = await axios.get(
-        `${API}/detailedestimate/getgeneralabstract?tender_id=${tenderId}`
-      );
-      setGeneralAbstractdata(res.data.data);
-    } catch (error) {
-      console.log(error);
-    }
-  };
-  useEffect(() => {
-    getGeneralAbstractdata();
-  }, []);
+
+  // Fetch data using TanStack Query
+  const { data: generalAbstractData, isLoading, isFetching } = useGeneralAbstract(tenderId);
+
+  // Fallback if no project is selected
+  if (!tenderId) {
+    return (
+      <div className="p-4 text-center text-gray-500 font-medium">
+        Please select a project to view the General Abstract.
+      </div>
+    );
+  }
+
   return (
     <Table
       contentMarginTop="mt-0"
-      endpoint={generalAbstractdata}
+      
+      // Data Props from React Query
+      loading={isLoading}
+      isRefreshing={isFetching}
+      endpoint={generalAbstractData || []}
+      
+      // Config
       columns={Columns}
       exportModal={false}
       pagination={false}

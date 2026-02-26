@@ -1,12 +1,7 @@
-import { toast } from "react-toastify";
-import axios from "axios";
-import React, { useEffect, useState } from "react";
-import { useParams } from "react-router-dom";
-import { TbFileExport } from "react-icons/tb";
+import React from "react";
 import Loader from "../../../../components/Loader";
-import Button from "../../../../components/Button";
-import { API } from "../../../../constant";
 import { useProject } from "../../../../context/ProjectContext";
+import { useNewInletDet } from "../../hooks/useProjects";
 
 
 const BoqProjectsColumns = [
@@ -20,125 +15,94 @@ const BoqProjectsColumns = [
 
 const NewInletDet = ({ name }) => {
   const { tenderId } = useProject();
-  const [detailedEstimate, setDetailedEstimate] = useState([]);
-  const [loading, setLoading] = useState(false);
-  const [expandedAbstract, setExpandedAbstract] = useState(null);
-  const [showUpload, setShowUpload] = useState(false);
-  const [delayedLoading, setDelayedLoading] = useState(false);
+  // const [showUpload, setShowUpload] = useState(false);
 
-  const fetchDetailedEstimate = async () => {
-    setLoading(true);
-    try {
-      const res = await axios.get(
-        `${API}/detailedestimate/getdatacustomhead?tender_id=${tenderId}&nametype=${name}`
-      );
-      setDetailedEstimate(res.data.data || []);
-    } catch (err) {
-      toast.error("Failed to fetch tenders");
-    } finally {
-      setLoading(false);
-    }
-  };
+  // 1. Fetch data using TanStack Query
+  const { 
+    data: detailedEstimate = [], 
+    isLoading 
+  } = useNewInletDet(tenderId, name);
 
-  useEffect(() => {
-    fetchDetailedEstimate();
-  }, [tenderId, name]);
-
-  const toggleExpand = (abstractId) => {
-    setExpandedAbstract((prev) => (prev === abstractId ? null : abstractId));
-  };
-
-  useEffect(() => {
-    let timer;
-
-    if (loading) {
-      // Show loader immediately
-      setDelayedLoading(true);
-    } else {
-      // Keep loader visible for minDelay ms before hiding
-      timer = setTimeout(() => setDelayedLoading(false), 2000);
-    }
-
-    return () => clearTimeout(timer);
-  }, [loading, 2000]);
+  // (Optional) Expand/Collapse logic if you decide to hide breakdowns by default
+  // const [expandedAbstract, setExpandedAbstract] = useState(null);
+  // const toggleExpand = (abstractId) => {
+  //   setExpandedAbstract((prev) => (prev === abstractId ? null : abstractId));
+  // };
 
   return (
     <div className="w-full h-full flex flex-col">
-      {delayedLoading ? (
+      {isLoading ? (
         <Loader />
       ) : (
         <>
-          {detailedEstimate.length === 0 &&
-            <div className="flex justify-end mb-2">
-              <Button
-                button_icon={<TbFileExport size={22} />}
-                button_name="Upload"
-                bgColor="dark:bg-layout-dark bg-white"
-                textColor="dark:text-white text-darkest-blue"
-                onClick={() => setShowUpload(true)}
-              />
-            </div>
-          }
 
           {/* ✅ ONLY TABLE SCROLLS */}
           <div className="flex-1 overflow-y-auto no-scrollbar">
             <div className="rounded-lg bg-slate-50 dark:bg-layout-dark">
               {/* HEADER */}
-              <div className="grid grid-cols-12 px-6 py-3 text-sm font-semibold border-b">
+              <div className="grid grid-cols-12 px-6 py-3 text-sm font-semibold border-b border-gray-200 dark:border-gray-700">
                 <div className="col-span-1">S.no</div>
                 <div className="col-span-2">Abstract ID</div>
-                <div className="col-span-3">Item Description</div>
-                <div className="col-span-2 text-right">Quantity</div>
+                <div className="col-span-6">Item Description</div>
+                <div className="col-span-3 text-right">Quantity</div>
               </div>
 
-              {/* CONTENT */}
-              <div className="divide-y">
+              <div className="divide-y divide-gray-200 dark:divide-gray-700">
                 {detailedEstimate.map((item, index) => {
                   const abs = item.abstract_details || {};
 
                   return (
-                    <div key={item.abstract_id}>
+                    <div key={item.abstract_id || index} className="py-4">
                       {/* Abstract Row */}
-                      <div className="grid grid-cols-12 px-6 py-3 text-sm">
+                      <div className="grid grid-cols-12 px-8 py-3 text-sm font-medium text-gray-800 dark:text-gray-200">
                         <div className="col-span-1">{index + 1}</div>
                         <div className="col-span-2">{item.abstract_id}</div>
-                        <div className="col-span-3">
+                        <div className="col-span-6 pr-4">
                           {abs.description || "N/A"}
                         </div>
-                        <div className="col-span-2 text-right">
+                        <div className="col-span-3 text-right">
                           {abs.quantity || "N/A"}
                         </div>
                       </div>
 
-                      {/* Breakdown */}
-                      <div className="px-6 pb-4">
-                        <div className="overflow-x-auto border rounded">
+                      {/* Breakdown Table */}
+                      <div className="px-6 pb-2 pt-2">
+                        <div className="overflow-x-auto border border-gray-300 dark:border-gray-600 rounded-md shadow-sm">
                           <table className="min-w-full text-xs">
-                            <thead className="bg-darkest-blue">
+                            <thead className="bg-darkest-blue text-white">
                               <tr>
                                 {BoqProjectsColumns.map((col) => (
                                   <th
                                     key={col.key}
-                                    className="px-3 py-2 text-left"
+                                    className="px-4 py-2 text-left font-semibold uppercase tracking-wider"
                                   >
                                     {col.label}
                                   </th>
                                 ))}
                               </tr>
                             </thead>
-                            <tbody>
+                            <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
                               {(item.breakdown || []).map((detail, idx) => (
                                 <tr
                                   key={idx}
-                                  className="border-t border-slate-100 hover:bg-slate-50  hover:text-lg hover:font-bold text-black bg-slate-200  "
+                                  className="hover:bg-slate-50 dark:hover:bg-gray-700 transition-colors text-gray-700 dark:text-gray-300"
                                 >
                                   {BoqProjectsColumns.map((col) => (
-                                    <td key={col.key} className="px-3 py-2">
-                                      {detail[col.key] ?? "N/A"}
+                                    <td key={col.key} className="px-4 py-2">
+                                      {detail[col.key] !== undefined && detail[col.key] !== null 
+                                        ? detail[col.key] 
+                                        : "N/A"}
                                     </td>
                                   ))}
                                 </tr>
                               ))}
+                              {(!item.breakdown || item.breakdown.length === 0) && (
+                                <tr>
+                                  <td colSpan={BoqProjectsColumns.length} className="px-4 py-3 text-center text-gray-500 italic">
+                                    No breakdown details available.
+                                  </td>
+                                </tr>
+                              )}
                             </tbody>
                           </table>
                         </div>
@@ -148,8 +112,8 @@ const NewInletDet = ({ name }) => {
                 })}
 
                 {detailedEstimate.length === 0 && (
-                  <div className="py-6 text-center text-sm">
-                    No matching results found.
+                  <div className="py-12 text-center text-gray-500 font-medium bg-white dark:bg-layout-dark">
+                    No matching results found for {name}.
                   </div>
                 )}
               </div>
@@ -157,8 +121,6 @@ const NewInletDet = ({ name }) => {
           </div>
         </>
       )}
-
-
     </div>
   );
 };

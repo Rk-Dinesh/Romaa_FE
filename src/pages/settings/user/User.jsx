@@ -1,56 +1,39 @@
+import React from "react";
 import Filters from "../../../components/Filters";
 import Table from "../../../components/Table";
 import { RiUserAddLine } from "react-icons/ri";
 import AddUser from "./AddUser";
-import { useEffect, useState } from "react";
-import { toast } from "react-toastify";
-import axios from "axios";
-import { API } from "../../../constant";
 import EditUser from "./EditUser";
 import DeleteUser from "./DeleteUser";
-import ViewUser from "./ViewUser";
+import { useUsers } from "./hooks/useUsers";
+
 
 const UserColumns = [
- { label: "Employee ID", key: "employeeId" },
+  { label: "Employee ID", key: "employeeId" },
   { label: "Name", key: "name" },
   { label: "Designation", key: "designation" },
-  { label: "Role Id", key: "role_id", 
-    render: (item) =>
-      `${item.role?.role_id || ""}`,
+  { 
+    label: "Role Id", 
+    key: "role_id", 
+    render: (item) => `${item.role?.role_id || ""}`,
   },
-  { label: "Role Name", key: "roleName", 
-    render: (item) =>
-      `${item.role?.roleName || ""}`,
+  { 
+    label: "Role Name", 
+    key: "roleName", 
+    render: (item) => `${item.role?.roleName || ""}`,
   },
-  { label: "Access Mode", key: "accessMode", 
-    render: (item) =>
-      `${item.accessMode || ""}`,
+  { 
+    label: "Access Mode", 
+    key: "accessMode", 
+    render: (item) => `${item.accessMode || ""}`,
   },
   { label: "Email", key: "email"  },
   { label: "Status", key: "status" },
 ];
 
 const User = () => {
-  const [users, setUsers] = useState([]);
-  const [loading, setLoading] = useState(false);
-
-
-  const fetchUsers = async () => {
-    setLoading(true);
-    try {
-      const res = await axios.get(`${API}/employee/with-roles`);
-      setUsers(res.data.data);
- 
-    } catch (err) {
-      toast.error("Failed to fetch users");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchUsers();
-  }, []);
+  // Fetch data using TanStack Query
+  const { data: users = [], isLoading, isFetching, refetch } = useUsers();
 
   return (
     <div>
@@ -58,21 +41,31 @@ const User = () => {
         title="Settings"
         subtitle="User "
         pagetitle="User"
+        
+        // Data and Loading States
         endpoint={users}
+        loading={isLoading}
+        isRefreshing={isFetching}
+        
+        // Config
         columns={UserColumns}
         ViewModal={true}
         routepoint={"viewuser"}
+        FilterModal={Filters}
+        
+        // Modals
         AddModal={AddUser}
         EditModal={EditUser}
         DeleteModal={DeleteUser}
-        FilterModal={Filters}
+        
+        // Add Button Config
         addButtonLabel="Add User"
         addButtonIcon={<RiUserAddLine size={23} />}
-        onUpdated={fetchUsers}
-        onSuccess={fetchUsers}
-        onDelete={fetchUsers}
-        loading={loading}
-      
+        
+        // Triggers (Refetch data when a user is added, updated, or deleted)
+        onUpdated={refetch}
+        onSuccess={refetch}
+        onDelete={refetch}
       />
     </div>
   );

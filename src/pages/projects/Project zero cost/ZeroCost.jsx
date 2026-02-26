@@ -1,91 +1,75 @@
-
-import axios from 'axios';
-// import { BOQData } from '../../../../../components/Data';
-import DeleteModal from '../../../components/DeleteModal';
-import Table from '../../../components/Table'
-import { API } from '../../../constant';
-import { useParams } from 'react-router-dom';
-import { useEffect, useState } from 'react';
-import { toast } from 'react-toastify';
+import React, { useState } from 'react';
+import Table from '../../../components/Table';
 import { useProject } from '../../../context/ProjectContext';
+import { useZeroCostItems } from '../hooks/useProjects';
+
 
 const customerColumns = [
   { label: "Item Code", key: "item_name" },
   { label: "Item Description", key: "description" },
   { label: "Quantity", key: "quantity" },
   { label: "Units", key: "unit" },
-  { label: "Final Rate", key: "n_rate", formatter: (value) => new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0, minimumFractionDigits: 0 }).format(value) },
-  { label: "Amount", key: "n_amount", formatter: (value) => new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0, minimumFractionDigits: 0 }).format(value) },
+  { 
+    label: "Final Rate", 
+    key: "n_rate", 
+    formatter: (value) => new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0, minimumFractionDigits: 0 }).format(value) 
+  },
+  { 
+    label: "Amount", 
+    key: "n_amount", 
+    formatter: (value) => new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0, minimumFractionDigits: 0 }).format(value) 
+  },
 ];
 
 const ZeroCost = () => {
   const { tenderId } = useProject();
 
-
-
-  const [items, setItems] = useState([]);
-  const [loading, setLoading] = useState(false);
+  // 1. Local State for Pagination Controls
   const [currentPage, setCurrentPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(0);
 
-  const fetchZeroCost = async () => {
-    if (!tenderId) return;
-    setLoading(true);
-    try {
-      const res = await axios.get(`${API}/boq/items/${tenderId}`, {
-        params: {
-          page: currentPage,
-          limit: 10,
-        },
-      });
+  // 2. Fetch Data via TanStack Query
+  const { 
+    data, 
+    isLoading, 
+    isFetching, 
+    refetch 
+  } = useZeroCostItems(tenderId, {
+    page: currentPage,
+    limit: 10,
+  });
 
-      setItems(res.data.data || []);
-      setTotalPages(res.data.totalPages || 1);
-    } catch (err) {
-      toast.error("Failed to fetch BOQ items");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchZeroCost();
-  }, [tenderId, currentPage]);
-
-  const handleDeleteZeroCostItem = async (item_code) => {
-    try {
-      await axios.delete(`${API}/boq/removeitem/${tenderId}/${item_code}`);
-      toast.success("Item deleted successfully");
-      fetchZeroCost(); // refresh table
-    } catch (error) {
-      console.error(error);
-      toast.error("Failed to delete BOQ item");
-    }
-  };
+  // If no tenderId is selected, you might want to show a message or just an empty table
+  if (!tenderId) {
+    return <div className="p-4 text-center text-gray-500 font-medium mt-10">Please select a project to view BOQ costs.</div>;
+  }
 
   return (
     <>
       <Table
         title="BOQ Cost"
         subtitle={`Tender: ${tenderId}`}
-        endpoint={items}
-        columns={customerColumns}
-        // EditModal={true}       
-        exportModal={false}
-        // DeleteModal={DeleteModal}
-        // deletetitle="Zero Cost"
-        totalPages={totalPages}
+        
+        // Data Props mapped from React Query
+        loading={isLoading}
+        isRefreshing={isFetching}
+        endpoint={data?.data || []}
+        totalPages={data?.totalPages || 1}
+        
+        // Pagination Controls
         currentPage={currentPage}
         setCurrentPage={setCurrentPage}
-        onUpdated={fetchZeroCost}
-        onSuccess={fetchZeroCost}
-        //onDelete={handleDeleteZeroCostItem}
+        
+        // Config
+        columns={customerColumns}      
+        exportModal={false}
         idKey="item_code"
-
+        
+        // Actions
+        onUpdated={refetch}
+        onSuccess={refetch}
       />
-
     </>
-  )
-}
+  );
+};
 
-export default ZeroCost
+export default ZeroCost;

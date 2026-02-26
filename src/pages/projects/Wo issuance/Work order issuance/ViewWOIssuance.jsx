@@ -5,11 +5,9 @@ import {
   Calendar, 
   User, 
   FileText, 
-  DollarSign,
   AlertCircle,
   Printer,
   Truck,
-  Check
 } from "lucide-react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
@@ -69,7 +67,6 @@ const ViewWOIssuance = () => {
 
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [passingLoading, setPassingLoading] = useState(false);
 
   // Fetch Data
   useEffect(() => {

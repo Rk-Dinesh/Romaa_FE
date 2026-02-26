@@ -1,23 +1,20 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo } from "react";
 import { useForm, useWatch } from "react-hook-form";
 import { yupResolver } from "@hookform/resolvers/yup";
 import * as yup from "yup";
-import { API } from "../../../constant";
-import axios from "axios";
-import { toast } from "react-toastify";
 import { IoClose } from "react-icons/io5";
-import { 
-  FiUserPlus, 
-  FiShield, 
-  FiUserCheck, 
-  FiSave, 
+import {
+  FiUserPlus,
+  FiShield,
+  FiSave,
   FiChevronDown,
   FiAlertCircle,
   FiUser,
   FiMail,
   FiBriefcase,
-  FiMonitor
+  FiMonitor,
 } from "react-icons/fi";
+import { useReassignUserRole, useRolesDropdown } from "./hooks/useUsers";
 
 // --- Validation Schema ---
 const schema = yup.object().shape({
@@ -27,92 +24,66 @@ const schema = yup.object().shape({
 
 // ✅ Receive 'item' directly from the Table component
 const EditUser = ({ item, onclose, onUpdated }) => {
-  const [loading, setLoading] = useState(false);
-  const [roles, setRoles] = useState([]);
-
   // Use 'item' passed from parent, fallback to empty object to prevent crashes
-  const user = item || {};
+  const user = useMemo(() => item || {}, [item]);
+
+  // --- TanStack Query Hooks ---
+  const { data: roles = [], isLoading: isLoadingRoles } = useRolesDropdown();
+  const { mutateAsync: updateRole, isPending: loading } = useReassignUserRole({
+    onUpdated,
+    onclose,
+  });
 
   const {
     register,
     handleSubmit,
     control,
     formState: { errors },
-    reset // Need reset to update form when item changes
+    reset, // Need reset to update form when item changes
   } = useForm({
     resolver: yupResolver(schema),
     defaultValues: {
       role: user.role?._id || user.role || "",
-      accessMode: user.accessMode || "" 
-    }
+      accessMode: user.accessMode || "",
+    },
   });
 
-  // --- 1. Reset Form when Modal Opens/Item Changes ---
+  // --- Reset Form when Modal Opens/Item Changes ---
   useEffect(() => {
     if (user) {
       reset({
         role: user.role?._id || user.role || "",
-        accessMode: user.accessMode || ""
+        accessMode: user.accessMode || "",
       });
     }
   }, [user, reset]);
 
-  const selectedRoleId = useWatch({ control, name: "role" }); 
+  const selectedRoleId = useWatch({ control, name: "role" });
 
-  // --- 2. Fetch Roles ---
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const res = await axios.get(`${API}/role/listForDropdown`, { withCredentials: true });
-        setRoles(res.data.data || []);
-      } catch (err) {
-        console.error("Fetch error:", err);
-        toast.error("Failed to load roles");
-      }
-    };
-    fetchData();
-  }, []);
-
-  // --- 3. Submit Handler ---
+  // --- Submit Handler ---
   const onSubmit = async (data) => {
-    try {
-      setLoading(true);
-      
-      const payload = { 
-        employeeId: user.employeeId, 
-        roleId: data.role,
-        accessMode: data.accessMode
-      };
+    const payload = {
+      employeeId: user.employeeId,
+      roleId: data.role,
+      accessMode: data.accessMode,
+    };
 
-      await axios.put(
-        `${API}/employee/role/re-assign`, 
-        payload, 
-        { withCredentials: true }
-      );
-
-      toast.success("User access updated successfully!");
-      if (onUpdated) onUpdated();
-      onclose();
-    } catch (err) {
-      console.error("Error updating user:", err);
-      toast.error(err.response?.data?.message || "Failed to update access");
-    } finally {
-      setLoading(false);
-    }
+    // The mutation handles try/catch and toasts internally
+    await updateRole(payload);
   };
 
   // Helper for Role Description
-  const selectedRoleDescription = roles.find(r => r._id === selectedRoleId)?.description;
+  const selectedRoleDescription = roles.find(
+    (r) => r._id === selectedRoleId,
+  )?.description;
 
   if (!user.employeeId) return null; // Don't render if no data
 
   return (
     // --- 1. Overlay (Fixed Modal Wrapper) ---
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4 font-layout-font animation-fade-in">
-      
       {/* --- 2. Modal Container --- */}
       <div className="bg-white dark:bg-gray-900 w-full max-w-lg rounded-2xl shadow-2xl flex flex-col overflow-hidden border border-gray-200 dark:border-gray-800 transform transition-all scale-100">
-        
         {/* --- Header --- */}
         <div className="px-6 py-5 border-b border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-900 flex justify-between items-center">
           <div>
@@ -122,11 +93,13 @@ const EditUser = ({ item, onclose, onUpdated }) => {
               </span>
               Reassign User Role
             </h2>
-            <p className="text-xs text-gray-500 mt-1 ml-11">Modify role and platform access</p>
+            <p className="text-xs text-gray-500 mt-1 ml-11">
+              Modify role and platform access
+            </p>
           </div>
-          
-          <button 
-            onClick={onclose} 
+
+          <button
+            onClick={onclose}
             className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-400 hover:text-gray-600 transition-colors"
           >
             <IoClose size={22} />
@@ -136,100 +109,112 @@ const EditUser = ({ item, onclose, onUpdated }) => {
         {/* --- Body --- */}
         <div className="p-6 overflow-y-auto max-h-[70vh]">
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-            
             {/* 1. User Identity Card (Read Only) */}
             <div className="bg-gray-50 dark:bg-gray-800/50 rounded-xl p-4 border border-gray-100 dark:border-gray-700">
-                <div className="flex items-start gap-4">
-                    <div className="h-12 w-12 min-w-[3rem] rounded-full bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 flex items-center justify-center text-xl font-bold text-gray-500 dark:text-gray-300">
-                        {user.name?.charAt(0).toUpperCase() || <FiUser />}
-                    </div>
-                    <div className="flex-1">
-                        <h3 className="text-sm font-bold text-gray-900 dark:text-white">{user.name}</h3>
-                        <p className="text-xs text-gray-500 dark:text-gray-400 font-mono mb-3">{user.employeeId}</p>
-                        
-                        <div className="grid grid-cols-2 gap-2">
-                            <div className="flex items-center gap-2 text-xs text-gray-600 dark:text-gray-300 bg-white dark:bg-gray-800 px-2 py-1.5 rounded border border-gray-200 dark:border-gray-700">
-                                <FiBriefcase className="text-gray-400" />
-                                <span className="truncate">{user.designation || "N/A"}</span>
-                            </div>
-                            <div className="flex items-center gap-2 text-xs text-gray-600 dark:text-gray-300 bg-white dark:bg-gray-800 px-2 py-1.5 rounded border border-gray-200 dark:border-gray-700">
-                                <FiShield className="text-gray-400" />
-                                <span className="truncate font-medium text-blue-600 dark:text-blue-400">
-                                    {user.role?.roleName || "No Role"}
-                                </span>
-                            </div>
-                        </div>
-                    </div>
+              <div className="flex items-start gap-4">
+                <div className="h-12 w-12 min-w-[3rem] rounded-full bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 flex items-center justify-center text-xl font-bold text-gray-500 dark:text-gray-300">
+                  {user.name?.charAt(0).toUpperCase() || <FiUser />}
                 </div>
-                <div className="mt-3 pt-3 border-t border-gray-200 dark:border-gray-700 flex items-center gap-2 text-xs text-gray-500">
-                    <FiMail /> {user.email}
+                <div className="flex-1">
+                  <h3 className="text-sm font-bold text-gray-900 dark:text-white">
+                    {user.name}
+                  </h3>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 font-mono mb-3">
+                    {user.employeeId}
+                  </p>
+
+                  <div className="grid grid-cols-2 gap-2">
+                    <div className="flex items-center gap-2 text-xs text-gray-600 dark:text-gray-300 bg-white dark:bg-gray-800 px-2 py-1.5 rounded border border-gray-200 dark:border-gray-700">
+                      <FiBriefcase className="text-gray-400" />
+                      <span className="truncate">
+                        {user.designation || "N/A"}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-2 text-xs text-gray-600 dark:text-gray-300 bg-white dark:bg-gray-800 px-2 py-1.5 rounded border border-gray-200 dark:border-gray-700">
+                      <FiShield className="text-gray-400" />
+                      <span className="truncate font-medium text-blue-600 dark:text-blue-400">
+                        {user.role?.roleName || "No Role"}
+                      </span>
+                    </div>
+                  </div>
                 </div>
+              </div>
+              <div className="mt-3 pt-3 border-t border-gray-200 dark:border-gray-700 flex items-center gap-2 text-xs text-gray-500">
+                <FiMail /> {user.email}
+              </div>
             </div>
 
             {/* 2. Form Fields Grid */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                
-                {/* Role Selection */}
-                <div className="space-y-2">
-                  <label className="text-xs font-bold text-gray-500 uppercase tracking-wider flex items-center gap-1">
-                      <FiShield className="text-emerald-500" /> Assign New Role
-                  </label>
-                  <div className="relative group">
-                      <select 
-                          {...register("role")}
-                          className="w-full border border-gray-300 dark:border-gray-700 rounded-xl px-4 py-3 text-sm bg-white dark:bg-gray-800 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 transition-all appearance-none cursor-pointer hover:border-gray-400"
-                      >
-                          <option value="">-- Select Role --</option>
-                          {roles.map((role) => (
-                              <option key={role._id} value={role._id}>
-                                  {role.roleName}
-                              </option>
-                          ))}
-                      </select>
-                      <div className="absolute inset-y-0 right-0 flex items-center px-4 pointer-events-none text-gray-400 group-hover:text-gray-600">
-                          <FiChevronDown />
-                      </div>
+              {/* Role Selection */}
+              <div className="space-y-2">
+                <label className="text-xs font-bold text-gray-500 uppercase tracking-wider flex items-center gap-1">
+                  <FiShield className="text-emerald-500" /> Assign New Role
+                </label>
+                <div className="relative group">
+                  <select
+                    {...register("role")}
+                    disabled={isLoadingRoles}
+                    className="w-full border border-gray-300 dark:border-gray-700 rounded-xl px-4 py-3 text-sm bg-white dark:bg-gray-800 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 transition-all appearance-none cursor-pointer hover:border-gray-400 disabled:opacity-50"
+                  >
+                    <option value="">
+                      {isLoadingRoles
+                        ? "Loading roles..."
+                        : "-- Select Role --"}
+                    </option>
+                    {roles.map((role) => (
+                      <option key={role._id} value={role._id}>
+                        {role.roleName}
+                      </option>
+                    ))}
+                  </select>
+                  <div className="absolute inset-y-0 right-0 flex items-center px-4 pointer-events-none text-gray-400 group-hover:text-gray-600">
+                    <FiChevronDown />
                   </div>
-                  {errors.role && (
-                    <p className="text-red-500 text-xs flex items-center gap-1 mt-1">
-                      <FiAlertCircle /> {errors.role.message}
-                    </p>
-                  )}
                 </div>
+                {errors.role && (
+                  <p className="text-red-500 text-xs flex items-center gap-1 mt-1">
+                    <FiAlertCircle /> {errors.role.message}
+                  </p>
+                )}
+              </div>
 
-                {/* Access Mode Selection */}
-                <div className="space-y-2">
-                  <label className="text-xs font-bold text-gray-500 uppercase tracking-wider flex items-center gap-1">
-                      <FiMonitor className="text-purple-500" /> Access Mode
-                  </label>
-                  <div className="relative group">
-                      <select 
-                          {...register("accessMode")}
-                          className="w-full border border-gray-300 dark:border-gray-700 rounded-xl px-4 py-3 text-sm bg-white dark:bg-gray-800 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-purple-500/50 focus:border-purple-500 transition-all appearance-none cursor-pointer hover:border-gray-400"
-                      >
-                          <option value="">-- Select Platform --</option>
-                          <option value="WEBSITE">Website Only</option>
-                          <option value="MOBILE">Mobile App Only</option>
-                          <option value="BOTH">Both (Web & Mobile)</option>
-                      </select>
-                      <div className="absolute inset-y-0 right-0 flex items-center px-4 pointer-events-none text-gray-400 group-hover:text-gray-600">
-                          <FiChevronDown />
-                      </div>
+              {/* Access Mode Selection */}
+              <div className="space-y-2">
+                <label className="text-xs font-bold text-gray-500 uppercase tracking-wider flex items-center gap-1">
+                  <FiMonitor className="text-purple-500" /> Access Mode
+                </label>
+                <div className="relative group">
+                  <select
+                    {...register("accessMode")}
+                    className="w-full border border-gray-300 dark:border-gray-700 rounded-xl px-4 py-3 text-sm bg-white dark:bg-gray-800 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-purple-500/50 focus:border-purple-500 transition-all appearance-none cursor-pointer hover:border-gray-400"
+                  >
+                    <option value="">-- Select Platform --</option>
+                    <option value="WEBSITE">Website Only</option>
+                    <option value="MOBILE">Mobile App Only</option>
+                    <option value="BOTH">Both (Web & Mobile)</option>
+                  </select>
+                  <div className="absolute inset-y-0 right-0 flex items-center px-4 pointer-events-none text-gray-400 group-hover:text-gray-600">
+                    <FiChevronDown />
                   </div>
-                  {errors.accessMode && (
-                    <p className="text-red-500 text-xs flex items-center gap-1 mt-1">
-                      <FiAlertCircle /> {errors.accessMode.message}
-                    </p>
-                  )}
                 </div>
-
+                {errors.accessMode && (
+                  <p className="text-red-500 text-xs flex items-center gap-1 mt-1">
+                    <FiAlertCircle /> {errors.accessMode.message}
+                  </p>
+                )}
+              </div>
             </div>
-              
+
             {/* Role Hint */}
             {selectedRoleDescription && (
-                <div className="mt-0 text-xs text-gray-500 dark:text-gray-400 bg-blue-50 dark:bg-blue-900/10 p-3 rounded-lg border border-blue-100 dark:border-blue-900/30 italic">
-                    "<span className="font-semibold not-italic text-gray-700 dark:text-gray-300">{selectedRoleDescription}</span>"
-                </div>
+              <div className="mt-0 text-xs text-gray-500 dark:text-gray-400 bg-blue-50 dark:bg-blue-900/10 p-3 rounded-lg border border-blue-100 dark:border-blue-900/30 italic">
+                "
+                <span className="font-semibold not-italic text-gray-700 dark:text-gray-300">
+                  {selectedRoleDescription}
+                </span>
+                "
+              </div>
             )}
 
             {/* --- Footer Buttons --- */}
@@ -237,7 +222,8 @@ const EditUser = ({ item, onclose, onUpdated }) => {
               <button
                 type="button"
                 onClick={onclose}
-                className="px-6 py-2.5 text-sm font-medium text-gray-600 bg-white border border-gray-300 rounded-xl hover:bg-gray-50 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-700 dark:hover:bg-gray-700 transition-all"
+                disabled={loading}
+                className="px-6 py-2.5 text-sm font-medium text-gray-600 bg-white border border-gray-300 rounded-xl hover:bg-gray-50 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-700 dark:hover:bg-gray-700 transition-all disabled:opacity-50"
               >
                 Cancel
               </button>
@@ -254,10 +240,8 @@ const EditUser = ({ item, onclose, onUpdated }) => {
                 {loading ? "Updating..." : "Update Access"}
               </button>
             </div>
-
           </form>
         </div>
-        
       </div>
     </div>
   );

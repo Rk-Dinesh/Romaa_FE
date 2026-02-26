@@ -1,4 +1,4 @@
-import { motion } from "framer-motion";
+
 import { RiDeleteBin5Fill } from "react-icons/ri";
 
 const TrashToast = ({ onUndo, closeToast }) => {

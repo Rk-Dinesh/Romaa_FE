@@ -1,11 +1,10 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { IoClose } from "react-icons/io5";
 import { useForm } from "react-hook-form";
 import { yupResolver } from "@hookform/resolvers/yup";
 import * as yup from "yup";
-import axios from "axios";
 import { toast } from "react-toastify";
-import { API } from "../../../../constant";
+import { useAllowedQuantities, useCreateWorkOrderRequest, usePermittedVendors } from "../../hooks/useProjects";
 
 /* ---------------- Validation Schema ---------------- */
 const workOrderSchema = yup.object().shape({
@@ -39,10 +38,13 @@ const CreateRequest = ({ onclose, onSuccess }) => {
     defaultValues,
   });
 
+  // --- Fetch Data using TanStack Query ---
+  const { data: vendors = [] } = usePermittedVendors(tenderId);
+  const { data: availableItems = [] } = useAllowedQuantities(tenderId);
+  const { mutateAsync: createRequest, isPending: loading } = useCreateWorkOrderRequest();
+
   // --- State ---
   const [materials, setMaterials] = useState([]);
-  const [vendors, setVendors] = useState([]); 
-  const [availableItems, setAvailableItems] = useState([]); // From Quantity API
   
   // Vendor Selection State
   const [selectedVendors, setSelectedVendors] = useState([{ vendorId: "", vendorName: "" }]);
@@ -54,30 +56,6 @@ const CreateRequest = ({ onclose, onSuccess }) => {
     unit: "",
     maxQuantity: 0 // To track limit
   });
-  
-  const [loading, setLoading] = useState(false);
-
-  /* ---------------- Fetch Data ---------------- */
-  useEffect(() => {
-    if (!tenderId) return;
-
-    const fetchData = async () => {
-      try {
-        // 1. Fetch Vendors
-        const vendorRes = await axios.get(`${API}/permittedvendor/permitted-vendors/${tenderId}`);
-        setVendors(vendorRes.data?.data || []);
-
-        const qtyRes = await axios.get(`${API}/raquantities/quantites/allowed/${tenderId}/contractor`); 
-        setAvailableItems(qtyRes.data?.data || []);
-
-      } catch (err) {
-        console.error(err);
-        toast.error("Failed to load project data");
-      }
-    };
-
-    fetchData();
-  }, [tenderId]);
 
   /* ---------------- Vendor Handlers ---------------- */
   const handleAddVendor = () => {
@@ -131,8 +109,6 @@ const CreateRequest = ({ onclose, onSuccess }) => {
 
     if (val > max) {
       toast.warning(`Quantity cannot exceed available limit: ${max}`);
-      // Optionally reset to max or allow typing but show error
-      // Here we allow typing but user can't Add if invalid (handled in Add function)
     }
     
     setMaterialInput({ ...materialInput, quantity: e.target.value });
@@ -177,7 +153,7 @@ const CreateRequest = ({ onclose, onSuccess }) => {
     const finalData = {
       ...data,
       projectId: tenderId,
-      materialsRequired: materials.map(({ maxQuantity, ...rest }) => rest), // Remove maxQuantity before sending
+      materialsRequired: materials.map(({ ...rest }) => rest), 
       permittedVendor: validVendors.map(v => ({
         vendorId: v.vendorId,
         vendorName: v.vendorName
@@ -185,8 +161,7 @@ const CreateRequest = ({ onclose, onSuccess }) => {
     };
 
     try {
-      setLoading(true);
-      await axios.post(`${API}/workorderrequest/api/create`, finalData);
+      await createRequest(finalData); // Using TanStack Query mutation
       toast.success("Request created successfully!");
       reset();
       setMaterials([]);
@@ -194,8 +169,6 @@ const CreateRequest = ({ onclose, onSuccess }) => {
       onclose();
     } catch (error) {
       toast.error(error.response?.data?.message || "Failed to create request.");
-    } finally {
-      setLoading(false);
     }
   };
 

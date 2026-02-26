@@ -1,6 +1,4 @@
-import React, { useState } from "react";
-import { API } from "../../../constant";
-import axios from "axios";
+import React from "react";
 import { toast } from "react-toastify";
 import { 
   FiAlertTriangle, 
@@ -9,37 +7,30 @@ import {
   FiShield,
   FiUser
 } from "react-icons/fi";
+import { useRevokeUserAccess } from "./hooks/useUsers";
+
 
 const DeleteUser = ({ item, onclose, onDelete }) => {
-  const [loading, setLoading] = useState(false);
-
   // Safe fallback if item is undefined
   const user = item || {};
 
+  // TanStack Query Mutation
+  const { mutateAsync: revokeAccess, isPending: loading } = useRevokeUserAccess({ onDelete, onclose });
+
   const handleRemoveRole = async () => {
     try {
-      setLoading(true);
-      
       // Payload: Send roleId as null to unassign
       const payload = { 
         employeeId: user.employeeId, 
         roleId: null 
       };
 
-      await axios.put(
-        `${API}/employee/role/re-assign`, 
-        payload, 
-        { withCredentials: true }
-      );
-
+      await revokeAccess(payload);
       toast.success(`Access revoked for ${user.name}`);
-      if (onDelete) onDelete();
-      onclose();
     } catch (err) {
+      // Errors are handled in the mutation's onError callback
       console.error("Error revoking role:", err);
       toast.error(err.response?.data?.message || "Failed to revoke access");
-    } finally {
-      setLoading(false);
     }
   };
 

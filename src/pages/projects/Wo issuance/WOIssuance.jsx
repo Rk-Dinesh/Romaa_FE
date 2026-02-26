@@ -1,11 +1,7 @@
-import React, { useEffect, useState } from "react";
+import { useState } from "react";
 import Title from "../../../components/Title";
-import { TbFileExport, TbFilter } from "react-icons/tb";
-import { LuFileCheck } from "react-icons/lu";
-import { MdArrowBackIosNew } from "react-icons/md";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { useSearchParams } from "react-router-dom";
 import WORequest from "./work order request/WORequest";
-import CreateRequest from "./work order request/CreateRequest";
 import WorkOrderIssuance from "./Work order issuance/WorkOrderIssuance";
 
 const tabs = [
@@ -24,7 +20,6 @@ const tabs = [
 ];
 
 const WoIssuance = () => {
-  const navigate = useNavigate();
   const [reloadWORequest, setReloadWORequest] = useState(0);
   const [searchParams, setSearchParams] = useSearchParams();
   const defaultTab = tabs[0].id;

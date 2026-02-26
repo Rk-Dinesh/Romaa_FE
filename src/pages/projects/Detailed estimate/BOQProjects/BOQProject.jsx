@@ -1,14 +1,13 @@
-import React, { useEffect, useMemo, useState } from "react";
-import axios from "axios";
-import { toast } from "react-toastify";
+import React, { useMemo } from "react";
 import { useProject } from "../../../../context/ProjectContext";
-import { API } from "../../../../constant";
+import { useBOQProject } from "../../hooks/useProjects";
+
 
 const BOQProject = () => {
-
   const { tenderId } = useProject();
-  const [boqdata, setBoqdata] = useState(null);
-  const [loading, setLoading] = useState(true);
+  
+  // Fetch data using TanStack Query
+  const { data: boqdata, isLoading: loading, isError } = useBOQProject(tenderId);
 
   // Helper to format currency/numbers safely
   const formatNumber = (num) => {
@@ -16,35 +15,13 @@ const BOQProject = () => {
     return parseFloat(num).toFixed(2);
   };
 
-  const getBoqProjectdata = async () => {
-    try {
-      setLoading(true);
-      const res = await axios.get(
-        `${API}/detailedestimate/getbillofqty?tender_id=${tenderId}`
-      );
-      // setBoqdata sets the "data" object from your JSON
-      setBoqdata(res.data.data);
-    } catch (error) {
-      console.error("Error fetching BOQ data:", error);
-      toast.error("Failed to load BOQ data");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    if (tenderId) {
-      getBoqProjectdata();
-    }
-  }, [tenderId]);
-
-  // 1. FIXED: Extract Headings from "spent" (not total_spent)
+  // 1. Extract Headings from "spent"
   const headings = useMemo(() => {
     if (!boqdata?.spent) return [];
     return Object.keys(boqdata.spent);
   }, [boqdata]);
 
-  // 2. FIXED: Calculate Grand Total using "billOfQty" (not billofqty)
+  // 2. Calculate Grand Total using "billOfQty"
   const grandTotalAmount = useMemo(() => {
     if (!boqdata?.billOfQty) return 0;
     return boqdata.billOfQty.reduce((acc, item) => {
@@ -57,14 +34,12 @@ const BOQProject = () => {
     return <div className="p-4 text-center">Loading BOQ Data...</div>;
   }
 
-  // FIXED: Check for "billOfQty"
-  if (!boqdata || !Array.isArray(boqdata.billOfQty)) {
+  if (isError || !boqdata || !Array.isArray(boqdata.billOfQty)) {
     return <div className="p-4 text-center text-red-500">No BOQ Data Found</div>;
   }
 
   return (
-
-    <div className="overflow-x-auto border border-gray-300 dark:border-gray-700 bg-white shadow-sm">
+    <div className="overflow-x-auto border border-gray-300 dark:border-gray-700 bg-white shadow-sm ">
       <table className="min-w-full border-collapse text-xs">
         <thead>
           {/* Header Row 1 */}
@@ -109,7 +84,6 @@ const BOQProject = () => {
         </thead>
 
         <tbody>
-          {/* FIXED: Map over "billOfQty" */}
           {boqdata.billOfQty.map((item, idx) => (
             <tr key={item.item_id || idx} className="hover:bg-gray-50 text-gray-600 transition-colors">
               <td className="border px-2 py-1 text-center">{idx + 1}</td>
@@ -126,7 +100,6 @@ const BOQProject = () => {
                 return (
                   <React.Fragment key={`row-${idx}-${h}`}>
                     <td className="border px-2 py-1 text-right text-gray-600">
-                      {/* Check if undefined to handle missing keys safely */}
                       {item[qtyKey] !== undefined ? item[qtyKey] : "-"}
                     </td>
                     <td className="border px-2 py-1 text-right font-medium">
@@ -155,7 +128,6 @@ const BOQProject = () => {
               <React.Fragment key={`total-${h}`}>
                 <td className="border px-2 py-2"></td>
                 <td className="border px-2 py-2 text-right">
-                  {/* FIXED: Access "spent" directly */}
                   {formatNumber(boqdata.spent?.[h])}
                 </td>
               </React.Fragment>
@@ -168,7 +140,6 @@ const BOQProject = () => {
         </tbody>
       </table>
     </div>
-
   );
 };
 

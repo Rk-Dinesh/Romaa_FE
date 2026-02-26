@@ -2,9 +2,6 @@ import React, { useEffect, useState } from "react";
 import { useForm, useWatch } from "react-hook-form";
 import { yupResolver } from "@hookform/resolvers/yup";
 import * as yup from "yup";
-import { API } from "../../../constant";
-import axios from "axios";
-import { toast } from "react-toastify";
 import { IoClose } from "react-icons/io5";
 import { 
   FiUserPlus, 
@@ -16,25 +13,27 @@ import {
   FiLock,
   FiEye,
   FiEyeOff,
-  FiSmartphone,
   FiMonitor
 } from "react-icons/fi";
+import { useRolesDropdown, useUnassignedEmployees, useGrantUserAccess } from "./hooks/useUsers";
+
 
 // --- Validation Schema ---
 const schema = yup.object().shape({
   employeeId: yup.string().required("Please select an employee"),
   password: yup.string().required("Password is required").min(6, "Min 6 characters"),
   role: yup.string().required("Please assign a role"),
-  accessMode: yup.string().required("Please select an access mode"), // Added Validation
+  accessMode: yup.string().required("Please select an access mode"),
 });
 
 const AddUser = ({ onclose, onSuccess }) => {
-  const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
-  
-  const [unassignedUsers, setUnassignedUsers] = useState([]);
-  const [roles, setRoles] = useState([]);
   const [selectedUserDetails, setSelectedUserDetails] = useState(null);
+
+  // --- TanStack Query Hooks ---
+  const { data: unassignedUsers = [], isLoading: isLoadingUsers } = useUnassignedEmployees();
+  const { data: roles = [], isLoading: isLoadingRoles } = useRolesDropdown();
+  const { mutateAsync: grantAccess, isPending: loading } = useGrantUserAccess({ onSuccess, onclose });
 
   const {
     register,
@@ -51,28 +50,9 @@ const AddUser = ({ onclose, onSuccess }) => {
   const selectedEmployeeId = useWatch({ control, name: "employeeId" });
   const selectedRoleId = useWatch({ control, name: "role" }); 
 
-  // --- Fetch Data ---
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const [usersRes, rolesRes] = await Promise.all([
-          axios.get(`${API}/employee/unassigned`, { withCredentials: true }),
-          axios.get(`${API}/role/listForDropdown`, { withCredentials: true })
-        ]);
-
-        setUnassignedUsers(usersRes.data.data || []);
-        setRoles(rolesRes.data.data || []);
-      } catch (err) {
-        console.error("Fetch error:", err);
-        toast.error("Failed to load data");
-      }
-    };
-    fetchData();
-  }, []);
-
   // --- Update User Preview ---
   useEffect(() => {
-    if (selectedEmployeeId) {
+    if (selectedEmployeeId && unassignedUsers.length > 0) {
       const user = unassignedUsers.find(u => u.employeeId === selectedEmployeeId);
       setSelectedUserDetails(user || null);
     } else {
@@ -82,31 +62,15 @@ const AddUser = ({ onclose, onSuccess }) => {
 
   // --- Submit Handler ---
   const onSubmit = async (data) => {
-    try {
-      setLoading(true);
-      
-      const payload = { 
-        role: data.role, 
-        password: data.password, 
-        accessMode: data.accessMode, // Added to Payload
-        status: "Active" 
-      };
+    const payload = { 
+      role: data.role, 
+      password: data.password, 
+      accessMode: data.accessMode,
+      status: "Active" 
+    };
 
-      await axios.put(
-        `${API}/employee/update-access/${data.employeeId}`, 
-        payload, 
-        { withCredentials: true }
-      );
-
-      toast.success("User access granted successfully!");
-      if (onSuccess) onSuccess();
-      onclose();
-    } catch (err) {
-      console.error("Error adding user:", err);
-      toast.error(err.response?.data?.message || "Failed to grant access");
-    } finally {
-      setLoading(false);
-    }
+    // The mutation handles try/catch and toasts internally
+    await grantAccess({ employeeId: data.employeeId, payload });
   };
 
   const selectedRoleDescription = roles.find(r => r._id === selectedRoleId)?.description;
@@ -144,9 +108,10 @@ const AddUser = ({ onclose, onSuccess }) => {
               <div className="relative group">
                   <select 
                       {...register("employeeId")}
-                      className="w-full border border-gray-300 dark:border-gray-700 rounded-xl px-4 py-3 text-sm bg-white dark:bg-gray-800 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 transition-all appearance-none cursor-pointer hover:border-gray-400"
+                      disabled={isLoadingUsers}
+                      className="w-full border border-gray-300 dark:border-gray-700 rounded-xl px-4 py-3 text-sm bg-white dark:bg-gray-800 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 transition-all appearance-none cursor-pointer hover:border-gray-400 disabled:opacity-50"
                   >
-                      <option value="">-- Choose Unassigned Staff --</option>
+                      <option value="">{isLoadingUsers ? "Loading staff..." : "-- Choose Unassigned Staff --"}</option>
                       {unassignedUsers.map((user) => (
                           <option key={user._id} value={user.employeeId}>
                               {user.name} — {user.employeeId}
@@ -215,9 +180,10 @@ const AddUser = ({ onclose, onSuccess }) => {
                   <div className="relative group">
                       <select 
                           {...register("role")}
-                          className="w-full border border-gray-300 dark:border-gray-700 rounded-xl px-4 py-3 text-sm bg-white dark:bg-gray-800 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500 transition-all appearance-none cursor-pointer hover:border-gray-400"
+                          disabled={isLoadingRoles}
+                          className="w-full border border-gray-300 dark:border-gray-700 rounded-xl px-4 py-3 text-sm bg-white dark:bg-gray-800 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500 transition-all appearance-none cursor-pointer hover:border-gray-400 disabled:opacity-50"
                       >
-                          <option value="">-- Select Role --</option>
+                          <option value="">{isLoadingRoles ? "Loading roles..." : "-- Select Role --"}</option>
                           {roles.map((role) => (
                               <option key={role._id} value={role._id}>
                                   {role.roleName}
@@ -271,13 +237,13 @@ const AddUser = ({ onclose, onSuccess }) => {
               <button
                 type="button"
                 onClick={onclose}
-                className="px-6 py-2.5 text-sm font-medium text-gray-600 bg-white border border-gray-300 rounded-xl hover:bg-gray-50 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-700 dark:hover:bg-gray-700 transition-all"
+                disabled={loading}
+                className="px-6 py-2.5 text-sm font-medium text-gray-600 bg-white border border-gray-300 rounded-xl hover:bg-gray-50 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-700 dark:hover:bg-gray-700 transition-all disabled:opacity-50"
               >
                 Cancel
               </button>
               <button
                 type="submit"
-                onClick={handleSubmit(onSubmit)}
                 disabled={loading}
                 className="px-8 py-2.5 text-sm font-bold text-white bg-darkest-blue rounded-xl hover:bg-blue-900 shadow-lg shadow-blue-500/30 flex items-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed transition-all active:scale-95"
               >

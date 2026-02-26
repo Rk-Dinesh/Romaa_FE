@@ -1,66 +1,51 @@
 import React, { useState, useEffect, useMemo } from "react";
-import axios from "axios";
 import { toast } from "react-toastify";
 import { Loader2 } from "lucide-react";
-import { API } from "../../../constant";
 import { useProject } from "../../../context/ProjectContext";
+import { useDrawingBoq, useUpdateDrawingBoq } from "../hooks/useProjects";
+
 
 const DrawingBoq = () => {
   const { tenderId } = useProject();
-  const [items, setItems] = useState([]);
-  const [loading, setLoading] = useState(false);
+  
+  // Local state for table editing
+  const [localItems, setLocalItems] = useState([]);
   const [isEditing, setIsEditing] = useState(false);
-  const [isSaving, setIsSaving] = useState(false);
-
-  // --- New State: Track modified item codes ---
   const [modifiedCodes, setModifiedCodes] = useState(new Set());
 
-  // --- 1. Fetch Data ---
-  const fetchDrawingBoq = async () => {
-    if (!tenderId) return;
-    setLoading(true);
-    try {
-      const res = await axios.get(`${API}/boq/get-drawing-quantity/${tenderId}`);
-      // Ensure numeric fields are numbers
-      const sanitizedData = (res.data.data || []).map((item) => ({
-        ...item,
-        quantity: Number(item.quantity) || 0,
-        n_rate: Number(item.n_rate) || 0,
-        drawing_quantity: Number(item.drawing_quantity) || 0,
-        variable_quantity: Number(item.variable_quantity) || 0,
-        variable_amount: Number(item.variable_amount) || 0,
-      }));
-      setItems(sanitizedData);
-      setModifiedCodes(new Set()); // Reset tracking on fresh fetch
-    } catch (err) {
-      toast.error("Failed to fetch Drawing BOQ items");
-      console.error(err);
-    } finally {
-      setLoading(false);
-    }
-  };
+  // 1. Fetch Data (TanStack Query)
+  const { 
+    data: boqItems = [], 
+    isLoading, 
+  } = useDrawingBoq(tenderId);
 
+  // 2. Sync server data to local state for editing
   useEffect(() => {
-    fetchDrawingBoq();
-  }, [tenderId]);
+    setLocalItems(boqItems);
+    setModifiedCodes(new Set()); // Reset tracking when fresh data arrives
+  }, [boqItems, isEditing]); // Reset when editing is toggled off too
 
-  // --- 2. Local State Update (Calculation Logic) ---
+  // 3. Mutation Setup
+  const { mutate: saveDrawingBoq, isPending: isSaving } = useUpdateDrawingBoq({
+    onSuccess: () => {
+      toast.success(`Updated successfully`);
+      setIsEditing(false);
+      setModifiedCodes(new Set());
+    }
+  });
+
+  // --- Calculations & Handlers ---
   const handleQuantityChange = (index, newVal) => {
-    // 1. Mark this item as modified
-    const itemCode = items[index].item_id || items[index].item_code;
+    const itemCode = localItems[index].item_id || localItems[index].item_code;
     setModifiedCodes(prev => new Set(prev).add(itemCode));
 
-    // 2. Update State
-    setItems((prevItems) => {
+    setLocalItems((prevItems) => {
       const updatedItems = [...prevItems];
       const item = { ...updatedItems[index] };
 
       const newDrawingQty = newVal === "" ? 0 : Number(newVal);
-
       item.drawing_quantity = newDrawingQty;
 
-      // If drawing qty is 0, variable qty becomes 0 (based on your previous logic req)
-      // Otherwise standard formula: BOQ - Drawing
       if (newDrawingQty === 0) {
         item.variable_quantity = 0;
       } else {
@@ -68,7 +53,6 @@ const DrawingBoq = () => {
       }
 
       item.variable_amount = item.variable_quantity * item.n_rate;
-
       updatedItems[index] = item;
       return updatedItems;
     });
@@ -77,60 +61,46 @@ const DrawingBoq = () => {
   const handleCancel = () => {
     setIsEditing(false);
     setModifiedCodes(new Set());
-    fetchDrawingBoq(); // Revert changes by re-fetching
+    setLocalItems(boqItems); // Revert to cached server data instantly
   };
 
-  // --- 3. Save Data (Optimized Payload) ---
-  const handleSave = async () => {
-    // Optimization: If nothing changed, don't call API
+  const handleSave = () => {
     if (modifiedCodes.size === 0) {
       toast.info("No changes to save");
       setIsEditing(false);
       return;
     }
 
-    try {
-      setIsSaving(true);
+    const changedItems = localItems.filter(item =>
+      modifiedCodes.has(item.item_id || item.item_code)
+    );
 
-      // Filter: Only include items that are in the modifiedCodes Set
-      const changedItems = items.filter(item =>
-        modifiedCodes.has(item.item_id || item.item_code)
-      );
+    const payload = {
+      items: changedItems.map(i => ({
+        item_code: i.item_id || i.item_code,
+        drawing_quantity: i.drawing_quantity,
+      }))
+    };
 
-      const itemsPayload = {
-        items: changedItems.map(i => ({
-          item_code: i.item_id || i.item_code,
-          drawing_quantity: i.drawing_quantity,
-        }))
-      };
-
-      // console.log(itemsPayload);
-
-      const res = await axios.put(`${API}/boq/bulk-update-drawing-quantity/${tenderId}`, itemsPayload);
-
-      if (res.status === 200 || res.data.success) {
-        toast.success(`Updated ${changedItems.length} items successfully`);
-        setIsEditing(false);
-        fetchDrawingBoq();
-      }
-    } catch (err) {
-      toast.error("Failed to save changes");
-      console.error(err);
-    } finally {
-      setIsSaving(false);
-    }
+    // Trigger the mutation
+    saveDrawingBoq({ tenderId, payload });
   };
 
-  // --- 4. Helpers ---
+  // --- Formatters ---
   const formatCurrency = (val) =>
     new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR' }).format(val || 0);
 
   const grandTotal = useMemo(() =>
-    items.reduce((sum, item) => sum + (item.variable_amount || 0), 0),
-    [items]);
+    localItems.reduce((sum, item) => sum + (item.variable_amount || 0), 0),
+    [localItems]
+  );
 
   // --- Render ---
-  if (loading && !items.length) {
+  if (!tenderId) {
+    return <div className="p-8 text-center text-gray-500">Please select a project to view Drawing BOQ.</div>;
+  }
+
+  if (isLoading && !localItems.length) {
     return (
       <div className="flex items-center justify-center h-64">
         <Loader2 className="animate-spin text-blue-600" size={32} />
@@ -140,7 +110,7 @@ const DrawingBoq = () => {
 
   return (
     <div className="font-roboto-flex flex flex-col gap-0.5 h-full py-2 overflow-hidden">
-
+      {/* Header Panel */}
       <div className="flex items-center justify-between bg-white dark:bg-layout-dark p-4 border border-gray-200 dark:border-gray-800">
         <div>
           <h2 className="text-lg font-semibold text-gray-800 dark:text-white">Drawing vs BOQ / {tenderId}</h2>
@@ -184,10 +154,10 @@ const DrawingBoq = () => {
         </div>
       </div>
 
-      {/* --- Table Container --- */}
+      {/* Table Container */}
       <div className="flex-1 overflow-y-auto custom-scrollbar bg-white dark:bg-layout-dark border border-gray-200 dark:border-gray-800">
         <table className="w-full text-sm text-left">
-          <thead className="bg-gray-100 dark:bg-gray-800 text-xs uppercase text-gray-500 font-semibold sticky top-0 z-5 ">
+          <thead className="bg-gray-100 dark:bg-gray-800 text-xs uppercase text-gray-500 font-semibold sticky top-0 z-10">
             <tr>
               <th className="px-4 py-3 ">#</th>
               <th className="px-4 py-3 w-30">Item Code</th>
@@ -199,8 +169,7 @@ const DrawingBoq = () => {
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
-            {items.map((item, index) => {
-              // Highlight row if modified
+            {localItems.map((item, index) => {
               const isModified = modifiedCodes.has(item.item_id || item.item_code);
               const rowClass = isModified
                 ? "bg-blue-50/40 dark:bg-blue-900/20"
@@ -251,7 +220,7 @@ const DrawingBoq = () => {
           </tbody>
         </table>
 
-        {items.length === 0 && !loading && (
+        {localItems.length === 0 && !isLoading && (
           <div className="p-8 text-center text-gray-500">No items found for this tender.</div>
         )}
       </div>

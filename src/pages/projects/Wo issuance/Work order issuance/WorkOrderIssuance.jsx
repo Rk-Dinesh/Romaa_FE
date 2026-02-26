@@ -1,27 +1,14 @@
-
-
-import { useEffect, useState } from "react";
-import axios from "axios";
+import React from "react";
 import Filters from "../../../../components/Filters";
 import Table from "../../../../components/Table";
-import { API } from "../../../../constant";
+import { useQuotationApprovedRequests } from "../../hooks/useProjects";
+
+
 const WorkOrderIssuance = () => {
   const projectId = localStorage.getItem("tenderId");
-  console.log(projectId);
-  const Columns = [
-    { label: "Request ID", key: "requestId" },
-    { label: "Project", key: "projectId" },
-    { label: "Project Name", key: "tender_project_name" },
-    { label: "Request Date", key: "requestDate" },
-    { label: "Date of Requirements", key: "requiredOn" },
-    { label: "Requested by", key: "siteIncharge" },
-    { 
-      label: "Status", 
-      key: "status",
-      // 🔥 FIX: Render the badge here, not in the data state
-      render: (row) => getStatusBadge(row.status) 
-    },
-  ];
+
+  // Fetch formatted data using TanStack Query
+  const { data = [], isLoading, isFetching } = useQuotationApprovedRequests(projectId);
 
   const getStatusBadge = (status) => {
     const styles = {
@@ -43,55 +30,32 @@ const WorkOrderIssuance = () => {
     );
   };
 
-  const [data, setData] = useState([]);
-   const fetchRequests = async () => {
-    try {
-
-
-      const res = await axios.get(
-        `${API}/workorderrequest/api/getbyIdQuotationApproved/${projectId}`
-      );
-
-
-      const formatted = res.data?.data?.map((item) => ({
-        requestId: item.requestId,
-        requestDate: item.requestDate
-          ? new Date(item.requestDate).toLocaleDateString("en-GB")
-          : "-",
-
-        projectId: item.projectId,
-        tender_project_name: item.tender_project_name,
-        tender_name: item.tender_name,
-        requiredOn: item.requiredByDate
-          ? new Date(item.requiredByDate).toLocaleDateString("en-GB")
-          : "-",
-
-        siteIncharge: item.siteDetails?.siteIncharge || "N/A",
-        status: item.status,
-
-      }));
-
-      setData(formatted || []);
-    } catch (err) {
-      console.error("Error fetching PR list", err);
-    }
-  };
-
-   useEffect(() => {
-      fetchRequests();
-    }, []);
+  const Columns = [
+    { label: "Request ID", key: "requestId" },
+    { label: "Project", key: "projectId" },
+    { label: "Project Name", key: "tender_project_name" },
+    { label: "Request Date", key: "requestDate" },
+    { label: "Date of Requirements", key: "requiredOn" },
+    { label: "Requested by", key: "siteIncharge" },
+    { 
+      label: "Status", 
+      key: "status",
+      render: (row) => getStatusBadge(row.status) 
+    },
+  ];
 
   return (
     <Table
+      // Pass loading states to the Table component
+      loading={isLoading}
+      isRefreshing={isFetching}
       
       endpoint={data}
       columns={Columns}
       routepoint={"viewwoissuance"}
       FilterModal={Filters}
-
     />
   );
 };
-
 
 export default WorkOrderIssuance;

@@ -1,62 +1,42 @@
 import React, { useEffect, useState } from "react";
 import romaaLogo from "../../../../assets/images/romaa logo.png";
-import Title from "../../../../components/Title";
 import { HiArrowsUpDown } from "react-icons/hi2";
-import axios from "axios";
 import { toast } from "react-toastify";
-import { API } from "../../../../constant";
 import { useParams } from "react-router-dom";
+import { 
+  useWorkOrderRequestDetails, 
+  useSubmitVendorQuotation 
+} from "../../hooks/useProjects";
 
 const WorkOrderRequestForm = ({ onCancel, onSubmit }) => {
   const { tenderId, requestId } = useParams();
 
+  // --- Local State ---
   const [rows, setRows] = useState([]);
-  const [workOrderRequestId, setWorkOrderRequestId] = useState([]);
-  const [loading, setLoading] = useState(true);
-  
-
+  const [workOrderRequestId, setWorkOrderRequestId] = useState("");
   const [selectedVendor, setSelectedVendor] = useState("");
   const [deliveryPeriod, setDeliveryPeriod] = useState("");
 
-  // ✅ Fetch materials
+  // --- TanStack Query Hooks ---
+  const { data: requestDetails, isLoading: loading } = useWorkOrderRequestDetails(tenderId, requestId);
+  const { mutateAsync: submitQuotation, isPending: isSubmitting } = useSubmitVendorQuotation();
+
+  // ✅ Sync fetched data into editable local state
   useEffect(() => {
-    const fetchMaterials = async () => {
-      try {
-        const res = await axios.get(
-          `${API}/workorderrequest/api/getdetailbyId/${tenderId}/${requestId}`
-        );
-
-        if (
-          res.data.data.materialsRequired &&
-          Array.isArray(res.data.data.materialsRequired)
-        ) {
-          const formatted = res.data.data.materialsRequired.map(
-            (item, index) => ({
-              sno: index + 1,
-              work: item.materialName || "Work",
-              unit: item.unit || "",
-              quantity: item.quantity || 0,
-              enterPrice: "",
-              total: "",
-              materialId: item._id,
-            })
-          );
-          setRows(formatted);
-          setWorkOrderRequestId(res.data.data._id);
-        }
-      } catch (error) {
-        console.error("Error fetching materials:", error);
-        toast.error("Failed to load materials");
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchMaterials();
-  }, [tenderId, requestId]);
-
-
-  
+    if (requestDetails?.materialsRequired && Array.isArray(requestDetails.materialsRequired)) {
+      const formatted = requestDetails.materialsRequired.map((item, index) => ({
+        sno: index + 1,
+        work: item.materialName || "Work",
+        unit: item.unit || "",
+        quantity: item.quantity || 0,
+        enterPrice: "",
+        total: "",
+        materialId: item._id,
+      }));
+      setRows(formatted);
+      setWorkOrderRequestId(requestDetails._id);
+    }
+  }, [requestDetails]);
 
   // ✅ Update price & total dynamically
   const handlePriceChange = (index, value) => {
@@ -66,74 +46,66 @@ const WorkOrderRequestForm = ({ onCancel, onSubmit }) => {
     setRows(updatedRows);
   };
 
+  // ✅ Submit Vendor Quotation
+  const handleSubmit = async () => {
+    const hasEmpty = rows.some((r) => !r.enterPrice);
+    if (hasEmpty) {
+      toast.warning("Please enter price for all items");
+      return;
+    }
 
-// ✅ Submit Vendor Quotation
-const handleSubmit = async () => {
-  const hasEmpty = rows.some((r) => !r.enterPrice);
-  if (hasEmpty) {
-    toast.warning("Please enter price for all items");
-    return;
-  }
+    if (!selectedVendor) {
+      toast.warning("Please enter a vendor ID or name before submitting");
+      return;
+    }
 
-  if (!selectedVendor) {
-    toast.warning("Please enter a vendor ID or name before submitting");
-    return;
-  }
+    if (!deliveryPeriod) {
+      toast.warning("Please select a delivery date");
+      return;
+    }
 
-  if (!deliveryPeriod) {
-    toast.warning("Please select a delivery date");
-    return;
-  }
+    const quoteItems = rows.map((r) => ({
+      materialName: r.work,
+      quotedUnitRate: Number(r.enterPrice),
+      unit: r.unit,
+      quantity: Number(r.quantity),
+      totalAmount: Number(r.total),
+    }));
 
-  const quoteItems = rows.map((r) => ({
-    materialName: r.work,
-    quotedUnitRate: Number(r.enterPrice),
-    unit:r.unit,
-    quantity: Number(r.quantity),
-    totalAmount: Number(r.total),
-  }));
+    try {
+      const payload = {
+        workOrderRequestId,
+        tenderId,
+        vendorId: selectedVendor.toUpperCase(),
+        deliveryPeriod,
+        quoteItems,
+      };
 
-  try {
-    const payload = {
-      workOrderRequestId,
-      tenderId,
-      vendorId: selectedVendor.toUpperCase(),
-      deliveryPeriod,
-      quoteItems,
-    };
+      // Use the mutation hook to submit data
+      const res = await submitQuotation({ workOrderRequestId, payload });
 
+      toast.success("Your quotation submitted successfully!");
 
-    const res = await axios.post(
-      `${API}/workorderrequest/api/workorder-requests/${workOrderRequestId}/vendor-quotation`,
-      payload
-    );
+      // ✅ Reset the form fields
+      setSelectedVendor("");
+      setDeliveryPeriod("");
+      setRows((prev) =>
+        prev.map((row) => ({
+          ...row,
+          enterPrice: "",
+          total: "",
+        }))
+      );
 
-    toast.success("Your quotation submitted successfully!");
-
-    // ✅ Reset the form fields
-    setSelectedVendor("");
-    setDeliveryPeriod("");
-    setRows((prev) =>
-      prev.map((row) => ({
-        ...row,
-        enterPrice: "",
-        total: "",
-      }))
-    );
-
-    // ✅ Optional: refresh data if needed
-    // fetchMaterials();  // Uncomment if you want to re-fetch materials after submit
-
-    // ✅ Trigger parent callback if provided
-    if (onSubmit) onSubmit(res.data);
-  } catch (error) {
-    console.error("Error submitting quotation:", error);
-    toast.error(
-      error.response?.data?.message || "Failed to submit vendor quotation"
-    );
-  }
-};
-
+      // ✅ Trigger parent callback if provided
+      if (onSubmit) onSubmit(res);
+    } catch (error) {
+      console.error("Error submitting quotation:", error);
+      toast.error(
+        error.response?.data?.message || "Failed to submit vendor quotation"
+      );
+    }
+  };
 
   return (
     <div className="font-roboto-flex rounded-md mx-10 mt-4 p-10 bg-blue-50 shadow-md">
@@ -240,29 +212,33 @@ const handleSubmit = async () => {
           <div className="flex justify-end gap-3 mt-6">
             <button
               onClick={onCancel}
-              className="px-5 py-1.5 border border-gray-400 rounded-md text-gray-700 hover:bg-gray-100 transition"
+              disabled={isSubmitting}
+              className="px-5 py-1.5 border border-gray-400 rounded-md text-gray-700 hover:bg-gray-100 transition disabled:opacity-50"
             >
               Cancel
             </button>
             <button
               onClick={handleSubmit}
-              className="px-5 py-1.5 bg-darkest-blue text-white rounded-md hover:bg-blue-900 flex items-center gap-2 transition"
+              disabled={isSubmitting}
+              className="px-5 py-1.5 bg-darkest-blue text-white rounded-md hover:bg-blue-900 flex items-center gap-2 transition disabled:opacity-50"
             >
-              <span>Submit</span>
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                className="w-4 h-4"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M5 13l4 4L19 7"
-                />
-              </svg>
+              <span>{isSubmitting ? "Submitting..." : "Submit"}</span>
+              {!isSubmitting && (
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="w-4 h-4"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M5 13l4 4L19 7"
+                  />
+                </svg>
+              )}
             </button>
           </div>
         </>

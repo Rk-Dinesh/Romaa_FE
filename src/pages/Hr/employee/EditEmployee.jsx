@@ -3,9 +3,6 @@ import { useLocation, useNavigate } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import { yupResolver } from "@hookform/resolvers/yup";
 import * as yup from "yup";
-import axios from "axios";
-import { toast } from "react-toastify";
-import { API } from "../../../constant";
 import { IoClose } from "react-icons/io5";
 import { 
   FiUser, 
@@ -19,8 +16,9 @@ import {
   FiChevronDown,
   FiSearch
 } from "react-icons/fi";
+import { useEditEmployee, useManagersDropdown } from "./hooks/useEmployees";
 
-// --- Schema (Aligned with AddEmployee) ---
+// --- Schema ---
 const schema = yup.object().shape({
   name: yup.string().required("Name is required"),
   email: yup.string().email("Invalid email").required("Email is required"),
@@ -61,11 +59,16 @@ const schema = yup.object().shape({
 
 const EditEmployee = ({ onUpdated, onclose }) => {
   const { state } = useLocation();
-  const employee = state?.item || {}; 
-  
   const navigate = useNavigate();
-  const [loading, setLoading] = useState(false);
-  const [managers, setManagers] = useState([]); // Dynamic Managers List
+  const employee = state?.item || {}; 
+
+  // --- TanStack Query Hooks ---
+  const { data: managers = [] } = useManagersDropdown();
+  const { mutateAsync: updateEmployee, isPending: loading } = useEditEmployee({ 
+    employeeId: employee.employeeId, 
+    onUpdated, 
+    onclose 
+  });
 
   // Construction-oriented Departments
   const departments = [
@@ -78,26 +81,6 @@ const EditEmployee = ({ onUpdated, onclose }) => {
     "Safety/EHS",
     "QA/QC"
   ];
-
-  // --- Fetch Managers from API ---
-  useEffect(() => {
-    const fetchManagers = async () => {
-      try {
-        const response = await axios.get(`${API}/employee/assigned`, { withCredentials: true });
-        if (response.data && response.data.data) {
-          const formattedManagers = response.data.data.map((emp) => ({
-            value: emp._id,
-            label: `${emp.name} (${emp.employeeId})`
-          }));
-          setManagers(formattedManagers);
-        }
-      } catch (error) {
-        console.error("Error fetching managers:", error);
-        // Silent fail or toast
-      }
-    };
-    fetchManagers();
-  }, []);
 
   const {
     register,
@@ -157,71 +140,52 @@ const EditEmployee = ({ onUpdated, onclose }) => {
   });
 
   const onSubmit = async (data) => {
-    setLoading(true);
-    try {
-      const payload = {
-        name: data.name,
-        email: data.email,
-        phone: data.phone,
-        
-        userType: data.userType,
-        designation: data.designation,
-        department: data.department,
-        hrStatus: data.hrStatus,
-        reportsTo: data.reportsTo || null,
-        dateOfJoining: data.dateOfJoining,
-        employeeReference: data.employeeReference,
+    const payload = {
+      name: data.name,
+      email: data.email,
+      phone: data.phone,
+      
+      userType: data.userType,
+      designation: data.designation,
+      department: data.department,
+      hrStatus: data.hrStatus,
+      reportsTo: data.reportsTo || null,
+      dateOfJoining: data.dateOfJoining,
+      employeeReference: data.employeeReference,
 
-        address: {
-          street: data.address_street,
-          city: data.address_city,
-          state: data.address_state,
-          pincode: data.address_pincode,
-        },
-        idProof: {
-            type: data.id_proof_type,
-            number: data.id_proof_number
-        },
-        emergencyContact: {
-          name: data.emergency_name,
-          relationship: data.emergency_relationship,
-          phone: data.emergency_phone,
-        },
-        leaveBalance: {
-          PL: data.leave_pl,
-          CL: data.leave_cl,
-          SL: data.leave_sl
-        },
-        payroll: {
-          basicSalary: data.basicSalary,
-          accountHolderName: data.accountHolderName,
-          bankName: data.bankName,
-          accountNumber: data.accountNumber,
-          ifscCode: data.ifscCode,
-          panNumber: data.panNumber,
-          uanNumber: data.uanNumber
-        }
-      };
-
-      await axios.put(
-        `${API}/employee/update/${employee.employeeId}`, 
-        payload,
-        { withCredentials: true }
-      );
-
-      toast.success("Employee details updated successfully");
-      if (onUpdated) onUpdated();
-      if (onclose) {
-          onclose();
-      } else {
-          navigate(-1); 
+      address: {
+        street: data.address_street,
+        city: data.address_city,
+        state: data.address_state,
+        pincode: data.address_pincode,
+      },
+      idProof: {
+          type: data.id_proof_type,
+          number: data.id_proof_number
+      },
+      emergencyContact: {
+        name: data.emergency_name,
+        relationship: data.emergency_relationship,
+        phone: data.emergency_phone,
+      },
+      leaveBalance: {
+        PL: data.leave_pl,
+        CL: data.leave_cl,
+        SL: data.leave_sl
+      },
+      payroll: {
+        basicSalary: data.basicSalary,
+        accountHolderName: data.accountHolderName,
+        bankName: data.bankName,
+        accountNumber: data.accountNumber,
+        ifscCode: data.ifscCode,
+        panNumber: data.panNumber,
+        uanNumber: data.uanNumber
       }
-    } catch (err) {
-      console.error("Update failed", err);
-      toast.error(err.response?.data?.message || "Failed to update employee.");
-    } finally {
-      setLoading(false);
-    }
+    };
+
+    // Trigger the mutation
+    await updateEmployee(payload);
   };
 
   // --- Styles ---
@@ -278,7 +242,7 @@ const EditEmployee = ({ onUpdated, onclose }) => {
             <Select label="Work Type *" name="userType" register={register} error={errors.userType} options={["Office", "Site"]} />
             <Select label="HR Status *" name="hrStatus" register={register} error={errors.hrStatus} options={["Probation", "Confirmed", "Notice Period"]} />
             
-            {/* UPDATED: Searchable Select for Reports To */}
+            {/* Searchable Select for Reports To */}
             <SearchableSelect 
               label="Reports To (Manager)" 
               name="reportsTo" 
@@ -354,7 +318,8 @@ const EditEmployee = ({ onUpdated, onclose }) => {
           <button 
             type="button"
             onClick={() => onclose ? onclose() : navigate(-1)}
-            className="px-5 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+            disabled={loading}
+            className="px-5 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-50"
           >
             Cancel
           </button>

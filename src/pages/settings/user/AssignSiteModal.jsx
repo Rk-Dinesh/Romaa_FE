@@ -1,30 +1,14 @@
-import React, { useEffect, useState } from "react";
-import axios from "axios";
+import React, { useState } from "react";
 import { FiX, FiSearch, FiMapPin, FiCheck, FiSave, FiAlertCircle } from "react-icons/fi";
-import { toast } from "react-toastify";
-import { API } from "../../../constant";
+import { useTendersForAssignment } from "./hooks/useUsers";
+
 
 const AssignSitesModal = ({ initialSelected = [], onClose, onSave }) => {
-  const [tenders, setTenders] = useState([]);
   const [selectedIds, setSelectedIds] = useState(initialSelected); // Stores _id strings
   const [search, setSearch] = useState("");
-  const [loading, setLoading] = useState(true);
 
-  // --- Fetch Tenders ---
-  useEffect(() => {
-    const fetchTenders = async () => {
-      try {
-        const res = await axios.get(`${API}/tender/gettendersid`, { withCredentials: true });
-        setTenders(res.data.data || []);
-      } catch (err) {
-        console.error("Error fetching tenders:", err);
-        toast.error("Failed to load sites list");
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchTenders();
-  }, []);
+  // --- Fetch Data using TanStack Query ---
+  const { data: tenders = [], isLoading: loading } = useTendersForAssignment();
 
   // --- Toggle Selection ---
   const toggleSite = (id) => {

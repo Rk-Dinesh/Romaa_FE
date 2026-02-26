@@ -1,7 +1,5 @@
 import React, { useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
-import axios from "axios";
-import { API } from "../../../constant";
 import { toast } from "react-toastify"; 
 import { 
   FiChevronDown, 
@@ -14,6 +12,8 @@ import {
   FiCheckSquare
 } from "react-icons/fi";
 import { Menus } from "../../../helperConfigData/helperData";
+import { useCreateRole } from "./hooks/useRoles";
+
 
 // --- Constants ---
 const ACTIONS = [
@@ -25,29 +25,31 @@ const ACTIONS = [
 
 const AddRoles = () => {
   const navigate = useNavigate();
+  
+  // Local Form State
   const [roleName, setRoleName] = useState("");
   const [description, setDescription] = useState("");
-  const [loading, setLoading] = useState(false);
   const [permissions, setPermissions] = useState({});
   const [expandedModules, setExpandedModules] = useState({});
 
+  // --- TanStack Query Mutation ---
+  const { mutateAsync: createRole, isPending: loading } = useCreateRole();
+
   // --- 1. Transform Menus to Module Config ---
-  // Ensure 'Menus' constant keys match your Mongoose Schema keys exactly
   const MODULES_CONFIG = useMemo(() => {
     return Menus.map(menu => ({
-        key: menu.module, // Must match Schema (e.g., "tender", "project")
+        key: menu.module, 
         label: menu.title,
         icon: menu.icon,
         hasSubModules: !!menu.nested && menu.nested.length > 0,
         subModules: menu.nested ? menu.nested.map(sub => ({
-            key: sub.subModule, // Must match Schema (e.g., "clients", "boq_cost")
+            key: sub.subModule,
             label: sub.title
         })) : []
     }));
   }, []);
 
   // --- 2. Logic Helpers ---
-
   const toggleModuleExpand = (moduleKey) => {
     setExpandedModules((prev) => ({ ...prev, [moduleKey]: !prev[moduleKey] }));
   };
@@ -61,19 +63,15 @@ const AddRoles = () => {
 
   const handlePermissionChange = (moduleKey, subModuleKey, actionKey) => {
     setPermissions((prev) => {
-      // Deep copy to prevent mutation issues
       const updatedModule = { ...(prev[moduleKey] || {}) };
 
       if (subModuleKey) {
-        // Nested Module (e.g., Tender -> Clients)
         const updatedSubModule = { ...(updatedModule[subModuleKey] || {}) };
         updatedSubModule[actionKey] = !updatedSubModule[actionKey];
         updatedModule[subModuleKey] = updatedSubModule;
       } else {
-        // Simple Module (e.g., Dashboard)
-        //  - Dashboard only has 'read' in your schema
         if (moduleKey === 'dashboard' && actionKey !== 'read') {
-            return prev; // Block create/edit/delete for dashboard if schema doesn't support it
+            return prev; 
         }
         updatedModule[actionKey] = !updatedModule[actionKey];
       }
@@ -91,7 +89,6 @@ const AddRoles = () => {
          return ACTIONS.every(act => modPerms[sub.key]?.[act.key] === true);
       });
     } else {
-      // For Dashboard, we only check 'read' because the schema only has 'read'
       if(module.key === 'dashboard') return modPerms['read'] === true;
       return ACTIONS.every(act => modPerms[act.key] === true);
     }
@@ -112,7 +109,6 @@ const AddRoles = () => {
           updatedModule[sub.key] = actionsObj;
         });
       } else {
-        // Special case for Dashboard (Only allow Read)
         if(module.key === 'dashboard') {
              updatedModule['read'] = targetState;
         } else {
@@ -124,35 +120,21 @@ const AddRoles = () => {
     });
   };
 
+  // --- Submit Handler ---
   const handleSave = async () => {
     if (!roleName.trim()) {
         toast.error("Role Name is required");
         return;
     }
     
-    // --- PAYLOAD CONSTRUCTION ---
-    // This matches your Mongoose RoleSchema structure
     const payload = { 
-        roleName: roleName, // Matches schema: roleName
-        description: description, // Matches schema: description
-        permissions: permissions // Matches schema: permissions object
-        // Note: 'role_id' is required in your Schema. 
-        // Ensure your Backend Service generates this (e.g. ROL-001) before saving.
+        roleName: roleName, 
+        description: description, 
+        permissions: permissions 
     };
     
-    try {
-      setLoading(true);
-      const response = await axios.post(`${API}/role/create`, payload, { withCredentials: true });
-      if (response.data.status) {
-        toast.success("Role created successfully!");
-        navigate("/settings/roles");
-      }
-    } catch (error) {
-      console.error("Payload Error:", error);
-      toast.error(error.response?.data?.message || "Failed to create role");
-    } finally {
-      setLoading(false);
-    }
+    // Mutation handles the try/catch, loading state, and redirects
+    await createRole(payload);
   };
 
   // Stats Logic
@@ -196,7 +178,7 @@ const AddRoles = () => {
         </div>
         
         <div className="flex gap-3">
-          <button onClick={() => navigate("/settings/roles")} className="px-4 py-2 rounded-lg text-sm border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition-all font-medium flex items-center gap-2">
+          <button onClick={() => navigate("/settings/roles")} disabled={loading} className="px-4 py-2 rounded-lg text-sm border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition-all font-medium flex items-center gap-2 disabled:opacity-50">
             <FiX /> Cancel
           </button>
           <button onClick={handleSave} disabled={loading} className={`px-6 py-2 rounded-lg text-sm text-white shadow-md shadow-blue-500/20 transition-all font-medium flex items-center gap-2 ${loading ? "bg-gray-400" : "bg-darkest-blue hover:bg-blue-900 active:scale-95"}`}>

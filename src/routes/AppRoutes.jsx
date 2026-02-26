@@ -43,11 +43,11 @@ const ZeroCost = lazy(() => import("../pages/projects/Project zero cost/ZeroCost
 const ViewBoqSplit = lazy(() => import("../pages/tender/tenders/view tenders/zero cost/boq split/ViewBoqSplit"));
 const EditRateAnalysis = lazy(() => import("../pages/tender/tenders/view tenders/zero cost/Rate analysis/EditRateAnalysis"));
 const DetailedEstimate = lazy(() => import("../pages/projects/Detailed estimate/DetailedEstimate"));
-const ViewGs = lazy(() => import("../pages/projects/Detailed estimate/general abstract/ViewGs"));
-const ViewBillQtyProject = lazy(() => import("../pages/projects/Detailed estimate/BOQProjects/ViewBOQProject"));
-const ViewNewInletDet = lazy(() => import("../pages/projects/Detailed estimate/new inlet det/ViewNewInletDet"));
-const ViewNewInletAbs = lazy(() => import("../pages/projects/Detailed estimate/new inlet abs/ViewNewInletAbs"));
-const ViewVendorProject = lazy(() => import("../pages/projects/Detailed estimate/vendor/ViewVendorProjects"));
+//const ViewGs = lazy(() => import("../pages/projects/Detailed estimate/general abstract/ViewGs"));
+//const ViewBillQtyProject = lazy(() => import("../pages/projects/Detailed estimate/BOQProjects/ViewBOQProject"));
+//const ViewNewInletDet = lazy(() => import("../pages/projects/Detailed estimate/new inlet det/ViewNewInletDet"));
+//const ViewNewInletAbs = lazy(() => import("../pages/projects/Detailed estimate/new inlet abs/ViewNewInletAbs"));
+//const ViewVendorProject = lazy(() => import("../pages/projects/Detailed estimate/vendor/ViewVendorProjects"));
 const DrawingBoq = lazy(() => import("../pages/projects/drawing vs Boq/DrawingBoq"));
 const ViewDrawingBoq = lazy(() => import("../pages/projects/drawing vs Boq/ViewDrawingBoq"));
 const WBS = lazy(() => import("../pages/projects/WBQ/WBS"));
@@ -255,15 +255,6 @@ const AppRoutes = () => {
                 </Route>
                 <Route path="detailestimate">
                   <Route index element={<DetailedEstimate />} />
-                  <Route path="viewgs" element={<ViewGs />} />
-                  <Route path="viewboqproject" element={<ViewBillQtyProject />} />
-                  <Route path="viewnewinletdet" element={<ViewNewInletDet />} />
-                  <Route path="viewnewinletabs" element={<ViewNewInletAbs />} />
-
-                  <Route
-                    path="viewvendorproject"
-                    element={<ViewVendorProject />}
-                  />
                 </Route>
                 <Route path="drawingboq">
                   <Route index element={<DrawingBoq />} />

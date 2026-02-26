@@ -1,9 +1,6 @@
 import React, { useState, useEffect, useMemo } from "react";
-import { useLocation, useNavigate, useParams } from "react-router-dom";
-import axios from "axios";
-import { API } from "../../../constant";
+import { useLocation, useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
-
 import { 
   FiChevronDown, 
   FiCheck, 
@@ -16,6 +13,8 @@ import {
   FiLoader
 } from "react-icons/fi";
 import { Menus } from "../../../helperConfigData/helperData";
+import { useRoleDetails, useUpdateRole } from "./hooks/useRoles";
+
 
 // --- Constants ---
 const ACTIONS = [
@@ -29,16 +28,17 @@ const EditRoles = () => {
   const navigate = useNavigate();
   const location = useLocation();
   
-  // Try to get role_id from navigation state first, fallback to URL params if you have a route like /edit/:id
-  // Assuming route is passed via state based on your previous code
   const roleIdFromState = location.state?.item?.role_id;
   
+  // Local Form State
   const [roleName, setRoleName] = useState("");
   const [description, setDescription] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [fetching, setFetching] = useState(true);
   const [permissions, setPermissions] = useState({});
   const [expandedModules, setExpandedModules] = useState({});
+
+  // --- TanStack Query Hooks ---
+  const { data: roleData, isLoading: fetching } = useRoleDetails(roleIdFromState);
+  const { mutateAsync: updateRole, isPending: loading } = useUpdateRole(roleIdFromState);
 
   // --- 1. Transform Menus to Module Config ---
   const MODULES_CONFIG = useMemo(() => {
@@ -54,41 +54,22 @@ const EditRoles = () => {
     }));
   }, []);
 
-  // --- 2. Fetch Existing Data ---
+  // --- 2. Sync Fetched Data to Local State ---
   useEffect(() => {
     if (!roleIdFromState) {
         toast.error("Invalid Role ID");
         navigate("/settings/roles");
         return;
     }
-    fetchRoleDetails();
-  }, [roleIdFromState]);
-
-  const fetchRoleDetails = async () => {
-    try {
-      setFetching(true);
-      // Endpoint: Get specific Role Details
-      const response = await axios.get(`${API}/role/getbyId/${roleIdFromState}`, { withCredentials: true });
-      
-      const roleData = response.data.data; // Adjust based on your actual API response structure
-      
-      if (roleData) {
-        setRoleName(roleData.roleName);
-        setDescription(roleData.description || "");
-        // Directly set the nested permissions object from DB to State
-        // Assuming DB stores it exactly how we send it: { tender: { clients: { read: true } } }
-        setPermissions(roleData.permissions || {});
-      }
-    } catch (error) {
-      console.error("Fetch Error:", error);
-      toast.error("Failed to load role details");
-    } finally {
-      setFetching(false);
+    
+    if (roleData) {
+      setRoleName(roleData.roleName || "");
+      setDescription(roleData.description || "");
+      setPermissions(roleData.permissions || {});
     }
-  };
+  }, [roleData, roleIdFromState, navigate]);
 
-  // --- 3. Logic Helpers (Same as AddRoles) ---
-
+  // --- 3. Logic Helpers ---
   const toggleModuleExpand = (moduleKey) => {
     setExpandedModules((prev) => ({ ...prev, [moduleKey]: !prev[moduleKey] }));
   };
@@ -156,6 +137,7 @@ const EditRoles = () => {
     });
   };
 
+  // --- 4. Submit Handler ---
   const handleUpdate = async () => {
     if (!roleName.trim()) {
         toast.error("Role Name is required");
@@ -164,23 +146,11 @@ const EditRoles = () => {
     
     const payload = { roleName, description, permissions };
     
-    try {
-      setLoading(true);
-      // Endpoint: Update Role Permissions/Name
-      const response = await axios.put(`${API}/role/update/${roleIdFromState}`, payload, { withCredentials: true });
-      
-      if (response.data.status) {
-        toast.success("Role updated successfully!");
-        navigate("/settings/roles");
-      }
-    } catch (error) {
-      toast.error(error.response?.data?.message || "Failed to update role");
-    } finally {
-      setLoading(false);
-    }
+    // Mutation handles the try/catch, loading state, and redirects
+    await updateRole(payload);
   };
 
-  // Stats Logic
+  // --- Stats Logic ---
   const stats = useMemo(() => {
     let totalPerms = 0;
     let modulesWithAccess = 0;
@@ -231,7 +201,7 @@ const EditRoles = () => {
         </div>
         
         <div className="flex gap-3">
-          <button onClick={() => navigate("/settings/roles")} className="px-4 py-2 rounded-lg text-sm border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition-all font-medium flex items-center gap-2">
+          <button onClick={() => navigate("/settings/roles")} disabled={loading} className="px-4 py-2 rounded-lg text-sm border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition-all font-medium flex items-center gap-2 disabled:opacity-50">
             <FiX /> Cancel
           </button>
           <button onClick={handleUpdate} disabled={loading} className={`px-6 py-2 rounded-lg text-sm text-white shadow-md shadow-amber-500/20 transition-all font-medium flex items-center gap-2 ${loading ? "bg-gray-400" : "bg-darkest-blue hover:bg-blue-900 active:scale-95"}`}>

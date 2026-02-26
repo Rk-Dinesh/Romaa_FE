@@ -1,21 +1,13 @@
-import React, { useEffect, useState } from "react";
+import React from "react";
 import Filters from "../../../components/Filters";
 import Table from "../../../components/Table";
 import { RiUserAddLine } from "react-icons/ri";
-import DeleteModal from "../../../components/DeleteModal";
-import axios from "axios";
-import { API } from "../../../constant";
-import { toast } from "react-toastify";
+// import DeleteModal from "../../../components/DeleteModal";
 import { FiLayers, FiShield } from "react-icons/fi";
+import { useRolesList } from "./hooks/useRoles";
 
-const RoleColumns = [
-  { label: "Role ID", key: "role_id" },
-  { label: "Name", key: "roleName" },
-  { label: "Description", key: "description" },
-  { label: "Modules", key: "moduleAccess" ,render: (row) => getModule(row.moduleAccess)},
-  { label: "Permissions", key: "totalPermissions" ,render: (row) => getPermission(row.totalPermissions)},
-];
 
+// --- Helpers ---
 const getModule = (moduleAccess) => {
   // Logic: If it's an object, count the keys. If number, use it.
   const count = typeof moduleAccess === 'object' && moduleAccess !== null 
@@ -47,62 +39,56 @@ const getPermission = (permissionAccess) => {
   );
 };
 
+// --- Column Configuration ---
+const RoleColumns = [
+  { label: "Role ID", key: "role_id" },
+  { label: "Name", key: "roleName" },
+  { label: "Description", key: "description" },
+  { label: "Modules", key: "moduleAccess", render: (row) => getModule(row.moduleAccess) },
+  { label: "Permissions", key: "totalPermissions", render: (row) => getPermission(row.totalPermissions) },
+];
+
 const Roles = () => {
-  const [roles, setRoles] = useState([]);
+  // --- TanStack Query Hooks ---
+  const { data: roles = [], isLoading, isFetching, refetch } = useRolesList();
+  //const { mutateAsync: deleteRole } = useDeleteRole();
 
-  const [loading, setLoading] = useState(false);
-
-  const fetchRoles = async () => {
-    setLoading(true);
-    try {
-      const res = await axios.get(`${API}/role/list`);
-
-      setRoles(res.data.data);
-    } catch (err) {
-      toast.error("Failed to fetch clients");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchRoles();
-  }, []);
-
-  const handleDelete = async (role_id) => {
-    try {
-      await axios.delete(`${API}/role/delete/${role_id}`);
-      toast.success("Role deleted successfully");
-      fetchRoles();
-    } catch (err) {
-      toast.error("Failed to delete role");
-      console.error(err);
-    } finally {
-      setLoading(false);
-    }
-  };
+  // Handlers
+  // const handleDelete = async (role_id) => {
+  //   await deleteRole(role_id);
+  // };
 
   return (
     <Table
       title="Settings"
       subtitle="Roles "
-      loading={loading}
       pagetitle="Roles"
+      
+      // Data and Loading States from React Query
+      loading={isLoading}
+      isRefreshing={isFetching}
       endpoint={roles}
+      
+      // Config
       columns={RoleColumns}
       AddModal={true}
       addroutepoint={"addroles"}
       EditModal={true}
       editroutepoint={"editroles"}
+      FilterModal={Filters}
+      
+      // Preserved Commented Code
       // DeleteModal={DeleteModal}
       // deletetitle="role"
-      idKey="role_id"
       // onDelete={handleDelete}
-      FilterModal={Filters}
+      
+      idKey="role_id"
       addButtonLabel="Add Roles"
       addButtonIcon={<RiUserAddLine size={23} />}
-      onUpdated={fetchRoles}
-      onSuccess={fetchRoles}
+      
+      // Triggers for background refetching
+      onUpdated={refetch}
+      onSuccess={refetch}
     />
   );
 };

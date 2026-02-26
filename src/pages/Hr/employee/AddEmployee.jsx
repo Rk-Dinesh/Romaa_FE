@@ -15,9 +15,8 @@ import {
   FiChevronDown,
   FiSearch
 } from "react-icons/fi";
-import { toast } from "react-toastify";
-import { API } from "../../../constant";
-import axios from "axios";
+import { useCreateEmployee, useManagersDropdown } from "./hooks/useEmployees";
+
 
 // --- Schema ---
 const schema = Yup.object().shape({
@@ -59,8 +58,9 @@ const schema = Yup.object().shape({
 });
 
 const AddEmployee = ({ onclose, onSuccess }) => {
-  const [loading, setLoading] = useState(false);
-  const [managers, setManagers] = useState([]); // State for API data
+  // --- TanStack Query Hooks ---
+  const { data: managers = [] } = useManagersDropdown();
+  const { mutateAsync: createEmployee, isPending: loading } = useCreateEmployee({ onSuccess, onclose });
 
   // Construction-oriented Departments
   const departments = [
@@ -74,32 +74,11 @@ const AddEmployee = ({ onclose, onSuccess }) => {
     "QA/QC"
   ];
 
-  // --- Fetch Managers from API ---
-  useEffect(() => {
-    const fetchManagers = async () => {
-      try {
-        const response = await axios.get(`${API}/employee/assigned`, { withCredentials: true });
-        // Assuming API response structure matches your sample
-        if (response.data && response.data.data) {
-          const formattedManagers = response.data.data.map((emp) => ({
-            value: emp._id,
-            label: `${emp.name} (${emp.employeeId})` // Show Name + ID
-          }));
-          setManagers(formattedManagers);
-        }
-      } catch (error) {
-        console.error("Error fetching managers:", error);
-        toast.error("Failed to load manager list");
-      }
-    };
-    fetchManagers();
-  }, []);
-
   const {
     register,
     handleSubmit,
-    setValue, // Needed for custom select
-    watch,    // Needed to display selected value in custom select
+    setValue, 
+    watch,    
     formState: { errors },
   } = useForm({
     resolver: yupResolver(schema),
@@ -116,57 +95,47 @@ const AddEmployee = ({ onclose, onSuccess }) => {
   const sectionHeaderClass = "col-span-full text-sm font-bold text-blue-600 dark:text-blue-400 border-b border-gray-200 dark:border-gray-700 pb-1 mt-4 mb-2 flex items-center gap-2";
 
   const onSubmit = async (data) => {
-    try {
-      setLoading(true);
-      const payload = {
-        ...data,
-        status: "Active",
-        
-        department: data.department,
-        hrStatus: data.hrStatus,
-        reportsTo: data.reportsTo || null,
+    const payload = {
+      ...data,
+      status: "Active",
+      
+      department: data.department,
+      hrStatus: data.hrStatus,
+      reportsTo: data.reportsTo || null,
 
-        address: {
-          street: data.address_street,
-          city: data.address_city,
-          state: data.address_state,
-          pincode: data.address_pincode
-        },
-        idProof: {
-          type: data.id_proof_type,
-          number: data.id_proof_number
-        },
-        emergencyContact: {
-          name: data.emergency_name,
-          relationship: data.emergency_relationship,
-          phone: data.emergency_phone
-        },
-        leaveBalance: {
-          PL: data.leave_pl,
-          CL: data.leave_cl,
-          SL: data.leave_sl
-        },
-        payroll: {
-          basicSalary: data.basicSalary,
-          accountHolderName: data.accountHolderName,
-          bankName: data.bankName,
-          accountNumber: data.accountNumber,
-          ifscCode: data.ifscCode,
-          panNumber: data.panNumber,
-          uanNumber: data.uanNumber
-        }
-      };
+      address: {
+        street: data.address_street,
+        city: data.address_city,
+        state: data.address_state,
+        pincode: data.address_pincode
+      },
+      idProof: {
+        type: data.id_proof_type,
+        number: data.id_proof_number
+      },
+      emergencyContact: {
+        name: data.emergency_name,
+        relationship: data.emergency_relationship,
+        phone: data.emergency_phone
+      },
+      leaveBalance: {
+        PL: data.leave_pl,
+        CL: data.leave_cl,
+        SL: data.leave_sl
+      },
+      payroll: {
+        basicSalary: data.basicSalary,
+        accountHolderName: data.accountHolderName,
+        bankName: data.bankName,
+        accountNumber: data.accountNumber,
+        ifscCode: data.ifscCode,
+        panNumber: data.panNumber,
+        uanNumber: data.uanNumber
+      }
+    };
 
-      await axios.post(`${API}/employee/register`, payload, { withCredentials: true });
-      toast.success("Employee onboarded successfully!");
-      if (onSuccess) onSuccess();
-      onclose();
-    } catch (error) {
-      console.error(error);
-      toast.error(error.response?.data?.message || "Failed to create employee");
-    } finally {
-      setLoading(false);
-    }
+    // Trigger the mutation
+    await createEmployee(payload);
   };
 
   return (
@@ -212,7 +181,7 @@ const AddEmployee = ({ onclose, onSuccess }) => {
             <Select label="Work Type *" name="userType" register={register} error={errors.userType} options={["Office", "Site"]} />
             <Select label="HR Status *" name="hrStatus" register={register} error={errors.hrStatus} options={["Probation", "Confirmed", "Notice Period"]} />
             
-            {/* UPDATED: Searchable Select for Reports To */}
+            {/* Searchable Select for Reports To */}
             <SearchableSelect 
               label="Reports To (Manager)" 
               name="reportsTo" 
@@ -291,7 +260,8 @@ const AddEmployee = ({ onclose, onSuccess }) => {
           <button
             type="button"
             onClick={onclose}
-            className="px-5 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+            disabled={loading}
+            className="px-5 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-50"
           >
             Cancel
           </button>
