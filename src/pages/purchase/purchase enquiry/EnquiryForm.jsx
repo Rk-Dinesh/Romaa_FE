@@ -90,6 +90,7 @@ const handleSubmit = async () => {
     unit:r.unit,
     quantity: Number(r.quantity),
     totalAmount: Number(r.total),
+    materialId: r.materialId,
   }));
 
   try {
@@ -100,6 +101,9 @@ const handleSubmit = async () => {
       deliveryPeriod,
       quoteItems,
     };
+
+    console.log(payload);
+    
 
     const res = await axios.post(
       `${API}/purchaseorderrequest/api/purchase-requests/${purchaseOrderRequestId}/vendor-quotation`,

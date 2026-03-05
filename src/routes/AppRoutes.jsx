@@ -49,7 +49,7 @@ const DetailedEstimate = lazy(() => import("../pages/projects/Detailed estimate/
 //const ViewNewInletAbs = lazy(() => import("../pages/projects/Detailed estimate/new inlet abs/ViewNewInletAbs"));
 //const ViewVendorProject = lazy(() => import("../pages/projects/Detailed estimate/vendor/ViewVendorProjects"));
 const DrawingBoq = lazy(() => import("../pages/projects/drawing vs Boq/DrawingBoq"));
-const ViewDrawingBoq = lazy(() => import("../pages/projects/drawing vs Boq/ViewDrawingBoq"));
+//const ViewDrawingBoq = lazy(() => import("../pages/projects/drawing vs Boq/ViewDrawingBoq"));
 const WBS = lazy(() => import("../pages/projects/WBQ/WBS"));
 const ViewWbs = lazy(() => import("../pages/projects/WBQ/ViewWbs"));
 const ScheduleProjects = lazy(() => import("../pages/projects/schedule/schedule/ScheduleProjects"));
@@ -258,7 +258,7 @@ const AppRoutes = () => {
                 </Route>
                 <Route path="drawingboq">
                   <Route index element={<DrawingBoq />} />
-                  <Route path="viewdrawingboq" element={<ViewDrawingBoq />} />
+                  {/* <Route path="viewdrawingboq" element={<ViewDrawingBoq />} /> */}
                 </Route>
                 <Route path="wbs">
                   <Route index element={<WBS />} />
