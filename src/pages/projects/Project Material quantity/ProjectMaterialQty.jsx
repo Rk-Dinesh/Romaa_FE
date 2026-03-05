@@ -6,7 +6,7 @@ import { API } from "../../../constant";
 import { useProject } from "../../../context/ProjectContext";
 import Title from "../../../components/Title";
 
-const ProjectMaterailQty = () => {
+const ProjectMaterialQty = () => {
   const { tenderId } = useProject();
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -361,4 +361,4 @@ const ProjectMaterailQty = () => {
   );
 };
 
-export default ProjectMaterailQty;
+export default ProjectMaterialQty;

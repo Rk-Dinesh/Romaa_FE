@@ -5,7 +5,7 @@ import Title from "../../../../../../components/Title";
 import Button from "../../../../../../components/Button";
 
 
-const ViewMechinerySchedule = () => {
+const ViewMachinerySchedule = () => {
   const location = useLocation();
   const rowData = location.state?.item;
   const navigate = useNavigate();
@@ -75,6 +75,6 @@ const ViewMechinerySchedule = () => {
   );
 };
 
-export default ViewMechinerySchedule;
+export default ViewMachinerySchedule;
 
 

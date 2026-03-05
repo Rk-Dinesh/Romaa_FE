@@ -10,5 +10,17 @@ export const api = axios.create({
   },
 });
 
-// Optional: Add Interceptors for Tokens here later
-// api.interceptors.request.use((config) => { ... });
+// Session expired — clear auth and redirect to login
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    const status = error.response?.status;
+
+    if (status === 401 && window.location.pathname !== "/") {
+      localStorage.removeItem("crm_user");
+      window.location.href = "/";
+    }
+
+    return Promise.reject(error);
+  }
+);

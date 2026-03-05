@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import Title from "../../../components/Title";
 
-const ViewDialyReportSite = () => {
+const ViewDailyReportSite = () => {
 
       const [mainFields, setMainFields] = useState([
         {
@@ -58,4 +58,4 @@ const ViewDialyReportSite = () => {
   );
 };
 
-export default ViewDialyReportSite;
+export default ViewDailyReportSite;

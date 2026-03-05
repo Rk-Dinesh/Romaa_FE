@@ -57,7 +57,7 @@ const ViewDailyProject = lazy(() => import("../pages/projects/schedule/schedule/
 const ViewWeekly = lazy(() => import("../pages/projects/schedule/schedule/tabs/weekly/ViewWeekly"));
 const ViewProjectSchedule = lazy(() => import("../pages/projects/schedule/schedule/tabs/project schedule/ViewProjectSchedule"));
 const ViewManPowerHistogram = lazy(() => import("../pages/projects/schedule/schedule/tabs/Man Power Histogram/ViewManPowerHistogram"));
-const ViewMechinerySchedule = lazy(() => import("../pages/projects/schedule/schedule/tabs/machinery Schedule/ViewMechinerySchedule"));
+const ViewMachinerySchedule = lazy(() => import("../pages/projects/schedule/schedule/tabs/machinery Schedule/ViewMachinerySchedule"));
 const WoIssuance = lazy(() => import("../pages/projects/Wo issuance/WOIssuance"));
 const ViewWORequest = lazy(() => import("../pages/projects/Wo issuance/work order request/ViewWORequest"));
 const ViewWOIssuance = lazy(() => import("../pages/projects/Wo issuance/Work order issuance/ViewWOIssuance"));
@@ -65,7 +65,7 @@ const ClientBillingProject = lazy(() => import("../pages/projects/client billing
 const ViewClBillProjects = lazy(() => import("../pages/projects/client billing/ViewClBillProjects"));
 const ProjectWorkProgress = lazy(() => import("../pages/projects/work progress/ProjectWorkProgress"));
 const ViewProjectWorkProgress = lazy(() => import("../pages/projects/work progress/ViewProjectWorkProgress"));
-const ProjectMaterailQty = lazy(() => import("../pages/projects/Project Material quantity/ProjectMaterailQty"));
+const ProjectMaterialQty = lazy(() => import("../pages/projects/Project Material quantity/ProjectMaterialQty"));
 const StockProject = lazy(() => import("../pages/projects/project stocks/StockProject"));
 const ProjectAsset = lazy(() => import("../pages/projects/project assets/ProjectAsset"));
 const WorkOrderRequestForm = lazy(() => import("../pages/projects/Wo issuance/work order request/WorkOrderRequestForm"));
@@ -81,7 +81,7 @@ const EnquiryForm = lazy(() => import("../pages/purchase/purchase enquiry/Enquir
 const PurchaseOrder = lazy(() => import("../pages/purchase/purchase order/PurchaseOrder"));
 const ViewPurchaseOrder = lazy(() => import("../pages/purchase/purchase order/ViewPurchaseOrder"));
 const GoodsReceipt = lazy(() => import("../pages/purchase/goods receipt/GoodsReceipt"));
-const ViewGoodRecipt = lazy(() => import("../pages/purchase/goods receipt/ViewGoodRecipt"));
+const ViewGoodReceipt = lazy(() => import("../pages/purchase/goods receipt/ViewGoodReceipt"));
 const PurchaseBill = lazy(() => import("../pages/purchase/purchase bill/PurchaseBill"));
 const ViewPurchaseBill = lazy(() => import("../pages/purchase/purchase bill/ViewPurchaseBill"));
 const MachineryTracking = lazy(() => import("../pages/purchase/machinery tracking/MachineryTracking"));
@@ -109,11 +109,11 @@ const ViewSiteDrawing = lazy(() => import("../pages/site/SiteDrawing/ViewSiteDra
 const WorkDoneSite = lazy(() => import("../pages/site/WorkDone/WorkDoneSite"));
 const ViewWorkDone = lazy(() => import("../pages/site/WorkDone/ViewWorkDone"));
 const DailyLabourReport = lazy(() => import("../pages/site/DailyLabourReport/DailyLabourReport"));
-const ViewDialyReportSite = lazy(() => import("../pages/site/DailyLabourReport/ViewDialyReportSite"));
+const ViewDailyReportSite = lazy(() => import("../pages/site/DailyLabourReport/ViewDailyReportSite"));
 const MaterialRecievedSite = lazy(() => import("../pages/site/MaterialRecieved/MaterialRecievedSite"));
 const ViewMaterialRecieved = lazy(() => import("../pages/site/MaterialRecieved/ViewMaterialRecieved"));
-const MaterialIssue = lazy(() => import("../pages/site/MaterialIsuued/MaterialIssue"));
-const ViewMaterialIssue = lazy(() => import("../pages/site/MaterialIsuued/ViewMaterialIssue"));
+const MaterialIssue = lazy(() => import("../pages/site/MaterialIssued/MaterialIssue"));
+const ViewMaterialIssue = lazy(() => import("../pages/site/MaterialIssued/ViewMaterialIssue"));
 const StockRegister = lazy(() => import("../pages/site/StockRegister/StockRegister"));
 const ViewStockRegisterSite = lazy(() => import("../pages/site/StockRegister/ViewStockRegisterSite"));
 const PurchaseRequestSite = lazy(() => import("../pages/site/PurchaseRequest/PurchaseRequestSite"));
@@ -138,20 +138,20 @@ const ViewNMR = lazy(() => import("../pages/Hr/nmr/ViewNMR"));
 const EditNMR = lazy(() => import("../pages/Hr/nmr/EditNMR"));
 
 // Finance
-const ClientBilling = lazy(() => import("../pages/finanace/client_billing/ClientBilling"));
-const Debit_CreditNote = lazy(() => import("../pages/finanace/debit_creditnote/Debit_CreditNote"));
-const BankTransactions = lazy(() => import("../pages/finanace/bank_transactions/BankTransactions"));
-const JournalEntry = lazy(() => import("../pages/finanace/journal_entry/JournalEntry"));
-const Banks = lazy(() => import("../pages/finanace/banks/Banks"));
-const TDS = lazy(() => import("../pages/finanace/tds/TDS"));
-const CashEntry = lazy(() => import("../pages/finanace/cash_entry/CashEntry"));
-const SupplierOutstanding = lazy(() => import("../pages/finanace/supplier_outstanding/SupplierOutstanding"));
-const PurchaseTotalBill = lazy(() => import("../pages/finanace/purchase_bill/PurchaseTotalBill"));
-const ContractorBill = lazy(() => import("../pages/finanace/contractor_bill/ContractorBill"));
-const InternalBankTransfer = lazy(() => import("../pages/finanace/internal_bank_transfer/InternalBankTransfer"));
-const LedgerEntry = lazy(() => import("../pages/finanace/ledger_entry/LedgerEntry"));
-const ViewLedgerEntry = lazy(() => import("../pages/finanace/ledger_entry/ViewLedgerEntry"));
-const Overall_expenses = lazy(() => import("../pages/finanace/overall_expenses/Overall_expenses"));
+const ClientBilling = lazy(() => import("../pages/finance/client_billing/ClientBilling"));
+const Debit_CreditNote = lazy(() => import("../pages/finance/debit_creditnote/Debit_CreditNote"));
+const BankTransactions = lazy(() => import("../pages/finance/bank_transactions/BankTransactions"));
+const JournalEntry = lazy(() => import("../pages/finance/journal_entry/JournalEntry"));
+const Banks = lazy(() => import("../pages/finance/banks/Banks"));
+const TDS = lazy(() => import("../pages/finance/tds/TDS"));
+const CashEntry = lazy(() => import("../pages/finance/cash_entry/CashEntry"));
+const SupplierOutstanding = lazy(() => import("../pages/finance/supplier_outstanding/SupplierOutstanding"));
+const PurchaseTotalBill = lazy(() => import("../pages/finance/purchase_bill/PurchaseTotalBill"));
+const ContractorBill = lazy(() => import("../pages/finance/contractor_bill/ContractorBill"));
+const InternalBankTransfer = lazy(() => import("../pages/finance/internal_bank_transfer/InternalBankTransfer"));
+const LedgerEntry = lazy(() => import("../pages/finance/ledger_entry/LedgerEntry"));
+const ViewLedgerEntry = lazy(() => import("../pages/finance/ledger_entry/ViewLedgerEntry"));
+const Overall_expenses = lazy(() => import("../pages/finance/overall_expenses/Overall_expenses"));
 
 // Reports
 const ProjectDashboard = lazy(() => import("../pages/reports/project_dashboard/ProjectDashboard"));
@@ -278,7 +278,7 @@ const AppRoutes = () => {
                   />
                   <Route
                     path="viewmechineryschedule"
-                    element={<ViewMechinerySchedule />}
+                    element={<ViewMachinerySchedule />}
                   />
                 </Route>
 
@@ -303,7 +303,7 @@ const AppRoutes = () => {
                 </Route>
                 <Route
                   path="projectsmaterialquantity"
-                  element={<ProjectMaterailQty />}
+                  element={<ProjectMaterialQty />}
                 />
                 <Route path="projectsstocks" element={<StockProject />} />
                 <Route path="projectsassets">
@@ -343,7 +343,7 @@ const AppRoutes = () => {
                 </Route>
                 <Route path="goodsreceipt">
                   <Route index element={<GoodsReceipt />} />
-                  <Route path="viewgoodreceipt" element={<ViewGoodRecipt />} />
+                  <Route path="viewgoodreceipt" element={<ViewGoodReceipt />} />
                 </Route>
                 <Route path="bill">
                   <Route index element={<PurchaseBill />} />
@@ -404,7 +404,7 @@ const AppRoutes = () => {
                   <Route index element={<DailyLabourReport />} />
                   <Route
                     path="viewdailylabourReport"
-                    element={<ViewDialyReportSite />}
+                    element={<ViewDailyReportSite />}
                   />
                 </Route>
                 <Route path="materialrecievedsite">

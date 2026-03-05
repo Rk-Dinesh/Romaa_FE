@@ -6,7 +6,7 @@ import { AiOutlineSave } from "react-icons/ai";
 import Title from "../../../components/Title";
 import Button from "../../../components/Button";
 
-const ViewGoodRecipt = () => {
+const ViewGoodReceipt = () => {
   const [isEditing, setIsEditing] = useState(false);
   const location = useLocation();
   const rowData = location.state?.item;
@@ -129,5 +129,5 @@ const [data, setData] = useState(
   );
 };
 
-export default ViewGoodRecipt;
+export default ViewGoodReceipt;
 
