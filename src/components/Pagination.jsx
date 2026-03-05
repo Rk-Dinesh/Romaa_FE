@@ -1,10 +1,7 @@
-import React from "react";
 import { GoArrowLeft } from "react-icons/go";
 import { GoArrowRight } from "react-icons/go";
 
 const Pagination = ({
-  totalItems,
-  itemsPerPage,
   setCurrentPage,
   currentPage,
   totalPages

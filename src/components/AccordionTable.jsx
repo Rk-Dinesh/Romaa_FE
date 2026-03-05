@@ -27,8 +27,6 @@ const AccordionTable = ({
   itemsPerPage = 10,
   searchTerm = "",
 }) => {
-  const [selectedItem, setSelectedItem] = useState(null);
-  const [showView, setShowView] = useState(false);
   const [filteredData, setFilteredData] = useState([]);
   const [currentPage, setCurrentPage] = useState(1);
   const [filterModal, setFilterModal] = useState(false);
@@ -154,12 +152,6 @@ const AccordionTable = ({
                                       state: { item: row },
                                     });
                                   }
-                                  if (ViewModal === true) {
-                                    setShowView(false);
-                                  } else {
-                                    setSelectedItem(row);
-                                    setShowView(true);
-                                  }
                                 }}
                                 className="cursor-pointer bg-[#BAFFBA] p-1.5 rounded"
                               >
@@ -223,10 +215,9 @@ const AccordionTable = ({
       </div>
 
       <Pagination
-        totalItems={filteredData.length}
-        itemsPerPage={itemsPerPage}
         currentPage={currentPage}
-        onPageChange={setCurrentPage}
+        totalPages={Math.ceil(filteredData.length / itemsPerPage)}
+        setCurrentPage={setCurrentPage}
       />
 
       {filterModal && (

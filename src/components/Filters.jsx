@@ -1,4 +1,3 @@
-import React from "react";
 import { useForm } from "react-hook-form";
 import { yupResolver } from "@hookform/resolvers/yup";
 import * as yup from "yup";
@@ -48,7 +47,6 @@ const Filters = ({ onclose, onFilter }) => {
   });
 
   const onSubmit = (data) => {
-    console.log("Filter Data:", data);
     onFilter(data); // Send filter data to parent
     onclose(); // Close modal
   };

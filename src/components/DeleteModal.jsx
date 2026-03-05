@@ -4,17 +4,13 @@ import Delete from "../assets/images/Delete.png";
 const DeleteModal = ({
   deletetitle,
   onclose,
-  Children,
   onDelete,
   idKey,
   item,
 }) => {
-  console.log(item[idKey]);
-
   return (
-    <>
-      <div className=" font-roboto-flex fixed inset-0 flex justify-center  items-center backdrop-grayscale-50  drop-shadow-lg  backdrop-blur-xs">
-        <div className="dark:bg-layout-dark bg-white rounded-md ">
+    <div className=" font-roboto-flex fixed inset-0 flex justify-center  items-center backdrop-grayscale-50  drop-shadow-lg  backdrop-blur-xs">
+      <div className="dark:bg-layout-dark bg-white rounded-md ">
           <button
             onClick={onclose}
             className=" cursor-pointer grid place-self-end -mx-4 -my-4 dark:bg-layout-dark bg-white py-2 px-2 rounded-full"
@@ -48,10 +44,8 @@ const DeleteModal = ({
               Delete
             </button>
           </div>
-        </div>
       </div>
-      {Children}
-    </>
+    </div>
   );
 };
 

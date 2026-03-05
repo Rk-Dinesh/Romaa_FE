@@ -1,4 +1,7 @@
-import React from "react";
+// Resolves dot-notation paths (e.g. "emd.emd_amount") into the nested errors object.
+// RHF stores nested field errors as { emd: { emd_amount: {...} } }, not as flat keys.
+const getError = (errors, name) =>
+  name.split(".").reduce((obj, key) => obj?.[key], errors);
 
 export const InputFieldTender = ({
   label,
@@ -28,7 +31,7 @@ export const InputFieldTender = ({
   `;
 
   // 2. Error styles (Red border when error exists)
-  const errorStyles = errors?.[name]
+  const errorStyles = getError(errors, name)
     ? "border-red-500 focus:border-red-500 focus:ring-red-200"
     : "";
 
@@ -97,9 +100,9 @@ export const InputFieldTender = ({
       )}
 
       {/* --- Error Message --- */}
-      {errors?.[name] && (
+      {getError(errors, name) && (
         <span className="text-[10px] font-semibold text-red-500 ml-1 animate-pulse">
-          {errors[name]?.message}
+          {getError(errors, name)?.message}
         </span>
       )}
     </div>
