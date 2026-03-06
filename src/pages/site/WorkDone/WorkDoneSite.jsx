@@ -21,6 +21,7 @@ const WorkDoneSite = () => {
   
 
   const [data, setData] = useState([]);
+  const [loading, setLoading] = useState(true);
   const fetchRequests = async () => {
     try {
 
@@ -45,6 +46,8 @@ const WorkDoneSite = () => {
       setData(formatted || []);
     } catch (err) {
       console.error("Error fetching PR list", err);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -59,6 +62,7 @@ const WorkDoneSite = () => {
       pagetitle={"Work Done"}
       columns={workDoneColumns}
       endpoint={data}
+      loading={loading}
       EditModal={false}
       routepoint={"viewworkDoneSite"}
       FilterModal={Filters}

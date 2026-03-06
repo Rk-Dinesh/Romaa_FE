@@ -18,6 +18,7 @@ const ProjectWorkProgress = () => {
   
 
   const [data, setData] = useState([]);
+  const [loading, setLoading] = useState(true);
   const fetchRequests = async () => {
     try {
 
@@ -42,6 +43,8 @@ const ProjectWorkProgress = () => {
       setData(formatted || []);
     } catch (err) {
       console.error("Error fetching PR list", err);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -56,6 +59,7 @@ const ProjectWorkProgress = () => {
       pagetitle={"Work Done"}
       columns={workDoneColumns}
       endpoint={data}
+      loading={loading}
       EditModal={false}
       routepoint={"viewprojectworkprogress"}
       FilterModal={Filters}

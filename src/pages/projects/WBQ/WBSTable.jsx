@@ -6,6 +6,7 @@ import AddPhaseModal from "./AddWBS";
 import { API } from "../../../constant";
 import { toast } from "react-toastify";
 import { useProject } from "../../../context/ProjectContext";
+import Loader from "../../../components/Loader";
 
 const WBSTable = ({ name }) => {
   console.log(name);
@@ -15,6 +16,7 @@ const WBSTable = ({ name }) => {
   const [showModal, setShowModal] = useState(false);
   const [selectedRowIdx, setSelectedRowIdx] = useState(null);
   const [wbsData, setWbsData] = useState([]);
+  const [loading, setLoading] = useState(true);
 
   // Fetch WBS data from API
   const fetchWBS = async () => {
@@ -25,10 +27,13 @@ const WBSTable = ({ name }) => {
       setWbsData(res.data.data || []);
     } catch (error) {
       console.error("Error fetching WBS data:", error);
+    } finally {
+      setLoading(false);
     }
   };
 
   useEffect(() => {
+    setLoading(true);
     fetchWBS();
   }, [tenderId,name]);
 
@@ -82,6 +87,8 @@ const WBSTable = ({ name }) => {
       console.error("Error adding phase:", error);
     }
   };
+
+  if (loading) return <Loader fullScreen={false} />;
 
   return (
     <div className="font-roboto-flex flex flex-col transition-colors duration-300 min-h-[40vh] rounded-lg shadow-lg overflow-hidden">

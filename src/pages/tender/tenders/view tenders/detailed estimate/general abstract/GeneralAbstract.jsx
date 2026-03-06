@@ -23,6 +23,7 @@ const Columns = [
 const GeneralAbstract = () => {
   const { tender_id } = useParams();
   const [generalAbstractdata, setGeneralAbstractdata] = useState([]);
+  const [loading, setLoading] = useState(true);
   const getGeneralAbstractdata = async () => {
     try {
       const res = await axios.get(
@@ -31,6 +32,8 @@ const GeneralAbstract = () => {
       setGeneralAbstractdata(res.data.data);
     } catch (error) {
       console.log(error);
+    } finally {
+      setLoading(false);
     }
   };
   useEffect(() => {
@@ -43,6 +46,7 @@ const GeneralAbstract = () => {
       columns={Columns}
       exportModal={false}
       pagination={false}
+      loading={loading}
     />
   );
 };

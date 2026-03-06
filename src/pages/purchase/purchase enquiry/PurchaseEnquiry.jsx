@@ -9,6 +9,7 @@ import { IoReorderThree } from "react-icons/io5";
 
 const PurchaseEnquiry = () => {
   const [data, setData] = useState([]);
+  const [loading, setLoading] = useState(true);
 
   const Columns = [
     { label: "Request ID", key: "requestId" },
@@ -74,6 +75,8 @@ const PurchaseEnquiry = () => {
       setData(formatted || []);
     } catch (err) {
       console.error("Error fetching PR list", err);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -92,6 +95,7 @@ const PurchaseEnquiry = () => {
       onSuccess={fetchRequests}
       endpoint={data}
       columns={Columns}
+      loading={loading}
       routepoint="viewpurchaseenquire"
       FilterModal={Filters}
       id2Key="requestId"

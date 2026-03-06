@@ -45,6 +45,7 @@ const PurchaseOrder = () => {
   };
 
   const [data, setData] = useState([]);
+  const [loading, setLoading] = useState(true);
    const fetchRequests = async () => {
     try {
 
@@ -75,6 +76,8 @@ const PurchaseOrder = () => {
       setData(formatted || []);
     } catch (err) {
       console.error("Error fetching PR list", err);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -91,7 +94,7 @@ const PurchaseOrder = () => {
       columns={Columns}
       routepoint={"viewpurchaseorder"}
       FilterModal={Filters}
-
+      loading={loading}
     />
   );
 };

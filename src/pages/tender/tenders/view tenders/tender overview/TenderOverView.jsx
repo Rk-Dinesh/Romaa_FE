@@ -8,6 +8,7 @@ import axios from "axios";
 import { API } from "../../../../../constant";
 import TenderProcessStepper from "./TenderProcessStepper";
 import PreliminaryProcessStepper from "./PreliminaryProcessStepper";
+import Loader from "../../../../../components/Loader";
 
 const tenderProcessDataTemplate = [
   { label: "Site Investigation", key: "site_investigation" },
@@ -62,6 +63,7 @@ const TenderOverView = () => {
   const [tenderPreliminary, setTenderPreliminary] = useState([]);
 
   const [isEditingTender, setIsEditingTender] = useState(false);
+  const [loading, setLoading] = useState(true);
 
   const fetchTenderOverview = async () => {
     try {
@@ -176,9 +178,14 @@ const TenderOverView = () => {
   };
 
   useEffect(() => {
-    if (tender_id) fetchTenderOverview();
-    fetchProcessData();
-    fetchPreliminaryData();
+    const loadAll = async () => {
+      setLoading(true);
+      if (tender_id) await fetchTenderOverview();
+      await fetchProcessData();
+      await fetchPreliminaryData();
+      setLoading(false);
+    };
+    loadAll();
   }, [tender_id]);
 
   const handleCancel = () => {
@@ -203,6 +210,8 @@ const TenderOverView = () => {
   const handleUploadSuccessPreliminary = () => {
     fetchPreliminaryData();
   };
+
+  if (loading) return <Loader fullScreen={false} />;
 
   return (
     <>

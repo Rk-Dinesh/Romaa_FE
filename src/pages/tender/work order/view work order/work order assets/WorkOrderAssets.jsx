@@ -4,10 +4,12 @@ import { TbFileInvoice } from "react-icons/tb";
 import { useParams } from "react-router-dom";
 import { API } from "../../../../../constant";
 import UploadWorkOrder from "./UploadWorkOrder";
+import Loader from "../../../../../components/Loader";
 
 const WorkOrderAssets = () => {
   const [showModal, setShowModal] = useState(false);
   const [documents, setDocuments] = useState([]);
+  const [loading, setLoading] = useState(true);
   const {tender_id,workOrder_id} = useParams(); 
 
   const handleUploadSuccess = () => {
@@ -28,6 +30,8 @@ const WorkOrderAssets = () => {
     } catch (error) {
       console.error("Error fetching documents", error);
       setDocuments([]);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -35,6 +39,8 @@ const WorkOrderAssets = () => {
   useEffect(() => {
     fetchDocuments();
   }, [tender_id]);
+
+  if (loading) return <Loader fullScreen={false} />;
 
   return (
     <>

@@ -13,12 +13,14 @@ import CreateEnquiry from "./CreateEnquiry";
 import { IoReorderThree } from "react-icons/io5";
 import axios from "axios";
 import { API } from "../../../constant";
+import Loader from "../../../components/Loader";
 
 const PurchaseEnquiry = () => {
   const navigate = useNavigate();
   const [expandedRow, setExpandedRow] = useState(null);
   const [createEnquiry, setCreateEnquiry] = useState(false);
   const [data, setData] = useState([]);
+  const [loading, setLoading] = useState(true);
 
   const toggleRow = (index) => {
     setExpandedRow(expandedRow === index ? null : index);
@@ -41,6 +43,8 @@ const PurchaseEnquiry = () => {
     } catch (err) {
       console.error(err);
       toast.error("Failed to load enquiries");
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -93,6 +97,8 @@ const PurchaseEnquiry = () => {
     navigator.clipboard.writeText(link);
     toast.success("Enquiry link copied!");
   };
+
+  if (loading) return <Loader fullScreen={false} />;
 
   return (
     <div className="font-roboto-flex flex flex-col h-full">

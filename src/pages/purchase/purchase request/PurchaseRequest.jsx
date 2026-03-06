@@ -9,6 +9,7 @@ import { date } from "yup";
 
 const PurchaseRequest = () => {
   const [data, setData] = useState([]);
+  const [loading, setLoading] = useState(true);
 
   const Columns = [
     { label: "Request ID", key: "requestId" },
@@ -75,6 +76,8 @@ const PurchaseRequest = () => {
       setData(formatted || []);
     } catch (err) {
       console.error("Error fetching PR list", err);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -89,6 +92,7 @@ const PurchaseRequest = () => {
       pagetitle="Purchase Request"
       endpoint={data}
       columns={Columns}
+      loading={loading}
       AddModal={RequestRegister}
       routepoint="viewpurchaserequest"
       FilterModal={Filters}

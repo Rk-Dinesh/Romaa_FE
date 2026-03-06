@@ -8,6 +8,7 @@ import CreditDebit from "./tabs/CreditDebit";
 import { API } from "../../../../constant";
 import axios from "axios";
 import { useEffect, useState } from "react";
+import Loader from "../../../../components/Loader";
 
 
 
@@ -15,17 +16,18 @@ const ViewVendorSupplier = () => {
   const location = useLocation();
   const { vendorId } = useParams();
   const [vendor, setVendor] = useState(location.state?.item || null);
+  const [loading, setLoading] = useState(!location.state?.item);
 
   useEffect(() => {
     if (!vendor) {
       const storedVendor = localStorage.getItem("selectedVendor");
       if (storedVendor) {
         setVendor(JSON.parse(storedVendor));
+        setLoading(false);
       } else {
-
         axios.get(`${API}/vendor/getvendor/${vendorId}`).then((res) => {
           setVendor(res.data.data);
-        });
+        }).finally(() => setLoading(false));
       }
     }
   }, [vendor, vendorId]);
@@ -102,6 +104,8 @@ const ViewVendorSupplier = () => {
 
     return button;
   });
+
+  if (loading) return <Loader fullScreen={false} />;
 
   return (
     <>

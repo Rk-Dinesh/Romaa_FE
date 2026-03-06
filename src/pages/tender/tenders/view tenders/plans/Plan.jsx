@@ -4,10 +4,12 @@ import { TbFileInvoice } from "react-icons/tb";
 import AddPlan from "./AddPlan";
 import { API } from "../../../../../constant";
 import { useParams } from "react-router-dom";
+import Loader from "../../../../../components/Loader";
 
 const Plan = () => {
   const [showModal, setShowModal] = useState(false);
   const [documents, setDocuments] = useState([]);
+  const [loading, setLoading] = useState(true);
   const {tender_id} = useParams(); 
 
   const handleUploadSuccess = () => {
@@ -29,6 +31,8 @@ const fetchDocuments = async () => {
     } else {
       console.error("Error fetching documents", error);
     }
+  } finally {
+    setLoading(false);
   }
 };
 
@@ -37,6 +41,8 @@ const fetchDocuments = async () => {
   useEffect(() => {
     fetchDocuments();
   }, [tender_id]);
+
+  if (loading) return <Loader fullScreen={false} />;
 
   return (
     <>

@@ -4,6 +4,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import Button from "../../../../../components/Button";
 import { API } from "../../../../../constant";
 import axios from "axios";
+import Loader from "../../../../../components/Loader";
 
 const WorkOrderOverviewDetails = [
   { label: "Work order ID", value: "WO-2025-001" },
@@ -26,6 +27,7 @@ const WorkOrderOverview = () => {
   const { tender_id } = useParams();
 
   const [tenderDetailsState, setTenderDetailsState] = useState([]);
+  const [loading, setLoading] = useState(true);
 
   const fetchTenderOverview = async () => {
     try {
@@ -67,12 +69,17 @@ const WorkOrderOverview = () => {
       ]);
     } catch (err) {
       console.error("Error fetching overview:", err);
+    } finally {
+      setLoading(false);
     }
   };
 
   useEffect(() => {
     if (tender_id) fetchTenderOverview();
   }, [tender_id]);
+
+  if (loading) return <Loader fullScreen={false} />;
+
   return (
     <>
       <div className="h-full">
