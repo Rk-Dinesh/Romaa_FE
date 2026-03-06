@@ -12,6 +12,7 @@ const Login = lazy(() => import("../pages/auth/Login"));
 const ForgotPassword = lazy(() => import("../pages/auth/ForgotPassword"));
 const ResetPassword = lazy(() => import("../pages/auth/ResetPassword"));
 const ProtectedRoute = lazy(() => import("../pages/auth/protectedRoute"));
+const NotFound = lazy(() => import("../pages/NotFound"));
 
 // Dashboard
 const Dashboard = lazy(() => import("../pages/dashboard/Dashboard"));
@@ -569,6 +570,7 @@ const AppRoutes = () => {
               </Route>
             </Route>
           </Route>
+          <Route path="*" element={<NotFound />} />
         </Routes>
       </Suspense>
       <ToastContainer

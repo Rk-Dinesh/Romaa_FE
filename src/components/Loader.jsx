@@ -1,62 +1,93 @@
-import React, { useState, useEffect } from "react";
-import {
-  FaHammer,
-  FaHardHat,
-  FaTools,
-  FaTruck,
-  FaWrench,
-  FaToolbox,
-} from "react-icons/fa";
-import { GiCrane, GiBarricade } from "react-icons/gi";
+import { useState, useEffect } from "react";
 
-const chainItems = [
-  { icon: <FaHardHat />, color: "text-yellow-400" },
-  { icon: <GiCrane />, color: "text-yellow-500" },
-  { icon: <FaHammer />, color: "text-red-600" },
-  { icon: <FaWrench />, color: "text-yellow-600" },
-  { icon: <FaTools />, color: "text-gray-600" },
-  { icon: <FaToolbox />, color: "text-yellow-700" },
-  { icon: <FaTruck />, color: "text-orange-400" },
-  { icon: <GiBarricade />, color: "text-red-500" },
+const MESSAGES = [
+  "Loading project data...",
+  "Fetching site reports...",
+  "Syncing tender records...",
+  "Preparing your workspace...",
 ];
 
-const slogans = [
-  "Laying the foundation…",
-  "Operating the crane…",
-  "Hammering things into place…",
-  "Assembling the structure…",
-  "Securing the site…",
-  "Building with precision…",
-  "Transporting materials…",
-  "Final touches underway…",
-];
-
-const Loader = () => {
-  const [currentIndex, setCurrentIndex] = useState(0);
-  const [currentSlogan, setCurrentSlogan] = useState(slogans[0]);
+const Loader = ({ fullScreen = true, message }) => {
+  const [msgIndex, setMsgIndex] = useState(0);
+  const [visible, setVisible] = useState(true);
 
   useEffect(() => {
-    const interval = setInterval(() => {
-      setCurrentIndex((prev) => {
-        const next = (prev + 1) % chainItems.length;
-        setCurrentSlogan(slogans[next]);
-        return next;
-      });
-    }, 1200); // change icon & slogan every 1.2s
+    if (message) return;
+    const id = setInterval(() => {
+      setVisible(false);
+      setTimeout(() => {
+        setMsgIndex((prev) => (prev + 1) % MESSAGES.length);
+        setVisible(true);
+      }, 300);
+    }, 2800);
+    return () => clearInterval(id);
+  }, [message]);
 
-    return () => clearInterval(interval);
-  }, []);
+  const displayMessage = message ?? MESSAGES[msgIndex];
 
-  const currentItem = chainItems[currentIndex];
+  const content = (
+    <div className="flex flex-col items-center gap-8">
+
+      {/* Logo mark */}
+      <div className="flex flex-col items-center gap-1 select-none">
+        <span className="text-2xl font-black tracking-[0.25em] text-darkest-blue dark:text-white uppercase">
+          ROMAA
+        </span>
+        <span className="text-[10px] font-medium tracking-[0.3em] text-gray-400 dark:text-gray-500 uppercase">
+          Construction ERP
+        </span>
+      </div>
+
+      {/* Spinner */}
+      <div className="relative w-14 h-14">
+        {/* Static background ring */}
+        <div className="absolute inset-0 rounded-full border-[3px] border-gray-100 dark:border-gray-800" />
+        {/* Spinning arc — primary */}
+        <div
+          className="absolute inset-0 rounded-full border-[3px] border-transparent border-t-darkest-blue dark:border-t-blue-400 animate-spin"
+          style={{ animationDuration: "0.9s" }}
+        />
+        {/* Spinning arc — secondary (counter, slower) */}
+        <div
+          className="absolute inset-[6px] rounded-full border-[2px] border-transparent border-b-blue-300 dark:border-b-blue-600 animate-spin"
+          style={{ animationDuration: "1.4s", animationDirection: "reverse" }}
+        />
+        {/* Center dot */}
+        <div className="absolute inset-0 flex items-center justify-center">
+          <div className="w-2 h-2 rounded-full bg-darkest-blue dark:bg-blue-400 animate-pulse" />
+        </div>
+      </div>
+
+      {/* Indeterminate progress bar */}
+      <div className="w-52 h-[2px] bg-gray-100 dark:bg-gray-800 rounded-full overflow-hidden">
+        <div
+          className="h-full w-2/5 bg-darkest-blue dark:bg-blue-400 rounded-full"
+          style={{ animation: "loader-slide 1.8s ease-in-out infinite" }}
+        />
+      </div>
+
+      {/* Status message */}
+      <p
+        className="text-sm text-gray-500 dark:text-gray-400 tracking-wide transition-opacity duration-300"
+        style={{ opacity: visible ? 1 : 0 }}
+      >
+        {displayMessage}
+      </p>
+
+      <style>{`
+        @keyframes loader-slide {
+          0%   { transform: translateX(-150%); }
+          100% { transform: translateX(380%); }
+        }
+      `}</style>
+    </div>
+  );
+
+  if (!fullScreen) return content;
 
   return (
-    <div className="absolute inset-0 flex flex-col items-center justify-center bg-white/90 dark:bg-black/80 z-10">
-      <div className={`text-6xl animate-bounce ${currentItem.color}`}>
-        {currentItem.icon}
-      </div>
-      <p className="mt-6 text-xl font-bold text-darkest-blue dark:text-white text-center max-w-xs">
-        {currentSlogan}
-      </p>
+    <div className="absolute inset-0 flex items-center justify-center bg-white/95 dark:bg-gray-950/95 backdrop-blur-sm z-50 font-roboto-flex">
+      {content}
     </div>
   );
 };

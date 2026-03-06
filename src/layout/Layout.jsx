@@ -1,8 +1,9 @@
-import React from "react";
+import React, { Suspense } from "react";
 import Headers from "./Headers";
 import { NavLink, Outlet, useLocation } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { Menus } from "../helperConfigData/helperData";
+import Loader from "../components/Loader";
 
 const LayOut = () => {
   const location = useLocation();
@@ -139,7 +140,9 @@ const LayOut = () => {
 
         {/* --- MAIN CONTENT AREA --- */}
         <div className="w-full p-4 overflow-auto no-scrollbar">
-          <Outlet />
+          <Suspense fallback={<Loader fullScreen={false} />}>
+            <Outlet />
+          </Suspense>
         </div>
       </div>
     </div>
