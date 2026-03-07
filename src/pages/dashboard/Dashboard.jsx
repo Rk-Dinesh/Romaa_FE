@@ -501,7 +501,7 @@ const MyWorkProfileSection = ({ data, navigate }) => {
             Recent Activity
           </p>
           <div className="space-y-2">
-            {recentLeaveApplications.slice(0, 3).map((leave) => (
+            {recentLeaveApplications.slice(0, 2).map((leave) => (
               <div
                 key={leave._id}
                 className="flex items-center justify-between p-3 rounded-xl bg-gray-50/50 dark:bg-gray-800/30 border border-gray-100 dark:border-gray-700/50"
@@ -1946,7 +1946,12 @@ const Dashboard = () => {
     return Object.values(modPerms).some((sub) => sub?.read === true);
   };
 
-  if (isLoading) return <Loader fullScreen={false} />;
+  if (isLoading)
+    return (
+      <div className="h-full flex items-center justify-center animate-fade-in">
+        <Loader fullScreen={false} />
+      </div>
+    );
 
   if (isError || !data || data.message === "No role assigned") {
     return (
@@ -1977,7 +1982,7 @@ const Dashboard = () => {
   }
 
   return (
-    <div className="h-full pb-16">
+    <div className="h-full pb-16 animate-fade-in">
       {/* Header Bar */}
       <div className="flex justify-between items-center mb-4">
         <Title
