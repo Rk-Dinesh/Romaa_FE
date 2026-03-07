@@ -59,7 +59,7 @@ import Loader from "../../components/Loader";
 import ViewWorkOrderDashboard from "./ViewWorkOrderDashboard";
 import { useDashboard } from "./hooks/useDashboard";
 import { useAuth } from "../../context/AuthContext";
-import { formatDistanceToNow, differenceInDays, format } from "date-fns";
+import { formatDistanceToNow, format } from "date-fns";
 
 // --- Helpers ---
 const formatCurrency = (value) =>
@@ -117,16 +117,23 @@ const Badge = ({ children, variant = "default" }) => {
   const styles = {
     default: "bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400",
     primary: "bg-blue-50 text-blue-600 dark:bg-blue-950/30 dark:text-blue-400",
-    success: "bg-emerald-50 text-emerald-600 dark:bg-emerald-950/30 dark:text-emerald-400",
-    warning: "bg-amber-50 text-amber-600 dark:bg-amber-950/30 dark:text-amber-400",
+    success:
+      "bg-emerald-50 text-emerald-600 dark:bg-emerald-950/30 dark:text-emerald-400",
+    warning:
+      "bg-amber-50 text-amber-600 dark:bg-amber-950/30 dark:text-amber-400",
     danger: "bg-rose-50 text-rose-600 dark:bg-rose-950/30 dark:text-rose-400",
-    violet: "bg-violet-50 text-violet-600 dark:bg-violet-950/30 dark:text-violet-400",
-    orange: "bg-orange-50 text-orange-600 dark:bg-orange-950/30 dark:text-orange-400",
-    indigo: "bg-indigo-50 text-indigo-600 dark:bg-indigo-950/30 dark:text-indigo-400",
+    violet:
+      "bg-violet-50 text-violet-600 dark:bg-violet-950/30 dark:text-violet-400",
+    orange:
+      "bg-orange-50 text-orange-600 dark:bg-orange-950/30 dark:text-orange-400",
+    indigo:
+      "bg-indigo-50 text-indigo-600 dark:bg-indigo-950/30 dark:text-indigo-400",
     teal: "bg-teal-50 text-teal-600 dark:bg-teal-950/30 dark:text-teal-400",
   };
   return (
-    <span className={`text-[10px] font-bold px-2.5 py-1 rounded-full ${styles[variant]}`}>
+    <span
+      className={`text-[10px] font-bold px-2.5 py-1 rounded-full ${styles[variant]}`}
+    >
       {children}
     </span>
   );
@@ -173,7 +180,9 @@ const MiniDonut = ({ data, colors, centerLabel, size = 130 }) => (
 const ProgressBar = ({ value, max, color = "#3b82f6", height = "h-2" }) => {
   const pct = max ? Math.min(Math.round((value / max) * 100), 100) : 0;
   return (
-    <div className={`${height} rounded-full bg-gray-100 dark:bg-gray-800 overflow-hidden`}>
+    <div
+      className={`${height} rounded-full bg-gray-100 dark:bg-gray-800 overflow-hidden`}
+    >
       <div
         className="h-full rounded-full transition-all duration-1000 ease-out"
         style={{ width: `${pct}%`, backgroundColor: color }}
@@ -211,7 +220,7 @@ const WelcomeHeader = ({ user, data }) => {
     quickStats.push(
       { label: "Tenders", val: data.overview.tenders, icon: FileText },
       { label: "Projects", val: data.overview.projects, icon: Briefcase },
-      { label: "Employees", val: data.overview.activeEmployees, icon: Users }
+      { label: "Employees", val: data.overview.activeEmployees, icon: Users },
     );
   }
 
@@ -261,9 +270,7 @@ const WelcomeHeader = ({ user, data }) => {
                 <p className="text-sm font-bold leading-none">
                   {attendanceStatus}
                 </p>
-                <p className="text-[10px] text-blue-200/70 mt-0.5">
-                  My Status
-                </p>
+                <p className="text-[10px] text-blue-200/70 mt-0.5">My Status</p>
               </div>
             </div>
           )}
@@ -344,121 +351,187 @@ const OverviewSection = ({ data }) => {
 const MyWorkProfileSection = ({ data, navigate }) => {
   const { todayAttendance, leaveBalance, recentLeaveApplications } = data;
 
-  const statusColor = {
-    Present: "#10b981",
-    Absent: "#ef4444",
-    "Half Day": "#f97316",
-    "On Leave": "#3b82f6",
-    "Not Punched": "#94a3b8",
-    Late: "#eab308",
+  const statusMap = {
+    "Not Punched": {
+      color: "text-slate-400",
+      bg: "bg-slate-400/10",
+      icon: Timer,
+      label: "Awaiting Check-in",
+    },
+    Present: {
+      color: "text-emerald-500",
+      bg: "bg-emerald-500/10",
+      icon: UserCheck,
+      label: "On Duty",
+    },
+    Late: {
+      color: "text-amber-500",
+      bg: "bg-amber-500/10",
+      icon: Clock,
+      label: "Late Check-in",
+    },
   };
-  const color = statusColor[todayAttendance?.status] || "#94a3b8";
 
-  const leaveEntries = Object.entries(leaveBalance || {}).filter(
-    ([key]) => key !== "compOff"
-  );
-  const compOffCount = leaveBalance?.compOff?.length || 0;
+  const currentStatus =
+    statusMap[todayAttendance?.status] || statusMap["Not Punched"];
+  const StatusIcon = currentStatus.icon;
+
+  // Leave styles for the Bento Grid
+  const leaveConfigs = {
+    PL: {
+      label: "Privilege",
+      color: "text-emerald-600",
+      bg: "bg-emerald-50 dark:bg-emerald-500/10",
+    },
+    CL: {
+      label: "Casual",
+      color: "text-blue-600",
+      bg: "bg-blue-50 dark:bg-blue-500/10",
+    },
+    SL: {
+      label: "Sick",
+      color: "text-rose-600",
+      bg: "bg-rose-50 dark:bg-rose-500/10",
+    },
+  };
 
   return (
-    <GlassCard hover={false} className="p-5">
-      <SectionHeader
-        title="My Work Profile"
-        icon={Fingerprint}
-        action={
-          <button
-            onClick={() => navigate("/dashboard/profile")}
-            className="text-[11px] font-semibold text-blue-500 hover:text-blue-600 flex items-center gap-1 transition-colors"
-          >
-            View Profile <ArrowRight className="size-3" />
-          </button>
-        }
-      />
-      <div className="flex flex-col sm:flex-row gap-4">
-        {/* Today's Status */}
-        <div className="flex-1 p-4 rounded-xl bg-gray-50/80 dark:bg-gray-800/30 border border-gray-100/80 dark:border-gray-700/30">
-          <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-3">
-            Today's Status
-          </p>
-          <div className="flex items-center gap-3">
-            <div
-              className="w-12 h-12 rounded-xl flex items-center justify-center text-white"
-              style={{ background: `linear-gradient(135deg, ${color}, ${color}cc)` }}
-            >
-              <Fingerprint className="size-5" />
-            </div>
-            <div>
-              <p className="text-lg font-bold dark:text-white">
-                {todayAttendance?.status || "Unknown"}
-              </p>
-              <p className="text-[10px] text-gray-400">
-                {todayAttendance?.punchIn
-                  ? `Punched in at ${todayAttendance.punchIn}`
-                  : "No punch recorded yet"}
-              </p>
-            </div>
+    <GlassCard
+      hover={false}
+      className="p-0 h-full flex flex-col overflow-hidden"
+    >
+      {/* 1. Header Identity */}
+      <div className="p-6 pb-4 flex items-center justify-between border-b border-gray-50 dark:border-gray-800/50">
+        <div className="flex items-center gap-3">
+          <div className="size-10 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center shadow-lg shadow-blue-500/20">
+            <Fingerprint className="size-5 text-white" />
+          </div>
+          <div>
+            <h3 className="text-sm font-black dark:text-white text-gray-800">
+              My Work Pulse
+            </h3>
+            <p className="text-[10px] text-gray-400 font-bold uppercase tracking-tight">
+              Personal Workspace
+            </p>
           </div>
         </div>
-
-        {/* Leave Balance */}
-        <div className="flex-1 p-4 rounded-xl bg-gray-50/80 dark:bg-gray-800/30 border border-gray-100/80 dark:border-gray-700/30">
-          <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-3">
-            Leave Balance
-          </p>
-          <div className="flex items-center gap-3 flex-wrap">
-            {leaveEntries.map(([type, balance]) => (
-              <div key={type} className="text-center">
-                <div className="w-12 h-12 rounded-xl bg-blue-50 dark:bg-blue-900/20 flex items-center justify-center mx-auto mb-1">
-                  <span className="text-base font-bold text-blue-600 dark:text-blue-400 tabular-nums">
-                    {balance}
-                  </span>
-                </div>
-                <p className="text-[10px] font-semibold text-gray-500 dark:text-gray-400">
-                  {type}
-                </p>
-              </div>
-            ))}
-            {compOffCount > 0 && (
-              <div className="text-center">
-                <div className="w-12 h-12 rounded-xl bg-violet-50 dark:bg-violet-900/20 flex items-center justify-center mx-auto mb-1">
-                  <span className="text-base font-bold text-violet-600 dark:text-violet-400 tabular-nums">
-                    {compOffCount}
-                  </span>
-                </div>
-                <p className="text-[10px] font-semibold text-gray-500 dark:text-gray-400">
-                  Comp Off
-                </p>
-              </div>
-            )}
-          </div>
-        </div>
+        <button
+          onClick={() => navigate("/dashboard/profile")}
+          className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+        >
+          <ArrowUpRight className="size-4 text-gray-400" />
+        </button>
       </div>
 
-      {/* Recent Leave Applications */}
-      {recentLeaveApplications?.length > 0 && (
-        <div className="mt-4">
-          <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2">
-            Recent Applications
+      <div className="p-6 space-y-8 flex-1">
+        {/* 2. Today's Attendance Hero */}
+        <div
+          className={`relative p-5 rounded-3xl border border-transparent transition-all ${currentStatus.bg}`}
+        >
+          <div className="flex items-center gap-5">
+            <div className="relative">
+              <div className="size-16 rounded-2xl bg-white dark:bg-gray-950 shadow-xl flex items-center justify-center">
+                <StatusIcon className={`size-8 ${currentStatus.color}`} />
+              </div>
+              <span className="absolute -bottom-1 -right-1 flex h-4 w-4">
+                <span
+                  className={`animate-ping absolute inline-flex h-full w-full rounded-full ${currentStatus.color} opacity-30`}
+                ></span>
+                <span
+                  className={`relative inline-flex rounded-full h-4 w-4 border-2 border-white dark:border-gray-900 ${currentStatus.color.replace("text-", "bg-")}`}
+                ></span>
+              </span>
+            </div>
+            <div>
+              <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">
+                Today's Status
+              </p>
+              <h4 className="text-xl font-black dark:text-white text-gray-900 leading-none">
+                {todayAttendance?.status || "Unknown"}
+              </h4>
+              <p className="text-[11px] text-gray-500 font-medium mt-2 flex items-center gap-1.5">
+                <Timer className="size-3" />
+                Shift: 09:00 AM - 06:00 PM
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* 3. Leave Entitlement Bento Grid */}
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">
+              Available Balance
+            </p>
+            <span className="text-[10px] font-bold text-blue-500 cursor-pointer">
+              Request Leave
+            </span>
+          </div>
+          <div className="grid grid-cols-3 gap-3">
+            {Object.entries(leaveBalance || {})
+              .filter(([k]) => k !== "compOff")
+              .map(([type, val]) => {
+                const cfg = leaveConfigs[type] || {
+                  label: type,
+                  color: "text-gray-600",
+                  bg: "bg-gray-50",
+                };
+                return (
+                  <div
+                    key={type}
+                    className={`p-3 rounded-2xl border border-transparent hover:shadow-md transition-all ${cfg.bg}`}
+                  >
+                    <p
+                      className={`text-2xl font-black tabular-nums leading-none ${cfg.color}`}
+                    >
+                      {val}
+                    </p>
+                    <p className="text-[9px] font-bold text-gray-500 uppercase mt-2 tracking-tighter">
+                      {cfg.label}
+                    </p>
+                  </div>
+                );
+              })}
+          </div>
+        </div>
+
+        {/* 4. Recent Timeline */}
+        <div className="space-y-4">
+          <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">
+            Recent Activity
           </p>
-          <div className="space-y-1">
-            {recentLeaveApplications.slice(0, 3).map((leave, i) => (
+          <div className="space-y-2">
+            {recentLeaveApplications.slice(0, 3).map((leave) => (
               <div
-                key={i}
-                className="flex items-center justify-between py-2.5 px-3 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors"
+                key={leave._id}
+                className="flex items-center justify-between p-3 rounded-xl bg-gray-50/50 dark:bg-gray-800/30 border border-gray-100 dark:border-gray-700/50"
               >
-                <div className="flex items-center gap-2.5">
-                  <TreePalm className="size-3.5 text-emerald-500" />
-                  <span className="text-xs font-medium dark:text-white">
-                    {leave.leaveType} - {leave.totalDays} day
-                    {leave.totalDays > 1 ? "s" : ""}
-                  </span>
+                <div className="flex items-center gap-3">
+                  <div
+                    className={`size-2 rounded-full ${
+                      leave.status === "Rejected"
+                        ? "bg-rose-500"
+                        : leave.status === "Pending"
+                          ? "bg-amber-500"
+                          : "bg-emerald-500"
+                    }`}
+                  />
+                  <div>
+                    <p className="text-xs font-bold dark:text-white">
+                      {leave.leaveType} Request
+                    </p>
+                    <p className="text-[10px] text-gray-400">
+                      {format(new Date(leave.fromDate), "dd MMM")}
+                    </p>
+                  </div>
                 </div>
                 <Badge
                   variant={
-                    leave.status === "Approved"
-                      ? "success"
-                      : leave.status === "Rejected"
+                    leave.status === "Rejected"
                       ? "danger"
-                      : "warning"
+                      : leave.status === "Pending"
+                        ? "warning"
+                        : "success"
                   }
                 >
                   {leave.status}
@@ -467,76 +540,149 @@ const MyWorkProfileSection = ({ data, navigate }) => {
             ))}
           </div>
         </div>
-      )}
+      </div>
     </GlassCard>
   );
 };
 
 const UpcomingDeadlinesSection = ({ data }) => {
-  if (!data?.upcoming?.length) return null;
+  const hasDeadlines = data?.upcoming && data.upcoming.length > 0;
 
   return (
-    <GlassCard hover={false} className="p-5">
-      <SectionHeader
-        title="Upcoming Deadlines"
-        icon={CalendarClock}
-        badge={<Badge variant="danger">{data.count} upcoming</Badge>}
-      />
-      <div className="space-y-1">
-        {data.upcoming.slice(0, 5).map((item) => {
-          const endDate = new Date(item.tender_end_date);
-          const daysLeft = differenceInDays(endDate, new Date());
-          const isUrgent = daysLeft <= 3;
-          const isPast = daysLeft < 0;
+    <GlassCard
+      hover={false}
+      className="p-0 h-full flex flex-col overflow-hidden"
+    >
+      {/* 1. Header with Urgency Badge */}
+      <div className="p-6 pb-4 flex items-center justify-between border-b border-gray-50 dark:border-gray-800/50">
+        <div className="flex items-center gap-3">
+          <div className="size-10 rounded-xl bg-gradient-to-br from-rose-500 to-orange-600 flex items-center justify-center shadow-lg shadow-rose-500/20">
+            <CalendarClock className="size-5 text-white" />
+          </div>
+          <div>
+            <h3 className="text-sm font-black dark:text-white text-gray-800">
+              Critical Deadlines
+            </h3>
+            <p className="text-[10px] text-gray-400 font-bold uppercase tracking-tight">
+              Timeline Overview
+            </p>
+          </div>
+        </div>
+        {hasDeadlines && (
+          <div className="px-2.5 py-1 rounded-full bg-rose-50 dark:bg-rose-500/10 border border-rose-100 dark:border-rose-500/20">
+            <span className="text-[10px] font-black text-rose-600 dark:text-rose-400 uppercase">
+              {data.count} Pending
+            </span>
+          </div>
+        )}
+      </div>
 
-          return (
-            <div
-              key={item._id}
-              className="flex items-center gap-3 py-3 px-3 -mx-1 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors"
-            >
-              <div
-                className={`w-10 h-10 rounded-xl flex items-center justify-center text-white shrink-0 ${
-                  isPast
-                    ? "bg-gradient-to-br from-red-500 to-rose-600"
-                    : isUrgent
-                    ? "bg-gradient-to-br from-amber-400 to-orange-500"
-                    : "bg-gradient-to-br from-blue-500 to-blue-600"
-                }`}
-              >
-                <Timer className="size-4" />
+      <div className="p-6 flex-1">
+        {!hasDeadlines ? (
+          /* Zero-State: All Clear */
+          <div className="h-full flex flex-col items-center justify-center py-12 px-6 text-center">
+            {/* Animated Icon Container */}
+            <div className="relative mb-6">
+              <div className="size-20 rounded-full bg-emerald-50 dark:bg-emerald-950/20 flex items-center justify-center">
+                <CheckCircle2 className="size-10 text-emerald-500" />
               </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-xs font-semibold dark:text-white text-gray-800 truncate">
-                  {item.tender_name}
-                </p>
-                <p className="text-[10px] text-gray-400 mt-0.5">
-                  {item.tender_project_name} &middot; {item.client_name} &middot;{" "}
-                  {formatCompact(item.tender_value)}
-                </p>
-              </div>
-              <div className="text-right shrink-0">
-                <p className="text-[10px] text-gray-400 tabular-nums">
-                  {format(endDate, "dd MMM yyyy")}
-                </p>
-                <span
-                  className={`text-[10px] font-bold ${
-                    isPast
-                      ? "text-red-500"
-                      : isUrgent
-                      ? "text-amber-500"
-                      : "text-blue-500"
+              {/* Decorative background pulse */}
+              <span className="absolute inset-0 rounded-full bg-emerald-400/20 animate-ping" />
+            </div>
+
+            {/* Positive Messaging */}
+            <div className="space-y-2">
+              <h4 className="text-sm font-black dark:text-white text-gray-800 tracking-tight">
+                Everything is on Track!
+              </h4>
+              <p className="text-[11px] text-gray-400 max-w-[220px] leading-relaxed mx-auto">
+                You've cleared all urgent tender milestones. Your project
+                pipeline is
+                <span className="text-emerald-500 font-bold">
+                  {" "}
+                  100% up to date
+                </span>
+                .
+              </p>
+            </div>
+
+            {/* Optional Motivational Footer */}
+            <div className="mt-8 pt-6 border-t border-gray-50 dark:border-gray-800/50 w-full">
+              <p className="text-[9px] font-bold text-gray-400 uppercase tracking-[0.2em]">
+                Current Status:{" "}
+                <span className="text-emerald-500">Ahead of Schedule</span>
+              </p>
+            </div>
+          </div>
+        ) : (
+          /* Active Deadlines */
+          <div className="space-y-4">
+            {data.upcoming.map((item) => {
+              const endDate = new Date(item.tender_end_date);
+              const daysLeft = Math.ceil(
+                (endDate - new Date()) / (1000 * 60 * 60 * 24),
+              );
+              const isUrgent = daysLeft <= 1;
+
+              return (
+                <div
+                  key={item._id}
+                  className={`group relative p-4 rounded-2xl border transition-all hover:shadow-lg ${
+                    isUrgent
+                      ? "bg-rose-50/30 dark:bg-rose-950/10 border-rose-100 dark:border-rose-900/30"
+                      : "bg-white dark:bg-gray-900/20 border-gray-100 dark:border-gray-800"
                   }`}
                 >
-                  {isPast
-                    ? `${Math.abs(daysLeft)}d overdue`
-                    : daysLeft === 0
-                    ? "Due today"
-                    : `${daysLeft}d left`}
-                </span>
-              </div>
-            </div>
-          );
-        })}
+                  <div className="flex justify-between items-start mb-3">
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-gray-100 dark:bg-gray-800 text-gray-500 font-mono">
+                          {item.tender_id}
+                        </span>
+                        <h4 className="text-xs font-bold dark:text-white truncate pr-2">
+                          {item.tender_name}
+                        </h4>
+                      </div>
+                      <p className="text-[10px] text-gray-400 font-medium truncate">
+                        {item.client_name} • {formatCompact(item.tender_value)}
+                      </p>
+                    </div>
+                    <div className="text-right shrink-0">
+                      <span
+                        className={`text-xs font-black tabular-nums ${isUrgent ? "text-rose-600" : "text-blue-500"}`}
+                      >
+                        {daysLeft === 0 ? "Today" : `${daysLeft}d left`}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Deadline Progress Indicator */}
+                  <div className="flex items-center gap-3">
+                    <div className="flex-1 h-1.5 bg-gray-100 dark:bg-gray-800 rounded-full overflow-hidden">
+                      <div
+                        className={`h-full transition-all duration-1000 ${isUrgent ? "bg-rose-500" : "bg-blue-500"}`}
+                        style={{
+                          width: `${Math.max(15, 100 - daysLeft * 15)}%`,
+                        }}
+                      />
+                    </div>
+                    <div className="flex items-center gap-1 text-[9px] text-gray-400 font-bold whitespace-nowrap">
+                      <Clock className="size-2.5" />
+                      {format(endDate, "dd MMM")}
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+
+      {/* Footer Quick Action */}
+      <div className="p-6 pt-0 mt-auto">
+        <button className="w-full py-2.5 rounded-xl border border-dashed border-gray-200 dark:border-gray-800 text-[10px] font-bold text-gray-400 hover:text-blue-500 hover:border-blue-500/50 transition-all uppercase tracking-widest">
+          View Submission Calendar
+        </button>
       </div>
     </GlassCard>
   );
@@ -544,11 +690,31 @@ const UpcomingDeadlinesSection = ({ data }) => {
 
 const AttendanceSection = ({ data }) => {
   const segments = [
-    { name: "Present", value: data.present, color: "#10b981", icon: CalendarCheck },
+    {
+      name: "Present",
+      value: data.present,
+      color: "#10b981",
+      icon: CalendarCheck,
+    },
     { name: "Absent", value: data.absent, color: "#ef4444", icon: CalendarX },
-    { name: "Half Day", value: data.halfDay, color: "#f97316", icon: Hourglass },
-    { name: "On Leave", value: data.onLeave, color: "#3b82f6", icon: Briefcase },
-    { name: "Not Punched", value: data.notYetPunched, color: "#94a3b8", icon: Clock },
+    {
+      name: "Half Day",
+      value: data.halfDay,
+      color: "#f97316",
+      icon: Hourglass,
+    },
+    {
+      name: "On Leave",
+      value: data.onLeave,
+      color: "#3b82f6",
+      icon: Briefcase,
+    },
+    {
+      name: "Not Punched",
+      value: data.notYetPunched,
+      color: "#94a3b8",
+      icon: Clock,
+    },
   ];
   const colors = segments.map((s) => s.color);
   const pieData = segments.map(({ name, value }) => ({ name, value }));
@@ -635,7 +801,10 @@ const PendingLeavesSection = ({ data }) => (
       }
     />
     {!data.requests?.length ? (
-      <EmptyState icon={CalendarCheck} message="All caught up! No pending requests" />
+      <EmptyState
+        icon={CalendarCheck}
+        message="All caught up! No pending requests"
+      />
     ) : (
       <div className="space-y-1">
         {data.requests.slice(0, 5).map((r, i) => (
@@ -685,7 +854,7 @@ const TenderPipelineSection = ({ data }) => {
     { name: "Approved", value: counts.approved },
     { name: "With Work Order", value: counts.withWorkOrder },
   ];
-  const pieColors = ["#f59e0b", "#22c55e", "#3b82f6"];
+  const pieColors = ["#f59e0b", "#10b981", "#3b82f6"];
 
   return (
     <GlassCard hover={false} className="p-5">
@@ -694,90 +863,117 @@ const TenderPipelineSection = ({ data }) => {
         icon={FileText}
         badge={<Badge variant="primary">{counts.total} total</Badge>}
       />
-      <div className="flex flex-col lg:flex-row gap-4">
-        <div className="flex items-start gap-3">
-          <MiniDonut
-            data={pieData}
-            colors={pieColors}
-            centerLabel={counts.total}
-            size={145}
-          />
-          <div className="space-y-3 pt-2">
-            {pieData.map((d, i) => (
-              <div key={d.name} className="flex items-center gap-3">
+      <div className="flex flex-col lg:flex-row gap-8">
+        {/* Left: Chart and Financial Summary */}
+        <div className="flex flex-col sm:flex-row lg:flex-col gap-6 shrink-0 lg:w-64">
+          <div className="flex justify-center">
+            <MiniDonut
+              data={pieData}
+              colors={pieColors}
+              centerLabel={counts.total}
+              size={160}
+            />
+          </div>
+          <div className="flex-1 space-y-4">
+            <div className="grid grid-cols-1 gap-2">
+              {pieData.map((d, i) => (
                 <div
-                  className="w-3 h-3 rounded-sm"
-                  style={{ backgroundColor: pieColors[i] }}
-                />
-                <div>
-                  <span className="text-[11px] text-gray-500 dark:text-gray-400">
-                    {d.name}
-                  </span>
-                  <p className="text-sm font-bold dark:text-white tabular-nums leading-tight">
+                  key={d.name}
+                  className="flex items-center justify-between p-2 rounded-lg bg-gray-50/50 dark:bg-gray-800/50 border border-gray-100 dark:border-gray-700/50"
+                >
+                  <div className="flex items-center gap-2">
+                    <div
+                      className="w-2 h-2 rounded-full"
+                      style={{ backgroundColor: pieColors[i] }}
+                    />
+                    <span className="text-[11px] font-medium text-gray-500 dark:text-gray-400">
+                      {d.name}
+                    </span>
+                  </div>
+                  <span className="text-xs font-bold dark:text-white tabular-nums">
                     {d.value}
-                  </p>
+                  </span>
                 </div>
-              </div>
-            ))}
-            <div className="border-t border-gray-100 dark:border-gray-800 pt-3 space-y-1.5">
-              <div className="flex items-center gap-2 text-[11px]">
-                <CircleDollarSign className="size-3 text-gray-400" />
-                <span className="text-gray-400">Total:</span>
-                <span className="font-bold dark:text-white text-gray-700">
+              ))}
+            </div>
+
+            <div className="pt-2 border-t border-gray-100 dark:border-gray-800 space-y-2">
+              <div>
+                <p className="text-[10px] text-gray-400 uppercase font-bold tracking-tight">
+                  Total Value
+                </p>
+                <p className="text-sm font-bold text-blue-600 dark:text-blue-400">
                   {formatCurrency(counts.totalValue)}
-                </span>
+                </p>
               </div>
-              <div className="flex items-center gap-2 text-[11px]">
-                <FileCheck className="size-3 text-gray-400" />
-                <span className="text-gray-400">Agreement:</span>
-                <span className="font-bold dark:text-white text-gray-700">
+              <div>
+                <p className="text-[10px] text-gray-400 uppercase font-bold tracking-tight">
+                  Agreement Value
+                </p>
+                <p className="text-sm font-bold text-emerald-600 dark:text-emerald-400">
                   {formatCurrency(counts.totalAgreementValue)}
-                </span>
+                </p>
               </div>
             </div>
           </div>
         </div>
 
-        <div className="flex-1 border-l-0 lg:border-l border-gray-100 dark:border-gray-800 lg:pl-6">
-          <p className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-3">
-            Recent Tenders
+        {/* Right: Modernized Recent Tenders List */}
+        <div className="flex-1 min-w-0">
+          <p className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-4">
+            Recent Tender Activity
           </p>
-          <div className="space-y-1">
-            {recentTenders?.slice(0, 4).map((t) => (
-              <div
-                key={t._id || t.tender_id}
-                className="flex items-center justify-between py-2.5 px-3 -mx-1 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors group cursor-pointer"
-              >
-                <div className="flex items-center gap-3 min-w-0">
-                  <div className="w-9 h-9 rounded-xl bg-blue-50 dark:bg-blue-900/20 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
-                    <FileText className="size-4 text-blue-500" />
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            {recentTenders?.slice(0, 4).map((t) => {
+              const isPending = t.tender_status === "PENDING";
+              return (
+                <div
+                  key={t._id || t.tender_id}
+                  className="group relative p-3 rounded-xl border border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-900/40 hover:border-blue-200 dark:hover:border-blue-900/50 transition-all cursor-pointer"
+                >
+                  <div className="flex justify-between items-start mb-2">
+                    <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 font-mono">
+                      {t.tender_id}
+                    </span>
+                    <span
+                      className={`text-[9px] font-bold uppercase tracking-wider ${isPending ? "text-amber-500" : "text-emerald-500"}`}
+                    >
+                      {t.tender_status}
+                    </span>
                   </div>
-                  <div className="min-w-0">
-                    <p className="text-xs font-semibold dark:text-white text-gray-800 truncate">
-                      {t.tender_name}
-                    </p>
-                    <p className="text-[10px] text-gray-400 mt-0.5">
-                      {t.client_name} &middot; {formatCompact(t.tender_value)}
-                    </p>
+
+                  <h4 className="text-xs font-bold dark:text-white text-gray-800 truncate mb-1 pr-4">
+                    {t.tender_name}
+                  </h4>
+                  <p className="text-[10px] text-gray-400 mb-3 truncate">
+                    {t.client_name}
+                  </p>
+
+                  <div className="flex items-center justify-between mt-auto pt-2 border-t border-gray-50 dark:border-gray-800/50">
+                    <div className="flex items-center gap-1">
+                      <CircleDollarSign className="size-3 text-gray-400" />
+                      <span className="text-[11px] font-bold dark:text-gray-200">
+                        {formatCompact(t.tender_value)}
+                      </span>
+                    </div>
+                    <span className="text-[9px] text-gray-400 flex items-center gap-1">
+                      <CalendarClock className="size-2.5" />
+                      {format(new Date(t.createdAt), "dd MMM yy")}
+                    </span>
+                  </div>
+
+                  {/* Hover indicator */}
+                  <div className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <ArrowUpRight className="size-3 text-blue-500" />
                   </div>
                 </div>
-                <span
-                  className={`shrink-0 ml-3 inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[10px] font-bold ${
-                    t.tender_status === "PENDING"
-                      ? "bg-amber-50 text-amber-700 dark:bg-amber-900/20 dark:text-amber-400"
-                      : "bg-emerald-50 text-emerald-700 dark:bg-emerald-900/20 dark:text-emerald-400"
-                  }`}
-                >
-                  {t.tender_status === "PENDING" ? (
-                    <Clock className="size-2.5" />
-                  ) : (
-                    <CheckCircle2 className="size-2.5" />
-                  )}
-                  {t.tender_status}
-                </span>
-              </div>
-            ))}
+              );
+            })}
           </div>
+
+          <button className="w-full mt-4 py-2 rounded-lg border border-dashed border-gray-200 dark:border-gray-800 text-[11px] font-bold text-gray-400 hover:text-blue-500 hover:border-blue-500/50 transition-all">
+            View All Tender Pipeline
+          </button>
         </div>
       </div>
     </GlassCard>
@@ -789,107 +985,132 @@ const PipelineSection = ({
   icon,
   counts,
   recentRaised,
+  recentQuotations,
   stages,
-  colors,
   badgeVariant = "primary",
 }) => {
-  const total = stages.reduce((s, st) => s + st.value, 0) || 1;
+  const total = counts.total || 1;
 
   return (
-    <GlassCard hover={false} className="p-5">
+    <GlassCard hover={false} className="p-6">
       <SectionHeader
         title={title}
         icon={icon}
-        badge={<Badge variant={badgeVariant}>{counts.total} total</Badge>}
+        badge={
+          <Badge variant={badgeVariant}>{counts.total} Total Requests</Badge>
+        }
       />
-      {/* Pipeline bar */}
-      <div className="flex rounded-xl overflow-hidden h-4 bg-gray-100 dark:bg-gray-800 mb-4">
-        {stages.map((stage, i) =>
-          stage.value > 0 ? (
-            <div
-              key={i}
-              className="transition-all duration-700 relative group"
-              style={{
-                width: `${(stage.value / total) * 100}%`,
-                backgroundColor: colors[i],
-              }}
-              title={`${stage.label}: ${stage.value}`}
-            >
-              <div className="absolute inset-0 bg-white/0 group-hover:bg-white/20 transition-colors" />
-            </div>
-          ) : null
-        )}
-      </div>
-      {/* Stage cards */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mb-4">
-        {stages.map((stage, i) => {
-          const Icon = stage.icon;
-          return (
-            <div
-              key={i}
-              className="flex items-center gap-2.5 px-3 py-2.5 rounded-xl bg-gray-50/80 dark:bg-gray-800/30 border border-gray-100/80 dark:border-gray-700/30"
-            >
-              <div
-                className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0"
-                style={{ backgroundColor: `${colors[i]}15` }}
-              >
-                {Icon ? (
-                  <Icon className="size-3.5" style={{ color: colors[i] }} />
-                ) : (
-                  <div
-                    className="size-3 rounded"
-                    style={{ backgroundColor: colors[i] }}
-                  />
-                )}
-              </div>
-              <div>
-                <p className="text-[10px] text-gray-400 dark:text-gray-500 font-medium leading-tight">
-                  {stage.label}
-                </p>
-                <p className="text-sm font-bold dark:text-white tabular-nums leading-tight">
+
+      {/* Modern Stage Progress */}
+      <div className="grid grid-cols-5 gap-2 mb-8">
+        {stages.map((stage, i) => (
+          <div key={i} className="relative">
+            <div className="flex flex-col gap-1">
+              <span className="text-[10px] font-bold text-gray-400 uppercase truncate">
+                {stage.label}
+              </span>
+              <div className="flex items-center gap-2">
+                <span className="text-lg font-black dark:text-white tabular-nums">
                   {stage.value}
-                </p>
+                </span>
+                <div className="h-1.5 flex-1 rounded-full bg-gray-100 dark:bg-gray-800 overflow-hidden">
+                  <div
+                    className="h-full rounded-full"
+                    style={{
+                      width: `${(stage.value / total) * 100}%`,
+                      backgroundColor: stage.color,
+                    }}
+                  />
+                </div>
               </div>
             </div>
-          );
-        })}
+          </div>
+        ))}
       </div>
-      {/* Recent Raised */}
-      {recentRaised?.length > 0 && (
-        <div className="border-t border-gray-100 dark:border-gray-800 pt-4">
-          <p className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-2">
-            Recently Raised
-          </p>
-          <div className="space-y-1">
-            {recentRaised.slice(0, 3).map((item) => (
+
+      <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
+        {/* Active Quotations - Focus on Vendor Data */}
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <h4 className="text-[11px] font-bold text-gray-500 uppercase tracking-widest flex items-center gap-2">
+              <RefreshCw className="size-3 text-amber-500" /> Pending Quotations
+            </h4>
+          </div>
+          <div className="space-y-3">
+            {recentQuotations?.slice(0, 2).map((q) => {
+              const pendingCount = q.vendorQuotations?.filter(
+                (v) => v.approvalStatus === "Pending",
+              ).length;
+              return (
+                <div
+                  key={q._id}
+                  className="p-4 rounded-2xl bg-amber-50/30 dark:bg-amber-900/10 border border-amber-100/50 dark:border-amber-900/30"
+                >
+                  <div className="flex justify-between items-start mb-3">
+                    <div>
+                      <p className="text-[10px] font-mono text-amber-600 dark:text-amber-500 font-bold">
+                        {q.requestId}
+                      </p>
+                      <h5 className="text-sm font-bold dark:text-white">
+                        {q.title || "Material Request"}
+                      </h5>
+                    </div>
+                    <Badge variant="warning">
+                      {pendingCount} Vendors Pending
+                    </Badge>
+                  </div>
+                  <div className="flex items-center gap-4 text-[11px] text-gray-500 dark:text-gray-400">
+                    <span className="flex items-center gap-1">
+                      <Building2 className="size-3" />{" "}
+                      {q.vendorQuotations?.length} Total Quotes
+                    </span>
+                    <span className="flex items-center gap-1">
+                      <CalendarClock className="size-3" />{" "}
+                      {format(new Date(q.requestDate), "dd MMM")}
+                    </span>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Recent Requests - Compact Tracking */}
+        <div className="space-y-4">
+          <h4 className="text-[11px] font-bold text-gray-500 uppercase tracking-widest flex items-center gap-2">
+            <Send className="size-3 text-blue-500" /> Recent Requests
+          </h4>
+          <div className="space-y-2">
+            {recentRaised?.slice(0, 3).map((item) => (
               <div
                 key={item._id}
-                className="flex items-center justify-between py-2 px-3 -mx-1 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors"
+                className="group flex items-center justify-between p-3 rounded-xl border border-gray-50 dark:border-gray-800/50 bg-gray-50/30 dark:bg-gray-800/20 hover:bg-white dark:hover:bg-gray-800 transition-all"
               >
-                <div className="flex items-center gap-2.5 min-w-0">
-                  <div className="w-7 h-7 rounded-lg bg-blue-50 dark:bg-blue-900/20 flex items-center justify-center shrink-0">
-                    <Send className="size-3 text-blue-500" />
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-lg bg-white dark:bg-gray-700 shadow-sm flex items-center justify-center">
+                    <PackageCheck className="size-4 text-blue-500" />
                   </div>
-                  <div className="min-w-0">
-                    <p className="text-[11px] font-semibold dark:text-white truncate">
-                      {item.requestId} - {item.title}
+                  <div>
+                    <p className="text-xs font-bold dark:text-white">
+                      {item.title}
                     </p>
-                    <p className="text-[10px] text-gray-400 truncate">
-                      {item.tender_project_name || `Project ${item.projectId}`}
+                    <p className="text-[10px] text-gray-400">
+                      {item.requestId} •{" "}
+                      {item.tender_project_name || "Ongoing Project"}
                     </p>
                   </div>
                 </div>
-                <span className="text-[10px] text-gray-400 tabular-nums shrink-0 ml-2">
-                  {new Date(item.requestDate).toLocaleDateString("en-GB", {
-                    day: "2-digit",
-                    month: "short",
-                  })}
-                </span>
+                <div className="text-right">
+                  <p className="text-[10px] font-bold text-gray-400">
+                    {format(new Date(item.requestDate), "dd MMM")}
+                  </p>
+                  <p className="text-[9px] text-blue-500 font-medium">Raised</p>
+                </div>
               </div>
             ))}
           </div>
         </div>
-      )}
+      </div>
     </GlassCard>
   );
 };
@@ -897,23 +1118,41 @@ const PipelineSection = ({
 const PurchaseSection = ({ data }) => {
   const c = data.counts;
   const stages = [
-    { label: "Raised", value: c.requestRaised, icon: Send },
-    { label: "Quotation Req.", value: c.quotationRequested, icon: FileText },
-    { label: "Quotation Rcvd.", value: c.quotationReceived, icon: FileCheck },
-    { label: "Vendor Approved", value: c.vendorApproved, icon: PackageCheck },
-    { label: "PO Issued", value: c.purchaseOrderIssued, icon: ClipboardList },
-    { label: "Completed", value: c.completed, icon: CheckCircle2 },
+    { label: "Raised", value: c.requestRaised, icon: Send, color: "#3b82f6" },
+    {
+      label: "Quotation Req.",
+      value: c.quotationRequested,
+      icon: FileText,
+      color: "#6366f1",
+    },
+    {
+      label: "Quotation Rcvd.",
+      value: c.quotationReceived,
+      icon: FileCheck,
+      color: "#eab308",
+    },
+    {
+      label: "Vendor Approved",
+      value: c.vendorApproved,
+      icon: PackageCheck,
+      color: "#f97316",
+    },
+    {
+      label: "PO Issued",
+      value: c.purchaseOrderIssued,
+      icon: ClipboardList,
+      color: "#22c55e",
+    },
   ];
-  const colors = ["#3b82f6", "#6366f1", "#eab308", "#f97316", "#22c55e", "#94a3b8"];
+
   return (
     <PipelineSection
       title="Purchase Pipeline"
       icon={ClipboardList}
       counts={c}
       recentRaised={data.recentRaised}
-
+      recentQuotations={data.recentQuotationReceived}
       stages={stages}
-      colors={colors}
       badgeVariant="primary"
     />
   );
@@ -922,22 +1161,41 @@ const PurchaseSection = ({ data }) => {
 const WorkOrderSection = ({ data }) => {
   const c = data.counts;
   const stages = [
-    { label: "Raised", value: c.requestRaised, icon: Send },
-    { label: "Quotation Rcvd.", value: c.quotationReceived, icon: FileCheck },
-    { label: "Vendor Approved", value: c.vendorApproved, icon: PackageCheck },
-    { label: "WO Issued", value: c.workOrderIssued, icon: Hammer },
-    { label: "Completed", value: c.completed, icon: CheckCircle2 },
+    { label: "Raised", value: c.requestRaised, icon: Send, color: "#6366f1" },
+    {
+      label: "Quotation Rcvd.",
+      value: c.quotationReceived,
+      icon: FileCheck,
+      color: "#eab308",
+    },
+    {
+      label: "Vendor Approved",
+      value: c.vendorApproved,
+      icon: PackageCheck,
+      color: "#f97316",
+    },
+    {
+      label: "WO Issued",
+      value: c.workOrderIssued,
+      icon: Hammer,
+      color: "#22c55e",
+    },
+    {
+      label: "Completed",
+      value: c.completed,
+      icon: CheckCircle2,
+      color: "#94a3b8",
+    },
   ];
-  const colors = ["#3b82f6", "#eab308", "#f97316", "#22c55e", "#94a3b8"];
+
   return (
     <PipelineSection
       title="Work Orders"
       icon={Hammer}
       counts={c}
       recentRaised={data.recentRaised}
-
+      recentQuotations={data.recentQuotationReceived} // New mapping
       stages={stages}
-      colors={colors}
       badgeVariant="indigo"
     />
   );
@@ -1023,151 +1281,253 @@ const EmdSection = ({ data }) => {
   );
 };
 
-const PenaltySection = ({ data }) => (
-  <GlassCard hover={false} className="p-5">
-    <SectionHeader
-      title="Penalties"
-      icon={AlertTriangle}
-      badge={
-        <Badge variant="danger">
-          {data.tendersWithPenalties} tender
-          {data.tendersWithPenalties > 1 ? "s" : ""}
-        </Badge>
-      }
-    />
-    <div className="rounded-xl bg-gradient-to-br from-rose-50 to-red-50 dark:from-rose-950/20 dark:to-red-950/20 border border-rose-200/60 dark:border-rose-900/30 p-5 mb-4">
-      <div className="flex items-center gap-4">
-        <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-rose-500 to-red-600 flex items-center justify-center text-white shadow-lg shadow-rose-200/50 dark:shadow-rose-900/30 shrink-0">
-          <AlertTriangle className="size-6" />
-        </div>
-        <div>
-          <p className="text-2xl font-bold text-rose-600 dark:text-rose-400 tabular-nums tracking-tight">
-            {formatCurrency(data.totalPenaltyValue)}
-          </p>
-          <p className="text-xs text-rose-500/70 font-medium mt-0.5">
-            Total penalty across all projects
-          </p>
-        </div>
-      </div>
-    </div>
-    {/* Penalty by project breakdown */}
-    {data.byProject?.length > 0 && (
-      <div>
-        <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2">
-          By Project
-        </p>
-        <div className="space-y-1">
-          {data.byProject.slice(0, 5).map((p) => (
-            <div
-              key={p._id}
-              className="flex items-center justify-between py-2 px-3 -mx-1 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors"
-            >
-              <div className="min-w-0 flex-1">
-                <p className="text-[11px] font-semibold dark:text-white truncate">
-                  {p.tenderName}
-                </p>
-                <p className="text-[10px] text-gray-400 truncate">
-                  {p.projectName || p._id}
-                </p>
-              </div>
-              <span className="text-xs font-bold text-rose-500 tabular-nums shrink-0 ml-2">
-                {formatCurrency(p.penaltyValue)}
-              </span>
-            </div>
-          ))}
-        </div>
-      </div>
-    )}
-  </GlassCard>
-);
-
-const BillingSection = ({ data }) => {
-  const pieData = [
-    { name: "Draft", value: data.draft },
-    { name: "Submitted", value: data.submitted },
-    { name: "Approved", value: data.approved },
-    { name: "Paid", value: data.paid },
-  ];
-  const colors = ["#94a3b8", "#3b82f6", "#f59e0b", "#22c55e"];
-  const icons = [FileText, Send, CheckCircle2, CircleDollarSign];
+const PenaltySection = ({ data }) => {
+  const totalPenalty = data.totalPenaltyValue || 0;
 
   return (
-    <GlassCard hover={false} className="p-5">
+    <GlassCard hover={false} className="p-6">
       <SectionHeader
-        title="Client Billing"
-        icon={Receipt}
-        badge={<Badge variant="success">{data.billCount} bills</Badge>}
+        title="Project Penalties"
+        icon={AlertTriangle}
+        badge={
+          <Badge variant="danger">
+            {data.tendersWithPenalties} Affected Tenders
+          </Badge>
+        }
       />
-      <div className="flex items-center gap-4">
-        <MiniDonut
-          data={pieData}
-          colors={colors}
-          centerLabel={data.billCount}
-        />
-        <div className="flex-1">
-          <p className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest">
-            Total Billed
-          </p>
-          <p className="text-xl font-bold dark:text-white tabular-nums mt-1 tracking-tight">
-            {formatCurrency(data.totalBilled)}
-          </p>
-          <div className="grid grid-cols-2 gap-2.5 mt-4">
-            {pieData.map((d, i) => {
-              const Icon = icons[i];
+
+      <div className="flex flex-col gap-6">
+        {/* Total Impact Banner */}
+        <div className="relative overflow-hidden p-5 rounded-2xl bg-rose-50 dark:bg-rose-950/20 border border-rose-100 dark:border-rose-900/30">
+          <div className="relative z-10 flex items-center justify-between">
+            <div>
+              <p className="text-[10px] font-bold text-rose-600 dark:text-rose-400 uppercase tracking-widest">
+                Total Financial Loss
+              </p>
+              <h2 className="text-3xl font-black text-rose-600 dark:text-rose-400 tabular-nums mt-1">
+                {formatCurrency(totalPenalty)}
+              </h2>
+            </div>
+            <div className="w-12 h-12 rounded-xl bg-rose-500/10 flex items-center justify-center">
+              <ShieldAlert className="size-6 text-rose-600" />
+            </div>
+          </div>
+          {/* Subtle Background Pattern */}
+          <div className="absolute -right-4 -bottom-4 opacity-10">
+            <XCircle className="size-24 text-rose-600" />
+          </div>
+        </div>
+
+        {/* Scrollable Project Breakdown */}
+        <div className="space-y-3">
+          <div className="flex justify-between items-center mb-1">
+            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">
+              Penalty by Project
+            </p>
+            <span className="text-[10px] font-medium text-gray-400">
+              Scroll to view all
+            </span>
+          </div>
+
+          <div className="max-h-[280px] overflow-y-auto pr-2 custom-scrollbar space-y-2">
+            {data.byProject?.map((p, index) => {
+              // Calculate percentage of total penalty for the micro-bar
+              const pct = totalPenalty
+                ? (p.penaltyValue / totalPenalty) * 100
+                : 0;
+
               return (
                 <div
-                  key={d.name}
-                  className="flex items-center gap-2 px-2.5 py-2 rounded-lg bg-gray-50/80 dark:bg-gray-800/30 border border-gray-100/50 dark:border-gray-700/30"
+                  key={p._id || index}
+                  className="p-3 rounded-xl bg-white dark:bg-gray-900/40 border border-gray-100 dark:border-gray-800 hover:border-rose-200 dark:hover:border-rose-900/50 transition-all group"
                 >
-                  <div
-                    className="w-6 h-6 rounded-md flex items-center justify-center shrink-0"
-                    style={{ backgroundColor: `${colors[i]}12` }}
-                  >
-                    <Icon className="size-3" style={{ color: colors[i] }} />
+                  <div className="flex justify-between items-start mb-2">
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-2">
+                        <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-gray-100 dark:bg-gray-800 text-gray-400 font-mono">
+                          {p._id}
+                        </span>
+                        <h5 className="text-xs font-bold dark:text-white truncate w-32 group-hover:text-rose-500 transition-colors">
+                          {p.tenderName}
+                        </h5>
+                      </div>
+                      <p className="text-[10px] text-gray-400 mt-0.5 truncate italic">
+                        {p.projectName || "General Site Operations"}
+                      </p>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-xs font-black text-rose-500 tabular-nums">
+                        {formatCurrency(p.penaltyValue)}
+                      </p>
+                      <p className="text-[9px] text-gray-400 uppercase font-medium">
+                        Penalty
+                      </p>
+                    </div>
                   </div>
-                  <div>
-                    <p className="text-[10px] text-gray-400 leading-tight">
-                      {d.name}
-                    </p>
-                    <p className="text-xs font-bold dark:text-white tabular-nums leading-tight">
-                      {d.value}
-                    </p>
+
+                  {/* Visual Impact Bar */}
+                  <div className="h-1 w-full bg-gray-100 dark:bg-gray-800 rounded-full overflow-hidden">
+                    <div
+                      className="h-full bg-rose-500 opacity-60 rounded-full"
+                      style={{ width: `${pct}%` }}
+                    />
                   </div>
                 </div>
               );
             })}
           </div>
         </div>
-      </div>
-      {/* Billing by project */}
-      {data.byProject?.length > 0 && (
-        <div className="mt-4 border-t border-gray-100 dark:border-gray-800 pt-4">
-          <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2">
-            By Project
+
+        {/* Action Callout */}
+        <div className="p-3 rounded-xl bg-gray-50 dark:bg-gray-800/40 border border-dashed border-gray-200 dark:border-gray-700 flex items-center gap-3">
+          <Clock className="size-4 text-gray-400" />
+          <p className="text-[10px] text-gray-500 dark:text-gray-400">
+            Most recent penalty: <strong>₹3,400</strong> on Romaa Review V1.2
           </p>
-          <div className="space-y-1">
-            {data.byProject.slice(0, 3).map((p) => (
-              <div
-                key={p.tenderId}
-                className="flex items-center justify-between py-2 px-3 -mx-1 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors"
-              >
-                <div className="min-w-0 flex-1">
-                  <p className="text-[11px] font-semibold dark:text-white truncate">
-                    {p.tenderName}
-                  </p>
-                  <p className="text-[10px] text-gray-400">
-                    {p.billCount} bills &middot; {p.draft} draft
-                    {p.paid > 0 ? ` &middot; ${p.paid} paid` : ""}
-                  </p>
-                </div>
-                <span className="text-xs font-bold text-emerald-500 tabular-nums shrink-0 ml-2">
-                  {formatCompact(p.totalBilled)}
-                </span>
-              </div>
-            ))}
+        </div>
+      </div>
+    </GlassCard>
+  );
+};
+
+const BillingSection = ({ data }) => {
+  // Mapping icons and colors to the specific billing stages in your JSON
+  const stages = [
+    {
+      label: "Draft",
+      value: data.draft,
+      icon: FileText,
+      color: "text-gray-400",
+      bg: "bg-gray-400/10",
+    },
+    {
+      label: "Submitted",
+      value: data.submitted,
+      icon: Send,
+      color: "text-blue-500",
+      bg: "bg-blue-500/10",
+    },
+    {
+      label: "Approved",
+      value: data.approved,
+      icon: CheckCircle2,
+      color: "text-amber-500",
+      bg: "bg-amber-500/10",
+    },
+    {
+      label: "Paid",
+      value: data.paid,
+      icon: CircleDollarSign,
+      color: "text-emerald-500",
+      bg: "bg-emerald-500/10",
+    },
+  ];
+
+  return (
+    <GlassCard hover={false} className="p-6">
+      <SectionHeader
+        title="Client Billing"
+        icon={Receipt}
+        badge={<Badge variant="success">{data.billCount} Total Bills</Badge>}
+      />
+
+      <div className="flex flex-col gap-6">
+        {/* Top Metric: Total Revenue Overview */}
+        <div className="p-6 rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-600 text-white shadow-lg shadow-emerald-200 dark:shadow-none">
+          <div className="flex justify-between items-start">
+            <div>
+              <p className="text-[10px] font-bold uppercase opacity-80 tracking-widest">
+                Total Value Billed
+              </p>
+              <h2 className="text-3xl font-black tabular-nums mt-1">
+                {formatCurrency(data.totalBilled)}
+              </h2>
+            </div>
+            <TrendingUp className="size-6 opacity-40" />
+          </div>
+          <div className="mt-4 flex gap-4 border-t border-white/20 pt-4">
+            <div className="text-xs font-medium">
+              <span className="opacity-70">Status: </span>
+              <span className="font-bold">All Draft ({data.draft})</span>
+            </div>
           </div>
         </div>
-      )}
+
+        {/* Billing Lifecycle Grid */}
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          {stages.map((s) => (
+            <div
+              key={s.label}
+              className={`p-3 rounded-xl ${s.bg} border border-transparent transition-all`}
+            >
+              <div className="flex items-center gap-2 mb-1">
+                <s.icon className={`size-3.5 ${s.color}`} />
+                <span className="text-[10px] font-bold text-gray-500 uppercase">
+                  {s.label}
+                </span>
+              </div>
+              <p className="text-lg font-black dark:text-white tabular-nums">
+                {s.value}
+              </p>
+            </div>
+          ))}
+        </div>
+
+        {/* Project Breakdown - Mapping all project fields */}
+        <div className="space-y-3">
+          <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">
+            Billing by Project
+          </p>
+          {data.byProject?.map((p) => (
+            <div
+              key={p.tenderId}
+              className="group p-4 rounded-2xl bg-gray-50/50 dark:bg-gray-800/30 border border-gray-100 dark:border-gray-700/50 hover:bg-white dark:hover:bg-gray-800 transition-all"
+            >
+              <div className="flex justify-between items-start mb-3">
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-gray-200 dark:bg-gray-700 text-gray-500 dark:text-gray-400 font-mono">
+                      {p.tenderId}
+                    </span>
+                    <h5 className="text-sm font-bold dark:text-white truncate">
+                      {p.tenderName}
+                    </h5>
+                  </div>
+                  <p className="text-[10px] text-gray-400 truncate">
+                    {p.projectName}
+                  </p>
+                </div>
+                <div className="text-right shrink-0">
+                  <p className="text-sm font-black text-emerald-600 dark:text-emerald-400">
+                    {formatCompact(p.totalBilled)}
+                  </p>
+                  <p className="text-[9px] text-gray-400 font-medium">
+                    Total Project Bill
+                  </p>
+                </div>
+              </div>
+
+              {/* Progress towards payment for this project */}
+              <div className="flex items-center gap-3">
+                <div className="flex-1 h-1.5 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden flex">
+                  {/* Visualizing Draft vs Paid for the specific project */}
+                  <div
+                    className="h-full bg-gray-400"
+                    style={{ width: `${(p.draft / p.billCount) * 100}%` }}
+                  />
+                  <div
+                    className="h-full bg-emerald-500"
+                    style={{ width: `${(p.paid / p.billCount) * 100}%` }}
+                  />
+                </div>
+                <span className="text-[10px] font-bold text-gray-500">
+                  {p.billCount} Bill{p.billCount > 1 ? "s" : ""}
+                </span>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
     </GlassCard>
   );
 };
@@ -1175,105 +1535,134 @@ const BillingSection = ({ data }) => {
 const EmployeesSection = ({ data }) => {
   const deptData = Object.entries(data.byDepartment)
     .map(([name, value]) => ({ name, value }))
-    .sort((a, b) => b.value - a.value)
-    .slice(0, 8);
+    .sort((a, b) => b.value - a.value);
 
   const statusCards = [
-    { label: "Active", value: data.byStatus.Active || 0, icon: UserCheck, color: "#10b981" },
-    { label: "Inactive", value: data.byStatus.Inactive || 0, icon: UserMinus, color: "#94a3b8" },
-    { label: "Suspended", value: data.byStatus.Suspended || 0, icon: UserX, color: "#ef4444" },
+    {
+      label: "Active",
+      value: data.byStatus.Active || 0,
+      icon: UserCheck,
+      color: "text-emerald-500",
+      bg: "bg-emerald-500/10",
+    },
+    {
+      label: "Inactive",
+      value: data.byStatus.Inactive || 0,
+      icon: UserMinus,
+      color: "text-gray-400",
+      bg: "bg-gray-400/10",
+    },
   ];
 
+  const siteCount = data.byUserType?.Site || 0;
+  const officeCount = data.byUserType?.Office || 0;
+  const sitePct = data.total ? Math.round((siteCount / data.total) * 100) : 0;
+
   return (
-    <GlassCard hover={false} className="p-5">
+    <GlassCard hover={false} className="p-6">
       <SectionHeader
-        title="Employees"
+        title="Workforce Overview"
         icon={Users}
-        badge={<Badge variant="violet">{data.total} total</Badge>}
+        badge={<Badge variant="violet">{data.total} Total Staff</Badge>}
       />
-      <div className="flex flex-wrap gap-3 mb-5">
-        {statusCards.map((s) => {
-          const Icon = s.icon;
-          return (
-            <div
-              key={s.label}
-              className="flex items-center gap-3 px-4 py-3 rounded-xl bg-gray-50/80 dark:bg-gray-800/30 border border-gray-100/80 dark:border-gray-700/30"
-            >
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        {/* Column 1: Status & Headcount */}
+        <div className="space-y-6">
+          <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">
+            Employment Status
+          </p>
+          <div className="grid grid-cols-2 gap-4">
+            {statusCards.map((s) => (
               <div
-                className="w-9 h-9 rounded-xl flex items-center justify-center text-white"
-                style={{
-                  background: `linear-gradient(135deg, ${s.color}, ${s.color}dd)`,
-                }}
+                key={s.label}
+                className={`p-4 rounded-2xl ${s.bg} border border-transparent hover:border-white/20 transition-all`}
               >
-                <Icon className="size-4" />
-              </div>
-              <div>
-                <p className="text-[10px] text-gray-400 dark:text-gray-500 font-medium">
-                  {s.label}
-                </p>
-                <p className="text-lg font-bold dark:text-white tabular-nums leading-tight">
+                <s.icon className={`size-5 ${s.color} mb-2`} />
+                <p className="text-2xl font-black dark:text-white tabular-nums">
                   {s.value}
                 </p>
+                <p className="text-[10px] font-bold text-gray-500 uppercase">
+                  {s.label}
+                </p>
+              </div>
+            ))}
+          </div>
+
+          <div className="p-4 rounded-2xl bg-gray-50/50 dark:bg-gray-800/30 border border-gray-100 dark:border-gray-700/50">
+            <div className="flex justify-between items-end mb-2">
+              <p className="text-[10px] font-bold text-gray-400 uppercase">
+                Field vs Office
+              </p>
+              <span className="text-[10px] font-bold text-orange-500">
+                {sitePct}% Field Force
+              </span>
+            </div>
+            <div className="h-3 w-full bg-blue-500 rounded-full flex overflow-hidden">
+              <div
+                className="h-full bg-orange-500"
+                style={{ width: `${sitePct}%` }}
+              />
+            </div>
+            <div className="flex justify-between mt-3">
+              <div className="flex items-center gap-2">
+                <div className="size-2 rounded-full bg-orange-500" />
+                <span className="text-xs font-bold dark:text-white">
+                  {siteCount} Site
+                </span>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="size-2 rounded-full bg-blue-500" />
+                <span className="text-xs font-bold dark:text-white">
+                  {officeCount} Office
+                </span>
               </div>
             </div>
-          );
-        })}
-        <div className="flex items-center gap-4 px-4 py-3 rounded-xl bg-gray-50/80 dark:bg-gray-800/30 border border-gray-100/80 dark:border-gray-700/30 ml-auto">
-          <div className="flex items-center gap-2 text-xs">
-            <HardHat className="size-4 text-orange-500" />
-            <span className="text-gray-400">Site</span>
-            <span className="font-bold dark:text-white tabular-nums">
-              {data.byUserType?.Site || 0}
-            </span>
-          </div>
-          <div className="w-px h-5 bg-gray-200 dark:bg-gray-700" />
-          <div className="flex items-center gap-2 text-xs">
-            <Briefcase className="size-4 text-blue-500" />
-            <span className="text-gray-400">Office</span>
-            <span className="font-bold dark:text-white tabular-nums">
-              {data.byUserType?.Office || 0}
-            </span>
           </div>
         </div>
-      </div>
-      <div className="rounded-xl bg-gray-50/50 dark:bg-gray-800/20 border border-gray-100/50 dark:border-gray-700/20 p-4">
-        <p className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-3">
-          By Department
-        </p>
-        <ResponsiveContainer width="100%" height={200}>
-          <BarChart
-            data={deptData}
-            layout="vertical"
-            margin={{ left: 0, right: 10 }}
-          >
-            <CartesianGrid
-              strokeDasharray="3 3"
-              horizontal={false}
-              stroke="#e5e7eb20"
-            />
-            <XAxis type="number" tick={{ fontSize: 10 }} />
-            <YAxis
-              dataKey="name"
-              type="category"
-              width={85}
-              tick={{ fontSize: 10, fontWeight: 600 }}
-            />
-            <Tooltip
-              contentStyle={{
-                borderRadius: "12px",
-                border: "none",
-                boxShadow: "0 8px 24px rgba(0,0,0,0.12)",
-                fontSize: "12px",
-              }}
-            />
-            <Bar
-              dataKey="value"
-              fill="#6366f1"
-              radius={[0, 8, 8, 0]}
-              barSize={16}
-            />
-          </BarChart>
-        </ResponsiveContainer>
+
+        {/* Column 2: Department Distribution */}
+        <div className="lg:col-span-2">
+          <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-4">
+            Department Strength
+          </p>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            {deptData.map((dept) => (
+              <div
+                key={dept.name}
+                className="flex items-center justify-between p-3 rounded-xl border border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-900/20 hover:shadow-sm transition-all"
+              >
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-lg bg-violet-50 dark:bg-violet-900/20 flex items-center justify-center">
+                    <Briefcase className="size-4 text-violet-500" />
+                  </div>
+                  <span className="text-xs font-bold dark:text-white text-gray-700">
+                    {dept.name}
+                  </span>
+                </div>
+                <div className="flex items-center gap-3">
+                  <span className="text-sm font-black dark:text-white tabular-nums">
+                    {dept.value}
+                  </span>
+                  <div className="w-12 h-1.5 bg-gray-100 dark:bg-gray-800 rounded-full overflow-hidden">
+                    <div
+                      className="h-full bg-violet-500"
+                      style={{ width: `${(dept.value / data.total) * 100}%` }}
+                    />
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          <div className="mt-6 flex items-center gap-2 p-3 rounded-xl bg-violet-50/50 dark:bg-violet-900/10 border border-violet-100 dark:border-violet-900/30">
+            <ShieldAlert className="size-4 text-violet-500" />
+            <p className="text-[10px] text-violet-700 dark:text-violet-400 font-medium">
+              Headcount is distributed across <strong>{deptData.length}</strong>{" "}
+              active departments.
+            </p>
+          </div>
+        </div>
       </div>
     </GlassCard>
   );
@@ -1283,8 +1672,18 @@ const SiteWorkDoneSection = ({ data }) => {
   const statuses = [
     { label: "Draft", value: data.draft, icon: FileText, color: "#94a3b8" },
     { label: "Submitted", value: data.submitted, icon: Send, color: "#3b82f6" },
-    { label: "Approved", value: data.approved, icon: CheckCircle2, color: "#10b981" },
-    { label: "Rejected", value: data.rejected, icon: XCircle, color: "#ef4444" },
+    {
+      label: "Approved",
+      value: data.approved,
+      icon: CheckCircle2,
+      color: "#10b981",
+    },
+    {
+      label: "Rejected",
+      value: data.rejected,
+      icon: XCircle,
+      color: "#ef4444",
+    },
   ];
 
   return (
@@ -1328,67 +1727,141 @@ const SiteWorkDoneSection = ({ data }) => {
 
 const MachinerySection = ({ data }) => {
   const statuses = [
-    { label: "Active", value: data.byStatus?.Active || 0, icon: CheckCircle2, color: "#10b981" },
-    { label: "Idle", value: data.byStatus?.Idle || 0, icon: Clock, color: "#94a3b8" },
+    {
+      label: "Active",
+      value: data.byStatus?.Active || 0,
+      icon: CheckCircle2,
+      color: "text-emerald-500",
+      bg: "bg-emerald-500/10",
+    },
     {
       label: "Maintenance",
       value: data.byStatus?.Maintenance || 0,
       icon: Cog,
-      color: "#f59e0b",
+      color: "text-amber-500",
+      bg: "bg-amber-500/10",
     },
-    { label: "Breakdown", value: data.byStatus?.Breakdown || 0, icon: XCircle, color: "#ef4444" },
+    {
+      label: "Breakdown",
+      value: data.byStatus?.Breakdown || 0,
+      icon: ShieldAlert,
+      color: "text-rose-500",
+      bg: "bg-rose-500/10",
+    },
+    {
+      label: "Idle",
+      value: data.byStatus?.Idle || 0,
+      icon: Clock,
+      color: "text-gray-400",
+      bg: "bg-gray-400/10",
+    },
   ];
 
+  const complianceAlert = data.expiringComplianceCount > 0;
+
   return (
-    <GlassCard hover={false} className="p-5">
+    <GlassCard hover={false} className="p-6">
       <SectionHeader
-        title="Machinery"
+        title="Machinery & Fleet"
         icon={HardHat}
-        badge={<Badge variant="orange">{data.total} assets</Badge>}
+        badge={<Badge variant="orange">{data.total} Total Assets</Badge>}
       />
-      <div className="grid grid-cols-2 gap-3">
-        {statuses.map((s) => {
-          const Icon = s.icon;
-          return (
+
+      <div className="flex flex-col gap-6">
+        {/* Fleet Status Grid */}
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+          {statuses.map((s) => (
             <div
               key={s.label}
-              className="flex items-center gap-3 px-4 py-3.5 rounded-xl bg-gray-50/80 dark:bg-gray-800/30 border border-gray-100/80 dark:border-gray-700/30 group hover:shadow-sm transition-all"
+              className={`p-4 rounded-2xl ${s.bg} border border-transparent flex flex-col items-center text-center transition-all`}
             >
+              <s.icon className={`size-5 ${s.color} mb-2`} />
+              <p className="text-2xl font-black dark:text-white tabular-nums leading-none">
+                {s.value}
+              </p>
+              <p className="text-[10px] font-bold text-gray-500 uppercase mt-1">
+                {s.label}
+              </p>
+            </div>
+          ))}
+        </div>
+
+        {/* Compliance & Health Summary */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {/* Health Progress */}
+          <div className="p-5 rounded-2xl bg-gray-50/50 dark:bg-gray-800/30 border border-gray-100 dark:border-gray-700/50">
+            <div className="flex justify-between items-center mb-4">
+              <p className="text-[11px] font-bold text-gray-400 uppercase tracking-widest">
+                Fleet Availability
+              </p>
+              <span className="text-xs font-black text-emerald-500">
+                {data.total
+                  ? Math.round(
+                      ((data.byStatus?.Active || 0) / data.total) * 100,
+                    )
+                  : 0}
+                %
+              </span>
+            </div>
+            <div className="h-4 w-full bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
               <div
-                className="w-10 h-10 rounded-xl flex items-center justify-center text-white shrink-0 group-hover:scale-105 transition-transform"
+                className="h-full bg-gradient-to-r from-emerald-500 to-teal-400 transition-all duration-1000"
                 style={{
-                  background: `linear-gradient(135deg, ${s.color}, ${s.color}cc)`,
+                  width: `${data.total ? ((data.byStatus?.Active || 0) / data.total) * 100 : 0}%`,
                 }}
+              />
+            </div>
+            <p className="text-[10px] text-gray-400 mt-3 flex items-center gap-1.5">
+              <CheckCircle2 className="size-3 text-emerald-500" /> All assets
+              are currently operational.
+            </p>
+          </div>
+
+          {/* Compliance Card */}
+          <div
+            className={`p-5 rounded-2xl border transition-all ${
+              complianceAlert
+                ? "bg-orange-50/50 dark:bg-orange-950/10 border-orange-200 dark:border-orange-900/30"
+                : "bg-emerald-50/30 dark:bg-emerald-950/10 border-emerald-100 dark:border-emerald-900/20"
+            }`}
+          >
+            <div className="flex items-start gap-4">
+              <div
+                className={`w-12 h-12 rounded-xl flex items-center justify-center shrink-0 ${
+                  complianceAlert
+                    ? "bg-orange-500 text-white"
+                    : "bg-emerald-500 text-white"
+                }`}
               >
-                <Icon className="size-4" />
+                {complianceAlert ? (
+                  <ShieldAlert className="size-6" />
+                ) : (
+                  <FileCheck className="size-6" />
+                )}
               </div>
               <div>
-                <p className="text-[10px] text-gray-400 dark:text-gray-500 font-medium">
-                  {s.label}
+                <h4
+                  className={`text-sm font-bold ${complianceAlert ? "text-orange-700 dark:text-orange-400" : "text-emerald-700 dark:text-emerald-400"}`}
+                >
+                  {complianceAlert
+                    ? "Compliance Action Required"
+                    : "Compliance Up-to-Date"}
+                </h4>
+                <p className="text-[11px] text-gray-500 dark:text-gray-400 mt-1">
+                  {complianceAlert
+                    ? `${data.expiringComplianceCount} documents expiring within 30 days.`
+                    : "All machinery documents and insurance are valid."}
                 </p>
-                <p className="text-xl font-bold dark:text-white tabular-nums leading-tight">
-                  {s.value}
-                </p>
+                {complianceAlert && (
+                  <button className="mt-3 text-[10px] font-bold text-orange-600 dark:text-orange-400 underline underline-offset-4">
+                    Renew Documents
+                  </button>
+                )}
               </div>
             </div>
-          );
-        })}
-      </div>
-      {data.expiringComplianceCount > 0 && (
-        <div className="flex items-center gap-3 mt-4 px-4 py-3.5 rounded-xl bg-gradient-to-r from-orange-50 to-amber-50 dark:from-orange-950/20 dark:to-amber-950/20 border border-orange-200/60 dark:border-orange-900/30">
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-orange-400 to-amber-500 flex items-center justify-center text-white shrink-0 shadow-sm">
-            <ShieldAlert className="size-4" />
-          </div>
-          <div>
-            <p className="text-xs font-bold text-orange-700 dark:text-orange-400">
-              {data.expiringComplianceCount} assets expiring soon
-            </p>
-            <p className="text-[10px] text-orange-500/70 mt-0.5">
-              Compliance documents expire within 30 days
-            </p>
           </div>
         </div>
-      )}
+      </div>
     </GlassCard>
   );
 };
@@ -1462,9 +1935,16 @@ const NotificationsSection = ({ data, navigate }) => {
 
 const Dashboard = () => {
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, canAccess } = useAuth();
   const [ViewWorkOrderModal, setViewWorkOrderModal] = useState(false);
   const { data, isLoading, isError, refetch, isFetching } = useDashboard();
+
+  // Check if user has read access to any subModule within a module
+  const hasModuleAccess = (module) => {
+    const modPerms = user?.role?.permissions?.[module];
+    if (!modPerms) return false;
+    return Object.values(modPerms).some((sub) => sub?.read === true);
+  };
 
   if (isLoading) return <Loader fullScreen={false} />;
 
@@ -1552,7 +2032,10 @@ const Dashboard = () => {
         {(data.myWorkProfile || data.upcomingDeadlines) && (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
             {data.myWorkProfile && (
-              <MyWorkProfileSection data={data.myWorkProfile} navigate={navigate} />
+              <MyWorkProfileSection
+                data={data.myWorkProfile}
+                navigate={navigate}
+              />
             )}
             {data.upcomingDeadlines && (
               <UpcomingDeadlinesSection data={data.upcomingDeadlines} />
@@ -1560,70 +2043,86 @@ const Dashboard = () => {
           </div>
         )}
 
-        {/* Attendance & Leaves Row */}
-        {/* {(data.todayAttendance || data.pendingLeaves) && (
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
-            {data.todayAttendance && (
-              <AttendanceSection data={data.todayAttendance} />
-            )}
-            {data.pendingLeaves && (
-              <PendingLeavesSection data={data.pendingLeaves} />
-            )}
-          </div>
-        )} */}
-
         {/* Tender Pipeline - Full Width */}
-        {data.tenderPipeline && (
+        {data.tenderPipeline && hasModuleAccess("tender") && (
           <TenderPipelineSection data={data.tenderPipeline} />
         )}
 
         {/* Purchase & Work Orders Row */}
-        {(data.purchaseRequests || data.workOrders) && (
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
-            {data.purchaseRequests && (
-              <PurchaseSection data={data.purchaseRequests} />
-            )}
-            {data.workOrders && <WorkOrderSection data={data.workOrders} />}
-          </div>
-        )}
+        {(() => {
+          const showPurchase =
+            data.purchaseRequests && hasModuleAccess("purchase");
+          const showWorkOrders = data.workOrders && hasModuleAccess("project");
+          if (!showPurchase && !showWorkOrders) return null;
+          const colClass =
+            showPurchase && showWorkOrders
+              ? "grid-cols-1 lg:grid-cols-2"
+              : "grid-cols-1";
+          return (
+            <div className={`grid ${colClass} gap-3`}>
+              {showPurchase && <PurchaseSection data={data.purchaseRequests} />}
+              {showWorkOrders && <WorkOrderSection data={data.workOrders} />}
+            </div>
+          );
+        })()}
 
         {/* Financial Row */}
-        {(data.emdSummary || data.billing || data.penaltySummary) && (
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
-            {data.emdSummary && <EmdSection data={data.emdSummary} />}
-            {data.billing && <BillingSection data={data.billing} />}
-            {data.penaltySummary && (
-              <PenaltySection data={data.penaltySummary} />
-            )}
-          </div>
-        )}
+        {(() => {
+          const showEmd = data.emdSummary && canAccess("tender", "emd");
+          const showBilling = data.billing && hasModuleAccess("finance");
+          const showPenalty =
+            data.penaltySummary && canAccess("tender", "project_penalty");
+          const visibleCount = [showEmd, showBilling, showPenalty].filter(
+            Boolean,
+          ).length;
+          if (visibleCount === 0) return null;
+          const colClass =
+            visibleCount === 3
+              ? "grid-cols-1 lg:grid-cols-3"
+              : visibleCount === 2
+                ? "grid-cols-1 lg:grid-cols-2"
+                : "grid-cols-1";
+          return (
+            <div className={`grid ${colClass} gap-3`}>
+              {showEmd && <EmdSection data={data.emdSummary} />}
+              {showBilling && <BillingSection data={data.billing} />}
+              {showPenalty && <PenaltySection data={data.penaltySummary} />}
+            </div>
+          );
+        })()}
 
         {/* Employees - Full Width */}
-        {data.employees && <EmployeesSection data={data.employees} />}
+        {data.employees && hasModuleAccess("hr") && (
+          <EmployeesSection data={data.employees} />
+        )}
 
         {/* Site & Machinery Row */}
-        {(data.siteWorkDone || data.machinery) && (
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
-            {data.siteWorkDone && (
-              <SiteWorkDoneSection data={data.siteWorkDone} />
-            )}
-            {data.machinery && <MachinerySection data={data.machinery} />}
-          </div>
-        )}
+        {(() => {
+          const showSite = data.siteWorkDone && hasModuleAccess("site");
+          const showMachinery =
+            data.machinery &&
+            (hasModuleAccess("site") || hasModuleAccess("purchase"));
+          if (!showSite && !showMachinery) return null;
+          const colClass =
+            showSite && showMachinery
+              ? "grid-cols-1 lg:grid-cols-2"
+              : "grid-cols-1";
+          return (
+            <div className={`grid ${colClass} gap-3`}>
+              {showSite && <SiteWorkDoneSection data={data.siteWorkDone} />}
+              {showMachinery && <MachinerySection data={data.machinery} />}
+            </div>
+          );
+        })()}
 
         {/* Notifications */}
         {data.notifications && (
-          <NotificationsSection
-            data={data.notifications}
-            navigate={navigate}
-          />
+          <NotificationsSection data={data.notifications} navigate={navigate} />
         )}
       </div>
 
       {ViewWorkOrderModal && (
-        <ViewWorkOrderDashboard
-          onclose={() => setViewWorkOrderModal(false)}
-        />
+        <ViewWorkOrderDashboard onclose={() => setViewWorkOrderModal(false)} />
       )}
     </div>
   );
