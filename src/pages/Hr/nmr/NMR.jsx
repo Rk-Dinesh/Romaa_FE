@@ -1,56 +1,37 @@
+import { useState } from "react";
+import { LuNotebookText } from "react-icons/lu";
 import Filters from "../../../components/Filters";
 import Table from "../../../components/Table";
 import AddNMR from "./AddNMR";
-import { LuNotebookText } from "react-icons/lu";
-import { useEffect, useState } from "react";
-import axios from "axios";
-import { toast } from "react-toastify";
-import { API } from "../../../constant";
+import { useDebounce } from "../../../hooks/useDebounce";
+import { useContractWorkers } from "./hooks/useContractWorkers";
 
 const columns = [
   { label: "NMR ID", key: "worker_id" },
   { label: "Name", key: "employee_name" },
   { label: "Role", key: "role" },
-  { label: "Department", key: "department" },
-  { label: "Contractor", key: "contractor_name" },
+  { label: "Daily Wage", key: "daily_wage" },
+  { label: "Contractor", key: "contractor_id" },
   { label: "Status", key: "status" },
 ];
 
 const NMR = () => {
-  const [nmrData, setNmrData] = useState([]);
-  const [loading, setLoading] = useState(false);
-  const [searchTerm, setSearchTerm] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(0);
+  const [searchTerm, setSearchTerm] = useState("");
   const [filterParams, setFilterParams] = useState({
     fromdate: "",
     todate: "",
   });
 
-  const fetchNMRs = async () => {
-    setLoading(true);
-    try {
-      const res = await axios.get(`${API}/contractworker/getcontractworker`, {
-        params: {
-          page: currentPage,
-          limit: 10,
-          search: searchTerm,
-          fromdate: filterParams.fromdate,
-          todate: filterParams.todate,
-        },
-      });
-      setNmrData(res.data.data);
-      setTotalPages(res.data.totalPages);
-    } catch (error) {
-      toast.error("Failed to fetch NMR data");
-    } finally {
-      setLoading(false);
-    }
-  };
+  const debouncedSearch = useDebounce(searchTerm, 500);
 
-  useEffect(() => {
-    fetchNMRs();
-  }, [currentPage, searchTerm, filterParams]);
+  const { data, isLoading, isFetching, refetch } = useContractWorkers({
+    page: currentPage,
+    limit: 10,
+    search: debouncedSearch,
+    fromdate: filterParams.fromdate,
+    todate: filterParams.todate,
+  });
 
   return (
     <Table
@@ -58,21 +39,24 @@ const NMR = () => {
       subtitle="NMR"
       pagetitle="NMR"
       columns={columns}
-      endpoint={nmrData}
+      endpoint={data?.data || []}
+      totalPages={data?.totalPages || 0}
+      loading={isLoading}
+      isRefreshing={isFetching}
       AddModal={AddNMR}
       editroutepoint={"editnmr"}
       routepoint={"viewnmr"}
       FilterModal={Filters}
       addButtonLabel="Add NMR"
       addButtonIcon={<LuNotebookText size={23} />}
-      totalPages={totalPages}
       currentPage={currentPage}
       setCurrentPage={setCurrentPage}
+      search={searchTerm}
+      setSearch={setSearchTerm}
       filterParams={filterParams}
       setFilterParams={setFilterParams}
-      onUpdated={fetchNMRs}
-      onSuccess={fetchNMRs}
-      loading={loading}
+      onUpdated={refetch}
+      onSuccess={refetch}
     />
   );
 };

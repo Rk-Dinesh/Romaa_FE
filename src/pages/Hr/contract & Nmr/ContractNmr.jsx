@@ -1,15 +1,14 @@
+import { useState } from "react";
 import { AiOutlineFileAdd } from "react-icons/ai";
 import Filters from "../../../components/Filters";
 import Table from "../../../components/Table";
 import AddContractor from "./AddContractor";
-import { useState, useEffect } from "react";
-import axios from "axios";
-import { toast } from "react-toastify";
-import { API } from "../../../constant";
+import { useDebounce } from "../../../hooks/useDebounce";
+import { useContractors } from "./hooks/useContractors";
 
 const ContractColumns = [
   { label: "Contractor ID", key: "contractor_id" },
-  { label: "Vendor", key: "company_name" },
+  { label: "Contractor Name", key: "contractor_name" },
   {
     label: "Contract Start",
     key: "contract_start_date",
@@ -39,41 +38,22 @@ const ContractColumns = [
 ];
 
 const ContractNmr = () => {
-  const [contracts, setContracts] = useState([]);
-  const [loading, setLoading] = useState(false);
-  const [searchTerm, setSearchTerm] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(0);
+  const [searchTerm, setSearchTerm] = useState("");
   const [filterParams, setFilterParams] = useState({
     fromdate: "",
     todate: "",
   });
 
-  const fetchContracts = async () => {
-    setLoading(true);
-    try {
-      const res = await axios.get(`${API}/contractor/contractorlist`, {
-        params: {
-          page: currentPage,
-          limit: 10,
-          search: searchTerm,
-          fromdate: filterParams.fromdate,
-          todate: filterParams.todate,
-        },
-      });
-    
-      setContracts(res.data.data);
-      setTotalPages(res.data.totalPages);
-    } catch (err) {
-      toast.error("Failed to fetch contract workers");
-    } finally {
-      setLoading(false);
-    }
-  };
+  const debouncedSearch = useDebounce(searchTerm, 500);
 
-  useEffect(() => {
-    fetchContracts();
-  }, [currentPage, searchTerm, filterParams]);
+  const { data, isLoading, isFetching, refetch } = useContractors({
+    page: currentPage,
+    limit: 10,
+    search: debouncedSearch,
+    fromdate: filterParams.fromdate,
+    todate: filterParams.todate,
+  });
 
   return (
     <Table
@@ -81,21 +61,24 @@ const ContractNmr = () => {
       subtitle="Contract & NMR"
       pagetitle="Contract & NMR"
       columns={ContractColumns}
-      endpoint={contracts}
+      endpoint={data?.data || []}
+      totalPages={data?.totalPages || 0}
+      loading={isLoading}
+      isRefreshing={isFetching}
       AddModal={AddContractor}
       editroutepoint={"editcontractor"}
       routepoint="viewcontractor"
       FilterModal={Filters}
       addButtonLabel="Add Contractor"
       addButtonIcon={<AiOutlineFileAdd size={23} />}
-      totalPages={totalPages}
       currentPage={currentPage}
       setCurrentPage={setCurrentPage}
+      search={searchTerm}
+      setSearch={setSearchTerm}
       filterParams={filterParams}
       setFilterParams={setFilterParams}
-      onUpdated={fetchContracts}
-      onSuccess={fetchContracts}
-      loading={loading}
+      onUpdated={refetch}
+      onSuccess={refetch}
     />
   );
 };

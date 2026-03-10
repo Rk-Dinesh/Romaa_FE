@@ -963,9 +963,9 @@ const TenderPipelineSection = ({ data }) => {
                   </div>
 
                   {/* Hover indicator */}
-                  <div className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity">
+                  {/* <div className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity">
                     <ArrowUpRight className="size-3 text-blue-500" />
-                  </div>
+                  </div> */}
                 </div>
               );
             })}
