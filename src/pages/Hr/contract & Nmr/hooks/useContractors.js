@@ -44,6 +44,24 @@ export const useContractorsDropdown = () => {
   });
 };
 
+export const useContractorsDropdownTenderWise = (tenderId) => {
+  return useQuery({
+    queryKey: ["contractors-dropdown-tender-wise", tenderId],
+    queryFn: async () => {
+      const { data } = await api.get(`/contractor/getallselectbyproject/${tenderId}`);
+      return (data?.data || []).map((c) => ({
+        value: c.contractor_id,
+        label: `${c.contractor_name || c.company_name || ""} (${c.contractor_id})`,
+        assigned_projects: c.assigned_projects || [],
+        wage_fixing: c.wage_fixing || [],
+      }));
+    },
+    enabled: !!tenderId,
+    staleTime: 0.1 * 60 * 1000, // 6 seconds
+  });
+};
+
+
 // --- Create Contractor ---
 export const useCreateContractor = ({ onSuccess, onclose }) => {
   const queryClient = useQueryClient();

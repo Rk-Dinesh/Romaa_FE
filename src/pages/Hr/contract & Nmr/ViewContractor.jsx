@@ -47,7 +47,7 @@ const ViewContractor = () => {
       {!onEdit ? (
         <div className="font-layout-font">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-6">
-            <Title title="HR Management" sub_title="Contractor Details" page_title={contractor.company_name || "View Contractor"} />
+            <Title title="HR Management" sub_title="Contractor Details" page_title={contractor.contractor_name || "View Contractor"} />
             <div className="mt-4 sm:mt-0">
               <ButtonBg button_name="Edit Profile" button_icon={<Pencil size={16} />} onClick={() => setOnEdit(true)} />
             </div>
@@ -63,7 +63,7 @@ const ViewContractor = () => {
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                 <InfoBlock label="Contractor ID" value={contractor.contractor_id} />
-                <InfoBlock label="Contractor Name" value={contractor.company_name} />
+                <InfoBlock label="Contractor Name" value={contractor.contractor_name} />
                 <InfoBlock label="Business Type" value={contractor.business_type} />
                 <div className="flex flex-col space-y-1">
                   <span className="text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">Status</span>
