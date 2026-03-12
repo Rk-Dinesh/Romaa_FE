@@ -60,7 +60,8 @@ export const useBOQItems = (projectId) => {
       return data?.data?.items || [];
     },
     enabled: !!projectId,
-    staleTime: 0.1 * 60 * 1000,
+    staleTime: 10 * 60 * 1000,
+    gcTime: 30 * 60 * 1000,
   });
 };
 
