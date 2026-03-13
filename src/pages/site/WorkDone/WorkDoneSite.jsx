@@ -1,77 +1,44 @@
-import React, { useEffect, useState } from 'react'
-import Table from '../../../components/Table'
-import Filters from '../../../components/Filters'
-import { TbPencil } from 'react-icons/tb'
-import { workDoneData } from '../../../components/Data'
-import AddWorkDoneSite from './AddWorkDoneSite'
-import axios from 'axios'
-import { API } from '../../../constant'
+import { TbPlus } from "react-icons/tb";
+import Filters from "../../../components/Filters";
+import Table from "../../../components/Table";
+import AddWorkDoneSite from "./AddWorkDoneSite";
+import { useWorkDoneSummary } from "./hooks/useWorkDone";
+import { useProject } from "../../../context/ProjectContext";
+
+const columns = [
+  {
+    label: "Report Date",
+    key: "report_date",
+    formatter: (v) => v ? new Date(v).toLocaleDateString("en-IN") : "—",
+  },
+  { label: "Tender ID",         key: "tender_id" },
+  { label: "Project Name",     key: "project_name" },
+  { label: "Total Work Orders", key: "total_work_orders" },
+];
 
 const WorkDoneSite = () => {
-  const tenderId = localStorage.getItem("tenderId");
-  const workDoneColumns = [
-    { label: "Work Done ID", key: "workDoneId" },
-    { label: "Tender ID", key: "tender_id" },
-    { label: "Report Date", key: "report_date" },
-    { label: "Total Work Done", key: "totalWorkDone" },
-    { label: "Created By", key: "created_by" },
-    { label: "Status", key: "status" },
-  ]
+  const { tenderId } = useProject();
 
-  
-
-  const [data, setData] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const fetchRequests = async () => {
-    try {
-
-
-      const res = await axios.get(
-        `${API}/workdone/api/list/${tenderId}`
-      );
-
-      const formatted = res.data?.data?.map((item) => ({
-        workDoneId: item.workDoneId,
-        tender_id: item.tender_id,
-        report_date: item.report_date
-          ? new Date(item.report_date).toLocaleDateString("en-GB")
-          : "-",
-
-        totalWorkDone: item.totalWorkDone,
-        created_by: item.created_by,
-        status: item.status,
-
-      }));
-
-      setData(formatted || []);
-    } catch (err) {
-      console.error("Error fetching PR list", err);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchRequests();
-  }, []);
+  const { data, isLoading, isFetching, refetch } = useWorkDoneSummary(tenderId);
 
   return (
     <Table
-      title={"DPR Work Done"}
-      subtitle={"Work Done"}
-      pagetitle={"Work Done"}
-      columns={workDoneColumns}
-      endpoint={data}
-      loading={loading}
-      EditModal={false}
-      routepoint={"viewworkDoneSite"}
-      FilterModal={Filters}
+      title="Site Management"
+      subtitle="Work Done"
+      pagetitle="Daily Progress Report"
+      columns={columns}
+      endpoint={data || []}
+      loading={isLoading}
+      isRefreshing={isFetching}
       AddModal={AddWorkDoneSite}
-      onSuccess={fetchRequests}
-      addButtonIcon={<TbPencil className="text-2xl text-primary" />}
-      addButtonLabel={"Add Work Done"}
+      EditModal={false}
+      routepoint="viewworkDoneSite"
+      FilterModal={Filters}
+      addButtonIcon={<TbPlus className="text-2xl text-primary" />}
+      addButtonLabel="Add Work Done"
+      onSuccess={refetch}
     />
-  )
-}
+  );
+};
 
-export default WorkDoneSite
+export default WorkDoneSite;

@@ -5,11 +5,11 @@ import axios from "axios";
 import { API } from "../../../../../constant";
 import { toast } from "react-toastify";
 import GeneralAbstract from "./general abstract/GeneralAbstract";
-import BOQProject from "./BOQTender/BOQProject";
+import BOQProject from "./BOQ/BOQProject";
 import NewInletDet from "./new inlet det/NewInletDet";
 import NewInletAbs from "./new inlet abs/NewInletAbs";
 
-const TenderDetailedEstimate = () => {
+const ProjectDetailedEstimate = () => {
   const { tender_id } = useParams();
   const [tabs, setTabs] = useState([
     { id: "1", label: "GS(General Abstract)", component: <GeneralAbstract /> },
@@ -137,4 +137,4 @@ const TenderDetailedEstimate = () => {
   );
 };
 
-export default TenderDetailedEstimate;
+export default ProjectDetailedEstimate;

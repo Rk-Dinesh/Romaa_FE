@@ -17,6 +17,32 @@ export const useContractorEmployees = (contractorId, tenderId) => {
   });
 };
 
+// --- DLP Summary (date-wise) ---
+export const useDLPSummary = (projectId) => {
+  return useQuery({
+    queryKey: ["dlp-summary", projectId],
+    queryFn: async () => {
+      const { data } = await api.get(`/dlp/api/summary/${projectId}`);
+      return data?.data || [];
+    },
+    enabled: !!projectId,
+    staleTime: 60 * 1000,
+  });
+};
+
+// --- DLP Reports by date ---
+export const useDLPByDate = (projectId, reportDate) => {
+  return useQuery({
+    queryKey: ["dlp-by-date", projectId, reportDate],
+    queryFn: async () => {
+      const { data } = await api.get(`/dlp/api/report-date/${projectId}/${reportDate}`);
+      return data?.data || [];
+    },
+    enabled: !!projectId && !!reportDate,
+    staleTime: 60 * 1000,
+  });
+};
+
 // --- DLP List for a project ---
 export const useDLPList = (projectId, queryParams = {}) => {
   return useQuery({

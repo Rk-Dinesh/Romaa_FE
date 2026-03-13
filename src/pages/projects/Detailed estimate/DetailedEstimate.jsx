@@ -64,7 +64,7 @@ const DetailedEstimate = () => {
       <Title title="Detailed Estimate" sub_title={`Tender : ${tenderId}`} />
 
       {/* Tabs Row */}
-      <div className="flex flex-wrap gap-2 py-2.5 ">
+      <div className="flex gap-2 py-2.5 overflow-x-auto no-scrollbar">
         {isLoading ? (
           <span className="text-sm text-gray-400 animate-pulse">Loading tabs...</span>
         ) : (
@@ -72,7 +72,7 @@ const DetailedEstimate = () => {
             <p
               key={id}
               onClick={() => setActiveTab(id)}
-              className={`first-letter:uppercase px-4 py-2.5 rounded-lg text-sm cursor-pointer transition-colors ${
+              className={`first-letter:uppercase px-4 py-2.5 rounded-lg text-sm cursor-pointer transition-colors whitespace-nowrap shrink-0 ${
                 activeTab === id
                   ? "bg-darkest-blue text-white shadow-md"
                   : "dark:bg-layout-dark dark:text-white bg-white text-darkest-blue border border-gray-200 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800"

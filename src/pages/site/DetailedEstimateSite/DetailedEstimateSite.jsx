@@ -67,11 +67,11 @@ const DetailedEstimateSite = () => {
       <Title title={`Detailed Estimate Site`} sub_title={`Tender : ${tenderId}`} />
 
       {/* Tabs */}
-      <div className="flex flex-wrap gap-2 py-2.5">
+      <div className="flex gap-2 py-2.5 overflow-x-auto no-scrollbar">
         {tabs.map(({ id, label }) => (
           <p
             key={id}
-            className={`first-letter:uppercase px-4 py-2.5 rounded-lg text-sm cursor-pointer ${activeTab === id
+            className={`first-letter:uppercase px-4 py-2.5 rounded-lg text-sm cursor-pointer whitespace-nowrap shrink-0 ${activeTab === id
                 ? "bg-darkest-blue text-white"
                 : "dark:bg-layout-dark dark:text-white bg-white text-darkest-blue"
               }`}
