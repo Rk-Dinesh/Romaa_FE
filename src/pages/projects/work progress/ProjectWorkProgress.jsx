@@ -1,71 +1,55 @@
-import React, { useEffect, useState } from 'react'
-import Table from '../../../components/Table'
-import Filters from '../../../components/Filters'
-import axios from 'axios'
-import { API } from '../../../constant'
+import Table from "../../../components/Table";
+import Filters from "../../../components/Filters";
+import { useProject } from "../../../context/ProjectContext";
+import { useWorkDoneList } from "../../site/WorkDone/hooks/useWorkDone";
+
+const STATUS_COLORS = {
+  Draft: "bg-gray-100 text-gray-600",
+  Submitted: "bg-blue-100 text-blue-700",
+  Approved: "bg-green-100 text-green-700",
+  Rejected: "bg-red-100 text-red-600",
+};
+
+const columns = [
+  { label: "Work ID", key: "workId" },
+  {
+    label: "Report Date",
+    key: "report_date",
+    formatter: (v) => (v ? new Date(v).toLocaleDateString("en-GB") : "—"),
+  },
+  { label: "Total Work Done", key: "totalWorkDone" },
+  { label: "Created By", key: "created_by" },
+  {
+    label: "Status",
+    key: "status",
+    render: (row) => (
+      <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${STATUS_COLORS[row.status] || "bg-gray-100 text-gray-600"}`}>
+        {row.status || "—"}
+      </span>
+    ),
+  },
+];
 
 const ProjectWorkProgress = () => {
-  const tenderId = localStorage.getItem("tenderId");
-  const workDoneColumns = [
-    { label: "Work Done ID", key: "workDoneId" },
-    { label: "Tender ID", key: "tender_id" },
-    { label: "Report Date", key: "report_date" },
-    { label: "Total Work Done", key: "totalWorkDone" },
-    { label: "Created By", key: "created_by" },
-    { label: "Status", key: "status" },
-  ]
-
-  
-
-  const [data, setData] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const fetchRequests = async () => {
-    try {
-
-
-      const res = await axios.get(
-        `${API}/workdone/api/list/${tenderId}`
-      );
-
-      const formatted = res.data?.data?.map((item) => ({
-        workDoneId: item.workDoneId,
-        tender_id: item.tender_id,
-        report_date: item.report_date
-          ? new Date(item.report_date).toLocaleDateString("en-GB")
-          : "-",
-
-        totalWorkDone: item.totalWorkDone,
-        created_by: item.created_by,
-        status: item.status,
-
-      }));
-
-      setData(formatted || []);
-    } catch (err) {
-      console.error("Error fetching PR list", err);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchRequests();
-  }, []);
+  const { tenderId } = useProject();
+  const { data, isLoading, isFetching, refetch } = useWorkDoneList(tenderId);
 
   return (
     <Table
-      title={"DPR Work Done"}
-      subtitle={"Work Done"}
-      pagetitle={"Work Done"}
-      columns={workDoneColumns}
-      endpoint={data}
-      loading={loading}
+      title="Project Management"
+      subtitle="Work Progress"
+      pagetitle="Daily Progress Report"
+      columns={columns}
+      endpoint={data || []}
+      loading={isLoading}
+      isRefreshing={isFetching}
+      AddModal={false}
       EditModal={false}
-      routepoint={"viewprojectworkprogress"}
+      routepoint="viewprojectworkprogress"
       FilterModal={Filters}
-      onSuccess={fetchRequests}
+      onSuccess={refetch}
     />
-  )
-}
+  );
+};
 
 export default ProjectWorkProgress;

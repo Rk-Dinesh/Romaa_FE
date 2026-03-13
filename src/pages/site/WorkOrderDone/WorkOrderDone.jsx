@@ -35,7 +35,7 @@ const WorkOrderDone = () => {
       routepoint="viewworkorderdone"
       FilterModal={Filters}
       addButtonIcon={<TbPlus className="text-2xl text-primary" />}
-      addButtonLabel="Add Work Done"
+      addButtonLabel="Add Work Order Done"
       onSuccess={refetch}
     />
   );

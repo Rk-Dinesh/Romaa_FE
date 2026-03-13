@@ -1,26 +1,42 @@
 import { TbPlus } from "react-icons/tb";
 import Filters from "../../../components/Filters";
 import Table from "../../../components/Table";
-// import AddWorkDoneSite from "./AddWorkOrderDone";
-
+import AddWorkDone from "./AddWorkDone";
 import { useProject } from "../../../context/ProjectContext";
-import { useWorkDoneSummary } from "../WorkOrderDone/hooks/useWorkOrderDone";
+import { useWorkDoneList } from "./hooks/useWorkDone";
+
+const STATUS_COLORS = {
+  Draft: "bg-gray-100 text-gray-600",
+  Submitted: "bg-blue-100 text-blue-700",
+  Approved: "bg-green-100 text-green-700",
+  Rejected: "bg-red-100 text-red-600",
+};
 
 const columns = [
+  { label: "Report ID", key: "workId" },
   {
     label: "Report Date",
     key: "report_date",
     formatter: (v) => (v ? new Date(v).toLocaleDateString("en-IN") : "—"),
   },
-  { label: "Tender ID", key: "tender_id" },
-  { label: "Project Name", key: "project_name" },
-  { label: "Total Work Orders", key: "total_work_orders" },
+  { label: "Total Qty", key: "totalWorkDone" },
+  { label: "Created By", key: "created_by" },
+  {
+    label: "Status",
+    key: "status",
+    render: (row) => (
+      <span
+        className={`text-xs font-semibold px-2 py-0.5 rounded-full ${STATUS_COLORS[row.status] || "bg-gray-100 text-gray-600"}`}
+      >
+        {row.status || "—"}
+      </span>
+    ),
+  },
 ];
 
 const WorkDone = () => {
   const { tenderId } = useProject();
-
-  const { data, isLoading, isFetching, refetch } = useWorkDoneSummary(tenderId);
+  const { data, isLoading, isFetching, refetch } = useWorkDoneList(tenderId);
 
   return (
     <Table
@@ -31,9 +47,9 @@ const WorkDone = () => {
       endpoint={data || []}
       loading={isLoading}
       isRefreshing={isFetching}
-      //AddModal={AddWorkDoneSite}
+      AddModal={AddWorkDone}
       EditModal={false}
-      routepoint="viewworkorderdone"
+      routepoint="viewworkdone"
       FilterModal={Filters}
       addButtonIcon={<TbPlus className="text-2xl text-primary" />}
       addButtonLabel="Add Work Done"

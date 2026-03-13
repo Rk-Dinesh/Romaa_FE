@@ -110,7 +110,7 @@ const ViewSiteDrawing = lazy(() => import("../pages/site/SiteDrawing/ViewSiteDra
 const WorkOrderDone = lazy(() => import("../pages/site/WorkOrderDone/WorkOrderDone"));
 const ViewWorkOrderDone = lazy(() => import("../pages/site/WorkOrderDone/ViewWorkOrderDone"));
 const WorkDone = lazy(() => import("../pages/site/WorkDone/WorkDone"));
-// const ViewWorkDone = lazy(() => import("../pages/site/WorkDone/ViewWorkDone"));
+const ViewWorkDone = lazy(() => import("../pages/site/WorkDone/ViewWorkDone"));
 const DailyLabourReport = lazy(() => import("../pages/site/DailyLabourReport/DailyLabourReport"));
 const ViewDailyReportSite = lazy(() => import("../pages/site/DailyLabourReport/ViewDailyReportSite"));
 const MaterialRecievedSite = lazy(() => import("../pages/site/MaterialRecieved/MaterialRecievedSite"));
@@ -405,7 +405,7 @@ const AppRoutes = () => {
                 </Route>
                 <Route path="workdone">
                   <Route index element={<WorkDone />} />
-                  {/* <Route path="viewworkdone" element={<ViewWorkDone />} /> */}
+                  <Route path="viewworkdone" element={<ViewWorkDone />} />
                 </Route>
                 <Route path="dialylabourreport">
                   <Route index element={<DailyLabourReport />} />
