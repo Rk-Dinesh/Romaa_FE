@@ -46,7 +46,7 @@ const validate = (reportDate, sections) => {
 
 // ─── Root component ───────────────────────────────────────────────────────────
 
-const AddWorkDoneSite = ({ onclose, onSuccess }) => {
+const AddWorkOrderDone = ({ onclose, onSuccess }) => {
   const { tenderId } = useProject();
   const [workOrders, setWorkOrders] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -487,4 +487,4 @@ const WorkOrderSection = ({
   );
 };
 
-export default AddWorkDoneSite;
+export default AddWorkOrderDone;

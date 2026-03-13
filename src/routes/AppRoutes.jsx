@@ -49,7 +49,7 @@ const DetailedEstimate = lazy(() => import("../pages/projects/Detailed estimate/
 //const ViewNewInletDet = lazy(() => import("../pages/projects/Detailed estimate/new inlet det/ViewNewInletDet"));
 //const ViewNewInletAbs = lazy(() => import("../pages/projects/Detailed estimate/new inlet abs/ViewNewInletAbs"));
 //const ViewVendorProject = lazy(() => import("../pages/projects/Detailed estimate/vendor/ViewVendorProjects"));
-const DrawingBoq = lazy(() => import("../pages/projects/drawing vs Boq/DrawingBoq"));
+const DrawingBoqPage = lazy(() => import("../pages/projects/drawing vs Boq/DrawingBoqPage"));
 //const ViewDrawingBoq = lazy(() => import("../pages/projects/drawing vs Boq/ViewDrawingBoq"));
 const WBS = lazy(() => import("../pages/projects/WBQ/WBS"));
 const ViewWbs = lazy(() => import("../pages/projects/WBQ/ViewWbs"));
@@ -107,8 +107,10 @@ const PlannedvsAchived = lazy(() => import("../pages/site/planned_vs_achived/Pla
 const MachineryEntry = lazy(() => import("../pages/site/machinery_Enry/MachineryEntry"));
 const SiteDrawing = lazy(() => import("../pages/site/SiteDrawing/SiteDrawing"));
 const ViewSiteDrawing = lazy(() => import("../pages/site/SiteDrawing/ViewSiteDrawing"));
-const WorkDoneSite = lazy(() => import("../pages/site/WorkDone/WorkDoneSite"));
-const ViewWorkDone = lazy(() => import("../pages/site/WorkDone/ViewWorkDone"));
+const WorkOrderDone = lazy(() => import("../pages/site/WorkOrderDone/WorkOrderDone"));
+const ViewWorkOrderDone = lazy(() => import("../pages/site/WorkOrderDone/ViewWorkOrderDone"));
+const WorkDone = lazy(() => import("../pages/site/WorkDone/WorkDone"));
+// const ViewWorkDone = lazy(() => import("../pages/site/WorkDone/ViewWorkDone"));
 const DailyLabourReport = lazy(() => import("../pages/site/DailyLabourReport/DailyLabourReport"));
 const ViewDailyReportSite = lazy(() => import("../pages/site/DailyLabourReport/ViewDailyReportSite"));
 const MaterialRecievedSite = lazy(() => import("../pages/site/MaterialRecieved/MaterialRecievedSite"));
@@ -258,7 +260,7 @@ const AppRoutes = () => {
                   <Route index element={<DetailedEstimate />} />
                 </Route>
                 <Route path="drawingboq">
-                  <Route index element={<DrawingBoq />} />
+                  <Route index element={<DrawingBoqPage />} />
                   {/* <Route path="viewdrawingboq" element={<ViewDrawingBoq />} /> */}
                 </Route>
                 <Route path="wbs">
@@ -397,9 +399,13 @@ const AppRoutes = () => {
                   <Route index element={<SiteDrawing />} />
                   <Route path="viewdrawing" element={<ViewSiteDrawing />} />
                 </Route>
-                <Route path="workDoneSite">
-                  <Route index element={<WorkDoneSite />} />
-                  <Route path="viewworkDoneSite" element={<ViewWorkDone />} />
+                <Route path="workorderdone">
+                  <Route index element={<WorkOrderDone />} />
+                  <Route path="viewworkorderdone" element={<ViewWorkOrderDone />} />
+                </Route>
+                <Route path="workdone">
+                  <Route index element={<WorkDone />} />
+                  {/* <Route path="viewworkdone" element={<ViewWorkDone />} /> */}
                 </Route>
                 <Route path="dialylabourreport">
                   <Route index element={<DailyLabourReport />} />

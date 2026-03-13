@@ -1,10 +1,10 @@
 import axios from "axios";
-import Table from "../../../../../../components/Table";
-import { API } from "../../../../../../constant";
-import { useEffect, useState } from "react";
-import { useParams } from "react-router-dom";
+import Table from "../../../../../components/Table";
+import { API } from "../../../../../constant";
+import { useCallback, useEffect, useState } from "react";
 import UploadAbstract from "./UploadAbstract";
 import { toast } from "react-toastify";
+import { useProject } from "../../../../../context/ProjectContext";
 
 const NewInletAbsColumns = [
   { label: "Abstract ID", key: "abstract_id" },
@@ -16,27 +16,29 @@ const NewInletAbsColumns = [
 ];
 
 const NewInletAbs = ({ name }) => {
-  const { tender_id } = useParams();
+  const { tenderId: tender_id } = useProject();
   const [abstract, setAbstract] = useState([]);
   const [loading, setLoading] = useState(false);
 
-  const fetchAbstract = async () => {
+  const fetchAbstract = useCallback(async () => {
     setLoading(true);
     try {
       const res = await axios.get(
-        `${API}/detailedestimate/getdatacustomhead?tender_id=${tender_id}&nametype=${name}`
+        `${API}/drawingvboqde/getdatacustomhead?tender_id=${tender_id}&nametype=${name}`
       );
   
       setAbstract(res.data.data || []);
     } catch (err) {
+      console.log(err);
       toast.error("Failed to fetch tenders");
     } finally {
       setLoading(false);
     }
-  };
+  }, [tender_id, name]);
+
   useEffect(() => {
     fetchAbstract();
-  }, [tender_id, name]);
+  }, [fetchAbstract]);
   return (
     <Table
       loading={loading}

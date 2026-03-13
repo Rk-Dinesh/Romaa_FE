@@ -1,11 +1,11 @@
-import React, { useEffect, useMemo, useState } from "react";
-import { useParams } from "react-router-dom";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import axios from "axios";
-import { API } from "../../../../../../constant"; 
+import { API } from "../../../../../constant"; 
 import { toast } from "react-toastify";
+import { useProject } from "../../../../../context/ProjectContext";
 
 const BOQProject = () => {
-  const { tender_id } = useParams();
+    const { tenderId :tender_id } = useProject();
   const [boqdata, setBoqdata] = useState(null);
   const [loading, setLoading] = useState(true);
 
@@ -15,11 +15,11 @@ const BOQProject = () => {
     return parseFloat(num).toFixed(2);
   };
 
-  const getBoqProjectdata = async () => {
+  const getBoqProjectdata = useCallback(async () => {
     try {
       setLoading(true);
       const res = await axios.get(
-        `${API}/detailedestimate/getbillofqty?tender_id=${tender_id}`
+        `${API}/drawingvboqde/getbillofqty?tender_id=${tender_id}`
       );
       // setBoqdata sets the "data" object from your JSON
       setBoqdata(res.data.data);
@@ -29,13 +29,13 @@ const BOQProject = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [tender_id]);
 
   useEffect(() => {
-    if (tender_id) {
+ 
       getBoqProjectdata();
-    }
-  }, [tender_id]);
+   
+  }, [getBoqProjectdata]);
 
   // 1. FIXED: Extract Headings from "spent" (not total_spent)
   const headings = useMemo(() => {

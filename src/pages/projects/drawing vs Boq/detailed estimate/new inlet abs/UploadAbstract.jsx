@@ -1,17 +1,17 @@
 import axios from "axios";
 import React, { useState, useRef } from "react";
 import { IoClose } from "react-icons/io5";
-import { useParams } from "react-router-dom";
-import { API } from "../../../../../../constant";
+import { API } from "../../../../../constant";
 import { toast } from "react-toastify";
 import SampleAbstractExcel from "./DetailEstimate.xlsx";
+import { useProject } from "../../../../../context/ProjectContext";
 
 
 const UploadAbstract = ({ onclose, onSuccess, name }) => {
   const [files, setFiles] = useState([]);
   const [saving, setSaving] = useState(false);
   const inputRef = useRef(null);
-  const { tender_id } = useParams();
+  const { tenderId: tender_id } = useProject();
   const nametype = name.replace(/abstract$/i, "");
 
 
@@ -51,7 +51,7 @@ const UploadAbstract = ({ onclose, onSuccess, name }) => {
       if (files.length === 1) {
         formData.append("file", files[0]);
         const res = await axios.post(
-          `${API}/detailedestimate/bulkinsertcustomheadnew?tender_id=${tender_id}`,
+          `${API}/drawingvboqde/bulkinsertcustomheadnew?tender_id=${tender_id}`,
           formData,
           {
             headers: { "Content-Type": "multipart/form-data" },

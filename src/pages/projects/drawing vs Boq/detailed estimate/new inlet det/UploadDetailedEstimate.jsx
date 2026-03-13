@@ -1,9 +1,10 @@
 import axios from "axios";
-import React, { useState, useRef } from "react";
+import React, { useState, useRef } from "react";  
 import { IoClose } from "react-icons/io5";
-import { useParams } from "react-router-dom";
-import { API } from "../../../../../../constant";
+import { API } from "../../../../../constant";
 import { toast } from "react-toastify";
+import { useProject } from "../../../../../context/ProjectContext";
+
 
 const sampleCSv = `abstract_id,particulars,nos,l,b,d_h,content,
 ABS001,u/s cut of wall,"1x2",120,10,1.90,30,
@@ -16,7 +17,7 @@ const UploadDetailedEstimate = ({ onclose, onSuccess, name }) => {
   const [files, setFiles] = useState([]);
   const [saving, setSaving] = useState(false);
   const inputRef = useRef(null);
-  const { tender_id } = useParams();
+const { tenderId: tender_id } = useProject();
 
 
   const handleFiles = (selectedFiles) => {
@@ -55,7 +56,7 @@ const UploadDetailedEstimate = ({ onclose, onSuccess, name }) => {
       if (files.length === 1) {
         formData.append("file", files[0]);
         const res = await axios.post(
-          `${API}/detailedestimate/bulkinsertcustomhead?tender_id=${tender_id}`,
+          `${API}/drawingvboqde/bulkinsertcustomhead?tender_id=${tender_id}`,
           formData,
           {
             headers: { "Content-Type": "multipart/form-data" },

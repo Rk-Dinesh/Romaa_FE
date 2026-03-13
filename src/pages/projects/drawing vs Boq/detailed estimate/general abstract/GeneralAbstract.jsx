@@ -1,9 +1,9 @@
 
 import axios from "axios";
-import Table from "../../../../../../components/Table";
-import { API } from "../../../../../../constant";
-import { useParams } from "react-router-dom";
+import Table from "../../../../../components/Table";
+import { API } from "../../../../../constant";
 import { useEffect, useState } from "react";
+import { useProject } from "../../../../../context/ProjectContext";
 
 const Columns = [
   { label: "Abstract ", key: "heading" },
@@ -21,24 +21,24 @@ const Columns = [
 ];
 
 const GeneralAbstract = () => {
-  const { tender_id } = useParams();
+  const { tenderId: tender_id } = useProject();
   const [generalAbstractdata, setGeneralAbstractdata] = useState([]);
   const [loading, setLoading] = useState(true);
-  const getGeneralAbstractdata = async () => {
-    try {
-      const res = await axios.get(
-        `${API}/detailedestimate/getgeneralabstract?tender_id=${tender_id}`
-      );
-      setGeneralAbstractdata(res.data.data);
-    } catch (error) {
-      console.log(error);
-    } finally {
-      setLoading(false);
-    }
-  };
   useEffect(() => {
-    getGeneralAbstractdata();
-  }, []);
+    const getGeneralAbstractdata = async () => {
+      try {
+        const res = await axios.get(
+          `${API}/drawingvboqde/getgeneralabstract?tender_id=${tender_id}`
+        );
+        setGeneralAbstractdata(res.data.data);
+      } catch (error) {
+        console.log(error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    if (tender_id) getGeneralAbstractdata();
+  }, [tender_id]);
   return (
     <Table
       contentMarginTop="mt-0"

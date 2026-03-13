@@ -1,16 +1,16 @@
-import React, { useEffect, useState } from "react";
-import { useParams } from "react-router-dom";
-import Title from "../../../../../components/Title";
+import React, { useCallback, useEffect, useState } from "react";
 import axios from "axios";
-import { API } from "../../../../../constant";
+
 import { toast } from "react-toastify";
 import GeneralAbstract from "./general abstract/GeneralAbstract";
-import BOQProject from "./BOQ/BOQProject";
+import BOQProject from "./BOQTender/BOQProject";
 import NewInletDet from "./new inlet det/NewInletDet";
 import NewInletAbs from "./new inlet abs/NewInletAbs";
+import { useProject } from "../../../../context/ProjectContext";
+import { API } from "../../../../constant";
 
 const ProjectDetailedEstimate = () => {
-  const { tender_id } = useParams();
+  const { tenderId: tender_id } = useProject();
   const [tabs, setTabs] = useState([
     { id: "1", label: "GS(General Abstract)", component: <GeneralAbstract /> },
     { id: "2", label: "Bill of Qty", component: <BOQProject /> },
@@ -20,9 +20,9 @@ const ProjectDetailedEstimate = () => {
   const [loading, setLoading] = useState(false);
 
   // ✅ Fetch headings from backend
-  const fetchHeadings = async () => {
+  const fetchHeadings = useCallback(async () => {
     try {
-      const res = await axios.get(`${API}/detailedestimate/extractheadings`, {
+      const res = await axios.get(`${API}/drawingvboqde/extractheadings`, {
         params: { tender_id },
       });
 
@@ -45,7 +45,7 @@ const ProjectDetailedEstimate = () => {
     } catch (error) {
       console.error("Error fetching headings:", error);
     }
-  };
+  }, [tender_id]);
 
   // ✅ Add new heading
   const handleAddTabs = async (e) => {
@@ -55,7 +55,7 @@ const ProjectDetailedEstimate = () => {
     setLoading(true);
     try {
       const res = await axios.post(
-        `${API}/detailedestimate/addheading?tender_id=${tender_id}`,
+        `${API}/drawingvboqde/addheading?tender_id=${tender_id}`,
         {
           heading: name.toLowerCase().trim(),
           abstract: [],
@@ -79,14 +79,12 @@ const ProjectDetailedEstimate = () => {
 
   useEffect(() => {
     if (tender_id) fetchHeadings();
-  }, [tender_id]);
+  }, [tender_id, fetchHeadings]);
 
   const activeTabData = tabs.find((tab) => tab.id === activeTab);
 
   return (
     <div className="font-roboto-flex h-full flex flex-col">
-      <Title page_title=" Tender Detailed Estimate" />
-
       {/* Add Heading */}
       <form onSubmit={handleAddTabs} className="flex gap-2   justify-end">
         <input

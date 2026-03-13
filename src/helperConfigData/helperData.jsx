@@ -301,9 +301,15 @@ export const Menus = [
         subModule: "stock_register",
       },
       {
+        title: "Work Order Done",
+        icon: <TbReceipt2 size={23} />,
+        to: "/site/workorderdone",
+        subModule: "workorder_done",
+      },
+      {
         title: "Work Done",
         icon: <TbReceipt2 size={23} />,
-        to: "/site/workDoneSite",
+        to: "/site/workdone",
         subModule: "work_done",
       },
       {

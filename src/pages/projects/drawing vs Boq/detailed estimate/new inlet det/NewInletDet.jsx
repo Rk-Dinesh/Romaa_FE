@@ -1,23 +1,25 @@
 import React, { useEffect, useState, useCallback } from "react";
-import { useParams } from "react-router-dom";
 import axios from "axios";
 import { toast } from "react-toastify";
-import { API } from "../../../../../../constant";
-import Loader from "../../../../../../components/Loader";
+import Loader from "../../../../../components/Loader";
 import { TbChevronRight, TbChevronDown } from "react-icons/tb";
+import { API } from "../../../../../constant";
+import { useProject } from "../../../../../context/ProjectContext";
+import UploadDetailedEstimate from "./UploadDetailedEstimate";
 
 const NewInletDet = ({ name }) => {
-  const { tender_id } = useParams();
+  const { tenderId: tender_id } = useProject();
   const [detailedEstimate, setDetailedEstimate] = useState([]);
   const [loading, setLoading] = useState(false);
   const [expandedAbstract, setExpandedAbstract] = useState(null);
   const [delayedLoading, setDelayedLoading] = useState(false);
+  const [showUpload, setShowUpload] = useState(false);
 
   const fetchDetailedEstimate = useCallback(async () => {
     setLoading(true);
     try {
       const res = await axios.get(
-        `${API}/detailedestimate/getdatacustomhead?tender_id=${tender_id}&nametype=${name}`,
+        `${API}/drawingvboqde/getdatacustomhead?tender_id=${tender_id}&nametype=${name}`,
       );
       setDetailedEstimate(res.data.data || []);
     } catch (error) {
@@ -47,6 +49,7 @@ const NewInletDet = ({ name }) => {
   }, [loading]);
 
   return (
+    <>
     <div className="w-full h-full flex flex-col bg-white dark:bg-gray-900 font-sans">
       {delayedLoading ? (
         <div className="flex-1 flex items-center justify-center bg-gray-50 dark:bg-gray-900">
@@ -185,15 +188,29 @@ const NewInletDet = ({ name }) => {
                 <p className="text-gray-500 dark:text-gray-400 font-medium">
                   No Data Found
                 </p>
-                <p className="text-xs text-gray-400 mt-1">
+                <p className="text-xs text-gray-400 mt-1 mb-4">
                   Try uploading an estimate file.
                 </p>
+                <button
+                  onClick={() => setShowUpload(true)}
+                  className="px-4 py-2 bg-darkest-blue text-white text-sm rounded-lg hover:bg-blue-800"
+                >
+                  Upload Estimate
+                </button>
               </div>
             )}
           </div>
         </div>
       )}
     </div>
+    {showUpload && (
+      <UploadDetailedEstimate
+        onclose={() => setShowUpload(false)}
+        onSuccess={fetchDetailedEstimate}
+        name={name}
+      />
+    )}
+    </>
   );
 };
 
