@@ -1,60 +1,66 @@
-import React, { useEffect, useState } from "react";
-import { 
-  ChevronLeft, 
-  MapPin, 
-  Calendar, 
-  User, 
-  FileText, 
-  AlertCircle,
-  Printer,
-  Truck,
-} from "lucide-react";
+import { useEffect, useState } from "react";
+import { ChevronLeft, Calendar, User, FileText, AlertCircle, Printer, Truck, MapPin } from "lucide-react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
 import axios from "axios";
-
-
-// --- Assets ---
-import LOGO from "../../../../assets/images/romaa logo.png";
+import LOGO from "../../../../assets/images/RomaaInfra.png";
 import Icon from "../../../../assets/images/logo icon.png";
 import { API } from "../../../../constant";
-import Title from "../../../../components/Title";
-import Button from "../../../../components/Button";
 
-// --- Helper: Status Badge (Screen Only) ---
-const StatusBadge = ({ status }) => {
-  const styles = {
-    "Vendor Approved": "bg-green-100 text-green-700 border-green-200 dark:bg-green-900/30 dark:text-green-400 dark:border-green-800",
-    "Work Order Issued": "bg-blue-100 text-blue-700 border-blue-200 dark:bg-blue-900/30 dark:text-blue-400 dark:border-blue-800",
-    "In Progress": "bg-amber-100 text-amber-700 border-amber-200 dark:bg-amber-900/30 dark:text-amber-400 dark:border-amber-800",
-    "Completed": "bg-purple-100 text-purple-700 border-purple-200 dark:bg-purple-900/30 dark:text-purple-400 dark:border-purple-800",
+// ── Helpers ────────────────────────────────────────────────────────────────────
+
+const fmtAmt = (n) =>
+  Number(n || 0).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+const fmtDate = (v) =>
+  v ? new Date(v).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" }) : "—";
+
+const STATUS_STYLES = {
+  "Vendor Approved":  "bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-900/20 dark:text-emerald-400 dark:border-emerald-800",
+  "Work Order Issued":"bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-900/20 dark:text-blue-400 dark:border-blue-800",
+  "In Progress":      "bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-900/20 dark:text-amber-400 dark:border-amber-800",
+  "Completed":        "bg-purple-50 text-purple-700 border-purple-200 dark:bg-purple-900/20 dark:text-purple-400 dark:border-purple-800",
+};
+
+const StatusBadge = ({ status }) => (
+  <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-semibold border ${STATUS_STYLES[status] || "bg-gray-100 text-gray-600 border-gray-200"}`}>
+    <span className="w-1.5 h-1.5 rounded-full bg-current opacity-70" />
+    {status}
+  </span>
+);
+
+const SectionCard = ({ title, icon, children, accent = "blue" }) => {
+  const accents = {
+    blue:   "border-blue-500 dark:border-blue-400",
+    emerald:"border-emerald-500 dark:border-emerald-400",
+    purple: "border-purple-500 dark:border-purple-400",
+    amber:  "border-amber-500 dark:border-amber-400",
   };
   return (
-    <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase border ${styles[status] || "bg-gray-100 text-gray-600 border-gray-200"}`}>
-      {status}
-    </span>
+    <div className={`bg-white dark:bg-gray-800/60 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden shadow-sm h-full flex flex-col border-t-2 ${accents[accent]}`}>
+      <div className="px-5 py-3.5 flex items-center gap-2 border-b border-gray-100 dark:border-gray-700/60">
+        <span className="opacity-70">{icon}</span>
+        <h3 className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest">{title}</h3>
+      </div>
+      <div className="p-5 flex-1 space-y-3">{children}</div>
+    </div>
   );
 };
 
-// --- Helper: Info Card (Screen Only) ---
-const InfoCard = ({ title, icon, children, className }) => (
-  <div className={`bg-white dark:bg-layout-dark rounded-md shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden h-full flex flex-col ${className}`}>
-    <div className="px-5 py-3 border-b border-gray-100 dark:border-gray-800 bg-gray-50/50 dark:bg-gray-800/50 flex items-center gap-2">
-      {icon}
-      <h3 className="font-bold text-gray-700 dark:text-gray-200 text-xs uppercase tracking-wide">{title}</h3>
-    </div>
-    <div className="p-5 space-y-3 flex-1">
-      {children}
-    </div>
+const Field = ({ label, value, mono = false, highlight = false }) => (
+  <div className="flex justify-between items-start gap-4 py-2 border-b border-gray-50 dark:border-gray-700/40 last:border-0 last:pb-0 first:pt-0">
+    <span className="text-[11px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wide shrink-0">{label}</span>
+    <span className={`text-sm text-right leading-snug break-words max-w-[60%] ${highlight ? "font-bold text-blue-600 dark:text-blue-400" : "font-medium text-gray-800 dark:text-gray-200"} ${mono ? "font-mono text-xs" : ""}`}>
+      {value || "—"}
+    </span>
   </div>
 );
 
-const DetailRow = ({ label, value, highlight = false }) => (
-  <div className="flex justify-between items-start border-b border-gray-50 dark:border-gray-800 pb-2 last:border-0 last:pb-0">
-    <span className="text-xs font-semibold text-gray-400 uppercase">{label}</span>
-    <span className={`text-sm font-medium text-right ${highlight ? 'text-blue-600 font-bold' : 'text-gray-800 dark:text-gray-200'}`}>
-      {value || "-"}
-    </span>
+const MetricCard = ({ label, value, sub, colorClass }) => (
+  <div className="bg-white dark:bg-gray-800/60 rounded-xl border border-gray-200 dark:border-gray-700 px-5 py-4 shadow-sm flex flex-col gap-1">
+    <p className="text-[11px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest">{label}</p>
+    <p className={`text-xl font-extrabold ${colorClass}`}>{value}</p>
+    {sub && <p className="text-[11px] text-gray-400">{sub}</p>}
   </div>
 );
 
@@ -62,335 +68,445 @@ const ViewWOIssuance = () => {
   const navigate = useNavigate();
   const location = useLocation();
 
-  const passedItem = location.state?.item || {};
+  const passedItem     = location.state?.item || {};
   const requestIdParam = passedItem.requestId;
 
-  const [data, setData] = useState(null);
+  const [data, setData]       = useState(null);
   const [loading, setLoading] = useState(true);
 
-  // Fetch Data
   useEffect(() => {
-    const fetchRequest = async () => {
-      if (!requestIdParam) {
-        setLoading(false);
-        return;
-      }
-      try {
-        const res = await axios.get(
-          `${API}/workorderrequest/api/getQuotationApproved/${requestIdParam}`
-        );
-        const fetchedData = Array.isArray(res.data?.data) ? res.data.data[0] : res.data?.data;
-        setData(fetchedData);
-      } catch (err) {
-        console.error("Error fetching PO:", err);
-        toast.error("Failed to load Work Order details");
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchRequest();
+    if (!requestIdParam) { setLoading(false); return; }
+    axios
+      .get(`${API}/workorderrequest/api/getQuotationApproved/${requestIdParam}`)
+      .then((res) => {
+        const d = Array.isArray(res.data?.data) ? res.data.data[0] : res.data?.data;
+        setData(d);
+      })
+      .catch(() => toast.error("Failed to load Work Order details"))
+      .finally(() => setLoading(false));
   }, [requestIdParam]);
 
+  if (loading)
+    return (
+      <div className="flex h-full items-center justify-center gap-2 text-sm text-gray-400">
+        <span className="animate-spin h-4 w-4 border-2 border-blue-500 border-t-transparent rounded-full" />
+        Loading…
+      </div>
+    );
 
+  if (!data)
+    return (
+      <div className="flex h-full items-center justify-center text-sm text-gray-500">
+        No Data Found
+      </div>
+    );
 
-  if (loading) return <div className="flex h-full items-center justify-center text-gray-500">Loading...</div>;
-  if (!data) return <div className="flex h-full items-center justify-center text-gray-500">No Data Found</div>;
-
-  const vendor = data.selectedVendor;
-
-  const handlePrint = () => {
-    window.print();
-  };
-
-  
+  const vendor     = data.selectedVendor || {};
+  const items      = vendor.quoteItems   || [];
+  const gross      = vendor.totalQuotedValue || items.reduce((s, i) => s + (i.totalAmount || 0), 0);
+  const cgst       = gross * 0.09;
+  const sgst       = gross * 0.09;
+  const total      = gross + cgst + sgst;
+  const woNumber   = data.workOrder?.woNumber  || data.requestId || "—";
+  const issueDate  = data.workOrder?.issueDate || data.requestDate;
 
   return (
     <>
-      {/* This style tag removes standard browser headers/footers (like page URL, date) 
-        and sets clean margins for the print job.
-      */}
-      <style>
-        {`
-          @media print {
-            @page { margin: 10mm; size: auto; }
-            body * { visibility: hidden; }
-            #print-section, #print-section * { visibility: visible; }
-            #print-section { 
-              position: absolute; 
-              left: 0; 
-              top: 0; 
-              width: 100%; 
-              margin: 0;
-              padding: 0;
-              background-color: white !important;
-              color: black !important;
-            }
+      <style>{`
+        @media print {
+          @page {
+            size: A4 portrait;
+            margin: 0;
           }
-        `}
-      </style>
+          body * { visibility: hidden; }
+          #print-section, #print-section * { visibility: visible; }
+          #print-section {
+            position: absolute; left: 0; top: 0;
+            width: 210mm;
+            background: white !important;
+            color: black !important;
+          }
+        }
+      `}</style>
 
-      {/* =======================================
-          1. SCREEN VIEW (MODERN UI)
-          Has class 'print:hidden' so it vanishes on print
-         ======================================= */}
-      <div className="h-full flex flex-col  dark:bg-[#0b0f19] p-4 overflow-hidden font-roboto-flex print:hidden">
-        
-        {/* HEADER */}
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-3">
-          <div>
-            <Title
-              title="Work Order Management"
-              sub_title="Order Summary"
-              page_title={`Work Order #${data.requestId}`}
-            />
-            <div className="mt-2 flex items-center gap-3">
-               <StatusBadge status={data.status} />
-               <span className="text-xs text-gray-400 flex items-center gap-1">
-                 <Calendar size={12}/> Issued: {new Date(data.workOrder?.issueDate || Date.now()).toLocaleDateString()}
-               </span>
-            </div>
-          </div>
-          
-          <div className="flex gap-2">
-      
-            <Button
-              button_name="View Invoice"
-              button_icon={<Printer size={18} />}
-              onClick={handlePrint}
-              className="bg-blue-600 hover:bg-blue-700 text-white shadow-sm"
-            />
+      {/* ── SCREEN VIEW ─────────────────────────────────────────────────────── */}
+      <div className="min-h-full dark:bg-[#0b0f19] p-5 pb-16 font-roboto-flex print:hidden">
+        <div className="max-w-6xl mx-auto space-y-5">
 
-            <Button
-              button_name="Back"
-              button_icon={<ChevronLeft size={18} />}
-              onClick={() => navigate("..")}
-              className="bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 shadow-sm"
-            />
-          </div>
-        </div>
-
-        {/* SCROLLABLE CONTENT */}
-        <div className="flex-1 overflow-y-auto pb-10 space-y-3 pr-2 custom-scrollbar">
-          
-          {/* INFO CARDS GRID */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
-            <InfoCard title="Project Info" icon={<FileText size={16} className="text-blue-500"/>}>
-              <DetailRow label="Project ID" value={data.projectId} />
-              <DetailRow label="Title" value={data.title} />
-              <DetailRow label="Delivery By" value={vendor?.deliveryPeriod ? new Date(vendor.deliveryPeriod).toLocaleDateString() : "-"} />
-              <div className="pt-1">
-                 <p className="text-[10px] text-gray-400 uppercase font-bold mb-1">Description</p>
-                 <p className="text-xs text-gray-600 dark:text-gray-300 line-clamp-2">"{data.description}"</p>
+          {/* ── Top bar ── */}
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div className="flex items-center gap-3">
+              <button
+                onClick={() => navigate(-1)}
+                className="p-2 rounded-lg bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-500 hover:text-blue-600 dark:hover:text-blue-400 shadow-sm transition-colors"
+              >
+                <ChevronLeft size={18} />
+              </button>
+              <div>
+                <div className="flex items-center gap-2 flex-wrap">
+                  <h1 className="text-lg font-bold text-gray-900 dark:text-white">Work Order Issuance</h1>
+                  <span className="text-xs font-mono text-gray-400 bg-gray-100 dark:bg-gray-700 dark:text-gray-400 px-2 py-0.5 rounded">
+                    #{woNumber}
+                  </span>
+                </div>
+                <div className="flex items-center gap-2 mt-1">
+                  <StatusBadge status={data.status} />
+                  <span className="text-xs text-gray-400 flex items-center gap-1">
+                    <Calendar size={11} /> {fmtDate(issueDate)}
+                  </span>
+                </div>
               </div>
-            </InfoCard>
-
-            <InfoCard title="Site Details" icon={<MapPin size={16} className="text-emerald-500"/>}>
-              <DetailRow label="Site Name" value={data.siteDetails?.siteName} />
-              <DetailRow label="Location" value={data.siteDetails?.location} />
-              <DetailRow label="Incharge" value={data.siteDetails?.siteIncharge} />
-              <DetailRow label="Progress" value={data.workOrder?.progressStatus} />
-            </InfoCard>
-
-            <InfoCard title="Selected Vendor" icon={<User size={16} className="text-purple-500"/>}>
-              <DetailRow label="Name" value={vendor?.vendorName} highlight />
-              <DetailRow label="Vendor ID" value={vendor?.vendorId} />
-              <DetailRow label="Contact" value={vendor?.contact || "-"} />
-              <div className="pt-1">
-                 <p className="text-[10px] text-gray-400 uppercase font-bold mb-1">Address</p>
-                 <p className="text-xs text-gray-600 dark:text-gray-300 truncate">{vendor?.address || "-"}</p>
-              </div>
-            </InfoCard>
+            </div>
+            <button
+              onClick={() => window.print()}
+              className="flex items-center gap-2 px-4 py-2 rounded-lg bg-darkest-blue hover:bg-darkest-blue/95 text-white text-sm font-semibold shadow-sm transition-colors"
+            >
+              <Printer size={15} /> View Invoice
+            </button>
           </div>
 
-          {/* WORK ORDER ITEMS TABLE (SCREEN) */}
-          <div className="bg-white dark:bg-layout-dark rounded-md shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
-            <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center bg-gray-50 dark:bg-gray-800/50">
-              <h3 className="font-bold text-gray-800 dark:text-white flex items-center gap-2">
-                <Truck className="text-blue-500" size={20} />
-                Work Order Items
-              </h3>
-              <span className="text-xs text-gray-500 bg-white dark:bg-gray-700 px-3 py-1 rounded border border-gray-200 dark:border-gray-600">
-                Ref: <span className="font-mono font-bold text-gray-700 dark:text-gray-200">{vendor?.quotationId || "N/A"}</span>
-              </span>
+          {/* ── Metric strip ── */}
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+            <MetricCard label="WO Number"   value={woNumber}            sub={fmtDate(issueDate)}            colorClass="text-gray-900 dark:text-white text-base" />
+            <MetricCard label="Gross Amount" value={`₹${fmtAmt(gross)}`} sub="Before GST"                  colorClass="text-blue-600 dark:text-blue-400" />
+            <MetricCard label="GST (18%)"   value={`₹${fmtAmt(cgst + sgst)}`} sub="CGST 9% + SGST 9%"    colorClass="text-amber-600 dark:text-amber-400" />
+            <MetricCard label="Total Payable" value={`₹${fmtAmt(total)}`} sub="Inc. all taxes"             colorClass="text-emerald-600 dark:text-emerald-400" />
+          </div>
+
+          {/* ── Info cards ── */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+            <SectionCard title="Project Info" icon={<FileText size={15} className="text-blue-500" />} accent="blue">
+              <Field label="Project ID"   value={data.projectId} mono />
+              <Field label="Title"        value={data.title} />
+              <Field label="Delivery By"  value={vendor?.deliveryPeriod ? fmtDate(vendor.deliveryPeriod) : null} />
+              {data.description && (
+                <div className="pt-1">
+                  <p className="text-[10px] text-gray-400 uppercase font-bold tracking-wider mb-1">Description</p>
+                  <p className="text-xs text-gray-600 dark:text-gray-300 leading-relaxed line-clamp-3 italic">"{data.description}"</p>
+                </div>
+              )}
+            </SectionCard>
+
+            <SectionCard title="Site Details" icon={<MapPin size={15} className="text-emerald-500" />} accent="emerald">
+              <Field label="Site Name"  value={data.siteDetails?.siteName} />
+              <Field label="Location"   value={data.siteDetails?.location} />
+              <Field label="Incharge"   value={data.siteDetails?.siteIncharge} />
+              <Field label="Progress"   value={data.workOrder?.progressStatus} />
+            </SectionCard>
+
+            <SectionCard title="Vendor" icon={<User size={15} className="text-purple-500" />} accent="purple">
+              <Field label="Name"       value={vendor?.vendorName} highlight />
+              <Field label="Vendor ID"  value={vendor?.vendorId} mono />
+              <Field label="Contact"    value={vendor?.contact} />
+              <Field label="Quotation"  value={vendor?.quotationId} mono />
+              {vendor?.address && (
+                <div className="pt-1">
+                  <p className="text-[10px] text-gray-400 uppercase font-bold tracking-wider mb-1">Address</p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 leading-relaxed">{vendor.address}</p>
+                </div>
+              )}
+            </SectionCard>
+          </div>
+
+          {/* ── Items table ── */}
+          <div className="bg-white dark:bg-gray-800/60 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden shadow-sm">
+            <div className="px-6 py-4 flex items-center justify-between border-b border-gray-100 dark:border-gray-700/60 bg-gray-50/80 dark:bg-gray-900/30">
+              <div className="flex items-center gap-2">
+                <Truck size={16} className="text-blue-500" />
+                <h3 className="font-bold text-gray-800 dark:text-white text-sm">Work Order Items</h3>
+                {items.length > 0 && (
+                  <span className="ml-1 text-[11px] bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 px-2 py-0.5 rounded-full font-semibold">
+                    {items.length} item{items.length !== 1 ? "s" : ""}
+                  </span>
+                )}
+              </div>
+              {vendor?.quotationId && (
+                <span className="text-[11px] text-gray-500 dark:text-gray-400">
+                  Ref: <span className="font-mono font-bold text-gray-700 dark:text-gray-300">{vendor.quotationId}</span>
+                </span>
+              )}
             </div>
 
-            {!vendor?.quoteItems ? (
-              <div className="p-12 text-center text-gray-400 flex flex-col items-center gap-3">
-                <AlertCircle size={48} className="opacity-20" />
-                <p>No item details found for this approved vendor.</p>
+            {items.length === 0 ? (
+              <div className="py-16 text-center flex flex-col items-center gap-3 text-gray-400">
+                <AlertCircle size={36} className="opacity-30" />
+                <p className="text-sm">No items found for this work order.</p>
               </div>
             ) : (
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm text-left">
-                  <thead>
-                    <tr className="bg-gray-100 dark:bg-gray-900 text-gray-500 dark:text-gray-400 text-xs uppercase font-bold border-b dark:border-gray-700">
-                      <th className="px-6 py-3 border-r dark:border-gray-700 w-16 text-center">S.No</th>
-                      <th className="px-6 py-3 border-r dark:border-gray-700">Material Name</th>
-                      <th className="px-6 py-3 border-r dark:border-gray-700 text-center">Unit</th>
-                      <th className="px-6 py-3 border-r dark:border-gray-700 text-right">Quantity</th>
-                      <th className="px-6 py-3 border-r dark:border-gray-700 text-right">Rate (₹)</th>
-                      <th className="px-6 py-3 text-right">Amount (₹)</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-gray-200 dark:divide-gray-800">
-                    {vendor.quoteItems?.map((item, idx) => (
-                      <tr key={idx} className="hover:bg-gray-50 dark:hover:bg-gray-800/30 transition-colors">
-                        <td className="px-6 py-4 text-center border-r dark:border-gray-700 text-gray-500 font-mono">{idx + 1}</td>
-                        <td className="px-6 py-4 border-r dark:border-gray-700 font-bold text-gray-700 dark:text-gray-200">{item.materialName}</td>
-                        <td className="px-6 py-4 text-center border-r dark:border-gray-700 text-gray-600 dark:text-gray-400">{item.unit}</td>
-                        <td className="px-6 py-4 text-right border-r dark:border-gray-700 font-medium text-gray-800 dark:text-gray-200">{item.quantity}</td>
-                        <td className="px-6 py-4 text-right border-r dark:border-gray-700 text-gray-600 dark:text-gray-400">{item.quotedUnitRate?.toLocaleString()}</td>
-                        <td className="px-6 py-4 text-right font-bold text-gray-800 dark:text-gray-200 bg-gray-50/50 dark:bg-gray-900/20">{item.totalAmount?.toLocaleString()}.00</td>
+              <>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="bg-gray-50 dark:bg-gray-900/40 text-[11px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider border-b border-gray-200 dark:border-gray-700">
+                        <th className="px-4 py-3 text-center w-12">#</th>
+                        <th className="px-4 py-3 text-left">Particulars</th>
+                        <th className="px-4 py-3 text-center w-20">Unit</th>
+                        <th className="px-4 py-3 text-right w-24">Qty</th>
+                        <th className="px-4 py-3 text-right w-32">Basic Rate (₹)</th>
+                        <th className="px-4 py-3 text-right w-32">Amount (₹)</th>
                       </tr>
-                    ))}
-                    <tr className="bg-gray-50 dark:bg-gray-900/10 border-t-2 border-gray-100 dark:border-gray-800">
-                      <td colSpan="5" className="px-6 py-4 text-right font-bold text-gray-600 dark:text-gray-300 uppercase text-xs">Total Approved Amount</td>
-                      <td className="px-6 py-4 text-right">
-                        <div className="text-lg font-bold text-slate-700 dark:text-slate-400 flex justify-end items-center gap-0.5">
-                          ₹ {vendor.totalQuotedValue?.toLocaleString()}.00
+                    </thead>
+                    <tbody className="divide-y divide-gray-100 dark:divide-gray-700/40">
+                      {items.map((item, idx) => (
+                        <tr key={idx} className="hover:bg-blue-50/30 dark:hover:bg-gray-700/20 transition-colors">
+                          <td className="px-4 py-3.5 text-center text-gray-400 font-mono text-xs">{idx + 1}</td>
+                          <td className="px-4 py-3.5 font-semibold text-gray-800 dark:text-gray-200">{item.materialName}</td>
+                          <td className="px-4 py-3.5 text-center text-gray-500 dark:text-gray-400 uppercase text-xs font-medium">{item.unit}</td>
+                          <td className="px-4 py-3.5 text-right text-gray-700 dark:text-gray-300 font-medium">{item.quantity}</td>
+                          <td className="px-4 py-3.5 text-right text-gray-600 dark:text-gray-400">{fmtAmt(item.quotedUnitRate)}</td>
+                          <td className="px-4 py-3.5 text-right font-bold text-gray-900 dark:text-white">{fmtAmt(item.totalAmount)}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+
+                {/* Tax summary footer */}
+                <div className="border-t border-gray-200 dark:border-gray-700 px-6 py-4 bg-gray-50/60 dark:bg-gray-900/20">
+                  <div className="flex justify-end">
+                    <div className="w-full max-w-xs space-y-2 text-sm">
+                      {[
+                        { label: "Gross Amount",    value: fmtAmt(gross),       cls: "text-gray-700 dark:text-gray-300" },
+                        { label: "CGST @ 9%",       value: fmtAmt(cgst),        cls: "text-gray-600 dark:text-gray-400" },
+                        { label: "SGST @ 9%",       value: fmtAmt(sgst),        cls: "text-gray-600 dark:text-gray-400" },
+                      ].map(({ label, value, cls }) => (
+                        <div key={label} className="flex justify-between items-center">
+                          <span className="text-xs text-gray-500 dark:text-gray-400">{label}</span>
+                          <span className={`font-medium ${cls}`}>₹ {value}</span>
                         </div>
-                      </td>
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
+                      ))}
+                      <div className="flex justify-between items-center pt-2 mt-1 border-t-2 border-gray-300 dark:border-gray-600">
+                        <span className="text-sm font-bold text-gray-800 dark:text-white">Total Payable</span>
+                        <span className="text-base font-extrabold text-emerald-600 dark:text-emerald-400">₹ {fmtAmt(total)}</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </>
             )}
           </div>
+
         </div>
       </div>
 
-      {/* =======================================
-          2. PRINT VIEW (INVOICE TEMPLATE)
-          Wrapped in ID 'print-section' which the style tag targets.
-          Visible only when printing due to CSS logic.
-         ======================================= */}
-      <div id="print-section" className="hidden print:block w-full bg-white px-10 py-16 font-roboto-flex text-black">
-        
-        {/* Print Header */}
-        <div className="flex justify-between items-center mb-8 border-b-2 border-gray-800 pb-4">
-          <div>
-            <h1 className="text-xl font-bold text-gray-900 uppercase tracking-wide">Work Order</h1>
-            <p className="text-sm font-semibold text-gray-600 mt-1">ID: #{data.requestId}</p>
-          </div>
-          <img src={LOGO} alt="ROMAA Logo" className="w-32 h-auto object-contain" />
-        </div>
+      {/* ── PRINT / INVOICE ─────────────────────────────────────────────────── */}
+      {(() => {
+        const ITEMS_PER_PAGE = 7;
+        const pGross  = vendor?.totalQuotedValue || vendor?.quoteItems?.reduce((s, i) => s + (i.totalAmount || 0), 0) || 0;
+        const pCgst   = pGross * 0.09;
+        const pSgst   = pGross * 0.09;
+        const pTotal  = pGross + pCgst + pSgst;
+        const pFmt    = (n) => Number(n || 0).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        const pDate   = (v) => v ? new Date(v).toLocaleDateString("en-GB", { day: "2-digit", month: "2-digit", year: "numeric" }) : "—";
+        const woNo    = data.workOrder?.woNumber  || data.requestId || "—";
+        const issued  = data.workOrder?.issueDate || data.requestDate;
+        const allItems = vendor?.quoteItems || [];
 
-        {/* Project & Dates */}
-        <div className="flex text-sm justify-between mb-6">
-          <div className="w-1/3">
-            <p className="font-bold text-gray-800 uppercase text-xs mb-1">Project Name</p>
-            <p className="opacity-90 font-light">{data.title || "N/A"}</p>
-            <p className="opacity-70 text-xs mt-1">({data.projectId})</p>
-          </div>
-          <div className="w-1/3 text-center">
-            <p className="font-bold text-gray-800 uppercase text-xs mb-1">Due Date</p>
-            <p className="opacity-90 font-light">
-              {vendor?.deliveryPeriod ? new Date(vendor.deliveryPeriod).toLocaleDateString() : "N/A"}
-            </p>
-          </div>
-          <div className="w-1/3 text-right">
-            <p className="font-bold text-gray-800 uppercase text-xs mb-1">Location</p>
-            <p className="opacity-90 font-light">{data.siteDetails?.location || "Chennai"}</p>
-            <p className="opacity-70 text-xs mt-1">{data.siteDetails?.siteName}</p>
-          </div>
-        </div>
+        // Split items into pages of max 7
+        const chunks = [];
+        if (allItems.length === 0) {
+          chunks.push([]);
+        } else {
+          for (let i = 0; i < allItems.length; i += ITEMS_PER_PAGE) {
+            chunks.push(allItems.slice(i, i + ITEMS_PER_PAGE));
+          }
+        }
+        const totalPages = chunks.length;
 
-        {/* Vendor Info */}
-        <div className="flex text-sm justify-between mb-8 border-b border-gray-300 pb-6">
-          <div className="w-1/2">
-            <p className="font-bold text-gray-800 uppercase text-xs mb-1">Vendor</p>
-            <p className="opacity-90 font-semibold">{vendor?.vendorName || "N/A"}</p>
-            <p className="opacity-80 font-light text-xs mt-1 max-w-xs">{vendor?.address || "Address N/A"}</p>
-            <p className="opacity-80 font-light text-xs">Ph: {vendor?.contact || "N/A"}</p>
+        // Shared: compact page header (used on page 2+)
+        const CompactHeader = () => (
+          <div className="flex items-center justify-between pb-3 mb-4" style={{ borderBottom: "2px solid #2B3A6B" }}>
+            <img src={LOGO} alt="ROMAA" className="h-9 w-auto object-contain" />
+            <div className="text-right text-xs text-gray-500">
+              <span className="font-semibold text-gray-800 font-mono">{woNo}</span>
+              <span className="mx-2 text-gray-300">|</span>
+              <span>{pDate(issued)}</span>
+              <span className="ml-2 text-[10px] text-gray-400 italic">contd.</span>
+            </div>
           </div>
-          <div className="w-1/2 text-right">
-            <p className="font-bold text-gray-800 uppercase text-xs mb-1">Vendor Category</p>
-            <p className="opacity-90 font-light">Registered Vendor</p>
-            <p className="opacity-70 font-mono text-xs mt-1">{vendor?.vendorId}</p>
-          </div>
-        </div>
+        );
 
-        {/* Watermarked Table */}
-        <div className="relative mb-10">
-          {/* Watermark Background */}
-          <div 
-            className="absolute inset-0 z-0 opacity-10 pointer-events-none"
-            style={{
-              backgroundImage: `url(${Icon})`,
-              backgroundRepeat: "no-repeat",
-              backgroundPosition: "center",
-              backgroundSize: "30%",
-            }}
-          />
-
-          <table className="w-full text-sm text-center border-collapse relative z-10">
-            <thead>
-              <tr className="bg-gray-100">
-                <th className="border border-gray-400 p-2 font-bold text-gray-800 w-16">S.no</th>
-                <th className="border border-gray-400 p-2 font-bold text-gray-800 text-left">Material</th>
-                <th className="border border-gray-400 p-2 font-bold text-gray-800 w-20">Qty</th>
-                <th className="border border-gray-400 p-2 font-bold text-gray-800 w-20">Unit</th>
-                <th className="border border-gray-400 p-2 font-bold text-gray-800 w-28 text-right">Total</th>
-              </tr>
-            </thead>
-            <tbody>
-              {vendor?.quoteItems?.map((item, idx) => (
-                <tr key={idx}>
-                  <td className="border border-gray-400 p-2 font-light">{idx + 1}</td>
-                  <td className="border border-gray-400 p-2 font-light text-left">{item.materialName}</td>
-                  <td className="border border-gray-400 p-2 font-light">{item.quantity}</td>
-                  <td className="border border-gray-400 p-2 font-light">{item.unit}</td>
-                  <td className="border border-gray-400 p-2 font-light text-right">₹ {item.totalAmount?.toLocaleString()}</td>
+        // Shared: items table
+        const ItemsTable = ({ chunk, startIdx }) => (
+          <div className="relative flex-1">
+            <div className="absolute inset-0 pointer-events-none" style={{
+              backgroundImage: `url(${Icon})`, backgroundRepeat: "no-repeat",
+              backgroundPosition: "center", backgroundSize: "28%", opacity: 0.04,
+            }} />
+            <table className="w-full text-xs relative" style={{ borderCollapse: "collapse" }}>
+              <thead>
+                <tr style={{ borderBottom: "2px solid #2B3A6B" }}>
+                  <th className="py-2 pr-3 text-center font-bold text-gray-700" style={{ width: "32px" }}>Sl.</th>
+                  <th className="py-2 pr-3 text-left font-bold text-gray-700">Particulars</th>
+                  <th className="py-2 pr-3 text-center font-bold text-gray-700" style={{ width: "52px" }}>Qty</th>
+                  <th className="py-2 pr-3 text-center font-bold text-gray-700" style={{ width: "52px" }}>Unit</th>
+                  <th className="py-2 pr-3 text-right font-bold text-gray-700" style={{ width: "90px" }}>Rate (Rs.)</th>
+                  <th className="py-2 text-right font-bold text-gray-700" style={{ width: "90px" }}>Amount (Rs.)</th>
                 </tr>
-              ))}
-              {/* Grand Total Row */}
-              <tr>
-                <td colSpan={4} className="border border-gray-400 p-2 text-right font-bold bg-gray-50">
-                  Total
-                </td>
-                <td className="border border-gray-400 p-2 font-bold text-right bg-gray-50">
-                  ₹ {vendor?.totalQuotedValue?.toLocaleString()}
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-
-        {/* Terms */}
-        <div className="mb-6 text-sm">
-          <p className="font-semibold text-gray-800 mb-2">Terms and conditions</p>
-          <p className="text-xs font-light text-gray-600 leading-relaxed text-justify">
-            Lorem ipsum dolor sit amet consectetur. Lorem non condimentum pharetra
-            ultrices sit ullamcorper. Aliquet egestas id lectus sodales mus
-            interdum. Consectetur nulla faucibus volutpat et habitant pharetra
-            faucibus amet. Iaculis viverra pulvinar sed sed posuere elementum
-            molestie faucibus.
-          </p>
-        </div>
-
-        {/* Footer Signatures */}
-        <div className="flex justify-between items-end text-sm mt-12 pt-4">
-          <div>
-            <p className="font-semibold mb-1">Note:</p>
-            <p className="text-xs">
-              Requested By: <span className="text-gray-700 font-medium">Admin / Work Order Dept</span>
-            </p>
-            <p className="text-xs mt-1">
-              Account No: <span className="text-gray-700 font-medium">XXXXXXX</span>
-            </p>
+              </thead>
+              <tbody>
+                {chunk.map((item, i) => (
+                  <tr key={i} style={{ borderBottom: "1px solid #f1f5f9" }}>
+                    <td className="py-2.5 pr-3 text-center text-gray-400">{startIdx + i + 1}</td>
+                    <td className="py-2.5 pr-3 text-gray-800 font-medium">{item.materialName}</td>
+                    <td className="py-2.5 pr-3 text-center text-gray-600">{item.quantity}</td>
+                    <td className="py-2.5 pr-3 text-center text-gray-500 uppercase">{item.unit}</td>
+                    <td className="py-2.5 pr-3 text-right text-gray-600">{pFmt(item.quotedUnitRate)}</td>
+                    <td className="py-2.5 text-right text-gray-800 font-semibold">{pFmt(item.totalAmount)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
-          
-          <div className="text-right w-40">
-            {/* Signature Area */}
-            <p className="italic text-lg mb-2 font-handwriting">Authorized Sign</p>
-            <hr className="border-gray-400" />
-            <p className="text-xs font-light text-center mt-2 italic">
-              Signature
-            </p>
-          </div>
-        </div>
+        );
 
-      </div>
+        return (
+          <div id="print-section" className="hidden print:block font-roboto-flex text-black bg-white">
+            {chunks.map((chunk, pageIdx) => {
+              const isFirst = pageIdx === 0;
+              const isLast  = pageIdx === totalPages - 1;
+              const startIdx = pageIdx * ITEMS_PER_PAGE;
+
+              return (
+                <div
+                  key={pageIdx}
+                  style={{
+                    width: "210mm",
+                    height: "297mm",
+                    boxSizing: "border-box",
+                    padding: "10mm 12mm",
+                    display: "flex",
+                    flexDirection: "column",
+                    background: "white",
+                    pageBreakAfter: isLast ? "auto" : "always",
+                    overflow: "hidden",
+                  }}
+                >
+                  {isFirst ? (
+                    <>
+                      {/* ── Page 1: full header ── */}
+                      <div className="flex items-center justify-between pb-4 mb-5" style={{ borderBottom: "3px solid #2B3A6B" }}>
+                        <img src={LOGO} alt="ROMAA" className="h-12 w-auto object-contain" />
+                        <div className="text-right">
+                          <p className="font-extrabold text-xl tracking-[0.2em] uppercase" style={{ color: "#2B3A6B" }}>WORK ORDER</p>
+                          <div className="mt-1 text-xs space-y-0.5 text-gray-500">
+                            <p>WO No &nbsp;<span className="font-semibold text-gray-800 font-mono">{woNo}</span></p>
+                            <p>Date &nbsp;&nbsp;<span className="font-semibold text-gray-800">{pDate(issued)}</span></p>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* FROM / TO */}
+                      <div className="grid grid-cols-2 mb-3" >
+                        <div className="px-4 py-3" >
+                          <p className="text-[9px] font-bold uppercase tracking-[0.15em] mb-1.5" style={{ color: "#2B3A6B" }}>From</p>
+                          <p className="font-extrabold text-sm leading-tight" style={{ color: "#2B3A6B" }}>ROMAA INFRAA PVT. LTD</p>
+                          <div className="text-[11px] leading-[1.6] text-gray-500">
+                            <p>1/107, P.R. Road, Nerkundram, Chennai – 600107</p>
+                            <p>Ph: 044-23333333 &nbsp;·&nbsp; </p>
+                            <p>GSTIN: 33AAECR6992B1Z9</p>
+                          </div>
+                        </div>
+                        <div className="px-4 py-3">
+                          <p className="text-[9px] font-bold uppercase tracking-[0.15em] mb-1.5" style={{ color: "#2B3A6B" }}>To</p>
+                          <p className="font-extrabold text-sm leading-tight text-gray-900">{vendor?.vendorName || "—"}</p>
+                          <div className="text-[11px] leading-[1.6] text-gray-500 mt-1">
+                            <p className="whitespace-pre-line">{vendor?.address || "—"}</p>
+                            {vendor?.contact && <p>Ph: {vendor.contact}</p>}
+                            {vendor?.gstin   && <p>GSTIN: {vendor.gstin}</p>}
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Ref row */}
+                      <div className="flex  justify-between gap-6 text-[11px] mb-3">
+                        {data.siteDetails?.location && (
+                          <p className="text-gray-500">Site &nbsp;<span className="font-semibold text-gray-800">{data.siteDetails.location}</span></p>
+                        )}
+                        <p className="text-gray-500">Ref No. &nbsp;<span className="font-semibold text-gray-800">{vendor?.quotationId || "—"}</span></p>
+                        <p className="text-gray-500">Ref Date &nbsp;<span className="font-semibold text-gray-800">{pDate(vendor?.deliveryPeriod)}</span></p>
+                      </div>
+                      <div className="mb-3" style={{ borderTop: "1px solid #e2e8f0" }} />
+                    </>
+                  ) : (
+                    <CompactHeader />
+                  )}
+
+                  {/* Items table */}
+                  <ItemsTable chunk={chunk} startIdx={startIdx} />
+
+                  {/* Last page: tax + despatch + terms + footer */}
+                  {isLast && (
+                    <div className="mt-4 space-y-3">
+
+                      {/* Tax summary */}
+                      <div className="flex justify-end">
+                        <div className="text-xs space-y-1" style={{ width: "200px" }}>
+                          {[
+                            { label: "Gross Amount", value: pFmt(pGross) },
+                            { label: "CGST @ 9%",    value: pFmt(pCgst)  },
+                            { label: "SGST @ 9%",    value: pFmt(pSgst)  },
+                            { label: "Rounded",       value: "—"          },
+                          ].map(({ label, value }) => (
+                            <div key={label} className="flex justify-between text-gray-600">
+                              <span>{label}</span>
+                              <span className="tabular-nums">{value}</span>
+                            </div>
+                          ))}
+                          <div className="flex justify-between pt-1.5 font-bold text-sm text-gray-900" style={{ borderTop: "1.5px solid #2B3A6B" }}>
+                            <span>Total</span>
+                            <span className="tabular-nums">{pFmt(pTotal)}</span>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Despatch To */}
+                      {(data.siteDetails?.siteName || data.siteDetails?.location) && (
+                        <div className="text-[11px]" style={{ paddingTop: "10px", borderTop: "1px solid #e2e8f0" }}>
+                          <p className="text-[9px] font-bold uppercase tracking-widest text-gray-400 mb-1">Despatch To</p>
+                          <p className="text-gray-700">
+                            {[data.siteDetails.siteName, data.siteDetails.location].filter(Boolean).join(", ")}
+                            {data.siteDetails.siteIncharge && ` — Attn: ${data.siteDetails.siteIncharge}`}
+                          </p>
+                        </div>
+                      )}
+
+                      {/* Terms */}
+                      <div className="text-[11px] leading-[1.55]" style={{ paddingTop: "10px", borderTop: "1px solid #e2e8f0" }}>
+                        <p className="text-[9px] font-bold uppercase tracking-widest text-gray-400 mb-1.5">Terms &amp; Conditions</p>
+                        <ol className="list-decimal list-inside space-y-0.5 text-gray-600">
+                          <li>Labour Accommodation / ER Water usage – Romaa Scope.</li>
+                          <li>Above rates including materials supply and labour charges.</li>
+                          <li>Payment Advance will be made during the work in Progress.</li>
+                          <li>If the work is delayed due to the contractor's actions, penalties may be applicable to the project.</li>
+                          <li>Payment will be made on submission of bills with proper acknowledgement from site Admin.</li>
+                          <li>Rs 1,50,000/- advance payment will be released after material Delivery.</li>
+                          <li>10% of Payment released during work; balance after Work Completion.</li>
+                          <li>TDS Extra.</li>
+                        </ol>
+                      </div>
+
+                      {/* Footer */}
+                      <div className="flex justify-end items-end" style={{ paddingTop: "10px", borderTop: "1px solid #e2e8f0" }}>
+                       
+                        <div className="text-center">
+                          <div className="mb-8 text-[10px] text-gray-500">
+                            <p className="font-bold text-gray-800 uppercase tracking-wide text-[11px]">for ROMAA INFRAA PVT. LTD</p>
+                          </div>
+                          <div style={{ width: "150px", borderTop: "1px solid #94a3b8" }} />
+                          <p className="text-[9px] text-gray-400 mt-1 italic">Authorised Signatory</p>
+                        </div>
+                      </div>
+
+                    </div>
+                  )}
+
+                </div>
+              );
+            })}
+          </div>
+        );
+      })()}
     </>
   );
 };

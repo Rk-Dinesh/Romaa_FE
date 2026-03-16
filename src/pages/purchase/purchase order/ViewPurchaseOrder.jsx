@@ -160,28 +160,17 @@ const ViewPurchaseOrder = () => {
 
   return (
     <>
-      {/* This style tag removes standard browser headers/footers (like page URL, date) 
-        and sets clean margins for the print job.
-      */}
-      <style>
-        {`
-          @media print {
-            @page { margin: 10mm; size: auto; }
-            body * { visibility: hidden; }
-            #print-section, #print-section * { visibility: visible; }
-            #print-section { 
-              position: absolute; 
-              left: 0; 
-              top: 0; 
-              width: 100%; 
-              margin: 0;
-              padding: 0;
-              background-color: white !important;
-              color: black !important;
-            }
+      <style>{`
+        @media print {
+          @page { size: A4 portrait; margin: 0; }
+          body * { visibility: hidden; }
+          #print-section, #print-section * { visibility: visible; }
+          #print-section {
+            position: absolute; left: 0; top: 0;
+            width: 210mm; background: white !important; color: black !important;
           }
-        `}
-      </style>
+        }
+      `}</style>
 
       {/* =======================================
           1. SCREEN VIEW (MODERN UI)
@@ -515,202 +504,294 @@ const ViewPurchaseOrder = () => {
         </div>
       </div>
 
-      {/* =======================================
-          2. PRINT VIEW (INVOICE TEMPLATE)
-          Wrapped in ID 'print-section' which the style tag targets.
-          Visible only when printing due to CSS logic.
-         ======================================= */}
-      <div
-        id="print-section"
-        className="hidden print:block w-full bg-white px-10 py-16 font-roboto-flex text-black"
-      >
-        {/* Print Header */}
-        <div className="flex justify-between items-center mb-8 border-b-2 border-gray-800 pb-4">
-          <div>
-            <h1 className="text-xl font-bold text-gray-900 uppercase tracking-wide">
-              Purchase Order
-            </h1>
-            <p className="text-sm font-semibold text-gray-600 mt-1">
-              ID: #{data.requestId}
-            </p>
-          </div>
-          <img
-            src={LOGO}
-            alt="ROMAA Logo"
-            className="w-32 h-auto object-contain"
-          />
-        </div>
+      {/* ── PRINT / INVOICE ─────────────────────────────────────────────────── */}
+      {(() => {
+        const ITEMS_PER_PAGE = 6;
+        const allItems = vendor?.quoteItems || [];
 
-        {/* Project & Dates */}
-        <div className="flex text-sm justify-between mb-6">
-          <div className="w-1/3">
-            <p className="font-bold text-gray-800 uppercase text-xs mb-1">
-              Project Name
-            </p>
-            <p className="opacity-90 font-light">{data.title || "N/A"}</p>
-            <p className="opacity-70 text-xs mt-1">({data.projectId})</p>
-          </div>
-          <div className="w-1/3 text-center">
-            <p className="font-bold text-gray-800 uppercase text-xs mb-1">
-              Due Date
-            </p>
-            <p className="opacity-90 font-light">
-              {vendor?.deliveryPeriod
-                ? new Date(vendor.deliveryPeriod).toLocaleDateString()
-                : "N/A"}
-            </p>
-          </div>
-          <div className="w-1/3 text-right">
-            <p className="font-bold text-gray-800 uppercase text-xs mb-1">
-              Location
-            </p>
-            <p className="opacity-90 font-light">
-              {data.siteDetails?.location || "Chennai"}
-            </p>
-            <p className="opacity-70 text-xs mt-1">
-              {data.siteDetails?.siteName}
-            </p>
-          </div>
-        </div>
+        // Per-item tax calculations
+        const itemRows = allItems.map((item) => {
+          const taxable = (item.quantity || 0) * (item.quotedUnitRate || 0);
+          const cgst    = (taxable * (item.taxStructure?.cgst || 0)) / 100;
+          const sgst    = (taxable * (item.taxStructure?.sgst || 0)) / 100;
+          const igst    = (taxable * (item.taxStructure?.igst || 0)) / 100;
+          const total   = taxable + igst;
+          return { ...item, taxable, cgst, sgst, igst, total };
+        });
 
-        {/* Vendor Info */}
-        <div className="flex text-sm justify-between mb-8 border-b border-gray-300 pb-6">
-          <div className="w-1/2">
-            <p className="font-bold text-gray-800 uppercase text-xs mb-1">
-              Vendor
-            </p>
-            <p className="opacity-90 font-semibold">
-              {vendor?.vendorName || "N/A"}
-            </p>
-            <p className="opacity-80 font-light text-xs mt-1 max-w-xs">
-              {vendor?.address || "Address N/A"}
-            </p>
-            <p className="opacity-80 font-light text-xs">
-              Ph: {vendor?.contact || "N/A"}
-            </p>
-          </div>
-          <div className="w-1/2 text-right">
-            <p className="font-bold text-gray-800 uppercase text-xs mb-1">
-              Vendor Category
-            </p>
-            <p className="opacity-90 font-light">Registered Vendor</p>
-            <p className="opacity-70 font-mono text-xs mt-1">
-              {vendor?.vendorId}
-            </p>
-          </div>
-        </div>
+        const baseValue    = vendor?.totalQuotedValue || 0;
+        const totalTaxable = itemRows.reduce((s, r) => s + r.taxable, 0);
 
-        {/* Watermarked Table */}
-        <div className="relative mb-10">
-          {/* Watermark Background */}
-          <div
-            className="absolute inset-0 z-0 opacity-10 pointer-events-none"
-            style={{
-              backgroundImage: `url(${Icon})`,
-              backgroundRepeat: "no-repeat",
-              backgroundPosition: "center",
-              backgroundSize: "30%",
-            }}
-          />
+        // Group items by their GST rate combination
+        const gstGroupMap = {};
+        itemRows.forEach((item) => {
+          const key = `${item.taxStructure?.cgst||0}_${item.taxStructure?.sgst||0}_${item.taxStructure?.igst||0}`;
+          if (!gstGroupMap[key]) gstGroupMap[key] = {
+            cgstRate: item.taxStructure?.cgst || 0,
+            sgstRate: item.taxStructure?.sgst || 0,
+            igstRate: item.taxStructure?.igst || 0,
+            taxable: 0, cgst: 0, sgst: 0, igst: 0,
+          };
+          gstGroupMap[key].taxable += item.taxable;
+          gstGroupMap[key].cgst    += item.cgst;
+          gstGroupMap[key].sgst    += item.sgst;
+          gstGroupMap[key].igst    += item.igst;
+        });
+        const gstGroups  = Object.values(gstGroupMap);
+        const totalAllTax = gstGroups.reduce((s, g) => s + g.cgst + g.sgst + g.igst, 0);
+        const netPayable  = baseValue + totalAllTax;
+        const hasCgst = gstGroups.some(g => g.cgstRate > 0);
+        const hasSgst = gstGroups.some(g => g.sgstRate > 0);
+        const hasIgst = gstGroups.some(g => g.igstRate > 0);
 
-          <table className="w-full text-sm text-center border-collapse relative z-10">
-            <thead>
-              <tr className="bg-gray-100">
-                <th className="border border-gray-400 p-2 font-bold text-gray-800 w-16">
-                  S.no
-                </th>
-                <th className="border border-gray-400 p-2 font-bold text-gray-800 text-left">
-                  Material
-                </th>
-                <th className="border border-gray-400 p-2 font-bold text-gray-800 w-20">
-                  Qty
-                </th>
-                <th className="border border-gray-400 p-2 font-bold text-gray-800 w-20">
-                  Unit
-                </th>
-                <th className="border border-gray-400 p-2 font-bold text-gray-800 w-28 text-right">
-                  Total
-                </th>
-              </tr>
-            </thead>
-            <tbody>
-              {vendor?.quoteItems?.map((item, idx) => (
-                <tr key={idx}>
-                  <td className="border border-gray-400 p-2 font-light">
-                    {idx + 1}
-                  </td>
-                  <td className="border border-gray-400 p-2 font-light text-left">
-                    {item.materialName}
-                  </td>
-                  <td className="border border-gray-400 p-2 font-light">
-                    {item.quantity}
-                  </td>
-                  <td className="border border-gray-400 p-2 font-light">
-                    {item.unit}
-                  </td>
-                  <td className="border border-gray-400 p-2 font-light text-right">
-                    ₹ {item.totalAmount?.toLocaleString()}
-                  </td>
+        const pFmt  = (n) => Number(n || 0).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        const pDate = (v) => v ? new Date(v).toLocaleDateString("en-GB", { day: "2-digit", month: "2-digit", year: "numeric" }) : "—";
+        const poNo  = data.purchaseOrder?.poNumber  || data.requestId || "—";
+        const issued = data.purchaseOrder?.issueDate || data.requestDate;
+
+        // Chunk items into pages
+        const chunks = [];
+        if (allItems.length === 0) { chunks.push([]); }
+        else { for (let i = 0; i < itemRows.length; i += ITEMS_PER_PAGE) chunks.push(itemRows.slice(i, i + ITEMS_PER_PAGE)); }
+        const totalPages = chunks.length;
+
+        const CompactHeader = () => (
+          <div className="flex items-center justify-between pb-3 mb-4" style={{ borderBottom: "2px solid #2B3A6B" }}>
+            <img src={LOGO} alt="ROMAA" className="h-9 w-auto object-contain" />
+            <div className="text-right text-xs text-gray-500">
+              <span className="font-semibold text-gray-800 font-mono">{poNo}</span>
+              <span className="mx-2 text-gray-300">|</span>
+              <span>{pDate(issued)}</span>
+              <span className="ml-2 text-[10px] text-gray-400 italic">contd.</span>
+            </div>
+          </div>
+        );
+
+        const ItemsTable = ({ chunk, startIdx }) => (
+          <div className="relative flex-1">
+            <div className="absolute inset-0 pointer-events-none" style={{
+              backgroundImage: `url(${Icon})`, backgroundRepeat: "no-repeat",
+              backgroundPosition: "center", backgroundSize: "28%", opacity: 0.04,
+            }} />
+            <table className="w-full relative" style={{ borderCollapse: "collapse", fontSize: "10px" }}>
+              <thead>
+                <tr style={{ borderBottom: "2px solid #2B3A6B" }}>
+                  {[
+                    { h: "Sl.",                 w: "24px",   align: "center" },
+                    { h: "Material Description",w: "auto",   align: "left"   },
+                    { h: "HSN",                 w: "48px",   align: "right"  },
+                    { h: "Qty",                 w: "40px",   align: "right"  },
+                    { h: "Unit",                w: "36px",   align: "right"  },
+                    { h: "Rate (Rs.)",          w: "72px",   align: "right"  },
+                    { h: "Taxable Val",         w: "72px",   align: "right"  },
+                    { h: "Total (Rs.)",         w: "72px",   align: "right"  },
+                  ].map(({ h, w, align }) => (
+                    <th key={h} className="py-2 pb-2 font-bold text-gray-700"
+                      style={{ textAlign: align, width: w, paddingRight: align === "right" ? "4px" : 0 }}>
+                      {h}
+                    </th>
+                  ))}
                 </tr>
-              ))}
-              {/* Grand Total Row */}
-              <tr>
-                <td
-                  colSpan={4}
-                  className="border border-gray-400 p-2 text-right font-bold bg-gray-50"
-                >
-                  Total
-                </td>
-                <td className="border border-gray-400 p-2 font-bold text-right bg-gray-50">
-                  ₹ {vendor?.totalQuotedValue?.toLocaleString()}
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-
-        {/* Terms */}
-        <div className="mb-6 text-sm">
-          <p className="font-semibold text-gray-800 mb-2">
-            Terms and conditions
-          </p>
-          <p className="text-xs font-light text-gray-600 leading-relaxed text-justify">
-            Lorem ipsum dolor sit amet consectetur. Lorem non condimentum
-            pharetra ultrices sit ullamcorper. Aliquet egestas id lectus sodales
-            mus interdum. Consectetur nulla faucibus volutpat et habitant
-            pharetra faucibus amet. Iaculis viverra pulvinar sed sed posuere
-            elementum molestie faucibus.
-          </p>
-        </div>
-
-        {/* Footer Signatures */}
-        <div className="flex justify-between items-end text-sm mt-12 pt-4">
-          <div>
-            <p className="font-semibold mb-1">Note:</p>
-            <p className="text-xs">
-              Requested By:{" "}
-              <span className="text-gray-700 font-medium">
-                Admin / Purchase Dept
-              </span>
-            </p>
-            <p className="text-xs mt-1">
-              Account No:{" "}
-              <span className="text-gray-700 font-medium">XXXXXXX</span>
-            </p>
+              </thead>
+              <tbody>
+                {chunk.map((item, i) => (
+                  <tr key={i} style={{ borderBottom: "1px solid #f1f5f9" }}>
+                    <td className="py-2 text-center text-gray-400">{startIdx + i + 1}</td>
+                    <td className="py-2 pr-2 text-gray-800 font-medium">{item.materialName}</td>
+                    <td className="py-2 pr-1 text-right text-gray-500">{item.hsnSac || "—"}</td>
+                    <td className="py-2 pr-1 text-right text-gray-600">{item.quantity}</td>
+                    <td className="py-2 pr-1 text-right text-gray-500 uppercase">{item.unit}</td>
+                    <td className="py-2 pr-1 text-right text-gray-600">{pFmt(item.quotedUnitRate)}</td>
+                    <td className="py-2 pr-1 text-right text-gray-600">{pFmt(item.taxable)}</td>
+                    <td className="py-2 text-right text-gray-800 font-semibold">{pFmt(item.total)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
+        );
 
-          <div className="text-right w-40">
-            {/* Signature Area */}
-            <p className="italic text-lg mb-2 font-handwriting">
-              Authorized Sign
-            </p>
-            <hr className="border-gray-400" />
-            <p className="text-xs font-light text-center mt-2 italic">
-              Signature
-            </p>
+        return (
+          <div id="print-section" className="hidden print:block font-roboto-flex text-black bg-white">
+            {chunks.map((chunk, pageIdx) => {
+              const isFirst = pageIdx === 0;
+              const isLast  = pageIdx === totalPages - 1;
+              const startIdx = pageIdx * ITEMS_PER_PAGE;
+
+              return (
+                <div key={pageIdx} style={{
+                  width: "210mm", height: "297mm", boxSizing: "border-box",
+                  padding: "10mm 12mm", display: "flex", flexDirection: "column",
+                  background: "white", pageBreakAfter: isLast ? "auto" : "always", overflow: "hidden",
+                }}>
+
+                  {isFirst ? (
+                    <>
+                      {/* Page 1 full header */}
+                      <div className="flex items-center justify-between pb-4 mb-4" style={{ borderBottom: "3px solid #2B3A6B" }}>
+                        <img src={LOGO} alt="ROMAA" className="h-12 w-auto object-contain" />
+                        <div className="text-right">
+                          <p className="font-extrabold text-xl tracking-[0.2em] uppercase" style={{ color: "#2B3A6B" }}>PURCHASE ORDER</p>
+                          <div className="mt-1 text-xs space-y-0.5 text-gray-500">
+                            <p>PO No &nbsp;<span className="font-semibold text-gray-800 font-mono">{poNo}</span></p>
+                            <p>Date &nbsp;&nbsp;<span className="font-semibold text-gray-800">{pDate(issued)}</span></p>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* FROM / TO */}
+                      <div className="grid grid-cols-2 mb-3" style={{ border: "1px solid #e2e8f0", borderRadius: "3px" }}>
+                        <div className="px-4 py-3" style={{ borderRight: "1px solid #e2e8f0" }}>
+                          <p className="text-[9px] font-bold uppercase tracking-[0.15em] mb-1.5" style={{ color: "#2B3A6B" }}>From</p>
+                          <p className="font-extrabold text-sm leading-tight" style={{ color: "#2B3A6B" }}>ROMAA INFRAA PVT. LTD</p>
+                          <div className="text-[11px] leading-[1.6] text-gray-500 mt-1">
+                            <p>1/107, P.R. Road, Nerkundram, Chennai – 600107</p>
+                            <p>Ph: 044-23333333 &nbsp;·&nbsp; GSTIN: 33AAECR6992B1Z9</p>
+                          </div>
+                        </div>
+                        <div className="px-4 py-3">
+                          <p className="text-[9px] font-bold uppercase tracking-[0.15em] mb-1.5" style={{ color: "#2B3A6B" }}>To</p>
+                          <p className="font-extrabold text-sm leading-tight text-gray-900">{vendor?.vendorName || "—"}</p>
+                          <div className="text-[11px] leading-[1.6] text-gray-500 mt-1">
+                            <p className="whitespace-pre-line">{vendor?.address || "—"}</p>
+                            {vendor?.contact && <p>Ph: {vendor.contact}</p>}
+                            {vendor?.gstin   && <p>GSTIN: {vendor.gstin}</p>}
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Ref row */}
+                      <div className="flex gap-6 text-[11px] mb-3">
+                        {data.siteDetails?.location && (
+                          <p className="text-gray-500">Site &nbsp;<span className="font-semibold text-gray-800">{data.siteDetails.location}</span></p>
+                        )}
+                        <p className="text-gray-500">Ref No. &nbsp;<span className="font-semibold text-gray-800">{vendor?.quotationId || "—"}</span></p>
+                        <p className="text-gray-500">Ref Date &nbsp;<span className="font-semibold text-gray-800">{pDate(vendor?.deliveryPeriod)}</span></p>
+                        {data.siteDetails?.siteIncharge && (
+                          <p className="text-gray-500">Incharge &nbsp;<span className="font-semibold text-gray-800">{data.siteDetails.siteIncharge}</span></p>
+                        )}
+                      </div>
+                      <div className="mb-3" style={{ borderTop: "1px solid #e2e8f0" }} />
+                    </>
+                  ) : (
+                    <CompactHeader />
+                  )}
+
+                  {/* Items table */}
+                  <ItemsTable chunk={chunk} startIdx={startIdx} />
+
+                  {/* Last page only: tax summary + terms + footer */}
+                  {isLast && (
+                    <div className="mt-4 space-y-3">
+
+                      {/* Tax summary — left: GST table, right: net payable */}
+                      <div className="flex justify-between items-start" style={{ paddingTop: "8px", borderTop: "1px solid #e2e8f0" }}>
+
+                        {/* LEFT — Tax Breakup pivot table (rates as columns) */}
+                        {(() => {
+                          const thS = { border: "1px solid #cbd5e1", padding: "4px 8px", background: "#f1f5f9", fontWeight: "700", color: "#374151", whiteSpace: "nowrap" };
+                          const tdS = { border: "1px solid #cbd5e1", padding: "4px 8px", color: "#374151" };
+                          const tdR = { ...tdS, textAlign: "right" };
+                          const totalCgst = gstGroups.reduce((s, g) => s + g.cgst, 0);
+                          const totalSgst = gstGroups.reduce((s, g) => s + g.sgst, 0);
+                          const totalIgst = gstGroups.reduce((s, g) => s + g.igst, 0);
+                          return (
+                            <div>
+                              <p style={{ fontSize: "9px", fontWeight: "700", textTransform: "uppercase", letterSpacing: "0.1em", color: "#9ca3af", marginBottom: "6px" }}>Tax Breakup</p>
+                              <table style={{ borderCollapse: "collapse", fontSize: "10px" }}>
+                                <thead>
+                                  <tr>
+                                    <th style={{ ...thS, textAlign: "left", minWidth: "80px" }}>Rate Slab</th>
+                                    <th style={{ ...thS, textAlign: "right", minWidth: "76px" }}>Taxable Val</th>
+                                    {hasCgst && <th style={{ ...thS, textAlign: "right", minWidth: "64px" }}>CGST</th>}
+                                    {hasSgst && <th style={{ ...thS, textAlign: "right", minWidth: "64px" }}>SGST</th>}
+                                    {hasIgst && <th style={{ ...thS, textAlign: "right", minWidth: "64px" }}>IGST</th>}
+                                    <th style={{ ...thS, textAlign: "right", minWidth: "72px" }}>Tax Total</th>
+                                  </tr>
+                                </thead>
+                                <tbody>
+                                  {gstGroups.map((g, gi) => {
+                                    const slabLabel = g.igstRate > 0
+                                      ? `${g.igstRate}% IGST`
+                                      : `${g.cgstRate || g.sgstRate}% each`;
+                                    const rowTax = g.cgst + g.sgst + g.igst;
+                                    return (
+                                      <tr key={gi}>
+                                        <td style={{ ...tdS, fontWeight: "500", color: "#2B3A6B" }}>{slabLabel}</td>
+                                        <td style={tdR}>{pFmt(g.taxable)}</td>
+                                        {hasCgst && <td style={tdR}>{g.cgstRate > 0 ? pFmt(g.cgst) : <span style={{ color: "#9ca3af" }}>—</span>}</td>}
+                                        {hasSgst && <td style={tdR}>{g.sgstRate > 0 ? pFmt(g.sgst) : <span style={{ color: "#9ca3af" }}>—</span>}</td>}
+                                        {hasIgst && <td style={tdR}>{g.igstRate > 0 ? pFmt(g.igst) : <span style={{ color: "#9ca3af" }}>—</span>}</td>}
+                                        <td style={{ ...tdR, fontWeight: "600" }}>{pFmt(rowTax)}</td>
+                                      </tr>
+                                    );
+                                  })}
+                                </tbody>
+                                <tfoot>
+                                  <tr style={{ borderTop: "2px solid #94a3b8", background: "#f8fafc" }}>
+                                    <td style={{ ...tdS, fontWeight: "700" }}>Total</td>
+                                    <td style={{ ...tdR, fontWeight: "700" }}>{pFmt(totalTaxable)}</td>
+                                    {hasCgst && <td style={{ ...tdR, fontWeight: "700" }}>{pFmt(totalCgst)}</td>}
+                                    {hasSgst && <td style={{ ...tdR, fontWeight: "700" }}>{pFmt(totalSgst)}</td>}
+                                    {hasIgst && <td style={{ ...tdR, fontWeight: "700" }}>{pFmt(totalIgst)}</td>}
+                                    <td style={{ ...tdR, fontWeight: "700", color: "#2B3A6B" }}>{pFmt(totalAllTax)}</td>
+                                  </tr>
+                                </tfoot>
+                              </table>
+                            </div>
+                          );
+                        })()}
+
+                        {/* RIGHT — Net Payable */}
+                        <div className="text-right">
+                          <p className="text-[9px] font-bold uppercase tracking-widest text-gray-400 mb-1.5">Net Payable</p>
+                          <p className="font-extrabold text-xl tabular-nums" style={{ color: "#2B3A6B" }}>
+                            ₹ {pFmt(netPayable)}
+                          </p>
+                          <p className="text-[9px] text-gray-400 mt-0.5">(Incl. all applicable taxes)</p>
+                        </div>
+
+                      </div>
+
+                      {/* Terms */}
+                      <div className="text-[11px] leading-[1.55]" style={{ paddingTop: "10px", borderTop: "1px solid #e2e8f0" }}>
+                        <p className="text-[9px] font-bold uppercase tracking-widest text-gray-400 mb-1.5">Terms &amp; Conditions</p>
+                        <ol className="list-decimal list-inside space-y-0.5 text-gray-600">
+                          <li>All materials must conform to the specifications mentioned in the purchase request.</li>
+                          <li>Delivery to be made at the site address mentioned above within the agreed delivery period.</li>
+                          <li>Payment will be made within 30 days of receipt of materials and invoice.</li>
+                          <li>Any damage or shortage during transit is the vendor's responsibility.</li>
+                          <li>GST invoice must be submitted along with delivery for tax credit eligibility.</li>
+                          <li>10% of payment will be withheld until quality inspection is completed.</li>
+                          <li>TDS will be deducted as applicable under Income Tax Act.</li>
+                        </ol>
+                      </div>
+
+                      {/* Footer */}
+                      <div className="flex justify-between items-end" style={{ paddingTop: "10px", borderTop: "1px solid #e2e8f0" }}>
+                        <div className="text-[11px] text-gray-600 leading-5">
+                          <p className="font-semibold text-gray-800 mb-0.5">Note</p>
+                          <p>Requested By : <span className="font-medium text-gray-800">{data.siteDetails?.siteIncharge || "Admin / Purchase Dept"}</span></p>
+                          <p>Project ID &nbsp; : <span className="font-medium text-gray-800">{data.projectId || "—"}</span></p>
+                        </div>
+                        <div className="text-center">
+                          <div className="mb-6 text-[10px] text-gray-500">
+                            <p className="font-bold text-gray-800 uppercase tracking-wide text-[11px]">for ROMAA INFRAA PVT. LTD</p>
+                          </div>
+                          <div style={{ width: "150px", borderTop: "1px solid #94a3b8" }} />
+                          <p className="text-[9px] text-gray-400 mt-1 italic">Authorised Signatory</p>
+                        </div>
+                      </div>
+
+                    </div>
+                  )}
+
+                </div>
+              );
+            })}
           </div>
-        </div>
-      </div>
+        );
+      })()}
     </>
   );
 };
