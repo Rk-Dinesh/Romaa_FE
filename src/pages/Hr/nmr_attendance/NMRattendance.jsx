@@ -1,170 +1,179 @@
-import React, { useEffect, useState } from "react";
-import Title from "../../../components/Title";
-import { TbFileExport } from "react-icons/tb";
-import ButtonBg from "../../../components/Button";
-import { BiFilterAlt } from "react-icons/bi";
-import { AttendanceData } from "../../../components/Data";
-import { Check, X } from "lucide-react";
-import { HiArrowsUpDown } from "react-icons/hi2";
-import Pagination from "../../../components/Pagination";
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { useSearch } from "../../../context/SearchBar";
+import { BiFilterAlt } from "react-icons/bi";
+import { Eye, CheckCircle } from "lucide-react";
+import Title from "../../../components/Title";
+import ButtonBg from "../../../components/Button";
+import Pagination from "../../../components/Pagination";
 import Filters from "../../../components/Filters";
+import Loader from "../../../components/Loader";
+import { useProject } from "../../../context/ProjectContext";
+import { useNMRAttendanceList, useApproveNMRAttendance } from "./hooks/useNMRAttendance";
 
-const getDaysInMonth = (month, year) => {
-  const date = new Date(year, month, 1);
-  const days = [];
-  while (date.getMonth() === month) {
-    days.push({
-      date: date.getDate().toString(),
-      day: date.toLocaleDateString("en-US", { weekday: "short" }).charAt(0).toUpperCase(),
-    });
-    date.setDate(date.getDate() + 1);
-  }
-  return days;
+const STATUS_STYLES = {
+  SUBMITTED: "bg-yellow-100 text-yellow-700 border-yellow-200",
+  APPROVED: "bg-emerald-100 text-emerald-700 border-emerald-200",
 };
 
 const NMRAttendance = () => {
-  const { searchTerm } = useSearch();
-  const [attendance, setAttendance] = useState(AttendanceData);
-  const [month, setMonth] = useState(new Date().getMonth());
-  const [year, setYear] = useState(new Date().getFullYear());
-  const [days, setDays] = useState([]);
-  const [filteredData, setFilteredData] = useState([]);
+  const navigate = useNavigate();
+  const { tenderId } = useProject();
+
   const [currentPage, setCurrentPage] = useState(1);
   const [filterModal, setFilterModal] = useState(false);
-  const [filterParams, setFilterParams] = useState({ fromdate: "", todate: "" });
+  const [filterParams, setFilterParams] = useState({ from: "", to: "", contractor_id: "" });
 
-  const navigate = useNavigate();
   const itemsPerPage = 10;
 
+  const { data, isLoading, isFetching } = useNMRAttendanceList(tenderId, {
+    from: filterParams.from,
+    to: filterParams.to,
+    contractor_id: filterParams.contractor_id,
+  });
+
+  const approveMutation = useApproveNMRAttendance({});
+
+  const records = data?.data || [];
+  const totalPages = Math.ceil(records.length / itemsPerPage);
+  const paginatedData = records.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
+
   const handleFilter = ({ fromdate, todate }) => {
-    setFilterParams({ fromdate, todate });
-    setFilterModal(false);
+    setFilterParams((prev) => ({ ...prev, from: fromdate, to: todate }));
     setCurrentPage(1);
+    setFilterModal(false);
   };
 
-  useEffect(() => {
-    setDays(getDaysInMonth(month, year));
-  }, [month, year]);
-
-  useEffect(() => {
-    const lowerSearchTerm = searchTerm.toString().toLowerCase();
-    const fromDate = filterParams.fromdate ? new Date(filterParams.fromdate) : null;
-    const toDate = filterParams.todate ? new Date(filterParams.todate) : null;
-
-    const filtered = attendance.filter((item) => {
-      const matchesSearch = item.name.toLowerCase().includes(lowerSearchTerm);
-      const matchesDate = true;
-
-      return matchesSearch && matchesDate;
-    });
-
-    setFilteredData(filtered);
-  }, [searchTerm, filterParams, attendance]);
-
-  const startIndex = (currentPage - 1) * itemsPerPage;
-  const paginatedData = filteredData.slice(startIndex, startIndex + itemsPerPage);
+  const handleApprove = (e, record) => {
+    e.stopPropagation();
+    approveMutation.mutate({ id: record._id, verified_by: "" });
+  };
 
   return (
     <div className="h-full">
       <div className="mb-4 flex flex-col lg:flex-row justify-between items-start lg:items-center">
         <Title title="HR Management" sub_title="NMR Attendance" page_title="NMR Attendance" />
         <div className="mt-4 lg:mt-0 flex flex-wrap items-center gap-3">
-          <div className="text-base">
-            <span className="font-semibold">Date:</span>{" "}
-            {new Date().toLocaleDateString("en-GB", {
-              day: "2-digit",
-              month: "long",
-              year: "numeric",
-            })}
-          </div>
           <ButtonBg
-            button_icon={<TbFileExport size={23} />}
-            button_name="Export"
-            bgColor="dark:bg-layout-dark bg-white"
-            textColor=" dark:text-white text-darkest-blue"
-          />
-          <ButtonBg
-            button_icon={<BiFilterAlt size={23} />}
+            button_icon={<BiFilterAlt size={20} />}
             button_name="Filter"
-            bgColor=" dark:bg-layout-dark bg-white"
-            textColor=" dark:text-white text-darkest-blue"
+            bgColor="dark:bg-layout-dark bg-white"
+            textColor="dark:text-white text-darkest-blue"
             onClick={() => setFilterModal(true)}
           />
         </div>
       </div>
 
-      <div className="overflow-auto no-scrollbar">
-        <table className="w-full whitespace-nowrap">
-          <thead>
-            <tr className="text-sm dark:bg-layout-dark bg-white border-b-[3px] dark:border-border-dark-grey border-light-blue">
-              <th className="rounded-l-md px-2 pl-5 py-1">S.No</th>
-              <th className="px-2 py-1 flex items-center justify-center gap-1 pt-[14px]">
-                Name <HiArrowsUpDown size={18} />
-              </th>
-              {days.map((d, i) => (
-                <th key={i} className="px-2 py-1">
-                  {d.date}
-                  <br />
-                  <p className="font-light">{d.day}</p>
-                </th>
-              ))}
-              <th className="rounded-r-md px-2 py-1 pr-5">Total</th>
-            </tr>
-          </thead>
-          <tbody className="text-greyish dark:bg-layout-dark bg-white text-sm">
-            {days.length > 0 && paginatedData.length > 0 ? (
-              paginatedData.map((row, idx) => (
-                <tr className="border-light-blue border-b-2 dark:border-border-dark-grey " key={idx}>
-                  <td className="rounded-l-md text-center">
-                    {(currentPage - 1) * itemsPerPage + idx + 1}
-                  </td>
-                  <td className="p-3">{row.name}</td>
-                  {days.map((day, i) => (
-                    <td key={i} className="px-2">
-                      {row.attendance[day.date] ? (
-                        <Check className="text-green-600 stroke-3" size={16} />
-                      ) : (
-                        <X className="text-red-600 stroke-3" size={16} />
-                      )}
-                    </td>
-                  ))}
-                  <td className="rounded-r-md px-2 ">
-                    {days.reduce(
-                      (acc, day) => acc + (row.attendance[day.date] ? 1 : 0),
-                      0
-                    )}
-                    /{days.length}
-                  </td>
-                </tr>
-              ))
-            ) : (
-              <tr>
-                <td
-                  colSpan={days.length + 3}
-                  className="text-center text-gray-400 py-4 font-medium"
-                >
-                  No data found
-                </td>
-              </tr>
-            )}
-          </tbody>
-        </table>
-      </div>
+      {!tenderId && (
+        <div className="text-center text-gray-400 py-10 font-medium">
+          No project selected. Please select a project first.
+        </div>
+      )}
 
-      <Pagination
-        totalItems={filteredData.length}
-        itemsPerPage={itemsPerPage}
-        currentPage={currentPage}
-        onPageChange={setCurrentPage}
-      />
+      {tenderId && (
+        <>
+          {isLoading ? (
+            <Loader />
+          ) : (
+            <div className="overflow-auto no-scrollbar">
+              <table className="w-full whitespace-nowrap">
+                <thead>
+                  <tr className="text-sm dark:bg-layout-dark bg-white border-b-[3px] dark:border-border-dark-grey border-light-blue text-center">
+                    <th className="rounded-l-md px-4 py-3 text-left">S.No</th>
+                    <th className="px-4 py-3 text-left">Date</th>
+                    <th className="px-4 py-3 text-left">Contractor</th>
+                    <th className="px-4 py-3">Total Present</th>
+                    <th className="px-4 py-3">Payable Amount</th>
+                    <th className="px-4 py-3">Status</th>
+                    <th className="rounded-r-md px-4 py-3">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="text-greyish dark:bg-layout-dark bg-white text-sm">
+                  {paginatedData.length > 0 ? (
+                    paginatedData.map((record, idx) => (
+                      <tr
+                        key={record._id}
+                        className="border-light-blue border-b-2 dark:border-border-dark-grey hover:bg-gray-50 dark:hover:bg-gray-800 cursor-pointer"
+                        onClick={() =>
+                          navigate("view", { state: { id: record._id, record } })
+                        }
+                      >
+                        <td className="px-4 py-3 rounded-l-md">
+                          {(currentPage - 1) * itemsPerPage + idx + 1}
+                        </td>
+                        <td className="px-4 py-3">
+                          {new Date(record.attendance_date).toLocaleDateString("en-GB", {
+                            day: "2-digit",
+                            month: "short",
+                            year: "numeric",
+                          })}
+                        </td>
+                        <td className="px-4 py-3">{record.contractor_id || "-"}</td>
+                        <td className="px-4 py-3 text-center">{record.total_present ?? "-"}</td>
+                        <td className="px-4 py-3 text-center">
+                          {record.total_payable_amount != null
+                            ? `₹${record.total_payable_amount.toLocaleString()}`
+                            : "-"}
+                        </td>
+                        <td className="px-4 py-3 text-center">
+                          <span
+                            className={`text-xs font-semibold px-2 py-1 rounded border ${
+                              STATUS_STYLES[record.status] || "bg-gray-100 text-gray-600 border-gray-200"
+                            }`}
+                          >
+                            {record.status}
+                          </span>
+                        </td>
+                        <td className="px-4 py-3 rounded-r-md">
+                          <div className="flex items-center justify-center gap-2">
+                            <button
+                              title="View Details"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                navigate("view", { state: { id: record._id, record } });
+                              }}
+                              className="text-blue-500 hover:text-blue-700"
+                            >
+                              <Eye size={16} />
+                            </button>
+                            {record.status === "SUBMITTED" && (
+                              <button
+                                title="Approve"
+                                onClick={(e) => handleApprove(e, record)}
+                                disabled={approveMutation.isPending}
+                                className="text-emerald-500 hover:text-emerald-700 disabled:opacity-50"
+                              >
+                                <CheckCircle size={16} />
+                              </button>
+                            )}
+                          </div>
+                        </td>
+                      </tr>
+                    ))
+                  ) : (
+                    <tr>
+                      <td
+                        colSpan={7}
+                        className="text-center text-gray-400 py-8 font-medium"
+                      >
+                        {isFetching ? "Loading..." : "No attendance records found"}
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          )}
+
+          <Pagination
+            totalPages={totalPages}
+            currentPage={currentPage}
+            setCurrentPage={setCurrentPage}
+          />
+        </>
+      )}
 
       {filterModal && (
-        <Filters
-          onclose={() => setFilterModal(false)}
-          onFilter={handleFilter}
-        />
+        <Filters onclose={() => setFilterModal(false)} onFilter={handleFilter} />
       )}
     </div>
   );

@@ -136,6 +136,7 @@ const ContractNmr = lazy(() => import("../pages/Hr/contract & Nmr/ContractNmr"))
 const ViewContractor = lazy(() => import("../pages/Hr/contract & Nmr/ViewContractor"));
 const EditContractor = lazy(() => import("../pages/Hr/contract & Nmr/EditContractor"));
 const NMRattendance = lazy(() => import("../pages/Hr/nmr_attendance/NMRattendance"));
+const ViewNMRAttendance = lazy(() => import("../pages/Hr/nmr_attendance/ViewNMRAttendance"));
 const NMR = lazy(() => import("../pages/Hr/nmr/NMR"));
 const ViewNMR = lazy(() => import("../pages/Hr/nmr/ViewNMR"));
 const EditNMR = lazy(() => import("../pages/Hr/nmr/EditNMR"));
@@ -466,7 +467,10 @@ const AppRoutes = () => {
                   <Route path="editcontractor" element={<EditContractor />} />
                 </Route>
 
-                <Route path="NMRattendance" element={<NMRattendance />} />
+                <Route path="NMRattendance">
+                  <Route index element={<NMRattendance />} />
+                  <Route path="view" element={<ViewNMRAttendance />} />
+                </Route>
                 <Route path="nmr">
                   <Route index element={<NMR />} />
                   <Route path="viewnmr" element={<ViewNMR />} />
