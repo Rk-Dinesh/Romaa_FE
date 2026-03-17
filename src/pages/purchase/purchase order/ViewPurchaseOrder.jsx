@@ -153,6 +153,7 @@ const ViewPurchaseOrder = () => {
 
   const vendor = data.selectedVendor;
   const isPOIssued = data.status === "Purchase Order Issued";
+  const isInState = vendor?.place_of_supply === "InState";
 
   const handlePrint = () => {
     window.print();
@@ -315,34 +316,33 @@ const ViewPurchaseOrder = () => {
               </div>
             ) : (
               <div className="overflow-x-auto">
-                <table className="w-full text-sm text-left">
+                <table className="w-full text-sm text-left table-fixed">
                   <thead>
                     <tr className="bg-gray-100 dark:bg-gray-900 text-gray-500 dark:text-gray-400 text-[10px] uppercase font-bold border-b dark:border-gray-700">
-                      <th className="px-4 py-3 border-r dark:border-gray-700 w-12 text-center">
+                      <th className="px-3 py-3 border-r dark:border-gray-700 text-center" style={{ width: "48px" }}>
                         S.No
                       </th>
                       <th className="px-4 py-3 border-r dark:border-gray-700">
                         Material Description
                       </th>
-                      <th className="px-4 py-3 border-r dark:border-gray-700 text-center">
+                      <th className="px-3 py-3 border-r dark:border-gray-700 text-center" style={{ width: isInState ? "88px" : "100px" }}>
                         Qty / Unit
                       </th>
-                      <th className="px-4 py-3 border-r dark:border-gray-700 text-right">
+                      <th className="px-3 py-3 border-r dark:border-gray-700 text-right" style={{ width: isInState ? "88px" : "100px" }}>
                         Rate (₹)
                       </th>
-                      <th className="px-4 py-3 border-r dark:border-gray-700 text-right">
+                      <th className="px-3 py-3 border-r dark:border-gray-700 text-right" style={{ width: isInState ? "96px" : "112px" }}>
                         Taxable Val (₹)
                       </th>
-                      <th className="px-4 py-3 border-r dark:border-gray-700 text-right">
-                        CGST
-                      </th>
-                      <th className="px-4 py-3 border-r dark:border-gray-700 text-right">
-                        SGST
-                      </th>
-                      <th className="px-4 py-3 border-r dark:border-gray-700 text-right">
-                        IGST
-                      </th>
-                      <th className="px-4 py-3 text-right bg-blue-50/50 dark:bg-blue-900/10">
+                      {isInState ? (
+                        <>
+                          <th className="px-3 py-3 border-r dark:border-gray-700 text-right" style={{ width: "88px" }}>CGST</th>
+                          <th className="px-3 py-3 border-r dark:border-gray-700 text-right" style={{ width: "88px" }}>SGST</th>
+                        </>
+                      ) : (
+                        <th className="px-3 py-3 border-r dark:border-gray-700 text-right" style={{ width: "112px" }}>IGST</th>
+                      )}
+                      <th className="px-3 py-3 text-right bg-blue-50/50 dark:bg-blue-900/10" style={{ width: isInState ? "96px" : "112px" }}>
                         Total (₹)
                       </th>
                     </tr>
@@ -357,7 +357,7 @@ const ViewPurchaseOrder = () => {
                         (taxableValue * (item.taxStructure?.sgst || 0)) / 100;
                       const igstAmt =
                         (taxableValue * (item.taxStructure?.igst || 0)) / 100;
-                      const totalTax = igstAmt;
+                      const totalTax = isInState ? cgstAmt + sgstAmt : igstAmt;
                       const rowTotal = taxableValue + totalTax;
 
                       return (
@@ -390,30 +390,23 @@ const ViewPurchaseOrder = () => {
                               minimumFractionDigits: 2,
                             })}
                           </td>
-                          <td className="px-4 py-3 text-right border-r dark:border-gray-700 bg-gray-50/30 dark:bg-transparent">
-                            <div className="font-mono">
-                              {cgstAmt.toFixed(2)}
-                            </div>
-                            <div className="text-[9px] text-gray-400">
-                              {item.taxStructure?.cgst}%
-                            </div>
-                          </td>
-                          <td className="px-4 py-3 text-right border-r dark:border-gray-700 bg-gray-50/30 dark:bg-transparent">
-                            <div className="font-mono">
-                              {sgstAmt.toFixed(2)}
-                            </div>
-                            <div className="text-[9px] text-gray-400">
-                              {item.taxStructure?.sgst}%
-                            </div>
-                          </td>
-                          <td className="px-4 py-3 text-right border-r dark:border-gray-700 bg-gray-50/30 dark:bg-transparent">
-                            <div className="font-mono">
-                              {igstAmt.toFixed(2)}
-                            </div>
-                            <div className="text-[9px] text-gray-400">
-                              {item.taxStructure?.igst}%
-                            </div>
-                          </td>
+                          {isInState ? (
+                            <>
+                              <td className="px-4 py-3 text-right border-r dark:border-gray-700 bg-gray-50/30 dark:bg-transparent">
+                                <div className="font-mono">{cgstAmt.toFixed(2)}</div>
+                                <div className="text-[9px] text-gray-400">{item.taxStructure?.cgst}%</div>
+                              </td>
+                              <td className="px-4 py-3 text-right border-r dark:border-gray-700 bg-gray-50/30 dark:bg-transparent">
+                                <div className="font-mono">{sgstAmt.toFixed(2)}</div>
+                                <div className="text-[9px] text-gray-400">{item.taxStructure?.sgst}%</div>
+                              </td>
+                            </>
+                          ) : (
+                            <td className="px-4 py-3 text-right border-r dark:border-gray-700 bg-gray-50/30 dark:bg-transparent">
+                              <div className="font-mono">{igstAmt.toFixed(2)}</div>
+                              <div className="text-[9px] text-gray-400">{item.taxStructure?.igst}%</div>
+                            </td>
+                          )}
                           <td className="px-4 py-3 text-right font-bold text-gray-800 dark:text-gray-200 bg-blue-50/20 dark:bg-blue-900/5">
                             {rowTotal.toLocaleString(undefined, {
                               minimumFractionDigits: 2,
@@ -428,7 +421,7 @@ const ViewPurchaseOrder = () => {
                     {/* 1. Base Amount (As provided in totalQuotedValue) */}
                     <tr className="text-gray-600 dark:text-gray-400">
                       <td
-                        colSpan="8"
+                        colSpan={isInState ? 7 : 6}
                         className="px-4 py-2 text-right text-[10px] uppercase font-bold tracking-wider"
                       >
                         Base Value
@@ -443,19 +436,19 @@ const ViewPurchaseOrder = () => {
                     {/* 2. Calculated Tax Amount (Sum of all item taxes) */}
                     <tr className="text-gray-500 border-b border-gray-100 dark:border-gray-800">
                       <td
-                        colSpan="8"
+                        colSpan={isInState ? 7 : 6}
                         className="px-4 py-2 text-right text-[10px] uppercase font-bold tracking-wider"
                       >
-                        Tax Amount (IGST)
+                        {isInState ? "Tax Amount (CGST + SGST)" : "Tax Amount (IGST)"}
                       </td>
                       <td className="px-4 py-2 text-right font-mono font-bold text-amber-600">
                         {vendor.quoteItems
                           ?.reduce((acc, item) => {
                             const taxableValue =
                               (item.quantity || 0) * (item.quotedUnitRate || 0);
-                            const tax =
-                              (taxableValue * (item.taxStructure?.igst || 0)) /
-                              100;
+                            const tax = isInState
+                              ? (taxableValue * ((item.taxStructure?.cgst || 0) + (item.taxStructure?.sgst || 0))) / 100
+                              : (taxableValue * (item.taxStructure?.igst || 0)) / 100;
                             return acc + tax;
                           }, 0)
                           .toLocaleString(undefined, {
@@ -466,7 +459,7 @@ const ViewPurchaseOrder = () => {
 
                     {/* 3. Grand Total (Base + Tax) */}
                     <tr className="bg-blue-600 dark:bg-blue-500 text-white">
-                      <td colSpan="8" className="px-4 py-4 text-right">
+                      <td colSpan={isInState ? 7 : 6} className="px-4 py-4 text-right">
                         <div className="text-xs font-black uppercase tracking-widest opacity-90 text-white">
                           Net Payable Amount
                         </div>
@@ -483,12 +476,10 @@ const ViewPurchaseOrder = () => {
                               const taxableValue =
                                 (item.quantity || 0) *
                                 (item.quotedUnitRate || 0);
-                              return (
-                                acc +
-                                (taxableValue *
-                                  (item.taxStructure?.igst || 0)) /
-                                  100
-                              );
+                              const tax = isInState
+                                ? (taxableValue * ((item.taxStructure?.cgst || 0) + (item.taxStructure?.sgst || 0))) / 100
+                                : (taxableValue * (item.taxStructure?.igst || 0)) / 100;
+                              return acc + tax;
                             }, 0)
                           ).toLocaleString(undefined, {
                             minimumFractionDigits: 2,
@@ -515,7 +506,7 @@ const ViewPurchaseOrder = () => {
           const cgst    = (taxable * (item.taxStructure?.cgst || 0)) / 100;
           const sgst    = (taxable * (item.taxStructure?.sgst || 0)) / 100;
           const igst    = (taxable * (item.taxStructure?.igst || 0)) / 100;
-          const total   = taxable + igst;
+          const total   = isInState ? taxable + cgst + sgst : taxable + igst;
           return { ...item, taxable, cgst, sgst, igst, total };
         });
 
@@ -538,11 +529,13 @@ const ViewPurchaseOrder = () => {
           gstGroupMap[key].igst    += item.igst;
         });
         const gstGroups  = Object.values(gstGroupMap);
-        const totalAllTax = gstGroups.reduce((s, g) => s + g.cgst + g.sgst + g.igst, 0);
+        const totalAllTax = isInState
+          ? gstGroups.reduce((s, g) => s + g.cgst + g.sgst, 0)
+          : gstGroups.reduce((s, g) => s + g.igst, 0);
         const netPayable  = baseValue + totalAllTax;
-        const hasCgst = gstGroups.some(g => g.cgstRate > 0);
-        const hasSgst = gstGroups.some(g => g.sgstRate > 0);
-        const hasIgst = gstGroups.some(g => g.igstRate > 0);
+        const hasCgst = isInState;
+        const hasSgst = isInState;
+        const hasIgst = !isInState;
 
         const pFmt  = (n) => Number(n || 0).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
         const pDate = (v) => v ? new Date(v).toLocaleDateString("en-GB", { day: "2-digit", month: "2-digit", year: "numeric" }) : "—";
@@ -640,13 +633,14 @@ const ViewPurchaseOrder = () => {
                       </div>
 
                       {/* FROM / TO */}
-                      <div className="grid grid-cols-2 mb-3" style={{ border: "1px solid #e2e8f0", borderRadius: "3px" }}>
-                        <div className="px-4 py-3" style={{ borderRight: "1px solid #e2e8f0" }}>
+                      <div className="grid grid-cols-2 mb-3" >
+                        <div className="px-4 py-3" >
                           <p className="text-[9px] font-bold uppercase tracking-[0.15em] mb-1.5" style={{ color: "#2B3A6B" }}>From</p>
                           <p className="font-extrabold text-sm leading-tight" style={{ color: "#2B3A6B" }}>ROMAA INFRAA PVT. LTD</p>
                           <div className="text-[11px] leading-[1.6] text-gray-500 mt-1">
                             <p>1/107, P.R. Road, Nerkundram, Chennai – 600107</p>
-                            <p>Ph: 044-23333333 &nbsp;·&nbsp; GSTIN: 33AAECR6992B1Z9</p>
+                            <p>Ph: 044-23333333 &nbsp;·&nbsp; </p>
+                            <p>GSTIN: 33AAECR6992B1Z9</p>
                           </div>
                         </div>
                         <div className="px-4 py-3">
@@ -661,14 +655,15 @@ const ViewPurchaseOrder = () => {
                       </div>
 
                       {/* Ref row */}
-                      <div className="flex gap-6 text-[11px] mb-3">
-                        {data.siteDetails?.location && (
-                          <p className="text-gray-500">Site &nbsp;<span className="font-semibold text-gray-800">{data.siteDetails.location}</span></p>
-                        )}
+                      <div className="flex justify-between gap-6 text-[11px] mb-3">
+                        
                         <p className="text-gray-500">Ref No. &nbsp;<span className="font-semibold text-gray-800">{vendor?.quotationId || "—"}</span></p>
                         <p className="text-gray-500">Ref Date &nbsp;<span className="font-semibold text-gray-800">{pDate(vendor?.deliveryPeriod)}</span></p>
                         {data.siteDetails?.siteIncharge && (
                           <p className="text-gray-500">Incharge &nbsp;<span className="font-semibold text-gray-800">{data.siteDetails.siteIncharge}</span></p>
+                        )}
+                        {data.siteDetails?.location && (
+                          <p className="text-gray-500">Site &nbsp;<span className="font-semibold text-gray-800">{data.siteDetails.location}</span></p>
                         )}
                       </div>
                       <div className="mb-3" style={{ borderTop: "1px solid #e2e8f0" }} />
@@ -711,10 +706,10 @@ const ViewPurchaseOrder = () => {
                                 </thead>
                                 <tbody>
                                   {gstGroups.map((g, gi) => {
-                                    const slabLabel = g.igstRate > 0
-                                      ? `${g.igstRate}% IGST`
-                                      : `${g.cgstRate || g.sgstRate}% each`;
-                                    const rowTax = g.cgst + g.sgst + g.igst;
+                                    const slabLabel = isInState
+                                      ? `${g.cgstRate}% CGST + ${g.sgstRate}% SGST`
+                                      : `${g.igstRate}% IGST`;
+                                    const rowTax = isInState ? g.cgst + g.sgst : g.igst;
                                     return (
                                       <tr key={gi}>
                                         <td style={{ ...tdS, fontWeight: "500", color: "#2B3A6B" }}>{slabLabel}</td>
@@ -768,12 +763,7 @@ const ViewPurchaseOrder = () => {
                       </div>
 
                       {/* Footer */}
-                      <div className="flex justify-between items-end" style={{ paddingTop: "10px", borderTop: "1px solid #e2e8f0" }}>
-                        <div className="text-[11px] text-gray-600 leading-5">
-                          <p className="font-semibold text-gray-800 mb-0.5">Note</p>
-                          <p>Requested By : <span className="font-medium text-gray-800">{data.siteDetails?.siteIncharge || "Admin / Purchase Dept"}</span></p>
-                          <p>Project ID &nbsp; : <span className="font-medium text-gray-800">{data.projectId || "—"}</span></p>
-                        </div>
+                      <div className="flex justify-end items-end" style={{ paddingTop: "10px", borderTop: "1px solid #e2e8f0" }}>
                         <div className="text-center">
                           <div className="mb-6 text-[10px] text-gray-500">
                             <p className="font-bold text-gray-800 uppercase tracking-wide text-[11px]">for ROMAA INFRAA PVT. LTD</p>

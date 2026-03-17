@@ -1,10 +1,10 @@
 import React, { useEffect, useState } from "react";
-import { 
-  ChevronLeft, 
-  MapPin, 
-  Calendar, 
-  User, 
-  FileText, 
+import {
+  ChevronLeft,
+  MapPin,
+  Calendar,
+  User,
+  FileText,
   Award,
   DollarSign,
   AlertCircle,
@@ -72,7 +72,7 @@ const ConfirmationModal = ({ isOpen, onClose, onConfirm, actionType, vendorName 
           <div className={`mx-auto mb-4 w-14 h-14 rounded-full flex items-center justify-center ${isApprove ? 'bg-green-100 text-green-600' : 'bg-red-100 text-red-600'}`}>
             {isApprove ? <CheckCircle2 size={32} /> : <AlertTriangle size={32} />}
           </div>
-          
+
           <h3 className="mb-2 text-xl font-bold text-gray-800 dark:text-white">
             {isApprove ? "Accept Quotation?" : "Reject Quotation?"}
           </h3>
@@ -82,19 +82,18 @@ const ConfirmationModal = ({ isOpen, onClose, onConfirm, actionType, vendorName 
           </p>
 
           <div className="flex gap-3 justify-center">
-            <button 
+            <button
               onClick={onClose}
               className="px-5 py-2.5 rounded-lg border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 text-sm font-medium transition-colors"
             >
               Cancel
             </button>
-            <button 
+            <button
               onClick={onConfirm}
-              className={`px-5 py-2.5 rounded-lg text-white text-sm font-medium shadow-md transition-colors flex items-center gap-2 ${
-                isApprove 
-                  ? "bg-green-600 hover:bg-green-700" 
-                  : "bg-red-600 hover:bg-red-700"
-              }`}
+              className={`px-5 py-2.5 rounded-lg text-white text-sm font-medium shadow-md transition-colors flex items-center gap-2 ${isApprove
+                ? "bg-green-600 hover:bg-green-700"
+                : "bg-red-600 hover:bg-red-700"
+                }`}
             >
               {isApprove ? "Yes, Accept" : "Yes, Reject"}
             </button>
@@ -110,7 +109,7 @@ const ConfirmationModal = ({ isOpen, onClose, onConfirm, actionType, vendorName 
 const ViewWORequest = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  
+
   const passedItem = location.state?.item || {};
   const requestIdParam = passedItem.requestId;
   const projectIdParam = passedItem.projectId;
@@ -126,7 +125,7 @@ const ViewWORequest = () => {
     vendorName: ""
   });
 
-  
+
   // Fetch Data
   useEffect(() => {
     const fetchRequest = async () => {
@@ -138,6 +137,8 @@ const ViewWORequest = () => {
         const res = await axios.get(
           `${API}/workorderrequest/api/getQuotationRequested/${projectIdParam}/${requestIdParam}`
         );
+
+
         const fetchedData = Array.isArray(res.data?.data) ? res.data.data[0] : res.data?.data;
         setData(fetchedData);
       } catch (err) {
@@ -186,7 +187,7 @@ const ViewWORequest = () => {
                 return { ...q, approvalStatus: "Rejected" };
               }),
             };
-          } 
+          }
           // Rejected logic
           return {
             ...prev,
@@ -206,7 +207,7 @@ const ViewWORequest = () => {
   };
 
   const handleCopyLink = () => {
-   const link = `${window.location.origin}/projects/woissuance/requestform/${projectIdParam}/${requestIdParam}`;
+    const link = `${window.location.origin}/projects/woissuance/requestform/${projectIdParam}/${requestIdParam}`;
     navigator.clipboard.writeText(link);
     toast.success("Work Order link copied to clipboard!");
   };
@@ -240,7 +241,7 @@ const ViewWORequest = () => {
 
   return (
     <div className="h-full flex flex-col dark:bg-[#0b0f19] p-4 overflow-hidden font-roboto-flex">
-      
+
       {/* HEADER */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-3 gap-4">
         <div>
@@ -250,13 +251,13 @@ const ViewWORequest = () => {
             page_title={data.requestId}
           />
           <div className="mt-2 flex items-center gap-3">
-             <StatusBadge status={data.status} />
-             <span className="text-xs text-gray-400 flex items-center gap-1">
-               <Calendar size={12}/> Req Date: {new Date(data.requestDate).toLocaleDateString()}
-             </span>
+            <StatusBadge status={data.status} />
+            <span className="text-xs text-gray-400 flex items-center gap-1">
+              <Calendar size={12} /> Req Date: {new Date(data.requestDate).toLocaleDateString("en-GB")}
+            </span>
           </div>
         </div>
-        
+
         <div className="flex gap-2">
           <Button
             button_name="Copy Link"
@@ -283,21 +284,21 @@ const ViewWORequest = () => {
           <InfoCard title="General Information" icon={<FileText size={16} className="text-blue-500" />}>
             <DetailRow label="Title" value={data.title} />
             <DetailRow label="Project ID" value={data.projectId} />
-            <DetailRow label="Required By" value={new Date(data.requiredByDate).toLocaleDateString()} highlight />
+            <DetailRow label="Required By" value={new Date(data.requiredByDate).toLocaleDateString("en-GB")} highlight />
             <div className="mt-2 p-2 bg-gray-50 dark:bg-gray-800 rounded border border-gray-100 dark:border-gray-700">
-               <p className="text-[10px] text-gray-400 uppercase font-bold mb-1">Description</p>
-               <p className="text-xs text-gray-600 dark:text-gray-300 italic">"{data.description}"</p>
+              <p className="text-[10px] text-gray-400 uppercase font-bold mb-1">Description</p>
+              <p className="text-xs text-gray-600 dark:text-gray-300 italic">"{data.description}"</p>
             </div>
           </InfoCard>
 
-          <InfoCard title="Site Details" icon={<MapPin size={16} className="text-emerald-500"/>}>
+          <InfoCard title="Site Details" icon={<MapPin size={16} className="text-emerald-500" />}>
             <DetailRow label="Site Name" value={data.siteDetails?.siteName} />
             <DetailRow label="Location" value={data.siteDetails?.location} />
             <DetailRow label="Incharge" value={data.siteDetails?.siteIncharge} />
             <DetailRow label="PO Status" value={data.workOrder?.progressStatus} />
           </InfoCard>
 
-          <InfoCard title="Invited Vendors" icon={<User size={16} className="text-purple-500"/>}>
+          <InfoCard title="Invited Vendors" icon={<User size={16} className="text-purple-500" />}>
             {data.permittedVendor?.length > 0 ? (
               <div className="space-y-2 max-h-[150px] overflow-y-auto custom-scrollbar">
                 {data.permittedVendor.map((v) => {
@@ -367,11 +368,14 @@ const ViewWORequest = () => {
                         <div className="flex flex-col items-center gap-1">
                           <span className="text-sm text-gray-800 dark:text-white font-bold">{vendor.vendorName}</span>
                           <span className="text-[10px] font-normal text-gray-500 flex items-center gap-1">
-                            <Briefcase size={10}/> {vendor.quotationId}
+                            <Briefcase size={10} /> {vendor.quotationId}
                           </span>
                           <span className="text-[10px] font-normal text-gray-400">
-                            {new Date(vendor.quotationDate).toLocaleDateString()}
+                            {new Date(vendor.quotationDate).toLocaleDateString("en-GB")}
                           </span>
+                          <p className="text-blue-700 lowercase first-letter:uppercase"> Delivery Date:
+                            <span >{new Date(vendor.deliveryPeriod).toLocaleDateString("en-GB")}</span>
+                          </p>
                         </div>
                       </th>
                     ))}
@@ -381,7 +385,7 @@ const ViewWORequest = () => {
                   {data.materialsRequired?.map((reqMat, idx) => (
                     <tr key={idx} className="hover:bg-gray-50 dark:hover:bg-gray-800/30 transition-colors">
                       <td className="px-6 py-4 border-r dark:border-gray-700 sticky left-0 bg-white dark:bg-layout-dark z-10 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)]">
-                        <p className="font-bold text-gray-700 dark:text-gray-200">{reqMat.materialName}</p>
+                        <p className="font-bold text-gray-700 dark:text-gray-200">{reqMat.detailedDescription}</p>
                         <div className="flex items-center gap-2 mt-1">
                           <span className="text-xs bg-gray-100 dark:bg-gray-800 px-2 py-0.5 rounded text-gray-600 dark:text-gray-400">
                             Qty: <strong>{reqMat.quantity}</strong> {reqMat.unit}
@@ -395,7 +399,7 @@ const ViewWORequest = () => {
                             {quoteItem ? (
                               <div className="flex flex-col items-center gap-1">
                                 <span className="font-bold text-gray-800 dark:text-gray-200">
-                                 Quoted Rate: ₹{quoteItem.quotedUnitRate}
+                                  Quoted Rate: ₹{quoteItem.quotedUnitRate}
                                 </span>
                                 <span className="text-xs text-gray-500">
                                   Total Amount: ₹{quoteItem.totalAmount?.toLocaleString()}
@@ -416,7 +420,7 @@ const ViewWORequest = () => {
                     {quotations.map((vendor) => (
                       <td key={vendor._id} className={`px-6 py-4 text-center border-r dark:border-gray-700 ${vendor.quotationId === l1VendorId ? "bg-green-100/30 dark:bg-green-900/20" : ""}`}>
                         <div className={`text-lg font-bold flex items-center justify-center gap-0.5 ${vendor.quotationId === l1VendorId ? "text-green-600 dark:text-green-400" : "text-gray-800 dark:text-white"}`}>
-                         
+
                           ₹{vendor.totalQuotedValue?.toLocaleString()}
                         </div>
                         {vendor.quotationId === l1VendorId && (
@@ -460,7 +464,7 @@ const ViewWORequest = () => {
       </div>
 
       {/* Confirmation Modal Render */}
-      <ConfirmationModal 
+      <ConfirmationModal
         isOpen={modalConfig.isOpen}
         onClose={() => setModalConfig({ ...modalConfig, isOpen: false })}
         onConfirm={handleConfirmAction}

@@ -45,13 +45,14 @@ const CreateRequest = ({ onclose, onSuccess }) => {
 
   // --- State ---
   const [materials, setMaterials] = useState([]);
-  
+
   // Vendor Selection State
   const [selectedVendors, setSelectedVendors] = useState([{ vendorId: "", vendorName: "" }]);
 
   // Material Input State
   const [materialInput, setMaterialInput] = useState({
     materialName: "",
+    detailedDescription: "",
     quantity: "",
     unit: "",
     maxQuantity: 0 // To track limit
@@ -83,7 +84,7 @@ const CreateRequest = ({ onclose, onSuccess }) => {
   };
 
   /* ---------------- Material Handlers (Enhanced) ---------------- */
-  
+
   // Handle Material Selection from Dropdown
   const handleMaterialSelect = (e) => {
     const selectedName = e.target.value;
@@ -98,7 +99,7 @@ const CreateRequest = ({ onclose, onSuccess }) => {
       });
     } else {
       // Reset if "Select" chosen
-      setMaterialInput({ materialName: "", quantity: "", unit: "", maxQuantity: 0 });
+      setMaterialInput({ materialName: "", detailedDescription: "", quantity: "", unit: "", maxQuantity: 0 });
     }
   };
 
@@ -110,27 +111,30 @@ const CreateRequest = ({ onclose, onSuccess }) => {
     if (val > max) {
       toast.warning(`Quantity cannot exceed available limit: ${max}`);
     }
-    
+
     setMaterialInput({ ...materialInput, quantity: e.target.value });
   };
 
   const handleMaterialAdd = () => {
-    const { materialName, quantity, unit, maxQuantity } = materialInput;
-    
-    if (!materialName || !quantity || !unit) {
+    const { materialName, quantity, unit, maxQuantity, detailedDescription } = materialInput;
+
+    if (!materialName || !quantity || !unit || !detailedDescription) {
       toast.warning("Please fill all material fields.");
       return;
     }
 
     if (parseFloat(quantity) > maxQuantity) {
-        toast.error(`Quantity exceeds available limit (${maxQuantity} ${unit})`);
-        return;
+      toast.error(`Quantity exceeds available limit (${maxQuantity} ${unit})`);
+      return;
     }
 
     setMaterials((prev) => [...prev, materialInput]);
-    
+
+
+
+
     // Reset input
-    setMaterialInput({ materialName: "", quantity: "", unit: "", maxQuantity: 0 });
+    setMaterialInput({ materialName: "", quantity: "", unit: "", maxQuantity: 0, detailedDescription: "" });
   };
 
   const handleMaterialDelete = (index) => {
@@ -153,12 +157,13 @@ const CreateRequest = ({ onclose, onSuccess }) => {
     const finalData = {
       ...data,
       projectId: tenderId,
-      materialsRequired: materials.map(({ ...rest }) => rest), 
+      materialsRequired: materials.map(({ ...rest }) => rest),
       permittedVendor: validVendors.map(v => ({
         vendorId: v.vendorId,
         vendorName: v.vendorName
-      })), 
+      })),
     };
+
 
     try {
       await createRequest(finalData); // Using TanStack Query mutation
@@ -175,7 +180,7 @@ const CreateRequest = ({ onclose, onSuccess }) => {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
       <div className="bg-white dark:bg-gray-900 w-full max-w-4xl rounded-xl shadow-2xl relative max-h-[90vh] overflow-y-auto border border-gray-200 dark:border-gray-700">
-        
+
         {/* HEADER */}
         <div className="flex justify-between items-center px-6 py-5 border-b border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-900 sticky top-0 z-10">
           <div>
@@ -195,7 +200,7 @@ const CreateRequest = ({ onclose, onSuccess }) => {
         </div>
 
         <form onSubmit={handleSubmit(onSubmit)} className="p-6 space-y-6">
-          
+
           {/* SECTION 1: REQUEST DETAILS */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
@@ -207,7 +212,7 @@ const CreateRequest = ({ onclose, onSuccess }) => {
               />
               <p className="text-xs text-red-500 mt-1">{errors.title?.message}</p>
             </div>
-            
+
             <div>
               <label className="block text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase mb-1">Required By Date</label>
               <input
@@ -273,16 +278,16 @@ const CreateRequest = ({ onclose, onSuccess }) => {
           {/* SECTION 3: VENDOR SELECTION */}
           <div>
             <div className="flex justify-between items-center mb-3">
-                <h3 className="text-sm font-bold text-gray-800 dark:text-gray-200 flex items-center gap-2">
-                  <span className="w-1 h-4 bg-green-500 rounded-full"></span> Select Vendors
-                </h3>
-                <button
-                  type="button"
-                  onClick={handleAddVendor}
-                  className="text-xs font-medium text-blue-600 dark:text-blue-400 hover:underline flex items-center gap-1"
-                >
-                  + Add Vendor
-                </button>
+              <h3 className="text-sm font-bold text-gray-800 dark:text-gray-200 flex items-center gap-2">
+                <span className="w-1 h-4 bg-green-500 rounded-full"></span> Select Vendors
+              </h3>
+              <button
+                type="button"
+                onClick={handleAddVendor}
+                className="text-xs font-medium text-blue-600 dark:text-blue-400 hover:underline flex items-center gap-1"
+              >
+                + Add Vendor
+              </button>
             </div>
 
             <div className="overflow-x-auto rounded-lg border border-gray-200 dark:border-gray-700">
@@ -345,87 +350,112 @@ const CreateRequest = ({ onclose, onSuccess }) => {
 
           {/* SECTION 4: MATERIALS */}
           <div>
-            <h3 className="text-sm font-bold text-gray-800 dark:text-gray-200 flex items-center gap-2 mb-3">
-              <span className="w-1 h-4 bg-purple-500 rounded-full"></span> Material Requirements
-            </h3>
-            
-            {/* Material Input Row */}
-            <div className="flex flex-col sm:flex-row gap-3 mb-4 items-end">
-              <div className="flex-1">
-                <label className="block text-xs font-medium text-gray-500 mb-1">Item Description</label>
-                <select
-                  value={materialInput.materialName}
-                  onChange={handleMaterialSelect}
-                  className="w-full bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-md px-3 py-2 text-sm text-gray-900 dark:text-white focus:ring-1 focus:ring-blue-500 outline-none"
-                >
-                  <option value="" className="dark:bg-gray-800">Select Item</option>
-                  {availableItems.map((item, idx) => (
-                    <option key={idx} value={item.item_description} className="dark:bg-gray-800">
-                      {item.item_description}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div className="w-32">
-                <label className="block text-xs font-medium text-gray-500 mb-1">
-                   Qty {materialInput.maxQuantity > 0 && <span className="text-blue-500">(Max: {materialInput.maxQuantity})</span>}
-                </label>
-                <input
-                  type="number"
-                  value={materialInput.quantity}
-                  onChange={handleQuantityChange}
-                  className="w-full bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-md px-3 py-2 text-sm text-gray-900 dark:text-white focus:ring-1 focus:ring-blue-500 outline-none"
-                  placeholder="0.00"
-                />
-              </div>
-
-              <div className="w-24">
-                <label className="block text-xs font-medium text-gray-500 mb-1">Unit</label>
-                <input
-                  value={materialInput.unit}
-                  readOnly // Unit comes from API
-                  className="w-full bg-gray-100 dark:bg-gray-800/50 border border-gray-300 dark:border-gray-700 rounded-md px-3 py-2 text-sm text-gray-500 cursor-not-allowed outline-none"
-                  placeholder="Unit"
-                />
-              </div>
-
+            <div className="flex justify-between items-center ">
+              <h3 className="  text-sm font-bold text-gray-800 dark:text-gray-200 flex items-center gap-2 mb-3">
+                <span className="w-1 h-4 bg-purple-500 rounded-full"></span> Material Requirements </h3>
               <button
                 type="button"
                 onClick={handleMaterialAdd}
-                className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors h-10"
+                className="text-sm font-medium text-blue-600 dark:text-blue-400 hover:underline "
               >
-                Add
+                +  Add Item
               </button>
+
+            </div>
+            <div className="bg-gray-50 dark:bg-gray-800/30 p-4 rounded-xl border border-gray-200 dark:border-gray-700 mb-6">
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
+                {/* 1. Item Dropdown */}
+                <div className="md:col-span-2">
+                  <label className="block text-[11px] font-bold text-gray-500 uppercase mb-1.5 ml-1">Item Description</label>
+                  <select
+                    value={materialInput.materialName}
+                    onChange={handleMaterialSelect}
+                    className="w-full bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-700 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none transition-all"
+                  >
+                    <option value="">Select Item</option>
+                    {availableItems.map((item, idx) => (
+                      <option key={idx} value={item.item_description}>{item.item_description}</option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* 2. Quantity */}
+                <div>
+                  <label className="block text-[11px] font-bold text-gray-500 uppercase mb-1.5 ml-1">
+                    Qty {materialInput.maxQuantity > 0 && <span className="text-blue-500 text-[10px]">(Max: {materialInput.maxQuantity})</span>}
+                  </label>
+                  <input
+                    type="number"
+                    value={materialInput.quantity}
+                    onChange={handleQuantityChange}
+                    className="w-full bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-700 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none transition-all"
+                    placeholder="0.00"
+                  />
+                </div>
+
+                {/* 3. Unit */}
+                <div>
+                  <label className="block text-[11px] font-bold text-gray-500 uppercase mb-1.5 ml-1">Unit</label>
+                  <input
+                    value={materialInput.unit}
+                    readOnly
+                    className="w-full bg-gray-100 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg px-3 py-2 text-sm text-gray-500 cursor-not-allowed"
+                    placeholder="Unit"
+                  />
+                </div>
+              </div>
+
+              {/* 4. Detailed Description (The New Field) */}
+              <div className="flex flex-col sm:flex-row gap-4 items-end">
+                <div className="flex-1 w-full">
+                  <label className="block text-[11px] font-bold text-gray-500 uppercase mb-1.5 ml-1">Detailed Specifications</label>
+                  <textarea
+                    rows={2}
+                    value={materialInput.detailedDescription || ""}
+                    onChange={(e) => setMaterialInput({ ...materialInput, detailedDescription: e.target.value })}
+                    placeholder="Enter technical specs, brand preference, or specific grade (e.g., Grade 43 OPC, 500 TMT)..."
+                    className="w-full bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-700 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none resize-none transition-all"
+                  />
+                </div>
+
+
+              </div>
             </div>
 
-            {/* Materials Table */}
+            {/* Materials Table - Update headers to include Detailed Specs */}
             {materials.length > 0 && (
-              <div className="overflow-x-auto rounded-lg border border-gray-200 dark:border-gray-700">
+              <div className="overflow-x-auto rounded-xl border border-gray-200 dark:border-gray-700">
                 <table className="w-full text-sm text-left">
-                  <thead className="bg-gray-50 dark:bg-gray-800/50 text-gray-500 dark:text-gray-400 text-xs uppercase font-semibold">
+                  <thead className="bg-gray-50 dark:bg-gray-800 text-gray-500 dark:text-gray-400 text-[11px] uppercase font-bold">
                     <tr>
-                      <th className="px-4 py-2 w-12 text-center">#</th>
-                      <th className="px-4 py-2">Material</th>
-                      <th className="px-4 py-2 w-24">Qty</th>
-                      <th className="px-4 py-2 w-24">Unit</th>
-                      <th className="px-4 py-2 w-20 text-center">Action</th>
+                      <th className="px-4 py-3 w-12 text-center">#</th>
+                      <th className="px-4 py-3">Material & Specs</th>
+                      <th className="px-4 py-3 w-24 text-center">Qty</th>
+                      <th className="px-4 py-3 w-24 text-center">Unit</th>
+                      <th className="px-4 py-3 w-20 text-center">Action</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-200 dark:divide-gray-800">
                     {materials.map((mat, i) => (
                       <tr key={i} className="bg-white dark:bg-gray-900 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
-                        <td className="px-4 py-2 text-center text-gray-400">{i + 1}</td>
-                        <td className="px-4 py-2 text-gray-800 dark:text-gray-200">{mat.materialName}</td>
-                        <td className="px-4 py-2 text-gray-800 dark:text-gray-200">{mat.quantity}</td>
-                        <td className="px-4 py-2 text-gray-800 dark:text-gray-200">{mat.unit}</td>
-                        <td className="px-4 py-2 text-center">
+                        <td className="px-4 py-3 text-center text-gray-400">{i + 1}</td>
+                        <td className="px-4 py-3">
+                          <div className="font-semibold text-gray-800 dark:text-gray-200">{mat.materialName}</div>
+                          {mat.detailedDescription && (
+                            <div className="text-xs text-gray-500 dark:text-gray-400 italic mt-0.5 line-clamp-1">
+                              {mat.detailedDescription}
+                            </div>
+                          )}
+                        </td>
+                        <td className="px-4 py-3 text-center font-medium">{mat.quantity}</td>
+                        <td className="px-4 py-3 text-center text-gray-500">{mat.unit}</td>
+                        <td className="px-4 py-3 text-center">
                           <button
                             type="button"
                             onClick={() => handleMaterialDelete(i)}
-                            className="text-red-500 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20 p-1 rounded transition-colors"
+                            className="text-gray-400 hover:text-red-500 p-1.5 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-full transition-all"
                           >
-                            <IoClose size={18} />
+                            <IoClose size={20} />
                           </button>
                         </td>
                       </tr>
