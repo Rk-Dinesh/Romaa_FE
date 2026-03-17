@@ -52,7 +52,7 @@ const VendorSupplier = () => {
 
       setVendors(res.data.data);
       setTotalPages(res.data.totalPages);
-    } catch (err) {
+    } catch {
       toast.error("Failed to fetch vendors");
     } finally {
       setLoading(false);
@@ -68,6 +68,7 @@ const VendorSupplier = () => {
       title="Purchase Management"
       subtitle="Vendor & Supplier"
       pagetitle="Vendor & Supplier Management"
+      loading={loading}
       endpoint={vendors}
       columns={VendorColumns}
       AddModal={CreateVendorSupplier}
@@ -79,6 +80,8 @@ const VendorSupplier = () => {
       totalPages={totalPages}
       currentPage={currentPage}
       setCurrentPage={setCurrentPage}
+      searchTerm={searchTerm}
+      setSearchTerm={setSearchTerm}
       filterParams={filterParams}
       setFilterParams={setFilterParams}
       onUpdated={fetchVendors}

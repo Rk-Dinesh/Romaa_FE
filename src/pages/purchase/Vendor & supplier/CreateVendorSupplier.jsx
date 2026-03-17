@@ -1,19 +1,27 @@
 import { useForm } from "react-hook-form";
 import { yupResolver } from "@hookform/resolvers/yup";
 import * as yup from "yup";
-import Modal from "../../../components/Modal";
-import { InputField } from "../../../components/InputField";
 import { useState } from "react";
 import axios from "axios";
-import { API } from "../../../constant"; // your API base URL
+import { API } from "../../../constant";
 import { toast } from "react-toastify";
+import { IoClose } from "react-icons/io5";
+import {
+  FiUser,
+  FiBriefcase,
+  FiMapPin,
+  FiShield,
+  FiSave,
+  FiCreditCard,
+} from "react-icons/fi";
 
 const schema = yup.object().shape({
   type: yup.string().required("Vendor Type is required"),
   company_name: yup.string().required("Company name is required"),
   contact_person: yup.string().required("Contact Person is required"),
-  contact_phone: yup.string().required("Contact phone is required"),
-  contact_email: yup.string().email().required("Email is required"),
+  contact_phone: yup.string().matches(/^[0-9]{10}$/, "Phone must be 10 digits").required("Contact phone is required"),
+  contact_email: yup.string().email("Invalid email").required("Email is required"),
+  place_of_supply: yup.string().required("Place of Supply is required"),
   address_street: yup.string().required("Street address is required"),
   address_city: yup.string().required("City is required"),
   address_state: yup.string().required("State is required"),
@@ -29,15 +37,27 @@ const schema = yup.object().shape({
   status: yup.string().required("Status is required"),
 });
 
-const CreateVendorSupplier = ({ onclose ,onSuccess}) => {
+const VENDOR_TYPES = [
+  "Cement Supplier",
+  "Steel Supplier",
+  "Sand Supplier",
+  "Aggregate Supplier",
+  "Bricks Supplier",
+  "Electrical Contractor",
+  "Plumbing Contractor",
+  "Paint Supplier",
+  "Tiles Supplier",
+  "Wood Supplier",
+];
+
+const CreateVendorSupplier = ({ onclose, onSuccess }) => {
   const [loading, setLoading] = useState(false);
+
   const {
     register,
     handleSubmit,
     formState: { errors },
-  } = useForm({
-    resolver: yupResolver(schema),
-  });
+  } = useForm({ resolver: yupResolver(schema) });
 
   const onSubmit = async (data) => {
     const payload = {
@@ -46,6 +66,7 @@ const CreateVendorSupplier = ({ onclose ,onSuccess}) => {
       contact_person: data.contact_person,
       contact_phone: data.contact_phone,
       contact_email: data.contact_email,
+      place_of_supply: data.place_of_supply,
       address: {
         street: data.address_street,
         city: data.address_city,
@@ -66,212 +87,180 @@ const CreateVendorSupplier = ({ onclose ,onSuccess}) => {
     };
 
     try {
-      setLoading(true); // start loader
-      const res = await axios.post(`${API}/vendor/addvendor`, payload);
-
+      setLoading(true);
+      await axios.post(`${API}/vendor/addvendor`, payload);
       toast.success("Vendor created successfully");
       if (onSuccess) onSuccess();
-
       onclose();
     } catch (error) {
-      console.error("Error creating vendor:", error);
       toast.error(error.response?.data?.message || "Failed to create vendor");
     } finally {
-      setLoading(false); 
+      setLoading(false);
     }
   };
 
+  const sectionHeaderClass =
+    "col-span-full text-sm font-bold text-blue-600 dark:text-blue-400 border-b border-gray-200 dark:border-gray-700 pb-1 mt-4 mb-2 flex items-center gap-2";
+
   return (
-    <Modal
-      title="Create Vendor"
-      widthClassName="lg:w-[800px] md:w-[700px] w-96"
-      onclose={onclose}
-      child={
-        <>
-          <form onSubmit={handleSubmit(onSubmit)}>
-            <div className="grid grid-cols-2 gap-4 px-6 py-6">
-              <InputField
-                label="Vendor Type"
-                name="type"
-                type="select"
-                register={register}
-                errors={errors}
-                placeholder="Select Vendor type"
-                options={[
-                  { label: "Cement Supplier", value: "Cement Supplier" },
-                  { label: "Steel Supplier", value: "Steel Supplier" },
-                  { label: "Sand Supplier", value: "Sand Supplier" },
-                  { label: "Aggregate Supplier", value: "Aggregate Supplier" },
-                  { label: "Bricks Supplier", value: "Bricks Supplier" },
-                  {
-                    label: "Electrical Contractor",
-                    value: "Electrical Contractor",
-                  },
-                  {
-                    label: "Plumbing Contractor",
-                    value: "Plumbing Contractor",
-                  },
-                  { label: "Paint Supplier", value: "Paint Supplier" },
-                  { label: "Tiles Supplier", value: "Tiles Supplier" },
-                  { label: "Wood Supplier", value: "Wood Supplier" },
-                ]}
-              />
-              <InputField
-                label="Company Name"
-                name="company_name"
-                register={register}
-                errors={errors}
-                placeholder="Enter company name"
-              />
-              <InputField
-                label="Contact Person"
-                name="contact_person"
-                register={register}
-                errors={errors}
-                placeholder="Enter contact person"
-              />
-              <InputField
-                label="Contact Phone"
-                name="contact_phone"
-                register={register}
-                errors={errors}
-                placeholder="Enter phone"
-              />
-              <InputField
-                label="Contact Email"
-                type="email"
-                name="contact_email"
-                register={register}
-                errors={errors}
-                placeholder="Enter email"
-              />
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4 font-layout-font">
+      <div className="bg-white dark:bg-gray-900 w-full max-w-4xl h-[90vh] rounded-2xl shadow-2xl flex flex-col overflow-hidden border border-gray-200 dark:border-gray-800">
 
-              <InputField
-                label="Street Address"
-                name="address_street"
-                register={register}
-                errors={errors}
-                placeholder="Enter street"
-              />
-              <InputField
-                label="City"
-                name="address_city"
-                register={register}
-                errors={errors}
-                placeholder="Enter city"
-              />
-              <InputField
-                label="State"
-                name="address_state"
-                register={register}
-                errors={errors}
-                placeholder="Enter state"
-              />
-              <InputField
-                label="Country"
-                name="address_country"
-                register={register}
-                errors={errors}
-                placeholder="Enter country"
-              />
-              <InputField
-                label="Pincode"
-                name="address_pincode"
-                register={register}
-                errors={errors}
-                placeholder="Enter pincode"
-              />
+        {/* Header */}
+        <div className="px-8 py-5 border-b border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-900 flex justify-between items-center sticky top-0 z-10">
+          <div>
+            <h2 className="text-xl font-bold text-gray-800 dark:text-white flex items-center gap-2">
+              <span className="p-2 bg-blue-100 text-blue-600 rounded-lg">
+                <FiUser className="text-xl" />
+              </span>
+              Add Vendor / Supplier
+            </h2>
+            <p className="text-xs text-gray-500 mt-1 ml-11">Register a new vendor or supplier in the system</p>
+          </div>
+          <button
+            onClick={onclose}
+            className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-500 transition-all"
+          >
+            <IoClose size={24} />
+          </button>
+        </div>
 
-              <InputField
-                label="GSTIN"
-                name="gstin"
-                register={register}
-                errors={errors}
-                placeholder="Enter GSTIN"
-              />
-              <InputField
-                label="PAN No"
-                name="pan_no"
-                register={register}
-                errors={errors}
-                placeholder="Enter PAN No"
-              />
+        {/* Scrollable Form */}
+        <div className="flex-1 overflow-y-auto p-8 bg-white dark:bg-gray-900">
+          <form onSubmit={handleSubmit(onSubmit)} className="grid grid-cols-1 md:grid-cols-3 gap-5">
 
-              <InputField
-                label="Bank Account Name"
-                name="account_name"
-                register={register}
-                errors={errors}
-                placeholder="Enter account name"
-              />
-              <InputField
-                label="Bank Account Number"
-                name="account_number"
-                register={register}
-                errors={errors}
-                placeholder="Enter account number"
-              />
-              <InputField
-                label="Bank Name"
-                name="bank_name"
-                register={register}
-                errors={errors}
-                placeholder="Enter bank name"
-              />
-              <InputField
-                label="IFSC Code"
-                name="ifsc_code"
-                register={register}
-                errors={errors}
-                placeholder="Enter IFSC code"
-              />
-              <InputField
-                label="Branch Name"
-                name="branch"
-                register={register}
-                errors={errors}
-                placeholder="Enter branch name"
-              />
-
-              <InputField
-                label="Status"
-                type="select"
-                name="status"
-                register={register}
-                errors={errors}
-                options={[
-                  { label: "ACTIVE", value: "ACTIVE" },
-                  { label: "INACTIVE", value: "INACTIVE" },
-                  { label: "BLACKLISTED", value: "BLACKLISTED" },
-                ]}
-              />
+            {/* Section 1: Vendor Info */}
+            <div className={sectionHeaderClass}>
+              <FiBriefcase /> Vendor Information
             </div>
-            <div className="mx-5 text-xs flex lg:justify-end md:justify-center justify-center gap-2 mb-4">
-              <button
-                type="button"
-                onClick={onclose}
-                disabled={loading} 
-                className={`cursor-pointer border dark:border-white dark:text-white border-darkest-blue text-darkest-blue px-6 py-2 rounded ${
-                  loading ? "opacity-50 cursor-not-allowed" : ""
-                }`}
-              >
-                Cancel
-              </button>
-              <button
-                type="submit"
-                disabled={loading} 
-                className={`cursor-pointer px-6 text-white rounded ${
-                  loading ? "bg-gray-500 cursor-not-allowed" : "bg-darkest-blue"
-                }`}
-              >
-                {loading ? "Saving..." : "Save"}
-              </button>
+
+            <Select
+              label="Vendor Type *"
+              name="type"
+              register={register}
+              error={errors.type}
+              options={VENDOR_TYPES}
+            />
+            <Input label="Company Name *" name="company_name" register={register} error={errors.company_name} placeholder="Enter company name" />
+            <Input label="Contact Person *" name="contact_person" register={register} error={errors.contact_person} placeholder="Enter contact person" />
+            <Input label="Contact Phone *" name="contact_phone" register={register} error={errors.contact_phone} placeholder="Enter phone number" />
+            <Input label="Contact Email *" type="email" name="contact_email" register={register} error={errors.contact_email} placeholder="Enter email" />
+            <Select
+              label="Place of Supply *"
+              name="place_of_supply"
+              register={register}
+              error={errors.place_of_supply}
+              options={["InState", "Others"]}
+            />
+
+            {/* Section 2: Address */}
+            <div className={sectionHeaderClass}>
+              <FiMapPin /> Address Details
             </div>
+
+            <div className="md:col-span-2">
+              <Input label="Street Address *" name="address_street" register={register} error={errors.address_street} placeholder="Enter street" />
+            </div>
+            <Input label="City *" name="address_city" register={register} error={errors.address_city} placeholder="Enter city" />
+            <Input label="State *" name="address_state" register={register} error={errors.address_state} placeholder="Enter state" />
+            <Input label="Country *" name="address_country" register={register} error={errors.address_country} placeholder="Enter country" />
+            <Input label="Pincode *" name="address_pincode" register={register} error={errors.address_pincode} placeholder="Enter pincode" />
+
+            {/* Section 3: Tax Info */}
+            <div className={sectionHeaderClass}>
+              <FiShield /> Tax Information
+            </div>
+
+            <Input label="GSTIN *" name="gstin" register={register} error={errors.gstin} placeholder="Enter GSTIN" />
+            <Input label="PAN No *" name="pan_no" register={register} error={errors.pan_no} placeholder="Enter PAN No" />
+            <div className="md:col-span-1"></div>
+
+            {/* Section 4: Bank Details */}
+            <div className={sectionHeaderClass}>
+              <FiCreditCard /> Bank Details
+            </div>
+
+            <Input label="Account Holder Name *" name="account_name" register={register} error={errors.account_name} placeholder="Enter account name" />
+            <Input label="Account Number *" name="account_number" register={register} error={errors.account_number} placeholder="Enter account number" />
+            <Input label="Bank Name *" name="bank_name" register={register} error={errors.bank_name} placeholder="Enter bank name" />
+            <Input label="IFSC Code *" name="ifsc_code" register={register} error={errors.ifsc_code} placeholder="Enter IFSC code" />
+            <Input label="Branch Name *" name="branch" register={register} error={errors.branch} placeholder="Enter branch name" />
+            <div className="md:col-span-1"></div>
+
+            {/* Section 5: Status */}
+            <div className={sectionHeaderClass}>
+              <FiUser /> Status
+            </div>
+
+            <Select
+              label="Status *"
+              name="status"
+              register={register}
+              error={errors.status}
+              options={["ACTIVE", "INACTIVE", "BLACKLISTED"]}
+            />
+
           </form>
-        </>
-      }
-    />
+        </div>
+
+        {/* Footer */}
+        <div className="sticky bottom-0 bg-gray-50 dark:bg-gray-800 px-6 py-4 border-t border-gray-200 dark:border-gray-700 flex justify-end gap-3 rounded-b-xl">
+          <button
+            type="button"
+            onClick={onclose}
+            disabled={loading}
+            className="px-5 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-50"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={handleSubmit(onSubmit)}
+            disabled={loading}
+            className="px-6 py-2 text-sm font-medium text-white bg-slate-600 rounded-lg hover:bg-slate-700 shadow-md flex items-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed"
+          >
+            {loading ? (
+              <span className="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full"></span>
+            ) : (
+              <FiSave />
+            )}
+            {loading ? "Saving..." : "Save Vendor"}
+          </button>
+        </div>
+
+      </div>
+    </div>
   );
 };
+
+// Reusable Input
+const Input = ({ label, name, type = "text", register, error, placeholder }) => (
+  <div className="w-full">
+    <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">{label}</label>
+    <input
+      type={type}
+      {...register(name)}
+      placeholder={placeholder}
+      className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 text-sm bg-gray-50 dark:bg-gray-800 dark:text-white focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all"
+    />
+    {error && <p className="text-red-500 text-[10px] mt-0.5">{error.message}</p>}
+  </div>
+);
+
+// Reusable Select
+const Select = ({ label, name, register, error, options }) => (
+  <div className="w-full">
+    <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">{label}</label>
+    <select
+      {...register(name)}
+      className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 text-sm bg-gray-50 dark:bg-gray-800 dark:text-white focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all"
+    >
+      <option value="">Select...</option>
+      {options.map((opt, i) => (
+        <option key={i} value={opt}>{opt}</option>
+      ))}
+    </select>
+    {error && <p className="text-red-500 text-[10px] mt-0.5">{error.message}</p>}
+  </div>
+);
 
 export default CreateVendorSupplier;
