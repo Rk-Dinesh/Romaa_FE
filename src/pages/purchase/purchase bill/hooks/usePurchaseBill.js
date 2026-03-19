@@ -61,7 +61,7 @@ export const useNextBillId = () =>
 
 /* ── Create purchase bill ───────────────────────────────────────────────── */
 const createBillApi = async (payload) => {
-  const { data } = await api.post("/purchase/bill/create", payload);
+  const { data } = await api.post("/purchasebill/create", payload);
   return data;
 };
 

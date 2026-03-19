@@ -21,8 +21,8 @@ const schema = yup.object().shape({
 });
 
 /* ── Row factories ──────────────────────────────────────────────────────── */
-const emptyGrnRow  = () => ({ grn_no: "", grn_ref_no: "", ref_date: "", grn_qty: "" });
-const emptyItemRow = () => ({ item_id: "", unit: "", accepted_qty: "", amt: "0.00", unit_price: "", gross_amt: "0.00", net_amt: "0.00", cgst_pct: 0, sgst_pct: 0, igst_pct: 0 });
+const emptyGrnRow  = () => ({ grn_no: "", grn_ref: "", grn_ref_no: "", ref_date: "", grn_qty: "" });
+const emptyItemRow = () => ({ item_id: "", item_description: "", unit: "", accepted_qty: "", unit_price: "", gross_amt: "0.00", net_amt: "0.00", cgst_pct: 0, sgst_pct: 0, igst_pct: 0 });
 
 /* ── Amount-in-words ────────────────────────────────────────────────────── */
 const ones    = ["","One","Two","Three","Four","Five","Six","Seven","Eight","Nine","Ten","Eleven","Twelve","Thirteen","Fourteen","Fifteen","Sixteen","Seventeen","Eighteen","Nineteen"];
@@ -144,7 +144,7 @@ const SearchableSelect = ({ options = [], value, onChange, placeholder = "Search
 const CHARGE_TYPES = [
   { value: "Transport",         label: "Transport",           isDeduction: false },
   { value: "Supplier",          label: "Supplier",            isDeduction: false },
-  { value: "Loading Unloading", label: "Loading / Unloading", isDeduction: false },
+  { value: "Loading / Unloading", label: "Loading / Unloading", isDeduction: false },
   { value: "Insurance",         label: "Insurance",           isDeduction: false },
   { value: "Freight",           label: "Freight",             isDeduction: false },
   { value: "Packing Charges",   label: "Packing Charges",     isDeduction: false },
@@ -158,7 +158,12 @@ const CreateBill = ({ onclose, onSuccess }) => {
   const [itemRows, setItemRows] = useState([emptyItemRow()]);
 
   const [selectedTenderId,       setSelectedTenderId]       = useState("");
+  const [selectedTenderRef,      setSelectedTenderRef]      = useState("");
+  const [selectedTenderName,     setSelectedTenderName]     = useState("");
   const [selectedVendorId,       setSelectedVendorId]       = useState("");
+  const [selectedVendorRef,      setSelectedVendorRef]      = useState("");
+  const [selectedVendorName,     setSelectedVendorName]     = useState("");
+  const [selectedVendorGstin,    setSelectedVendorGstin]    = useState("");
   const [selectedPlaceOfSupply,  setSelectedPlaceOfSupply]  = useState(""); // "InState" | "Others"
 
   // additional charges: [{ id, type, amt, gst_pct }]
@@ -188,28 +193,41 @@ const CreateBill = ({ onclose, onSuccess }) => {
 
   /* ── Build dropdown options ─────────────────────────────────────────── */
   const tenderOptions = tendersRaw.map(t => ({
-    value: t.tender_id,
-    label: t.tender_project_name ? `${t.tender_id} – ${t.tender_project_name}` : t.tender_id,
+    value:        t.tender_id,
+    label:        t.tender_project_name ? `${t.tender_id} – ${t.tender_project_name}` : t.tender_id,
+    _id:          t._id || "",
+    tender_name:  t.tender_project_name || t.tender_id,
   }));
 
   const vendorOptions = vendorsRaw.map(v => ({
-    value:            v.vendor_id,
-    label:            `${v.vendor_id} – ${v.vendor_name}`,
-    credit_day:       v.credit_day,
-    place_of_supply:  v.place_of_supply || "",
+    value:           v.vendor_id,
+    label:           `${v.vendor_id} – ${v.vendor_name}`,
+    _id:             v._id || "",
+    vendor_name:     v.vendor_name || "",
+    vendor_gstin:    v.gstin || v.vendor_gstin || "",
+    credit_day:      v.credit_day,
+    place_of_supply: v.place_of_supply || "",
   }));
 
   /* ── Selection handlers ─────────────────────────────────────────────── */
   const handleTenderSelect = (option) => {
     if (option.value === selectedTenderId) return;
     setSelectedTenderId(option.value);
+    setSelectedTenderRef(option._id || "");
+    setSelectedTenderName(option.tender_name || "");
     setSelectedVendorId("");
+    setSelectedVendorRef("");
+    setSelectedVendorName("");
+    setSelectedVendorGstin("");
     setSelectedPlaceOfSupply("");
     setValue("credit_days", null);
   };
 
   const handleVendorSelect = (option) => {
     setSelectedVendorId(option.value);
+    setSelectedVendorRef(option._id || "");
+    setSelectedVendorName(option.vendor_name || "");
+    setSelectedVendorGstin(option.vendor_gstin || "");
     setSelectedPlaceOfSupply(option.place_of_supply || "");
     const days = option.credit_day != null ? Number(option.credit_day) : null;
     setValue("credit_days", days, { shouldDirty: true, shouldTouch: true });
@@ -225,7 +243,12 @@ const CreateBill = ({ onclose, onSuccess }) => {
     setGrnRows([emptyGrnRow()]);
     setItemRows([emptyItemRow()]);
     setSelectedTenderId("");
+    setSelectedTenderRef("");
+    setSelectedTenderName("");
     setSelectedVendorId("");
+    setSelectedVendorRef("");
+    setSelectedVendorName("");
+    setSelectedVendorGstin("");
     setSelectedPlaceOfSupply("");
     setAdditionalCharges([]);
     reset({ doc_date: "", doc_id: "", invoice_no: "", invoice_date: "", credit_days: "", narration: "" });
@@ -254,30 +277,30 @@ const CreateBill = ({ onclose, onSuccess }) => {
   const handleGrnPickerConfirm = (entries) => {
     setGrnRows(entries.map(e => ({
       grn_no:     e.grn_bill_no   || "",
-      grn_ref_no: e.party_bill_no || e.invoice_challan_no || "",
+      grn_ref:    e._id           || "",   // MaterialTransaction ObjectId
+      grn_ref_no: e.party_bill_no || e.invoice_challan_no || "", // display only
       ref_date:   e.date ? e.date.split("T")[0] : "",
-      grn_qty:    String(e.quantity ?? ""),
+      grn_qty:    parseFloat(e.quantity) || 0,
     })));
 
     setItemRows(entries.map(e => {
       const qty   = parseFloat(e.quantity)    || 0;
       const price = parseFloat(e.quoted_rate) || 0;
       const gross = parseFloat((qty * price).toFixed(2));
-      // tax rates — try nested tax_structure first, then flat fields, default 0
       const cgst = e.tax_structure?.cgst ?? e.taxStructure?.cgst ?? e.cgst_pct ?? e.cgst ?? 0;
       const sgst = e.tax_structure?.sgst ?? e.taxStructure?.sgst ?? e.sgst_pct ?? e.sgst ?? 0;
       const igst = e.tax_structure?.igst ?? e.taxStructure?.igst ?? e.igst_pct ?? e.igst ?? 0;
       return {
-        item_id:      e.item_description || "",
-        unit:         e.unit || "",
-        accepted_qty: String(e.quantity   ?? ""),
-        amt:          "0.00",
-        unit_price:   String(e.quoted_rate ?? ""),
-        gross_amt:    gross.toFixed(2),
-        net_amt:      gross.toFixed(2),
-        cgst_pct:     Number(cgst),
-        sgst_pct:     Number(sgst),
-        igst_pct:     Number(igst),
+        item_id:          e.item_id || e.material_id || e.material_ref || "",  // Material ObjectId
+        item_description: e.item_description || "",
+        unit:             e.unit || "",
+        accepted_qty:     qty,
+        unit_price:       parseFloat(e.quoted_rate) || 0,
+        gross_amt:        gross.toFixed(2),
+        net_amt:          gross.toFixed(2), // display only; server recomputes
+        cgst_pct:         Number(cgst),
+        sgst_pct:         Number(sgst),
+        igst_pct:         Number(igst),
       };
     }));
 
@@ -371,23 +394,69 @@ const CreateBill = ({ onclose, onSuccess }) => {
 
   /* ── Submit ─────────────────────────────────────────────────────────── */
   const onSubmit = (data) => {
-    if (!selectedTenderId) { import("react-toastify").then(m => m.toast.warning("Please select a tender")); return; }
-    if (!selectedVendorId) { import("react-toastify").then(m => m.toast.warning("Please select a vendor")); return; }
+    if (!selectedTenderId) { toast.warning("Please select a tender"); return; }
+    if (!selectedVendorId) { toast.warning("Please select a vendor");  return; }
+    if (itemRows.length === 0 || !itemRows[0].item_description) {
+      toast.warning("Please pick GRN entries before saving"); return;
+    }
+
     createBillMutation.mutate({
-      ...data,
-      tender_id:          selectedTenderId,
-      vendor_id:          selectedVendorId,
-      place_of_supply:    selectedPlaceOfSupply,
-      tax_mode:           isInState ? "instate" : "igst",
-      due_date:           computedDueDate,
-      grn_rows:           grnRows,
-      line_items:         itemRows,
-      tax_groups:         taxGroups,
-      total_tax:          totalTax,
-      additional_charges: chargeDetails.map(c => ({ type: c.type, amount: c.amtNum, gst_pct: parseFloat(c.gst_pct) || 0, net: c.net })),
-      round_off:          roundOff,
-      grand_total:        grandTotal,
-      net_amount:         netAmount,
+      // Bill identity
+      doc_id:       data.doc_id,
+      doc_date:     data.doc_date,
+      invoice_no:   data.invoice_no,
+      invoice_date: data.invoice_date,
+      credit_days:  data.credit_days != null ? Number(data.credit_days) : undefined,
+      narration:    data.narration || undefined,
+
+      // Tender snapshot
+      tender_id:   selectedTenderId,
+      tender_ref:  selectedTenderRef  || undefined,
+      tender_name: selectedTenderName || undefined,
+
+      // Vendor snapshot
+      vendor_id:    selectedVendorId,
+      vendor_ref:   selectedVendorRef   || undefined,
+      vendor_name:  selectedVendorName  || undefined,
+      vendor_gstin: selectedVendorGstin || undefined,
+
+      // Tax
+      place_of_supply: selectedPlaceOfSupply,
+      tax_mode:        isInState ? "instate" : "otherstate",
+
+      // GRN rows — only API fields (drop display-only grn_ref_no)
+      grn_rows: grnRows.map(r => ({
+        grn_no:   r.grn_no,
+        grn_ref:  r.grn_ref  || undefined,
+        ref_date: r.ref_date || undefined,
+        grn_qty:  r.grn_qty,
+      })),
+
+      // Line items — drop display-only net_amt; server recomputes it
+      line_items: itemRows.map(r => ({
+        item_id:          r.item_id          || undefined,
+        item_description: r.item_description,
+        unit:             r.unit,
+        accepted_qty:     Number(r.accepted_qty),
+        unit_price:       Number(r.unit_price),
+        gross_amt:        parseFloat(r.gross_amt),
+        cgst_pct:         r.cgst_pct,
+        sgst_pct:         r.sgst_pct,
+        igst_pct:         r.igst_pct,
+      })),
+
+      // Additional charges — include is_deduction as required by API
+      additional_charges: chargeDetails.map(c => {
+        const typeDef = CHARGE_TYPES.find(t => t.value === c.type);
+        return {
+          type:         c.type,
+          amount:       c.amtNum,
+          gst_pct:      parseFloat(c.gst_pct) || 0,
+          is_deduction: typeDef?.isDeduction ?? false,
+        };
+      }),
+
+      status: "pending",
     });
   };
 
