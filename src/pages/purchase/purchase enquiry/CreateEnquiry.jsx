@@ -182,7 +182,7 @@ const CreateEnquiry = ({ onclose, onSuccess }) => {
 
   const loadProjects = async () => {
     try {
-      const res = await axios.get(`${API}/tender/all`);
+      const res = await axios.get(`${API}/tender/gettendersid`);
       setProjects(res.data?.data || []);
     } catch {
       toast.error("Failed to load projects");

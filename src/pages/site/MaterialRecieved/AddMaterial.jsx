@@ -34,6 +34,7 @@ const AddMaterial = ({ onclose, onSuccess }) => {
   // State
   const [purchaseRequests, setPurchaseRequests] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [docType, setDocType] = useState("invoice"); // "invoice" | "dc"
 
   const {
     register,
@@ -149,7 +150,8 @@ const AddMaterial = ({ onclose, onSuccess }) => {
       const payload = {
         tender_id: tenderId,
         requestId: data.requestId,
-        invoice_no: data.invoice_no,
+        invoice_challan_no: docType === "invoice" ? data.invoice_no : "",
+        dc_no:              docType === "dc"      ? data.invoice_no : "",
         site_name: data.site_name,
         received_items: itemsToSubmit,
       };
@@ -233,16 +235,44 @@ const AddMaterial = ({ onclose, onSuccess }) => {
               />
             </div>
 
-            {/* Invoice No */}
+            {/* Invoice / DC No */}
             <div className="flex flex-col gap-1.5">
               <label className="text-sm font-semibold text-gray-700 dark:text-gray-300">
-                Invoice / Challan No <span className="text-red-500">*</span>
+                Document No <span className="text-red-500">*</span>
               </label>
-              <input
-                {...register("invoice_no")}
-                className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-700 shadow-sm transition-colors focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-800 dark:text-white"
-                placeholder="Enter Invoice No"
-              />
+              <div className="flex rounded-lg border border-gray-300 dark:border-gray-600 overflow-hidden shadow-sm focus-within:border-blue-500 focus-within:ring-1 focus-within:ring-blue-500 transition-colors">
+                {/* Toggle */}
+                <div className="flex flex-shrink-0 border-r border-gray-300 dark:border-gray-600">
+                  <button
+                    type="button"
+                    onClick={() => setDocType("invoice")}
+                    className={`px-3 py-2 text-xs font-bold uppercase tracking-wide transition-colors ${
+                      docType === "invoice"
+                        ? "bg-slate-700 text-white"
+                        : "bg-gray-50 dark:bg-gray-800 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+                    }`}
+                  >
+                    Invoice
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setDocType("dc")}
+                    className={`px-3 py-2 text-xs font-bold uppercase tracking-wide border-l border-gray-300 dark:border-gray-600 transition-colors ${
+                      docType === "dc"
+                        ? "bg-slate-700 text-white"
+                        : "bg-gray-50 dark:bg-gray-800 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+                    }`}
+                  >
+                    DC
+                  </button>
+                </div>
+                {/* Input */}
+                <input
+                  {...register("invoice_no")}
+                  className="flex-1 min-w-0 px-3 py-2 text-sm text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800 focus:outline-none"
+                  placeholder={docType === "invoice" ? "Enter Invoice No" : "Enter DC No"}
+                />
+              </div>
               <p className="text-xs text-red-500 min-h-[16px]">{errors.invoice_no?.message}</p>
             </div>
           </div>

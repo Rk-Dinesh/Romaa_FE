@@ -14,7 +14,10 @@ const emptyAttendance = (emp, wageMap) => ({
   category: emp.role,
   daily_wage: wageMap[emp.role] ?? emp.daily_wage ?? 0,
   status: "PRESENT",
+  in_time: "",
+  out_time: "",
   remark: "",
+  
 });
 
 const emptyWorkEntry = () => ({
@@ -143,6 +146,7 @@ const AddDailyLabourSite = ({ onclose, onSuccess }) => {
         const w = parseFloat(a.daily_wage) || 0;
         if (a.status === "PRESENT") { manDays += 1; amount += w; }
         else if (a.status === "HALF_DAY") { manDays += 0.5; amount += w / 2; }
+        else if (a.status === "QUARTER_DAY") { manDays += 0.25; amount += w /4; }
       })
     );
     return { manDays, amount };
@@ -168,6 +172,8 @@ const AddDailyLabourSite = ({ onclose, onSuccess }) => {
         category: a.category,
         status: a.status,
         daily_wage: parseFloat(a.daily_wage) || 0,
+        ...(a.in_time && { in_time: a.in_time }),
+        ...(a.out_time && { out_time: a.out_time }),
         ...(a.remark && { remark: a.remark }),
       })),
       work_entries: s.workEntries
@@ -177,12 +183,14 @@ const AddDailyLabourSite = ({ onclose, onSuccess }) => {
           const totalHeads = catAtt.reduce((sum, a) => {
             if (a.status === "PRESENT") return sum + 1;
             if (a.status === "HALF_DAY") return sum + 0.5;
+            if (a.status === "QUARTER_DAY") return sum + 0.25;
             return sum;
           }, 0);
           const totalAmount = catAtt.reduce((sum, a) => {
             const w = parseFloat(a.daily_wage) || 0;
             if (a.status === "PRESENT") return sum + w;
             if (a.status === "HALF_DAY") return sum + w / 2;
+            if (a.status === "QUARTER_DAY") return sum + w / 4;
             return sum;
           }, 0);
           return {
@@ -196,6 +204,7 @@ const AddDailyLabourSite = ({ onclose, onSuccess }) => {
             ...(e.h !== "" && { h: parseFloat(e.h) }),
             ...(e.quantity !== "" && { quantity: parseFloat(e.quantity) }),
             ...(e.remark && { remark: e.remark }),
+            
           };
         }),
     }));
@@ -330,17 +339,18 @@ const ContractorSection = ({
   const categorySummary = useMemo(() => {
     const map = {};
     section.attendance.forEach((a) => {
-      if (!map[a.category]) map[a.category] = { total: 0, present: 0, halfDay: 0, absent: 0, amount: 0 };
+      if (!map[a.category]) map[a.category] = { total: 0, present: 0, halfDay: 0, quarterDay: 0, absent: 0, amount: 0 };
       map[a.category].total++;
       const w = parseFloat(a.daily_wage) || 0;
       if (a.status === "PRESENT") { map[a.category].present++; map[a.category].amount += w; }
       else if (a.status === "HALF_DAY") { map[a.category].halfDay++; map[a.category].amount += w / 2; }
+      else if (a.status === "QUARTER_DAY") { map[a.category].quarterDay++; map[a.category].amount += w * 0.25; }
       else { map[a.category].absent++; }
     });
     return Object.entries(map).map(([cat, v]) => ({
       category: cat,
       ...v,
-      manDays: v.present + v.halfDay * 0.5,
+      manDays: v.present + (v.halfDay * 0.5) + (v.quarterDay * 0.25),
     }));
   }, [section.attendance]);
 
@@ -412,8 +422,8 @@ const ContractorSection = ({
                 {/* Attendance table */}
                 <div className="border border-gray-200 dark:border-gray-700 rounded-xl overflow-hidden">
                   {/* Head */}
-                  <div className="grid grid-cols-[2fr_1.2fr_0.8fr_auto_1.5fr] gap-0 bg-gray-50 dark:bg-gray-800 px-4 py-2 border-b border-gray-200 dark:border-gray-700">
-                    {["Worker", "Category", "Wage ₹", "Status", "Remark"].map((h) => (
+                  <div className="grid grid-cols-[2fr_1.2fr_0.8fr_0.9fr_0.9fr_7rem_1.5fr] gap-0 bg-gray-50 dark:bg-gray-800 px-4 py-2 border-b border-gray-200 dark:border-gray-700">
+                    {["Worker", "Category", "Wage ₹", "In Time", "Out Time", "Status", "Remark"].map((h) => (
                       <div key={h} className="text-[10px] font-semibold text-gray-500 uppercase tracking-wide">{h}</div>
                     ))}
                   </div>
@@ -437,9 +447,10 @@ const ContractorSection = ({
                         <span className="text-gray-400">·</span>
                         {c.present > 0 && <span className="text-green-600 font-medium">{c.present}P</span>}
                         {c.halfDay > 0 && <span className="text-yellow-600 font-medium">{c.halfDay}H</span>}
+                        {c.quarterDay > 0 && <span className="text-orange-500 font-medium">{c.quarterDay}Q</span>}
                         {c.absent > 0 && <span className="text-red-500 font-medium">{c.absent}A</span>}
                         <span className="text-gray-400">·</span>
-                        <span className="font-bold text-gray-700 dark:text-gray-200">{c.manDays} days</span>
+                        <span className="font-bold text-gray-700 dark:text-gray-200">{c.manDays}</span>
                         <span className="text-gray-400">·</span>
                         <span className="font-semibold text-green-600">₹{c.amount.toLocaleString("en-IN")}</span>
                       </div>
@@ -505,13 +516,16 @@ const ContractorSection = ({
 const STATUS_BTN = {
   PRESENT:  { active: "bg-green-500 text-white border-green-500",  label: "P" },
   HALF_DAY: { active: "bg-yellow-400 text-white border-yellow-400", label: "H" },
+  QUARTER_DAY: { active: "bg-orange-400 text-white border-orange-400", label: "Q" },
   ABSENT:   { active: "bg-red-500 text-white border-red-500",      label: "A" },
 };
 
 const AttendanceRow = ({ att, idx, onChange }) => {
   const isAbsent = att.status === "ABSENT";
+  const timeCls = `w-full border rounded-md px-2 py-1.5 text-xs bg-white dark:bg-gray-800 dark:text-white focus:outline-none focus:border-blue-400 transition-colors disabled:opacity-40 disabled:cursor-not-allowed disabled:bg-gray-50 dark:disabled:bg-gray-700`;
+
   return (
-    <div className={`grid grid-cols-[2fr_1.2fr_0.8fr_auto_1.5fr] items-center gap-0 px-4 py-2 transition-colors ${isAbsent ? "bg-red-50/40 dark:bg-red-900/10" : "hover:bg-gray-50/50 dark:hover:bg-gray-800/20"}`}>
+    <div className={`grid grid-cols-[2fr_1.2fr_0.8fr_0.9fr_0.9fr_auto_1.5fr] items-center gap-0 px-4 py-2 transition-colors ${isAbsent ? "bg-red-50/40 dark:bg-red-900/10" : "hover:bg-gray-50/50 dark:hover:bg-gray-800/20"}`}>
 
       {/* Worker */}
       <div>
@@ -533,9 +547,27 @@ const AttendanceRow = ({ att, idx, onChange }) => {
         </span>
       </div>
 
+      {/* In Time */}
+      <div className="pr-2">
+        <input
+          type="time" value={att.in_time} disabled={isAbsent}
+          onChange={(e) => onChange(idx, "in_time", e.target.value)}
+          className={`${timeCls} border-gray-200 dark:border-gray-600 text-center`}
+        />
+      </div>
+
+      {/* Out Time */}
+      <div className="pr-2">
+        <input
+          type="time" value={att.out_time} disabled={isAbsent}
+          onChange={(e) => onChange(idx, "out_time", e.target.value)}
+          className={`${timeCls} border-gray-200 dark:border-gray-600 text-center`}
+        />
+      </div>
+
       {/* Status toggle */}
       <div className="flex rounded-md border border-gray-300 dark:border-gray-600 overflow-hidden mx-2">
-        {["PRESENT", "HALF_DAY", "ABSENT"].map((s) => (
+        {["PRESENT", "HALF_DAY", "QUARTER_DAY", "ABSENT"].map((s) => (
           <button
             key={s} type="button"
             onClick={() => onChange(idx, "status", s)}
@@ -552,7 +584,7 @@ const AttendanceRow = ({ att, idx, onChange }) => {
           type="text" value={att.remark} disabled={isAbsent}
           onChange={(e) => onChange(idx, "remark", e.target.value)}
           placeholder={isAbsent ? "—" : "Note..."}
-          className="w-full border border-gray-200 dark:border-gray-600 rounded-md px-2 py-1.5 text-xs bg-white dark:bg-gray-800 dark:text-white focus:outline-none focus:border-blue-400 disabled:opacity-40 disabled:cursor-not-allowed disabled:bg-gray-50 dark:disabled:bg-gray-700"
+          className={`${timeCls} border-gray-200 dark:border-gray-600`}
         />
       </div>
     </div>

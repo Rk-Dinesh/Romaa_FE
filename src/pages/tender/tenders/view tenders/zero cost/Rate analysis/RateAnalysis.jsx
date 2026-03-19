@@ -22,7 +22,7 @@ const groupLinesByCategory = (lines = []) => {
       rate: line.rate,
       amount: line.amount,
       finalRate: line.total_rate,
-      resouceGroup: line.resouceGroup,
+      resourceGroup: line.resourceGroup,
     });
   });
 
@@ -266,7 +266,7 @@ rateAnalysis.forEach((item) => {
         amount: line.amount,
         total_rate: line.finalRate || 0,
         category: categoryGroup.category,
-        resouceGroup:line.resouceGroup
+        resourceGroup:line.resourceGroup
       });
     });
   });

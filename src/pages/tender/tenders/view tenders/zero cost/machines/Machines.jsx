@@ -248,7 +248,7 @@ const Machines = () => {
                     {/* Res Group */}
                     <td className="p-2.5 text-left align-middle">
                       <div className="font-medium text-gray-700 dark:text-gray-200">
-                        {item.resouceGroup || "-"}
+                        {item.resourceGroup || "-"}
                       </div>
                     </td>
 

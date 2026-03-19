@@ -57,6 +57,7 @@ const schema = yup.object().shape({
   bank_name: yup.string().required("Bank Name is required"),
   ifsc_code: yup.string().required("IFSC Code is required"),
   branch: yup.string().required("Branch is required"),
+  credit_day: yup.number().typeError("Credit Days must be a number").required("Credit Days is required"),
   status: yup.string().required("Status is required"),
 });
 
@@ -101,6 +102,7 @@ const EditVendorSupplier = ({ onclose, onUpdated, item }) => {
       bank_name: item.bank_details?.bank_name,
       ifsc_code: item.bank_details?.ifsc_code,
       branch: item.bank_details?.branch,
+      credit_day: item.credit_day,
       status: item.status,
     },
   });
@@ -131,6 +133,7 @@ const EditVendorSupplier = ({ onclose, onUpdated, item }) => {
           ifsc_code: data.ifsc_code,
           branch: data.branch,
         },
+        credit_day: data.credit_day,
         status: data.status,
       };
 
@@ -192,6 +195,7 @@ const EditVendorSupplier = ({ onclose, onUpdated, item }) => {
             <Input label="Contact Person *" name="contact_person" register={register} error={errors.contact_person} placeholder="Enter contact person" />
             <Input label="Contact Phone *" name="contact_phone" register={register} error={errors.contact_phone} placeholder="Enter phone number" />
             <Input label="Contact Email *" type="email" name="contact_email" register={register} error={errors.contact_email} placeholder="Enter email" />
+            <Input label="Credit Days *" type="number" name="credit_day" register={register} error={errors.credit_day} placeholder="Enter credit days" />
             <Select
               label="Place of Supply *"
               name="place_of_supply"
