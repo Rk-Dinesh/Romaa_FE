@@ -7,6 +7,7 @@ import {
   FiSave, FiFileText, FiSettings, FiChevronDown,
   FiLink, FiList, FiDollarSign, FiUser, FiCalendar,
 } from "react-icons/fi";
+import { toast } from "react-toastify";
 import { useTenderIds, usePermittedVendors, useCreateBill, useGRNForBilling } from "./hooks/usePurchaseBill";
 
 /* ── Schema ─────────────────────────────────────────────────────────────── */
@@ -21,7 +22,7 @@ const schema = yup.object().shape({
 
 /* ── Row factories ──────────────────────────────────────────────────────── */
 const emptyGrnRow  = () => ({ grn_no: "", grn_ref_no: "", ref_date: "", grn_qty: "" });
-const emptyItemRow = () => ({ item_id: "", unit: "", accepted_qty: "", amt: "0.00", unit_price: "", gross_amt: "0.00", net_amt: "0.00" });
+const emptyItemRow = () => ({ item_id: "", unit: "", accepted_qty: "", amt: "0.00", unit_price: "", gross_amt: "0.00", net_amt: "0.00", cgst_pct: 0, sgst_pct: 0, igst_pct: 0 });
 
 /* ── Amount-in-words ────────────────────────────────────────────────────── */
 const ones    = ["","One","Two","Three","Four","Five","Six","Seven","Eight","Nine","Ten","Eleven","Twelve","Thirteen","Fourteen","Fifteen","Sixteen","Seventeen","Eighteen","Nineteen"];
@@ -156,8 +157,9 @@ const CreateBill = ({ onclose, onSuccess }) => {
   const [grnRows,  setGrnRows]  = useState([emptyGrnRow()]);
   const [itemRows, setItemRows] = useState([emptyItemRow()]);
 
-  const [selectedTenderId, setSelectedTenderId] = useState("");
-  const [selectedVendorId, setSelectedVendorId] = useState("");
+  const [selectedTenderId,       setSelectedTenderId]       = useState("");
+  const [selectedVendorId,       setSelectedVendorId]       = useState("");
+  const [selectedPlaceOfSupply,  setSelectedPlaceOfSupply]  = useState(""); // "InState" | "Others"
 
   // additional charges: [{ id, type, amt, gst_pct }]
   const [additionalCharges, setAdditionalCharges] = useState([]);
@@ -185,9 +187,10 @@ const CreateBill = ({ onclose, onSuccess }) => {
   }));
 
   const vendorOptions = vendorsRaw.map(v => ({
-    value:      v.vendor_id,
-    label:      `${v.vendor_id} – ${v.vendor_name}`,
-    credit_day: v.credit_day,
+    value:            v.vendor_id,
+    label:            `${v.vendor_id} – ${v.vendor_name}`,
+    credit_day:       v.credit_day,
+    place_of_supply:  v.place_of_supply || "",
   }));
 
   /* ── Selection handlers ─────────────────────────────────────────────── */
@@ -195,25 +198,37 @@ const CreateBill = ({ onclose, onSuccess }) => {
     if (option.value === selectedTenderId) return;
     setSelectedTenderId(option.value);
     setSelectedVendorId("");
+    setSelectedPlaceOfSupply("");
     setValue("credit_days", null);
   };
 
   const handleVendorSelect = (option) => {
     setSelectedVendorId(option.value);
+    setSelectedPlaceOfSupply(option.place_of_supply || "");
     const days = option.credit_day != null ? Number(option.credit_day) : null;
     setValue("credit_days", days, { shouldDirty: true, shouldTouch: true });
+  };
+
+  // InState → CGST + SGST  |  Others (inter-state) → IGST
+  const isInState = selectedPlaceOfSupply === "InState";
+
+  /* ── Shared GRN picker open — validates and gives feedback ─────────── */
+  const openGrnPicker = () => {
+    if (!selectedTenderId)  { toast.info("Select a Tender first");          return; }
+    if (!selectedVendorId)  { toast.info("Select a Vendor / Supplier");     return; }
+    if (!watchBillNo)       { toast.info("Enter Bill No to continue");       return; }
+    if (!watchBillDate)     { toast.info("Enter Bill Date to continue");     return; }
+    if (!watchInvoiceNo)    { toast.info("Enter Invoice No to continue");    return; }
+    if (!watchInvoiceDate)  { toast.info("Enter Invoice Date to continue");  return; }
+    setShowGrnPicker(true);
   };
 
   /* ── Enter key → open GRN picker ────────────────────────────────────── */
   const handleSectionKeyDown = (e) => {
     if (e.key !== "Enter") return;
-    if (e.target.tagName === "BUTTON" || e.target.tagName === "TEXTAREA") return;
-    const identityOk = selectedTenderId && selectedVendorId &&
-      watchBillDate && watchBillNo && watchInvoiceNo && watchInvoiceDate;
-    const configOk = watchCreditDays !== "" && watchCreditDays !== null && watchCreditDays !== undefined;
-    if (!identityOk || !configOk) return;
+    if (e.target.tagName === "BUTTON" || e.target.tagName === "TEXTAREA" || e.target.tagName === "SELECT") return;
     e.preventDefault();
-    setShowGrnPicker(true);
+    openGrnPicker();
   };
 
   /* ── GRN picker confirm ─────────────────────────────────────────────── */
@@ -229,6 +244,10 @@ const CreateBill = ({ onclose, onSuccess }) => {
       const qty   = parseFloat(e.quantity)    || 0;
       const price = parseFloat(e.quoted_rate) || 0;
       const gross = parseFloat((qty * price).toFixed(2));
+      // tax rates — try nested tax_structure first, then flat fields, default 0
+      const cgst = e.tax_structure?.cgst ?? e.taxStructure?.cgst ?? e.cgst_pct ?? e.cgst ?? 0;
+      const sgst = e.tax_structure?.sgst ?? e.taxStructure?.sgst ?? e.sgst_pct ?? e.sgst ?? 0;
+      const igst = e.tax_structure?.igst ?? e.taxStructure?.igst ?? e.igst_pct ?? e.igst ?? 0;
       return {
         item_id:      e.item_description || "",
         unit:         e.unit || "",
@@ -237,6 +256,9 @@ const CreateBill = ({ onclose, onSuccess }) => {
         unit_price:   String(e.quoted_rate ?? ""),
         gross_amt:    gross.toFixed(2),
         net_amt:      gross.toFixed(2),
+        cgst_pct:     Number(cgst),
+        sgst_pct:     Number(sgst),
+        igst_pct:     Number(igst),
       };
     }));
 
@@ -263,8 +285,33 @@ const CreateBill = ({ onclose, onSuccess }) => {
 
   /* ── Derived totals ─────────────────────────────────────────────────── */
   const grandTotal = itemRows.reduce((acc, r) => acc + (parseFloat(r.gross_amt) || 0), 0);
-  const sgst       = parseFloat((grandTotal * 0.025).toFixed(2));
-  const cgst       = sgst;
+
+  // Build per-rate tax groups from line items (mirrors ViewPurchaseOrder pattern)
+  const taxGroupMap = {};
+  itemRows.forEach(row => {
+    const gross = parseFloat(row.gross_amt) || 0;
+    if (!gross) return;
+    if (isInState) {
+      const c = Number(row.cgst_pct) || 0;
+      const s = Number(row.sgst_pct) || 0;
+      const key = `${c}_${s}`;
+      if (!taxGroupMap[key]) taxGroupMap[key] = { cgst_pct: c, sgst_pct: s, taxable: 0, cgstAmt: 0, sgstAmt: 0 };
+      taxGroupMap[key].taxable  += gross;
+      taxGroupMap[key].cgstAmt  += parseFloat((gross * c / 100).toFixed(2));
+      taxGroupMap[key].sgstAmt  += parseFloat((gross * s / 100).toFixed(2));
+    } else {
+      const ig = Number(row.igst_pct) || 0;
+      const key = `igst_${ig}`;
+      if (!taxGroupMap[key]) taxGroupMap[key] = { igst_pct: ig, taxable: 0, igstAmt: 0 };
+      taxGroupMap[key].taxable += gross;
+      taxGroupMap[key].igstAmt += parseFloat((gross * ig / 100).toFixed(2));
+    }
+  });
+  const taxGroups = Object.values(taxGroupMap);
+
+  const totalTax = taxGroups.reduce((s, g) =>
+    s + (isInState ? (g.cgstAmt + g.sgstAmt) : g.igstAmt), 0
+  );
 
   // per-charge net (amount + its GST); deductions are negative
   const chargeDetails = additionalCharges.map(c => {
@@ -277,17 +324,32 @@ const CreateBill = ({ onclose, onSuccess }) => {
   });
 
   const additionalTotal = chargeDetails.reduce((s, c) => s + c.net, 0);
-  const preRound        = grandTotal + sgst + cgst + additionalTotal;
+  const preRound        = grandTotal + totalTax + additionalTotal;
   const roundOff        = parseFloat((Math.round(preRound) - preRound).toFixed(2));
   const netAmount       = Math.round(preRound);
 
+  // Dynamic fixed tax rows based on InState / IGST mode
   const fixedTaxRows = [
-    { desc: "Inward Supply 5%", amt: fmt(grandTotal), account: "INWARD SUPPLY" },
-    { desc: "SGST @ 2.5%",      amt: fmt(sgst),       account: "SGST INPUT TAX @ 2.5%" },
-    { desc: "CGST @ 2.5%",      amt: fmt(cgst),       account: "CGST INPUT TAX @ 2.5%" },
+    { desc: "Inward Supply", amt: fmt(grandTotal), account: "INWARD SUPPLY" },
+    ...(taxGroups.length === 0
+      ? isInState
+        ? [
+            { desc: "CGST", amt: fmt(0), account: "CGST INPUT TAX" },
+            { desc: "SGST", amt: fmt(0), account: "SGST INPUT TAX" },
+          ]
+        : [{ desc: "IGST", amt: fmt(0), account: "IGST INPUT TAX" }]
+      : taxGroups.flatMap(g =>
+          isInState
+            ? [
+                { desc: `CGST @ ${g.cgst_pct}%`, amt: fmt(g.cgstAmt), account: "CGST INPUT TAX" },
+                { desc: `SGST @ ${g.sgst_pct}%`, amt: fmt(g.sgstAmt), account: "SGST INPUT TAX" },
+              ]
+            : [{ desc: `IGST @ ${g.igst_pct}%`, amt: fmt(g.igstAmt), account: "IGST INPUT TAX" }]
+        )
+    ),
   ];
 
-  const addedTypes    = new Set(additionalCharges.map(c => c.type));
+  const addedTypes     = new Set(additionalCharges.map(c => c.type));
   const availableTypes = CHARGE_TYPES.filter(t => !addedTypes.has(t.value));
 
   /* ── Submit ─────────────────────────────────────────────────────────── */
@@ -298,9 +360,13 @@ const CreateBill = ({ onclose, onSuccess }) => {
       ...data,
       tender_id:          selectedTenderId,
       vendor_id:          selectedVendorId,
+      place_of_supply:    selectedPlaceOfSupply,
+      tax_mode:           isInState ? "instate" : "igst",
       due_date:           computedDueDate,
       grn_rows:           grnRows,
       line_items:         itemRows,
+      tax_groups:         taxGroups,
+      total_tax:          totalTax,
       additional_charges: chargeDetails.map(c => ({ type: c.type, amount: c.amtNum, gst_pct: parseFloat(c.gst_pct) || 0, net: c.net })),
       round_off:          roundOff,
       grand_total:        grandTotal,
@@ -337,9 +403,10 @@ const CreateBill = ({ onclose, onSuccess }) => {
 
       {/* ══ Scrollable body ══════════════════════════════════════════════ */}
       <div className="flex-1 overflow-y-auto">
-        <div className="max-w-[1600px] mx-auto px-6 py-5 space-y-4" onKeyDown={handleSectionKeyDown}>
+        <div className="max-w-[1600px] mx-auto px-6 py-5 space-y-4">
 
           {/* ── Row 1: Bill Identity ─────────────────────────────────── */}
+          <div onKeyDown={handleSectionKeyDown}>
           <SectionCard iconEl={<FiFileText />} title="Bill Identity" accent="slate">
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
 
@@ -398,22 +465,48 @@ const CreateBill = ({ onclose, onSuccess }) => {
 
           {/* ── Row 2: Bill Configuration ────────────────────────────── */}
           <SectionCard iconEl={<FiSettings />} title="Bill Configuration" accent="blue">
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               <Field label="Credit Days" error={errors.credit_days}>
                 <input type="number" {...register("credit_days")} className={inputCls} placeholder="Auto-filled from vendor" min={0} />
               </Field>
               <Field label="Due Date">
                 <input type="date" value={computedDueDate} readOnly className={readonlyCls} />
               </Field>
-              <div className="flex flex-col justify-end pb-0.5">
-                <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-relaxed">
-                  Fill all fields above, then press{" "}
-                  <kbd className="px-1.5 py-0.5 text-[10px] bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded font-mono">Enter</kbd>
-                  {" "}to select GRN entries.
+              <Field label="Tax Mode">
+                <div className={`flex items-center gap-2 px-3 py-2 rounded-lg border text-sm font-semibold ${
+                  !selectedPlaceOfSupply
+                    ? "border-gray-200 dark:border-gray-700 text-gray-400 bg-gray-50 dark:bg-gray-800/60"
+                    : isInState
+                      ? "border-green-200 bg-green-50 text-green-700 dark:border-green-800 dark:bg-green-900/20 dark:text-green-400"
+                      : "border-blue-200 bg-blue-50 text-blue-700 dark:border-blue-800 dark:bg-blue-900/20 dark:text-blue-400"
+                }`}>
+                  <span className={`w-2 h-2 rounded-full shrink-0 ${
+                    !selectedPlaceOfSupply ? "bg-gray-300" : isInState ? "bg-green-500" : "bg-blue-500"
+                  }`} />
+                  {!selectedPlaceOfSupply
+                    ? "Select vendor first"
+                    : isInState
+                      ? "InState — CGST + SGST"
+                      : "Inter-State — IGST"}
+                </div>
+              </Field>
+              <div className="flex flex-col justify-end gap-1.5">
+                <p className="text-[11px] text-slate-400 dark:text-slate-500">
+                  or press{" "}
+                  <kbd className="px-1 py-0.5 text-[10px] bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded font-mono">Enter</kbd>
                 </p>
+                <button
+                  type="button"
+                  onClick={openGrnPicker}
+                  className="flex items-center justify-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold bg-teal-600 hover:bg-teal-700 text-white shadow-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <FiLink size={14} />
+                  Select GRN Entries
+                </button>
               </div>
             </div>
           </SectionCard>
+          </div>{/* end Enter-key wrapper */}
 
           {/* ── Row 3: GRN Linkage (full width) ──────────────────────── */}
           <SectionCard iconEl={<FiLink />} title="GRN Linkage" accent="teal" noPad overflow>
@@ -648,8 +741,23 @@ const CreateBill = ({ onclose, onSuccess }) => {
                 </div>
                 <div className="divide-y divide-gray-100 dark:divide-gray-800">
                   <SummaryRow label="Taxable Value" value={`₹${fmt(grandTotal)}`} />
-                  <SummaryRow label="SGST @ 2.5%"   value={`₹${fmt(sgst)}`} />
-                  <SummaryRow label="CGST @ 2.5%"   value={`₹${fmt(cgst)}`} />
+                  {taxGroups.length === 0 && isInState && (
+                    <>
+                      <SummaryRow label="CGST" value={`₹${fmt(0)}`} />
+                      <SummaryRow label="SGST" value={`₹${fmt(0)}`} />
+                    </>
+                  )}
+                  {taxGroups.length === 0 && !isInState && (
+                    <SummaryRow label="IGST" value={`₹${fmt(0)}`} />
+                  )}
+                  {taxGroups.flatMap((g, i) =>
+                    isInState
+                      ? [
+                          <SummaryRow key={`cgst_${i}`} label={`CGST @ ${g.cgst_pct}%`} value={`₹${fmt(g.cgstAmt)}`} />,
+                          <SummaryRow key={`sgst_${i}`} label={`SGST @ ${g.sgst_pct}%`} value={`₹${fmt(g.sgstAmt)}`} />,
+                        ]
+                      : [<SummaryRow key={`igst_${i}`} label={`IGST @ ${g.igst_pct}%`} value={`₹${fmt(g.igstAmt)}`} />]
+                  )}
                   {chargeDetails.map(c => {
                     const typeDef = CHARGE_TYPES.find(t => t.value === c.type);
                     return (
