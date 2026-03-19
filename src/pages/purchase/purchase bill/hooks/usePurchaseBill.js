@@ -45,6 +45,20 @@ export const useGRNForBilling = (tenderId, vendorId) =>
     staleTime: 1 * 60 * 1000,
   });
 
+/* ── Fetch next bill ID ─────────────────────────────────────────────────── */
+const fetchNextBillId = async () => {
+  const { data } = await api.get("/purchasebill/next-id");
+  return data?.doc_id || "";
+};
+
+export const useNextBillId = () =>
+  useQuery({
+    queryKey: ["next-bill-id"],
+    queryFn:  fetchNextBillId,
+    staleTime: 0,
+    refetchOnMount: true,
+  });
+
 /* ── Create purchase bill ───────────────────────────────────────────────── */
 const createBillApi = async (payload) => {
   const { data } = await api.post("/purchase/bill/create", payload);

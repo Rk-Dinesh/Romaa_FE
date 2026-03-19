@@ -8,12 +8,12 @@ import {
   FiLink, FiList, FiDollarSign, FiUser, FiCalendar,
 } from "react-icons/fi";
 import { toast } from "react-toastify";
-import { useTenderIds, usePermittedVendors, useCreateBill, useGRNForBilling } from "./hooks/usePurchaseBill";
+import { useTenderIds, usePermittedVendors, useCreateBill, useGRNForBilling, useNextBillId } from "./hooks/usePurchaseBill";
 
 /* ── Schema ─────────────────────────────────────────────────────────────── */
 const schema = yup.object().shape({
-  bill_date:    yup.string().required("Bill Date is required"),
-  bill_no:      yup.string().required("Bill No is required"),
+  doc_date:     yup.string().required("Bill Date is required"),
+  doc_id:       yup.string().required("Bill No is required"),
   invoice_no:   yup.string().required("Invoice No is required"),
   invoice_date: yup.string().required("Invoice Date is required"),
   credit_days:  yup.number().typeError("Must be a number").min(0).nullable().optional(),
@@ -164,21 +164,27 @@ const CreateBill = ({ onclose, onSuccess }) => {
   // additional charges: [{ id, type, amt, gst_pct }]
   const [additionalCharges, setAdditionalCharges] = useState([]);
 
-  const { register, handleSubmit, watch, setValue, formState: { errors } } = useForm({
+  const { register, handleSubmit, watch, setValue, reset, formState: { errors } } = useForm({
     resolver: yupResolver(schema),
     defaultValues: { credit_days: "" },
   });
 
   const [showGrnPicker, setShowGrnPicker] = useState(false);
 
-  const [watchBillDate, watchBillNo, watchInvoiceNo, watchInvoiceDate, watchCreditDays] =
-    watch(["bill_date", "bill_no", "invoice_no", "invoice_date", "credit_days"]);
+  const [watchDocDate, watchDocId, watchInvoiceNo, watchInvoiceDate, watchCreditDays] =
+    watch(["doc_date", "doc_id", "invoice_no", "invoice_date", "credit_days"]);
 
   /* ── Hooks ──────────────────────────────────────────────────────────── */
+  const { data: nextBillId }                                    = useNextBillId();
   const { data: tendersRaw = [],  isLoading: loadingTenders  } = useTenderIds();
   const { data: vendorsRaw = [],  isLoading: loadingVendors  } = usePermittedVendors(selectedTenderId);
   const { data: grnData = [],     isLoading: loadingGrn      } = useGRNForBilling(selectedTenderId, selectedVendorId);
   const createBillMutation = useCreateBill({ onSuccess, onClose: onclose });
+
+  /* ── Auto-fill Bill No from API ─────────────────────────────────────── */
+  useEffect(() => {
+    if (nextBillId) setValue("doc_id", nextBillId, { shouldDirty: false });
+  }, [nextBillId, setValue]);
 
   /* ── Build dropdown options ─────────────────────────────────────────── */
   const tenderOptions = tendersRaw.map(t => ({
@@ -210,14 +216,27 @@ const CreateBill = ({ onclose, onSuccess }) => {
   };
 
   // InState → CGST + SGST  |  Others (inter-state) → IGST
-  const isInState = selectedPlaceOfSupply === "InState";
+  const isInState  = selectedPlaceOfSupply === "InState";
+  // Lock tender/vendor once GRN has been picked
+  const grnLocked  = grnRows[0].grn_no !== "";
+
+  /* ── Full reset ─────────────────────────────────────────────────────── */
+  const handleFullReset = () => {
+    setGrnRows([emptyGrnRow()]);
+    setItemRows([emptyItemRow()]);
+    setSelectedTenderId("");
+    setSelectedVendorId("");
+    setSelectedPlaceOfSupply("");
+    setAdditionalCharges([]);
+    reset({ doc_date: "", doc_id: "", invoice_no: "", invoice_date: "", credit_days: "", narration: "" });
+  };
 
   /* ── Shared GRN picker open — validates and gives feedback ─────────── */
   const openGrnPicker = () => {
     if (!selectedTenderId)  { toast.info("Select a Tender first");          return; }
     if (!selectedVendorId)  { toast.info("Select a Vendor / Supplier");     return; }
-    if (!watchBillNo)       { toast.info("Enter Bill No to continue");       return; }
-    if (!watchBillDate)     { toast.info("Enter Bill Date to continue");     return; }
+    if (!watchDocId)        { toast.info("Enter Bill No to continue");       return; }
+    if (!watchDocDate)      { toast.info("Enter Bill Date to continue");     return; }
     if (!watchInvoiceNo)    { toast.info("Enter Invoice No to continue");    return; }
     if (!watchInvoiceDate)  { toast.info("Enter Invoice Date to continue");  return; }
     setShowGrnPicker(true);
@@ -328,24 +347,22 @@ const CreateBill = ({ onclose, onSuccess }) => {
   const roundOff        = parseFloat((Math.round(preRound) - preRound).toFixed(2));
   const netAmount       = Math.round(preRound);
 
-  // Dynamic fixed tax rows based on InState / IGST mode
+  // Aggregate totals across all tax groups (one combined row per tax type)
+  const totalCgst = taxGroups.reduce((s, g) => s + (g.cgstAmt || 0), 0);
+  const totalSgst = taxGroups.reduce((s, g) => s + (g.sgstAmt || 0), 0);
+  const totalIgst = taxGroups.reduce((s, g) => s + (g.igstAmt || 0), 0);
+  const cgstLabel = taxGroups.length ? taxGroups.map(g => `${g.cgst_pct}%`).join(" + ") : null;
+  const sgstLabel = taxGroups.length ? taxGroups.map(g => `${g.sgst_pct}%`).join(" + ") : null;
+  const igstLabel = taxGroups.length ? taxGroups.map(g => `${g.igst_pct}%`).join(" + ") : null;
+
   const fixedTaxRows = [
     { desc: "Inward Supply", amt: fmt(grandTotal), account: "INWARD SUPPLY" },
-    ...(taxGroups.length === 0
-      ? isInState
-        ? [
-            { desc: "CGST", amt: fmt(0), account: "CGST INPUT TAX" },
-            { desc: "SGST", amt: fmt(0), account: "SGST INPUT TAX" },
-          ]
-        : [{ desc: "IGST", amt: fmt(0), account: "IGST INPUT TAX" }]
-      : taxGroups.flatMap(g =>
-          isInState
-            ? [
-                { desc: `CGST @ ${g.cgst_pct}%`, amt: fmt(g.cgstAmt), account: "CGST INPUT TAX" },
-                { desc: `SGST @ ${g.sgst_pct}%`, amt: fmt(g.sgstAmt), account: "SGST INPUT TAX" },
-              ]
-            : [{ desc: `IGST @ ${g.igst_pct}%`, amt: fmt(g.igstAmt), account: "IGST INPUT TAX" }]
-        )
+    ...(isInState
+      ? [
+          { desc: cgstLabel ? `CGST @ ${cgstLabel}` : "CGST", amt: fmt(totalCgst), account: "CGST INPUT TAX" },
+          { desc: sgstLabel ? `SGST @ ${sgstLabel}` : "SGST", amt: fmt(totalSgst), account: "SGST INPUT TAX" },
+        ]
+      : [{ desc: igstLabel ? `IGST @ ${igstLabel}` : "IGST", amt: fmt(totalIgst), account: "IGST INPUT TAX" }]
     ),
   ];
 
@@ -392,9 +409,19 @@ const CreateBill = ({ onclose, onSuccess }) => {
           </div>
         </div>
         <div className="flex items-center gap-3">
+          {grnLocked && (
+            <button
+              type="button"
+              onClick={handleFullReset}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold text-amber-300 border border-amber-500/40 hover:bg-amber-500/10 hover:text-amber-200 transition-all"
+              title="Reset all fields and start over"
+            >
+              ↺ Reset
+            </button>
+          )}
           <button
             onClick={onclose}
-            className="w-8 h-8 flex items-center justify-center rounded-lg text-slate-400 hover:text-white hover:bg-white/10 transition-all"
+            className="w-8 h-8 flex items-center justify-center rounded-lg text-slate-400 hover:text-red-400 hover:bg-red-500/10 transition-all"
           >
             <IoClose size={18} />
           </button>
@@ -417,11 +444,11 @@ const CreateBill = ({ onclose, onSuccess }) => {
                   <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">Bill Reference</span>
                 </div>
                 <div className="grid grid-cols-2 gap-3">
-                  <Field label="Bill No" required error={errors.bill_no}>
-                    <input type="text" {...register("bill_no")} className={inputCls} placeholder="e.g. RF/C2/25-26/PB/01019" />
+                  <Field label="Bill No" required error={errors.doc_id}>
+                    <input type="text" {...register("doc_id")} readOnly className={readonlyCls} placeholder="Auto-generated..." />
                   </Field>
-                  <Field label="Bill Date" required error={errors.bill_date}>
-                    <input type="date" {...register("bill_date")} className={inputCls} />
+                  <Field label="Bill Date" required error={errors.doc_date}>
+                    <input type="date" {...register("doc_date")} className={inputCls} />
                   </Field>
                   <Field label="Invoice No" required error={errors.invoice_no}>
                     <input type="text" {...register("invoice_no")} className={inputCls} placeholder="e.g. RA/Q1/04200" />
@@ -440,24 +467,32 @@ const CreateBill = ({ onclose, onSuccess }) => {
                   <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">Party Details</span>
                 </div>
                 <Field label="Project / Tender" required>
-                  <SearchableSelect
-                    options={tenderOptions}
-                    value={selectedTenderId}
-                    onChange={handleTenderSelect}
-                    placeholder="Select tender..."
-                    isLoading={loadingTenders}
-                  />
+                  {grnLocked ? (
+                    <LockedField value={tenderOptions.find(o => o.value === selectedTenderId)?.label || selectedTenderId} />
+                  ) : (
+                    <SearchableSelect
+                      options={tenderOptions}
+                      value={selectedTenderId}
+                      onChange={handleTenderSelect}
+                      placeholder="Select tender..."
+                      isLoading={loadingTenders}
+                    />
+                  )}
                 </Field>
                 <Field label="Vendor / Supplier" required>
-                  <SearchableSelect
-                    key={selectedTenderId || "__no_tender__"}
-                    options={vendorOptions}
-                    value={selectedVendorId}
-                    onChange={handleVendorSelect}
-                    placeholder={!selectedTenderId ? "Select a tender first" : "Select vendor..."}
-                    disabled={!selectedTenderId}
-                    isLoading={loadingVendors}
-                  />
+                  {grnLocked ? (
+                    <LockedField value={vendorOptions.find(o => o.value === selectedVendorId)?.label || selectedVendorId} />
+                  ) : (
+                    <SearchableSelect
+                      key={selectedTenderId || "__no_tender__"}
+                      options={vendorOptions}
+                      value={selectedVendorId}
+                      onChange={handleVendorSelect}
+                      placeholder={!selectedTenderId ? "Select a tender first" : "Select vendor..."}
+                      disabled={!selectedTenderId}
+                      isLoading={loadingVendors}
+                    />
+                  )}
                 </Field>
               </div>
             </div>
@@ -467,7 +502,11 @@ const CreateBill = ({ onclose, onSuccess }) => {
           <SectionCard iconEl={<FiSettings />} title="Bill Configuration" accent="blue">
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               <Field label="Credit Days" error={errors.credit_days}>
-                <input type="number" {...register("credit_days")} className={inputCls} placeholder="Auto-filled from vendor" min={0} />
+                {grnLocked ? (
+                  <LockedField value={watchCreditDays != null ? `${watchCreditDays} days` : "—"} />
+                ) : (
+                  <input type="number" {...register("credit_days")} className={inputCls} placeholder="Auto-filled from vendor" min={0} />
+                )}
               </Field>
               <Field label="Due Date">
                 <input type="date" value={computedDueDate} readOnly className={readonlyCls} />
@@ -610,7 +649,6 @@ const CreateBill = ({ onclose, onSuccess }) => {
                     <th className="px-4 py-2.5 text-center w-8 text-xs font-semibold text-amber-700 dark:text-amber-400">#</th>
                     <th className="px-4 py-2.5 text-left text-xs font-semibold text-amber-700 dark:text-amber-400">Description</th>
                     <th className="px-4 py-2.5 text-right text-xs font-semibold text-amber-700 dark:text-amber-400 whitespace-nowrap">Amount (₹)</th>
-                    <th className="px-4 py-2.5 text-left text-xs font-semibold text-amber-700 dark:text-amber-400 w-32">GST %</th>
                     <th className="px-4 py-2.5 text-left text-xs font-semibold text-amber-700 dark:text-amber-400">Account</th>
                     <th className="w-8" />
                   </tr>
@@ -622,7 +660,6 @@ const CreateBill = ({ onclose, onSuccess }) => {
                       <td className="px-4 py-2.5 text-center text-xs text-gray-400">{i + 1}</td>
                       <td className="px-4 py-2.5 text-gray-700 dark:text-gray-300">{row.desc}</td>
                       <td className="px-4 py-2.5 text-right font-medium text-gray-700 dark:text-gray-300">{row.amt}</td>
-                      <td className="px-4 py-2.5 text-gray-400 text-xs">—</td>
                       <td className="px-4 py-2.5">
                         <span className="inline-block px-2 py-0.5 text-[10px] font-semibold bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 rounded uppercase tracking-wide">
                           {row.account}
@@ -645,28 +682,28 @@ const CreateBill = ({ onclose, onSuccess }) => {
                           </span>
                         </td>
                         <td className="px-3 py-2">
-                          <input
-                            type="text"
-                            inputMode="decimal"
-                            value={c.amt}
-                            onChange={e => { if (/^\d*\.?\d*$/.test(e.target.value)) updateCharge(c.id, "amt", e.target.value); }}
-                            placeholder="0.00"
-                            className="w-full border border-gray-200 dark:border-gray-600 rounded-lg px-2.5 py-1.5 text-sm text-right bg-white dark:bg-gray-800 dark:text-white focus:outline-none focus:border-amber-400 focus:ring-1 focus:ring-amber-400"
-                          />
-                        </td>
-                        <td className="px-3 py-2">
-                          <div className="flex items-center gap-1">
+                          <div className="flex items-center gap-1.5">
                             <input
                               type="text"
                               inputMode="decimal"
-                              value={c.gst_pct}
-                              onChange={e => { if (/^\d*\.?\d*$/.test(e.target.value)) updateCharge(c.id, "gst_pct", e.target.value); }}
-                              placeholder="0"
-                              className="w-14 border border-gray-200 dark:border-gray-600 rounded-lg px-2 py-1.5 text-sm bg-white dark:bg-gray-800 dark:text-white focus:outline-none focus:border-amber-400 focus:ring-1 focus:ring-amber-400"
+                              value={c.amt}
+                              onChange={e => { if (/^\d*\.?\d*$/.test(e.target.value)) updateCharge(c.id, "amt", e.target.value); }}
+                              placeholder="0.00"
+                              className="w-full border border-gray-200 dark:border-gray-600 rounded-lg px-2.5 py-1.5 text-sm text-right bg-white dark:bg-gray-800 dark:text-white focus:outline-none focus:border-amber-400 focus:ring-1 focus:ring-amber-400"
                             />
-                            <span className="text-gray-400 text-xs">%</span>
+                            <div className="flex items-center gap-0.5 shrink-0">
+                              <input
+                                type="text"
+                                inputMode="decimal"
+                                value={c.gst_pct}
+                                onChange={e => { if (/^\d*\.?\d*$/.test(e.target.value)) updateCharge(c.id, "gst_pct", e.target.value); }}
+                                placeholder="GST%"
+                                className="w-14 border border-gray-200 dark:border-gray-600 rounded-lg px-2 py-1.5 text-sm bg-white dark:bg-gray-800 dark:text-white focus:outline-none focus:border-amber-400 focus:ring-1 focus:ring-amber-400"
+                              />
+                              <span className="text-gray-400 text-xs">%</span>
+                            </div>
                             {c.gst_pct && c.amtNum > 0 && (
-                              <span className="text-[10px] text-amber-600 font-medium whitespace-nowrap">₹{c.gstAmt.toFixed(2)}</span>
+                              <span className="text-[10px] text-amber-600 font-medium whitespace-nowrap shrink-0">+₹{c.gstAmt.toFixed(2)}</span>
                             )}
                           </div>
                         </td>
@@ -695,7 +732,6 @@ const CreateBill = ({ onclose, onSuccess }) => {
                     <td className="px-4 py-2.5 text-right font-medium text-gray-600 dark:text-gray-400">
                       {roundOff >= 0 ? "+" : ""}₹{fmt(roundOff)}
                     </td>
-                    <td className="px-4 py-2.5 text-gray-400 text-xs">—</td>
                     <td className="px-4 py-2.5">
                       <span className="inline-block px-2 py-0.5 text-[10px] font-semibold bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 rounded uppercase tracking-wide">ROUND OFF</span>
                     </td>
@@ -705,7 +741,7 @@ const CreateBill = ({ onclose, onSuccess }) => {
                   {/* Add charge row — dropdown */}
                   {availableTypes.length > 0 && (
                     <tr className="bg-gray-50/60 dark:bg-gray-800/30">
-                      <td colSpan={6} className="px-4 py-2.5">
+                      <td colSpan={5} className="px-4 py-2.5">
                         <div className="flex items-center gap-2">
                           <span className="text-xs text-gray-400 shrink-0">+ Add charge:</span>
                           <select
@@ -741,22 +777,13 @@ const CreateBill = ({ onclose, onSuccess }) => {
                 </div>
                 <div className="divide-y divide-gray-100 dark:divide-gray-800">
                   <SummaryRow label="Taxable Value" value={`₹${fmt(grandTotal)}`} />
-                  {taxGroups.length === 0 && isInState && (
+                  {isInState ? (
                     <>
-                      <SummaryRow label="CGST" value={`₹${fmt(0)}`} />
-                      <SummaryRow label="SGST" value={`₹${fmt(0)}`} />
+                      <SummaryRow label={cgstLabel ? `CGST @ ${cgstLabel}` : "CGST"} value={`₹${fmt(totalCgst)}`} />
+                      <SummaryRow label={sgstLabel ? `SGST @ ${sgstLabel}` : "SGST"} value={`₹${fmt(totalSgst)}`} />
                     </>
-                  )}
-                  {taxGroups.length === 0 && !isInState && (
-                    <SummaryRow label="IGST" value={`₹${fmt(0)}`} />
-                  )}
-                  {taxGroups.flatMap((g, i) =>
-                    isInState
-                      ? [
-                          <SummaryRow key={`cgst_${i}`} label={`CGST @ ${g.cgst_pct}%`} value={`₹${fmt(g.cgstAmt)}`} />,
-                          <SummaryRow key={`sgst_${i}`} label={`SGST @ ${g.sgst_pct}%`} value={`₹${fmt(g.sgstAmt)}`} />,
-                        ]
-                      : [<SummaryRow key={`igst_${i}`} label={`IGST @ ${g.igst_pct}%`} value={`₹${fmt(g.igstAmt)}`} />]
+                  ) : (
+                    <SummaryRow label={igstLabel ? `IGST @ ${igstLabel}` : "IGST"} value={`₹${fmt(totalIgst)}`} />
                   )}
                   {chargeDetails.map(c => {
                     const typeDef = CHARGE_TYPES.find(t => t.value === c.type);
@@ -1002,6 +1029,14 @@ const GRNPickerModal = ({ data = [], isLoading, onClose, onConfirm }) => {
     </div>
   );
 };
+
+/* ── Locked (read-only) select display ──────────────────────────────────── */
+const LockedField = ({ value }) => (
+  <div className="w-full border border-teal-200 dark:border-teal-800 rounded-lg px-3 py-2 text-sm bg-teal-50/60 dark:bg-teal-900/10 text-teal-800 dark:text-teal-300 flex items-center justify-between gap-2">
+    <span className="truncate font-medium">{value || "—"}</span>
+    <span className="shrink-0 text-[10px] font-bold uppercase tracking-wider bg-teal-100 dark:bg-teal-900/40 text-teal-600 dark:text-teal-400 px-1.5 py-0.5 rounded">Locked</span>
+  </div>
+);
 
 /* ── Field wrapper ──────────────────────────────────────────────────────── */
 const Field = ({ label, required, error, children }) => (
