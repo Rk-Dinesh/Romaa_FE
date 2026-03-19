@@ -3,7 +3,10 @@ import { useForm }     from "react-hook-form";
 import { yupResolver } from "@hookform/resolvers/yup";
 import * as yup        from "yup";
 import { IoClose }     from "react-icons/io5";
-import { FiSave, FiFileText, FiSettings, FiChevronDown } from "react-icons/fi";
+import {
+  FiSave, FiFileText, FiSettings, FiChevronDown,
+  FiLink, FiList, FiDollarSign, FiUser, FiCalendar,
+} from "react-icons/fi";
 import { useTenderIds, usePermittedVendors, useCreateBill, useGRNForBilling } from "./hooks/usePurchaseBill";
 
 /* ── Schema ─────────────────────────────────────────────────────────────── */
@@ -32,11 +35,31 @@ const toWords = (n) => {
   return ones[n];
 };
 const toWordsRupees = (n) => "Rupees " + toWords(n) + " Only";
+const fmt = (n) => n.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
 /* ── Shared class strings ───────────────────────────────────────────────── */
-const inputCls    = "w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 text-sm bg-gray-50 dark:bg-gray-800 dark:text-white focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all";
-const tblInputCls = "w-full border border-gray-200 dark:border-gray-600 rounded px-1.5 py-1 text-xs bg-white dark:bg-gray-800 dark:text-white focus:outline-none focus:border-blue-400 focus:ring-1 focus:ring-blue-400 min-w-[64px]";
-const sectionHdr  = "text-xs font-bold text-blue-600 dark:text-blue-400 border-b border-gray-200 dark:border-gray-700 pb-1 mb-3 flex items-center gap-2 uppercase tracking-wider";
+const inputCls   = "w-full border border-gray-200 dark:border-gray-700 rounded-lg px-3 py-2 text-sm bg-white dark:bg-gray-800 dark:text-white focus:outline-none focus:border-slate-500 focus:ring-1 focus:ring-slate-400 transition-all placeholder:text-gray-400";
+const readonlyCls = "w-full border border-gray-200 dark:border-gray-700 rounded-lg px-3 py-2 text-sm bg-gray-50 dark:bg-gray-800/60 dark:text-gray-400 text-gray-500 cursor-default";
+
+/* ── Section card wrapper ───────────────────────────────────────────────── */
+const accentBar = {
+  slate: "bg-slate-700",
+  blue:  "bg-blue-600",
+  teal:  "bg-teal-600",
+  amber: "bg-amber-600",
+};
+// `iconEl` is a pre-rendered JSX node, e.g. <FiFileText />
+const SectionCard = ({ iconEl, title, accent = "slate", children, noPad = false, overflow = false, className = "" }) => (
+  <div className={`bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 ${overflow ? "overflow-hidden" : ""} ${className}`}>
+    <div className="flex items-center gap-2.5 px-5 py-3 border-b border-gray-100 dark:border-gray-800 bg-gray-50/70 dark:bg-gray-800/40 rounded-t-xl">
+      <span className={`w-6 h-6 rounded-md flex items-center justify-center text-[13px] text-white ${accentBar[accent] || accentBar.slate}`}>
+        {iconEl}
+      </span>
+      <span className="text-xs font-bold text-gray-600 dark:text-gray-300 uppercase tracking-widest">{title}</span>
+    </div>
+    <div className={noPad ? "" : "p-5"}>{children}</div>
+  </div>
+);
 
 /* ── SearchableSelect ───────────────────────────────────────────────────── */
 const SearchableSelect = ({ options = [], value, onChange, placeholder = "Search...", disabled = false, isLoading = false }) => {
@@ -50,7 +73,6 @@ const SearchableSelect = ({ options = [], value, onChange, placeholder = "Search
     return () => document.removeEventListener("mousedown", handler);
   }, []);
 
-  // when new options arrive while open, keep dropdown open (no reset needed)
   const filtered = (options || []).filter(o =>
     o.label.toLowerCase().includes(search.toLowerCase())
   );
@@ -68,13 +90,13 @@ const SearchableSelect = ({ options = [], value, onChange, placeholder = "Search
           {selected ? selected.label : placeholder}
         </span>
         {isLoading
-          ? <span className="shrink-0 ml-1 w-3.5 h-3.5 border-2 border-gray-300 border-t-blue-500 rounded-full animate-spin" />
+          ? <span className="shrink-0 ml-1 w-3.5 h-3.5 border-2 border-gray-300 border-t-slate-500 rounded-full animate-spin" />
           : <FiChevronDown className={`text-gray-400 shrink-0 ml-1 transition-transform ${open ? "rotate-180" : ""}`} />
         }
       </button>
 
       {open && !disabled && (
-        <div className="absolute z-50 w-full mt-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-lg shadow-xl max-h-56 overflow-hidden flex flex-col">
+        <div className="absolute z-[200] w-full mt-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-lg shadow-xl max-h-56 overflow-hidden flex flex-col">
           <div className="p-2 border-b border-gray-100 dark:border-gray-700">
             <input
               autoFocus
@@ -84,13 +106,13 @@ const SearchableSelect = ({ options = [], value, onChange, placeholder = "Search
               placeholder="Type to search..."
               onClick={e => e.stopPropagation()}
               onKeyDown={e => e.stopPropagation()}
-              className="w-full text-sm px-2 py-1.5 border border-gray-200 dark:border-gray-600 rounded bg-gray-50 dark:bg-gray-900 dark:text-white focus:outline-none focus:border-blue-400"
+              className="w-full text-sm px-2 py-1.5 border border-gray-200 dark:border-gray-600 rounded bg-gray-50 dark:bg-gray-900 dark:text-white focus:outline-none focus:border-slate-400"
             />
           </div>
           <div className="overflow-y-auto">
             {isLoading ? (
               <p className="text-xs text-gray-400 px-3 py-2 flex items-center gap-2">
-                <span className="w-3 h-3 border-2 border-gray-300 border-t-blue-500 rounded-full animate-spin inline-block" />
+                <span className="w-3 h-3 border-2 border-gray-300 border-t-slate-500 rounded-full animate-spin inline-block" />
                 Loading...
               </p>
             ) : filtered.length === 0 ? (
@@ -100,9 +122,9 @@ const SearchableSelect = ({ options = [], value, onChange, placeholder = "Search
                 <div
                   key={o.value}
                   onClick={() => { onChange(o); setOpen(false); setSearch(""); }}
-                  className={`px-3 py-2 text-sm cursor-pointer hover:bg-blue-50 dark:hover:bg-blue-900/20 ${
+                  className={`px-3 py-2 text-sm cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-900/20 ${
                     o.value === value
-                      ? "bg-blue-50 dark:bg-blue-900/20 text-blue-600 font-medium"
+                      ? "bg-slate-50 dark:bg-slate-900/20 text-slate-700 font-medium"
                       : "text-gray-700 dark:text-gray-300"
                   }`}
                 >
@@ -117,19 +139,28 @@ const SearchableSelect = ({ options = [], value, onChange, placeholder = "Search
   );
 };
 
+/* ── Additional charge type definitions ─────────────────────────────────── */
+const CHARGE_TYPES = [
+  { value: "Transport",         label: "Transport",           isDeduction: false },
+  { value: "Supplier",          label: "Supplier",            isDeduction: false },
+  { value: "Loading Unloading", label: "Loading / Unloading", isDeduction: false },
+  { value: "Insurance",         label: "Insurance",           isDeduction: false },
+  { value: "Freight",           label: "Freight",             isDeduction: false },
+  { value: "Packing Charges",   label: "Packing Charges",     isDeduction: false },
+  { value: "Discount",          label: "Discount",            isDeduction: true  },
+  { value: "TCS Receivable",    label: "TCS Receivable",      isDeduction: true  },
+];
+
 /* ── Component ──────────────────────────────────────────────────────────── */
 const CreateBill = ({ onclose, onSuccess }) => {
   const [grnRows,  setGrnRows]  = useState([emptyGrnRow()]);
   const [itemRows, setItemRows] = useState([emptyItemRow()]);
 
-  // Tender & vendor selection (stored separately from RHF)
   const [selectedTenderId, setSelectedTenderId] = useState("");
   const [selectedVendorId, setSelectedVendorId] = useState("");
 
-  // Other charges
-  const [otherCharges,       setOtherCharges]       = useState("");
-  const [otherChargesAmt,    setOtherChargesAmt]     = useState("");
-  const [otherChargesGstPct, setOtherChargesGstPct] = useState("");
+  // additional charges: [{ id, type, amt, gst_pct }]
+  const [additionalCharges, setAdditionalCharges] = useState([]);
 
   const { register, handleSubmit, watch, setValue, formState: { errors } } = useForm({
     resolver: yupResolver(schema),
@@ -149,8 +180,8 @@ const CreateBill = ({ onclose, onSuccess }) => {
 
   /* ── Build dropdown options ─────────────────────────────────────────── */
   const tenderOptions = tendersRaw.map(t => ({
-    value:      t.tender_id,
-    label:      t.tender_project_name ? `${t.tender_id} – ${t.tender_project_name}` : t.tender_id,
+    value: t.tender_id,
+    label: t.tender_project_name ? `${t.tender_id} – ${t.tender_project_name}` : t.tender_id,
   }));
 
   const vendorOptions = vendorsRaw.map(v => ({
@@ -161,7 +192,7 @@ const CreateBill = ({ onclose, onSuccess }) => {
 
   /* ── Selection handlers ─────────────────────────────────────────────── */
   const handleTenderSelect = (option) => {
-    if (option.value === selectedTenderId) return;   // no-op if same tender
+    if (option.value === selectedTenderId) return;
     setSelectedTenderId(option.value);
     setSelectedVendorId("");
     setValue("credit_days", null);
@@ -173,7 +204,7 @@ const CreateBill = ({ onclose, onSuccess }) => {
     setValue("credit_days", days, { shouldDirty: true, shouldTouch: true });
   };
 
-  /* ── Enter key on identity/config sections → open GRN picker ───────── */
+  /* ── Enter key → open GRN picker ────────────────────────────────────── */
   const handleSectionKeyDown = (e) => {
     if (e.key !== "Enter") return;
     if (e.target.tagName === "BUTTON" || e.target.tagName === "TEXTAREA") return;
@@ -185,13 +216,13 @@ const CreateBill = ({ onclose, onSuccess }) => {
     setShowGrnPicker(true);
   };
 
-  /* ── GRN picker confirm → populate GRN rows + line items ────────────── */
+  /* ── GRN picker confirm ─────────────────────────────────────────────── */
   const handleGrnPickerConfirm = (entries) => {
     setGrnRows(entries.map(e => ({
-      grn_no:     e.grn_bill_no       || "",
-      grn_ref_no: e.party_bill_no     || e.invoice_challan_no || "",
+      grn_no:     e.grn_bill_no   || "",
+      grn_ref_no: e.party_bill_no || e.invoice_challan_no || "",
       ref_date:   e.date ? e.date.split("T")[0] : "",
-      grn_qty:    String(e.quantity   ?? ""),
+      grn_qty:    String(e.quantity ?? ""),
     })));
 
     setItemRows(entries.map(e => {
@@ -212,7 +243,7 @@ const CreateBill = ({ onclose, onSuccess }) => {
     setShowGrnPicker(false);
   };
 
-  /* ── Auto due date = today + credit_days ────────────────────────────── */
+  /* ── Auto due date ──────────────────────────────────────────────────── */
   const computedDueDate = useMemo(() => {
     const days = Number(watchCreditDays);
     if (isNaN(days) || days < 0) return "";
@@ -221,46 +252,59 @@ const CreateBill = ({ onclose, onSuccess }) => {
     return d.toISOString().split("T")[0];
   }, [watchCreditDays]);
 
+  /* ── Additional charge handlers ─────────────────────────────────────── */
+  const addCharge = (type) => {
+    if (!type) return;
+    setAdditionalCharges(prev => [...prev, { id: Date.now(), type, amt: "", gst_pct: "" }]);
+  };
+  const removeCharge = (id) => setAdditionalCharges(prev => prev.filter(c => c.id !== id));
+  const updateCharge = (id, field, value) =>
+    setAdditionalCharges(prev => prev.map(c => c.id === id ? { ...c, [field]: value } : c));
+
   /* ── Derived totals ─────────────────────────────────────────────────── */
-  const grandTotal         = itemRows.reduce((acc, r) => acc + (parseFloat(r.gross_amt) || 0), 0);
-  const sgst               = parseFloat((grandTotal * 0.025).toFixed(2));
-  const cgst               = sgst;
-  const otherChargesAmtNum = parseFloat(otherChargesAmt) || 0;
+  const grandTotal = itemRows.reduce((acc, r) => acc + (parseFloat(r.gross_amt) || 0), 0);
+  const sgst       = parseFloat((grandTotal * 0.025).toFixed(2));
+  const cgst       = sgst;
 
-  const otherChargesGst = useMemo(() => {
-    if (!otherCharges) return 0;
-    const pct = parseFloat(otherChargesGstPct) || 0;
-    return parseFloat((otherChargesAmtNum * pct / 100).toFixed(2));
-  }, [otherCharges, otherChargesAmtNum, otherChargesGstPct]);
+  // per-charge net (amount + its GST); deductions are negative
+  const chargeDetails = additionalCharges.map(c => {
+    const typeDef  = CHARGE_TYPES.find(t => t.value === c.type);
+    const amt      = parseFloat(c.amt)     || 0;
+    const gst      = parseFloat(c.gst_pct) || 0;
+    const gstAmt   = parseFloat((amt * gst / 100).toFixed(2));
+    const net      = parseFloat((amt + gstAmt).toFixed(2));
+    return { ...c, amtNum: amt, gstAmt, net: typeDef?.isDeduction ? -net : net };
+  });
 
-  const roundOff  = 0.10;
-  const netAmount = parseFloat((grandTotal + sgst + cgst + otherChargesAmtNum + otherChargesGst + roundOff).toFixed(2));
+  const additionalTotal = chargeDetails.reduce((s, c) => s + c.net, 0);
+  const preRound        = grandTotal + sgst + cgst + additionalTotal;
+  const roundOff        = parseFloat((Math.round(preRound) - preRound).toFixed(2));
+  const netAmount       = Math.round(preRound);
 
   const fixedTaxRows = [
-    { desc: "Inward supply 5%", amt: grandTotal.toLocaleString("en-IN", { minimumFractionDigits: 2 }), account: "INWARD SUPPLY" },
-    { desc: "SGST @ 2.5%",      amt: sgst.toLocaleString("en-IN", { minimumFractionDigits: 2 }),       account: "SGST INPUT TAX @ 2.5%" },
-    { desc: "CGST @ 2.5%",      amt: cgst.toLocaleString("en-IN", { minimumFractionDigits: 2 }),       account: "CGST INPUT TAX @ 2.5%" },
-    { desc: "TCS receivable",   amt: "0.00",                                                            account: "TCS RECEIVABLE" },
-    { desc: "Round off",        amt: roundOff.toFixed(2),                                               account: "Round off" },
+    { desc: "Inward Supply 5%", amt: fmt(grandTotal), account: "INWARD SUPPLY" },
+    { desc: "SGST @ 2.5%",      amt: fmt(sgst),       account: "SGST INPUT TAX @ 2.5%" },
+    { desc: "CGST @ 2.5%",      amt: fmt(cgst),       account: "CGST INPUT TAX @ 2.5%" },
   ];
+
+  const addedTypes    = new Set(additionalCharges.map(c => c.type));
+  const availableTypes = CHARGE_TYPES.filter(t => !addedTypes.has(t.value));
 
   /* ── Submit ─────────────────────────────────────────────────────────── */
   const onSubmit = (data) => {
     if (!selectedTenderId) { import("react-toastify").then(m => m.toast.warning("Please select a tender")); return; }
-    if (!selectedVendorId) { import("react-toastify").then(m => m.toast.warning("Please select a vendor"));  return; }
-
+    if (!selectedVendorId) { import("react-toastify").then(m => m.toast.warning("Please select a vendor")); return; }
     createBillMutation.mutate({
       ...data,
-      tender_id:             selectedTenderId,
-      vendor_id:             selectedVendorId,
-      due_date:              computedDueDate,
-      grn_rows:              grnRows,
-      line_items:            itemRows,
-      other_charges:         otherCharges || null,
-      other_charges_amount:  otherChargesAmtNum,
-      other_charges_gst_pct: parseFloat(otherChargesGstPct) || 0,
-      grand_total:           grandTotal,
-      net_amount:            netAmount,
+      tender_id:          selectedTenderId,
+      vendor_id:          selectedVendorId,
+      due_date:           computedDueDate,
+      grn_rows:           grnRows,
+      line_items:         itemRows,
+      additional_charges: chargeDetails.map(c => ({ type: c.type, amount: c.amtNum, gst_pct: parseFloat(c.gst_pct) || 0, net: c.net })),
+      round_off:          roundOff,
+      grand_total:        grandTotal,
+      net_amount:         netAmount,
     });
   };
 
@@ -268,55 +312,75 @@ const CreateBill = ({ onclose, onSuccess }) => {
 
   /* ── Render ─────────────────────────────────────────────────────────── */
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4 font-layout-font">
-      <div className="bg-white dark:bg-gray-900 w-full max-w-6xl h-[97vh] rounded-2xl shadow-2xl flex flex-col overflow-hidden border border-gray-200 dark:border-gray-800">
+    <div className="fixed inset-0 z-50 flex flex-col bg-slate-100 dark:bg-gray-950 font-layout-font overflow-hidden">
 
-        {/* ── Header ───────────────────────────────────────────────────── */}
-        <div className="px-8 py-4 border-b border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-900 flex justify-between items-center sticky top-0 z-10">
-          <div>
-            <h2 className="text-xl font-bold text-gray-800 dark:text-white flex items-center gap-2">
-              <span className="p-2 bg-blue-100 text-blue-600 rounded-lg">
-                <FiFileText className="text-xl" />
-              </span>
-              Purchase Bill — New Entry
-            </h2>
-            <p className="text-xs text-gray-500 mt-1 ml-11">Amount in Rupees</p>
+      {/* ══ Top bar ══════════════════════════════════════════════════════ */}
+      <div className="shrink-0 bg-slate-800 dark:bg-gray-900 px-6 py-3 flex items-center justify-between border-b border-slate-700 dark:border-gray-800">
+        <div className="flex items-center gap-3">
+          <div className="w-8 h-8 bg-white/10 rounded-lg flex items-center justify-center">
+            <FiFileText className="text-white text-base" />
           </div>
-          <button onClick={onclose} className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-500 transition-all">
-            <IoClose size={24} />
+          <div>
+            <h1 className="text-sm font-bold text-white tracking-wide">PURCHASE BILL — NEW ENTRY</h1>
+            <p className="text-[11px] text-slate-400 mt-0.5">Fill Bill Identity &amp; Configuration, then press Enter to pick GRN</p>
+          </div>
+        </div>
+        <div className="flex items-center gap-3">
+          <button
+            onClick={onclose}
+            className="w-8 h-8 flex items-center justify-center rounded-lg text-slate-400 hover:text-white hover:bg-white/10 transition-all"
+          >
+            <IoClose size={18} />
           </button>
         </div>
+      </div>
 
-        {/* ── Scrollable body ──────────────────────────────────────────── */}
-        <div className="flex-1 overflow-y-auto p-6 bg-white dark:bg-gray-900 space-y-6">
+      {/* ══ Scrollable body ══════════════════════════════════════════════ */}
+      <div className="flex-1 overflow-y-auto">
+        <div className="max-w-[1600px] mx-auto px-6 py-5 space-y-4" onKeyDown={handleSectionKeyDown}>
 
-          {/* Sections 1 + 2 wrapped for Enter key detection */}
-          <div onKeyDown={handleSectionKeyDown}>
+          {/* ── Row 1: Bill Identity ─────────────────────────────────── */}
+          <SectionCard iconEl={<FiFileText />} title="Bill Identity" accent="slate">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
 
-          {/* Section 1 — Bill Identity */}
-          <div>
-            <div className={sectionHdr}><FiFileText /> Bill Identity</div>
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+              {/* Left — Reference fields */}
+              <div className="space-y-4">
+                <div className="flex items-center gap-2 mb-1">
+                  <FiCalendar className="text-slate-500 text-xs" />
+                  <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">Bill Reference</span>
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <Field label="Bill No" required error={errors.bill_no}>
+                    <input type="text" {...register("bill_no")} className={inputCls} placeholder="e.g. RF/C2/25-26/PB/01019" />
+                  </Field>
+                  <Field label="Bill Date" required error={errors.bill_date}>
+                    <input type="date" {...register("bill_date")} className={inputCls} />
+                  </Field>
+                  <Field label="Invoice No" required error={errors.invoice_no}>
+                    <input type="text" {...register("invoice_no")} className={inputCls} placeholder="e.g. RA/Q1/04200" />
+                  </Field>
+                  <Field label="Invoice Date" required error={errors.invoice_date}>
+                    <input type="date" {...register("invoice_date")} className={inputCls} />
+                  </Field>
+                </div>
+              </div>
 
-              <Field label="Tender" required>
-                <SearchableSelect
-                  options={tenderOptions}
-                  value={selectedTenderId}
-                  onChange={handleTenderSelect}
-                  placeholder="Select tender..."
-                  isLoading={loadingTenders}
-                />
-              </Field>
-
-              <Field label="Bill Date" required error={errors.bill_date}>
-                <input type="date" {...register("bill_date")} className={inputCls} />
-              </Field>
-
-              <Field label="Bill No" required error={errors.bill_no}>
-                <input type="text" {...register("bill_no")} className={inputCls} placeholder="e.g. RF/C2/25-26/PB/01019" />
-              </Field>
-
-              <div className="md:col-span-2">
+              
+              {/* Right — Party fields */}
+              <div className="space-y-4">
+                <div className="flex items-center gap-2 mb-1">
+                  <FiUser className="text-slate-500 text-xs" />
+                  <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">Party Details</span>
+                </div>
+                <Field label="Project / Tender" required>
+                  <SearchableSelect
+                    options={tenderOptions}
+                    value={selectedTenderId}
+                    onChange={handleTenderSelect}
+                    placeholder="Select tender..."
+                    isLoading={loadingTenders}
+                  />
+                </Field>
                 <Field label="Vendor / Supplier" required>
                   <SearchableSelect
                     key={selectedTenderId || "__no_tender__"}
@@ -329,228 +393,307 @@ const CreateBill = ({ onclose, onSuccess }) => {
                   />
                 </Field>
               </div>
-
-              <Field label="Invoice No" required error={errors.invoice_no}>
-                <input type="text" {...register("invoice_no")} className={inputCls} placeholder="e.g. RA/Q1/04200" />
-              </Field>
-
-              <Field label="Invoice Date" required error={errors.invoice_date}>
-                <input type="date" {...register("invoice_date")} className={inputCls} />
-              </Field>
-
             </div>
-          </div>
+          </SectionCard>
 
-          {/* Section 2 — Bill Configuration */}
-          <div>
-            <div className={sectionHdr}><FiSettings /> Bill Configuration</div>
+          {/* ── Row 2: Bill Configuration ────────────────────────────── */}
+          <SectionCard iconEl={<FiSettings />} title="Bill Configuration" accent="blue">
             <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-
               <Field label="Credit Days" error={errors.credit_days}>
                 <input type="number" {...register("credit_days")} className={inputCls} placeholder="Auto-filled from vendor" min={0} />
               </Field>
-
               <Field label="Due Date">
-                <input
-                  type="date"
-                  value={computedDueDate}
-                  readOnly
-                  className={`${inputCls} !bg-gray-100 dark:!bg-gray-700 cursor-default`}
-                />
+                <input type="date" value={computedDueDate} readOnly className={readonlyCls} />
               </Field>
-
-              <Field label="Other Charges">
-                <select
-                  value={otherCharges}
-                  onChange={e => { setOtherCharges(e.target.value); setOtherChargesAmt(""); setOtherChargesGstPct(""); }}
-                  className={inputCls}
-                >
-                  <option value="">—</option>
-                  <option>Supplier</option>
-                  <option>Loading Unloading</option>
-                </select>
-              </Field>
-            </div>
-          </div>
-
-          </div>{/* end Enter-key wrapper */}
-
-          {/* Section 3 — GRN Linkage + Line Items */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-
-            {/* GRN Linkage */}
-            <div>
-              <p className={sectionHdr}>GRN Linkage</p>
-              <div className="border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden">
-                <div className="overflow-x-auto">
-                  <table className="w-full text-xs">
-                    <thead>
-                      <tr className="bg-gray-50 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
-                        {["S No", "GRN No", "GRN Ref No", "Ref Date", "GRN Qty"].map(h => (
-                          <th key={h} className="px-2 py-2 text-left font-semibold text-gray-500 dark:text-gray-400 whitespace-nowrap">{h}</th>
-                        ))}
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {grnRows.map((row, i) => (
-                        <tr key={i} className="border-b border-gray-100 dark:border-gray-800 last:border-0 hover:bg-blue-50/30">
-                          <td className="px-2 py-1.5 text-gray-400">{i + 1}</td>
-                          <td className="px-2 py-1.5 text-gray-700 dark:text-gray-300 font-medium">{row.grn_no || "—"}</td>
-                          <td className="px-2 py-1.5 text-gray-500 dark:text-gray-400">{row.grn_ref_no || "—"}</td>
-                          <td className="px-2 py-1.5 text-gray-500 dark:text-gray-400 whitespace-nowrap">{row.ref_date || "—"}</td>
-                          <td className="px-2 py-1.5 text-right text-gray-700 dark:text-gray-300">{row.grn_qty || "—"}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
+              <div className="flex flex-col justify-end pb-0.5">
+                <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-relaxed">
+                  Fill all fields above, then press{" "}
+                  <kbd className="px-1.5 py-0.5 text-[10px] bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded font-mono">Enter</kbd>
+                  {" "}to select GRN entries.
+                </p>
               </div>
             </div>
+          </SectionCard>
 
-            {/* Line Items */}
-            <div>
-              <p className={sectionHdr}>Line Items</p>
-              <div className="border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden">
-                <div className="overflow-x-auto">
-                  <table className="w-full text-xs">
-                    <thead>
-                      <tr className="bg-gray-50 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
-                        {["S No", "Item", "Unit", "Accepted Qty", "Amt", "Unit Price", "Gross Amt", "Net Amt"].map(h => (
-                          <th key={h} className="px-2 py-2 text-left font-semibold text-gray-500 dark:text-gray-400 whitespace-nowrap">{h}</th>
-                        ))}
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {itemRows.map((row, i) => (
-                        <tr key={i} className="border-b border-gray-100 dark:border-gray-800 last:border-0 hover:bg-blue-50/30">
-                          <td className="px-2 py-1.5 text-gray-400">{i + 1}</td>
-                          <td className="px-2 py-1.5 text-gray-700 dark:text-gray-300">{row.item_id || "—"}</td>
-                          <td className="px-2 py-1.5 text-gray-500 dark:text-gray-400">{row.unit || "—"}</td>
-                          <td className="px-2 py-1.5 text-right text-gray-700 dark:text-gray-300">{row.accepted_qty || "—"}</td>
-                          <td className="px-2 py-1.5 text-right text-gray-500 dark:text-gray-400">{row.amt}</td>
-                          <td className="px-2 py-1.5 text-right text-gray-700 dark:text-gray-300">{row.unit_price || "—"}</td>
-                          <td className="px-2 py-1.5 text-right font-medium text-gray-700 dark:text-gray-300">{row.gross_amt}</td>
-                          <td className="px-2 py-1.5 text-right font-medium text-gray-700 dark:text-gray-300">{row.net_amt}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
+          {/* ── Row 3: GRN Linkage (full width) ──────────────────────── */}
+          <SectionCard iconEl={<FiLink />} title="GRN Linkage" accent="teal" noPad overflow>
+            {grnRows[0].grn_no === "" && grnRows.length === 1 ? (
+              <div className="flex flex-col items-center justify-center py-10 text-gray-400 dark:text-gray-600 gap-2">
+                <FiLink className="text-3xl opacity-40" />
+                <p className="text-sm">No GRN entries linked yet</p>
+                <p className="text-xs opacity-70">Press Enter after filling bill details to pick GRN</p>
               </div>
-            </div>
-          </div>
-
-          {/* Section 4 — Tax & Summary */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-
-            {/* Tax table + Narration */}
-            <div>
-              <p className={sectionHdr}>Tax &amp; Additions / Deductions</p>
-              <div className="border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden">
-                <table className="w-full text-xs">
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
                   <thead>
-                    <tr className="bg-gray-50 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
-                      {["S No", "Description", "Amount (₹)", "Account / GST %"].map(h => (
-                        <th key={h} className="px-3 py-2 text-left font-semibold text-gray-500 dark:text-gray-400">{h}</th>
-                      ))}
+                    <tr className="bg-teal-50/60 dark:bg-teal-900/10 border-b border-teal-100 dark:border-teal-900/30">
+                      <th className="px-4 py-2.5 text-center w-10 text-xs font-semibold text-teal-700 dark:text-teal-400">#</th>
+                      <th className="px-4 py-2.5 text-left text-xs font-semibold text-teal-700 dark:text-teal-400 whitespace-nowrap">GRN No</th>
+                      <th className="px-4 py-2.5 text-left text-xs font-semibold text-teal-700 dark:text-teal-400 whitespace-nowrap">GRN Ref No</th>
+                      <th className="px-4 py-2.5 text-left text-xs font-semibold text-teal-700 dark:text-teal-400 whitespace-nowrap">Reference Date</th>
+                      <th className="px-4 py-2.5 text-right text-xs font-semibold text-teal-700 dark:text-teal-400 whitespace-nowrap">GRN Qty</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {fixedTaxRows.map((row, i) => (
-                      <tr key={i} className="border-b border-gray-100 dark:border-gray-800 last:border-0">
-                        <td className="px-3 py-2 text-gray-400">{i + 1}</td>
-                        <td className="px-3 py-2 text-gray-700 dark:text-gray-300">{row.desc}</td>
-                        <td className="px-3 py-2 text-right font-medium text-gray-700 dark:text-gray-300">{row.amt}</td>
-                        <td className="px-3 py-2 text-gray-500 dark:text-gray-400">{row.account}</td>
+                    {grnRows.map((row, i) => (
+                      <tr key={i} className={`border-b border-gray-100 dark:border-gray-800 last:border-0 ${i % 2 === 0 ? "" : "bg-gray-50/50 dark:bg-gray-800/20"}`}>
+                        <td className="px-4 py-2.5 text-center text-xs text-gray-400">{i + 1}</td>
+                        <td className="px-4 py-2.5 font-medium text-gray-800 dark:text-gray-200">{row.grn_no || <span className="text-gray-300">—</span>}</td>
+                        <td className="px-4 py-2.5 text-gray-500 dark:text-gray-400">{row.grn_ref_no || <span className="text-gray-300">—</span>}</td>
+                        <td className="px-4 py-2.5 text-gray-500 dark:text-gray-400 whitespace-nowrap">{row.ref_date || <span className="text-gray-300">—</span>}</td>
+                        <td className="px-4 py-2.5 text-right font-medium text-gray-700 dark:text-gray-300">{row.grn_qty || <span className="text-gray-300">—</span>}</td>
                       </tr>
                     ))}
-
-                    {otherCharges && (
-                      <tr className="border-t-2 border-blue-100 dark:border-blue-800 bg-blue-50/40 dark:bg-blue-900/10">
-                        <td className="px-3 py-2 text-gray-400">{fixedTaxRows.length + 1}</td>
-                        <td className="px-3 py-2 font-medium text-gray-700 dark:text-gray-300">{otherCharges}</td>
-                        <td className="px-2 py-1.5">
-                          <input
-                            type="number"
-                            value={otherChargesAmt}
-                            onChange={e => setOtherChargesAmt(e.target.value)}
-                            placeholder="0.00"
-                            className={`${tblInputCls} text-right`}
-                          />
-                        </td>
-                        <td className="px-2 py-1.5">
-                          <div className="flex items-center gap-1">
-                            <input
-                              type="number"
-                              value={otherChargesGstPct}
-                              onChange={e => setOtherChargesGstPct(e.target.value)}
-                              placeholder="GST %"
-                              className={`${tblInputCls} w-16`}
-                              min={0}
-                              max={100}
-                            />
-                            <span className="text-gray-400 text-[10px] shrink-0">%</span>
-                            {otherChargesGstPct && (
-                              <span className="text-gray-500 text-[10px] shrink-0">= ₹{otherChargesGst.toFixed(2)}</span>
-                            )}
-                          </div>
-                        </td>
-                      </tr>
-                    )}
                   </tbody>
                 </table>
               </div>
-              <div className="mt-3">
+            )}
+          </SectionCard>
+
+          {/* ── Row 4: Line Items (full width) ───────────────────────── */}
+          <SectionCard iconEl={<FiList />} title="Line Items" accent="blue" noPad overflow>
+            {itemRows[0].item_id === "" && itemRows.length === 1 ? (
+              <div className="flex flex-col items-center justify-center py-10 text-gray-400 dark:text-gray-600 gap-2">
+                <FiList className="text-3xl opacity-40" />
+                <p className="text-sm">No line items yet</p>
+                <p className="text-xs opacity-70">Items will be populated after GRN selection</p>
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="bg-blue-50/60 dark:bg-blue-900/10 border-b border-blue-100 dark:border-blue-900/30">
+                      <th className="px-4 py-2.5 text-center w-10 text-xs font-semibold text-blue-700 dark:text-blue-400">#</th>
+                      <th className="px-4 py-2.5 text-left text-xs font-semibold text-blue-700 dark:text-blue-400">Item Description</th>
+                      <th className="px-4 py-2.5 text-left text-xs font-semibold text-blue-700 dark:text-blue-400">Unit</th>
+                      <th className="px-4 py-2.5 text-right text-xs font-semibold text-blue-700 dark:text-blue-400 whitespace-nowrap">Accepted Qty</th>
+                      <th className="px-4 py-2.5 text-right text-xs font-semibold text-blue-700 dark:text-blue-400 whitespace-nowrap">Unit Price (₹)</th>
+                      <th className="px-4 py-2.5 text-right text-xs font-semibold text-blue-700 dark:text-blue-400 whitespace-nowrap">Gross Amt (₹)</th>
+                      <th className="px-4 py-2.5 text-right text-xs font-semibold text-blue-700 dark:text-blue-400 whitespace-nowrap">Net Amt (₹)</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {itemRows.map((row, i) => (
+                      <tr key={i} className={`border-b border-gray-100 dark:border-gray-800 last:border-0 ${i % 2 === 0 ? "" : "bg-gray-50/50 dark:bg-gray-800/20"}`}>
+                        <td className="px-4 py-2.5 text-center text-xs text-gray-400">{i + 1}</td>
+                        <td className="px-4 py-2.5 font-medium text-gray-800 dark:text-gray-200">{row.item_id || <span className="text-gray-300">—</span>}</td>
+                        <td className="px-4 py-2.5 text-gray-500 dark:text-gray-400">
+                          {row.unit ? (
+                            <span className="inline-block px-2 py-0.5 bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 rounded text-xs font-medium">{row.unit}</span>
+                          ) : <span className="text-gray-300">—</span>}
+                        </td>
+                        <td className="px-4 py-2.5 text-right text-gray-700 dark:text-gray-300">{row.accepted_qty || <span className="text-gray-300">—</span>}</td>
+                        <td className="px-4 py-2.5 text-right text-gray-700 dark:text-gray-300">{row.unit_price || <span className="text-gray-300">—</span>}</td>
+                        <td className="px-4 py-2.5 text-right font-semibold text-gray-800 dark:text-gray-200">{row.gross_amt}</td>
+                        <td className="px-4 py-2.5 text-right font-semibold text-gray-800 dark:text-gray-200">{row.net_amt}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                  <tfoot>
+                    <tr className="bg-gray-50 dark:bg-gray-800/60 border-t-2 border-gray-200 dark:border-gray-700">
+                      <td colSpan={5} className="px-4 py-2.5 text-right text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Subtotal</td>
+                      <td className="px-4 py-2.5 text-right font-bold text-gray-900 dark:text-white">
+                        ₹{grandTotal.toLocaleString("en-IN", { minimumFractionDigits: 2 })}
+                      </td>
+                      <td className="px-4 py-2.5 text-right font-bold text-gray-900 dark:text-white">
+                        ₹{grandTotal.toLocaleString("en-IN", { minimumFractionDigits: 2 })}
+                      </td>
+                    </tr>
+                  </tfoot>
+                </table>
+              </div>
+            )}
+          </SectionCard>
+
+          {/* ── Row 5: Tax + Summary ─────────────────────────────────── */}
+          <div className="grid grid-cols-1 lg:grid-cols-5 gap-4">
+
+            {/* Tax table — takes 3/5 */}
+            <SectionCard iconEl={<FiDollarSign />} title="Tax & Additions / Deductions" accent="amber" noPad overflow className="lg:col-span-3">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="bg-amber-50/60 dark:bg-amber-900/10 border-b border-amber-100 dark:border-amber-900/30">
+                    <th className="px-4 py-2.5 text-center w-8 text-xs font-semibold text-amber-700 dark:text-amber-400">#</th>
+                    <th className="px-4 py-2.5 text-left text-xs font-semibold text-amber-700 dark:text-amber-400">Description</th>
+                    <th className="px-4 py-2.5 text-right text-xs font-semibold text-amber-700 dark:text-amber-400 whitespace-nowrap">Amount (₹)</th>
+                    <th className="px-4 py-2.5 text-left text-xs font-semibold text-amber-700 dark:text-amber-400 w-32">GST %</th>
+                    <th className="px-4 py-2.5 text-left text-xs font-semibold text-amber-700 dark:text-amber-400">Account</th>
+                    <th className="w-8" />
+                  </tr>
+                </thead>
+                <tbody>
+                  {/* Fixed GST rows — read-only */}
+                  {fixedTaxRows.map((row, i) => (
+                    <tr key={i} className="border-b border-gray-100 dark:border-gray-800">
+                      <td className="px-4 py-2.5 text-center text-xs text-gray-400">{i + 1}</td>
+                      <td className="px-4 py-2.5 text-gray-700 dark:text-gray-300">{row.desc}</td>
+                      <td className="px-4 py-2.5 text-right font-medium text-gray-700 dark:text-gray-300">{row.amt}</td>
+                      <td className="px-4 py-2.5 text-gray-400 text-xs">—</td>
+                      <td className="px-4 py-2.5">
+                        <span className="inline-block px-2 py-0.5 text-[10px] font-semibold bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 rounded uppercase tracking-wide">
+                          {row.account}
+                        </span>
+                      </td>
+                      <td />
+                    </tr>
+                  ))}
+
+                  {/* User-added charge rows */}
+                  {chargeDetails.map((c, i) => {
+                    const typeDef = CHARGE_TYPES.find(t => t.value === c.type);
+                    return (
+                      <tr key={c.id} className="border-b border-gray-100 dark:border-gray-800 bg-amber-50/20 dark:bg-amber-900/5">
+                        <td className="px-4 py-2 text-center text-xs text-gray-400">{fixedTaxRows.length + i + 1}</td>
+                        <td className="px-4 py-2">
+                          <span className={`text-sm font-medium ${typeDef?.isDeduction ? "text-red-600 dark:text-red-400" : "text-gray-700 dark:text-gray-300"}`}>
+                            {typeDef?.label || c.type}
+                            {typeDef?.isDeduction && <span className="ml-1 text-[10px] bg-red-100 text-red-500 px-1.5 py-0.5 rounded">Deduction</span>}
+                          </span>
+                        </td>
+                        <td className="px-3 py-2">
+                          <input
+                            type="text"
+                            inputMode="decimal"
+                            value={c.amt}
+                            onChange={e => { if (/^\d*\.?\d*$/.test(e.target.value)) updateCharge(c.id, "amt", e.target.value); }}
+                            placeholder="0.00"
+                            className="w-full border border-gray-200 dark:border-gray-600 rounded-lg px-2.5 py-1.5 text-sm text-right bg-white dark:bg-gray-800 dark:text-white focus:outline-none focus:border-amber-400 focus:ring-1 focus:ring-amber-400"
+                          />
+                        </td>
+                        <td className="px-3 py-2">
+                          <div className="flex items-center gap-1">
+                            <input
+                              type="text"
+                              inputMode="decimal"
+                              value={c.gst_pct}
+                              onChange={e => { if (/^\d*\.?\d*$/.test(e.target.value)) updateCharge(c.id, "gst_pct", e.target.value); }}
+                              placeholder="0"
+                              className="w-14 border border-gray-200 dark:border-gray-600 rounded-lg px-2 py-1.5 text-sm bg-white dark:bg-gray-800 dark:text-white focus:outline-none focus:border-amber-400 focus:ring-1 focus:ring-amber-400"
+                            />
+                            <span className="text-gray-400 text-xs">%</span>
+                            {c.gst_pct && c.amtNum > 0 && (
+                              <span className="text-[10px] text-amber-600 font-medium whitespace-nowrap">₹{c.gstAmt.toFixed(2)}</span>
+                            )}
+                          </div>
+                        </td>
+                        <td className="px-4 py-2">
+                          <span className="inline-block px-2 py-0.5 text-[10px] font-semibold bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 rounded uppercase tracking-wide">
+                            {c.type.toUpperCase()}
+                          </span>
+                        </td>
+                        <td className="px-2 py-2 text-center">
+                          <button
+                            type="button"
+                            onClick={() => removeCharge(c.id)}
+                            className="w-6 h-6 flex items-center justify-center rounded-full text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-all"
+                          >
+                            <IoClose size={14} />
+                          </button>
+                        </td>
+                      </tr>
+                    );
+                  })}
+
+                  {/* Round-off row — auto */}
+                  <tr className="border-b border-gray-100 dark:border-gray-800 bg-gray-50/60 dark:bg-gray-800/30">
+                    <td className="px-4 py-2.5 text-center text-xs text-gray-400">{fixedTaxRows.length + additionalCharges.length + 1}</td>
+                    <td className="px-4 py-2.5 text-gray-600 dark:text-gray-400 italic text-sm">Round Off</td>
+                    <td className="px-4 py-2.5 text-right font-medium text-gray-600 dark:text-gray-400">
+                      {roundOff >= 0 ? "+" : ""}₹{fmt(roundOff)}
+                    </td>
+                    <td className="px-4 py-2.5 text-gray-400 text-xs">—</td>
+                    <td className="px-4 py-2.5">
+                      <span className="inline-block px-2 py-0.5 text-[10px] font-semibold bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 rounded uppercase tracking-wide">ROUND OFF</span>
+                    </td>
+                    <td />
+                  </tr>
+
+                  {/* Add charge row — dropdown */}
+                  {availableTypes.length > 0 && (
+                    <tr className="bg-gray-50/60 dark:bg-gray-800/30">
+                      <td colSpan={6} className="px-4 py-2.5">
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs text-gray-400 shrink-0">+ Add charge:</span>
+                          <select
+                            value=""
+                            onChange={e => { addCharge(e.target.value); e.target.value = ""; }}
+                            className="border border-dashed border-amber-300 dark:border-amber-700 rounded-lg px-3 py-1.5 text-sm bg-white dark:bg-gray-800 text-amber-700 dark:text-amber-400 focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-400 cursor-pointer"
+                          >
+                            <option value="" disabled>— Select charge type —</option>
+                            {availableTypes.map(t => (
+                              <option key={t.value} value={t.value}>
+                                {t.isDeduction ? "(-) " : "(+) "}{t.label}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+              <div className="px-5 py-4 border-t border-gray-100 dark:border-gray-800">
                 <Field label="Narration" error={errors.narration}>
                   <input type="text" {...register("narration")} className={inputCls} placeholder="e.g. Purchase for: INFRA" />
                 </Field>
               </div>
-            </div>
+            </SectionCard>
 
-            {/* Summary */}
-            <div>
-              <p className={sectionHdr}>Summary</p>
-              <div className="border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden">
-                <table className="w-full text-sm">
-                  <tbody>
-                    <tr className="border-b border-gray-100 dark:border-gray-700">
-                      <td className="px-4 py-3 text-xs text-gray-500 dark:text-gray-400 w-40">Grand Total</td>
-                      <td className="px-4 py-3 text-right font-semibold text-gray-800 dark:text-white">
-                        ₹{grandTotal.toLocaleString("en-IN", { minimumFractionDigits: 2 })}
-                      </td>
-                    </tr>
-                    {otherCharges && (
-                      <tr className="border-b border-gray-100 dark:border-gray-700">
-                        <td className="px-4 py-3 text-xs text-gray-500 dark:text-gray-400 w-40">
-                          {otherCharges}{otherChargesGstPct ? ` (GST ${otherChargesGstPct}%)` : ""}
-                        </td>
-                        <td className="px-4 py-3 text-right font-medium text-gray-700 dark:text-gray-300">
-                          ₹{(otherChargesAmtNum + otherChargesGst).toLocaleString("en-IN", { minimumFractionDigits: 2 })}
-                        </td>
-                      </tr>
-                    )}
-                    <tr className="bg-gray-50 dark:bg-gray-800">
-                      <td className="px-4 py-3 text-xs font-semibold text-gray-700 dark:text-gray-200 w-40">Net Amount</td>
-                      <td className="px-4 py-3 text-right font-bold text-green-600 text-base">
-                        ₹{netAmount.toLocaleString("en-IN", { minimumFractionDigits: 2 })}
-                      </td>
-                    </tr>
-                  </tbody>
-                </table>
+            {/* Summary — takes 2/5 */}
+            <div className="lg:col-span-2 flex flex-col gap-3">
+              <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 overflow-hidden">
+                <div className="px-5 py-3 bg-slate-700 text-white">
+                  <p className="text-[11px] font-bold uppercase tracking-widest text-slate-300">Invoice Summary</p>
+                </div>
+                <div className="divide-y divide-gray-100 dark:divide-gray-800">
+                  <SummaryRow label="Taxable Value" value={`₹${fmt(grandTotal)}`} />
+                  <SummaryRow label="SGST @ 2.5%"   value={`₹${fmt(sgst)}`} />
+                  <SummaryRow label="CGST @ 2.5%"   value={`₹${fmt(cgst)}`} />
+                  {chargeDetails.map(c => {
+                    const typeDef = CHARGE_TYPES.find(t => t.value === c.type);
+                    return (
+                      <SummaryRow
+                        key={c.id}
+                        label={typeDef?.label || c.type}
+                        value={`${typeDef?.isDeduction ? "−" : "+"}₹${fmt(Math.abs(c.net))}`}
+                        deduction={typeDef?.isDeduction}
+                      />
+                    );
+                  })}
+                  <SummaryRow label="Round Off" value={`${roundOff >= 0 ? "+" : ""}₹${fmt(roundOff)}`} />
+                </div>
+                <div className="px-5 py-4 bg-slate-700 dark:bg-slate-800 flex items-center justify-between">
+                  <span className="text-sm font-bold text-slate-200 uppercase tracking-wider">Net Payable</span>
+                  <span className="text-xl font-black text-white">
+                    ₹{netAmount.toLocaleString("en-IN", { minimumFractionDigits: 2 })}
+                  </span>
+                </div>
               </div>
-              <div className="mt-2 border border-gray-200 dark:border-gray-700 rounded-lg px-4 py-3 text-xs text-gray-500 dark:text-gray-400">
-                Amount in words:<br />
-                <span className="text-gray-800 dark:text-white font-semibold">
+
+              <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 px-5 py-4">
+                <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider mb-1.5">Amount in Words</p>
+                <p className="text-sm font-semibold text-gray-800 dark:text-white leading-snug">
                   {toWordsRupees(Math.round(netAmount))}
-                </span>
+                </p>
               </div>
             </div>
-
           </div>
-        </div>
 
-        {/* ── Footer ───────────────────────────────────────────────────── */}
-        <div className="sticky bottom-0 bg-gray-50 dark:bg-gray-800 px-6 py-4 border-t border-gray-200 dark:border-gray-700 flex justify-end gap-3 rounded-b-xl">
+          {/* bottom padding for footer overlap */}
+          <div className="h-2" />
+        </div>
+      </div>
+
+      {/* ══ Footer ═══════════════════════════════════════════════════════ */}
+      <div className="shrink-0 bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-800 px-6 py-3 flex items-center justify-between">
+        <p className="text-xs text-gray-400">
+          {grnRows[0].grn_no
+            ? <span className="text-green-600 font-medium">{grnRows.length} GRN row{grnRows.length > 1 ? "s" : ""} · {itemRows.length} line item{itemRows.length > 1 ? "s" : ""} linked</span>
+            : <span className="text-amber-500">No GRN linked yet</span>
+          }
+        </p>
+        <div className="flex items-center gap-3">
           <button
             type="button"
             onClick={onclose}
@@ -562,7 +705,7 @@ const CreateBill = ({ onclose, onSuccess }) => {
           <button
             onClick={handleSubmit(onSubmit)}
             disabled={isSaving}
-            className="px-6 py-2 text-sm font-medium text-white bg-slate-600 rounded-lg hover:bg-slate-700 shadow-md flex items-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed"
+            className="px-7 py-2 text-sm font-semibold text-white bg-slate-700 rounded-lg hover:bg-slate-800 shadow-sm flex items-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed transition-colors"
           >
             {isSaving
               ? <span className="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full" />
@@ -570,7 +713,6 @@ const CreateBill = ({ onclose, onSuccess }) => {
             {isSaving ? "Saving..." : "Save Bill"}
           </button>
         </div>
-
       </div>
 
       {/* ── GRN Picker Modal ─────────────────────────────────────────── */}
@@ -585,6 +727,14 @@ const CreateBill = ({ onclose, onSuccess }) => {
     </div>
   );
 };
+
+/* ── Summary row helper ─────────────────────────────────────────────────── */
+const SummaryRow = ({ label, value, deduction = false }) => (
+  <div className="flex items-center justify-between px-5 py-2.5">
+    <span className="text-xs text-gray-500 dark:text-gray-400">{label}</span>
+    <span className={`text-sm font-medium tabular-nums ${deduction ? "text-red-600 dark:text-red-400" : "text-gray-800 dark:text-white"}`}>{value}</span>
+  </div>
+);
 
 /* ── GRN Picker Modal ───────────────────────────────────────────────────── */
 const GRNPickerModal = ({ data = [], isLoading, onClose, onConfirm }) => {
@@ -620,22 +770,22 @@ const GRNPickerModal = ({ data = [], isLoading, onClose, onConfirm }) => {
   };
 
   return (
-    <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 font-layout-font">
-      <div className="bg-white dark:bg-gray-900 w-full max-w-5xl rounded-2xl shadow-2xl flex flex-col border border-gray-200 dark:border-gray-800" style={{ maxHeight: "82vh" }}>
+    <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/60 backdrop-blur-sm p-6 font-layout-font">
+      <div className="bg-white dark:bg-gray-900 w-full max-w-5xl rounded-2xl shadow-2xl flex flex-col border border-gray-200 dark:border-gray-800" style={{ maxHeight: "84vh" }}>
 
         {/* Header */}
-        <div className="px-6 py-4 border-b border-gray-100 dark:border-gray-800 flex justify-between items-center">
+        <div className="px-6 py-4 border-b border-gray-100 dark:border-gray-800 bg-slate-700 rounded-t-2xl flex justify-between items-center">
           <div>
-            <h3 className="text-base font-bold text-gray-800 dark:text-white">Select GRN Entries</h3>
-            <p className="text-xs text-gray-400 mt-0.5">Press Enter or click OK to fill GRN Linkage and Line Items</p>
+            <h3 className="text-sm font-bold text-white">Select GRN Entries</h3>
+            <p className="text-xs text-slate-400 mt-0.5">Check entries to link · Press Enter or click OK to populate bill</p>
           </div>
-          <button onClick={onClose} className="p-1.5 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-500 transition-all">
-            <IoClose size={20} />
+          <button onClick={onClose} className="w-7 h-7 flex items-center justify-center rounded-lg text-slate-400 hover:text-white hover:bg-white/10 transition-all">
+            <IoClose size={18} />
           </button>
         </div>
 
         {/* Filter */}
-        <div className="px-6 py-3 border-b border-gray-100 dark:border-gray-700">
+        <div className="px-5 py-3 border-b border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/40">
           <input
             autoFocus
             type="text"
@@ -650,61 +800,64 @@ const GRNPickerModal = ({ data = [], isLoading, onClose, onConfirm }) => {
         {/* Table */}
         <div className="flex-1 overflow-auto">
           {isLoading ? (
-            <div className="flex items-center justify-center py-12 gap-2 text-sm text-gray-400">
-              <span className="w-4 h-4 border-2 border-gray-300 border-t-blue-500 rounded-full animate-spin" />
+            <div className="flex items-center justify-center py-16 gap-2 text-sm text-gray-400">
+              <span className="w-5 h-5 border-2 border-gray-300 border-t-slate-600 rounded-full animate-spin" />
               Loading GRN entries...
             </div>
           ) : filtered.length === 0 ? (
-            <p className="text-sm text-gray-400 text-center py-10">No GRN entries found</p>
+            <div className="flex flex-col items-center justify-center py-16 text-gray-400 gap-2">
+              <FiLink className="text-3xl opacity-30" />
+              <p className="text-sm">No GRN entries found</p>
+            </div>
           ) : (
-            <table className="w-full text-xs">
+            <table className="w-full text-sm">
               <thead className="sticky top-0 z-10">
                 <tr className="bg-gray-50 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
-                  <th className="px-3 py-2.5 text-center w-8">
+                  <th className="px-4 py-3 text-center w-10">
                     <input
                       type="checkbox"
                       checked={allChecked}
                       ref={el => { if (el) el.indeterminate = someChecked && !allChecked; }}
                       onChange={toggleAll}
-                      className="accent-blue-600 cursor-pointer"
+                      className="accent-slate-600 cursor-pointer w-4 h-4"
                     />
                   </th>
-                  {["GRN Bill No", "Party Bill No", "Item", "Site", "Qty", "Rate", "PO Ref", "Date"].map(h => (
-                    <th key={h} className="px-3 py-2.5 text-left font-semibold text-gray-500 dark:text-gray-400 whitespace-nowrap">{h}</th>
+                  {["GRN Bill No", "Party Bill No", "Item", "Site", "Qty", "Rate (₹)", "PO Ref", "Date"].map(h => (
+                    <th key={h} className="px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 whitespace-nowrap uppercase tracking-wider">{h}</th>
                   ))}
                 </tr>
               </thead>
               <tbody>
-                {filtered.map(e => (
+                {filtered.map((e, i) => (
                   <tr
                     key={e._id}
                     onClick={() => toggleOne(e._id)}
                     className={`border-b border-gray-100 dark:border-gray-800 cursor-pointer transition-colors ${
                       selected.has(e._id)
-                        ? "bg-blue-50 dark:bg-blue-900/20"
-                        : "hover:bg-gray-50 dark:hover:bg-gray-800/40"
+                        ? "bg-slate-50 dark:bg-slate-900/30 ring-1 ring-inset ring-slate-200 dark:ring-slate-700"
+                        : i % 2 === 0 ? "hover:bg-gray-50 dark:hover:bg-gray-800/40" : "bg-gray-50/40 dark:bg-gray-800/10 hover:bg-gray-100/60 dark:hover:bg-gray-800/40"
                     }`}
                   >
-                    <td className="px-3 py-2 text-center" onClick={ev => ev.stopPropagation()}>
+                    <td className="px-4 py-2.5 text-center" onClick={ev => ev.stopPropagation()}>
                       <input
                         type="checkbox"
                         checked={selected.has(e._id)}
                         onChange={() => toggleOne(e._id)}
-                        className="accent-blue-600 cursor-pointer"
+                        className="accent-slate-600 cursor-pointer w-4 h-4"
                       />
                     </td>
-                    <td className="px-3 py-2 font-medium text-gray-700 dark:text-gray-200 whitespace-nowrap">{e.grn_bill_no}</td>
-                    <td className="px-3 py-2 text-gray-500 dark:text-gray-400 whitespace-nowrap">{e.party_bill_no}</td>
-                    <td className="px-3 py-2 text-gray-700 dark:text-gray-300">{e.item_description}</td>
-                    <td className="px-3 py-2 text-gray-500">{e.site_name}</td>
-                    <td className="px-3 py-2 text-right text-gray-700 dark:text-gray-300 font-medium">{e.quantity}</td>
-                    <td className="px-3 py-2 text-right text-gray-700 dark:text-gray-300">₹{e.quoted_rate}</td>
-                    <td className="px-3 py-2 whitespace-nowrap">
-                      <span className="inline-block px-2 py-0.5 rounded-full text-[10px] font-medium bg-blue-50 text-blue-600 dark:bg-blue-900/20">
-                        {e.purchase_request_ref}
+                    <td className="px-4 py-2.5 font-semibold text-gray-800 dark:text-gray-200 whitespace-nowrap">{e.grn_bill_no}</td>
+                    <td className="px-4 py-2.5 text-gray-500 dark:text-gray-400 whitespace-nowrap">{e.party_bill_no || "—"}</td>
+                    <td className="px-4 py-2.5 text-gray-700 dark:text-gray-300 max-w-[180px] truncate">{e.item_description}</td>
+                    <td className="px-4 py-2.5 text-gray-500">{e.site_name || "—"}</td>
+                    <td className="px-4 py-2.5 text-right font-medium text-gray-700 dark:text-gray-300">{e.quantity}</td>
+                    <td className="px-4 py-2.5 text-right text-gray-700 dark:text-gray-300">₹{e.quoted_rate}</td>
+                    <td className="px-4 py-2.5 whitespace-nowrap">
+                      <span className="inline-block px-2 py-0.5 rounded-full text-[10px] font-semibold bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300">
+                        {e.purchase_request_ref || "—"}
                       </span>
                     </td>
-                    <td className="px-3 py-2 text-gray-500 whitespace-nowrap">
+                    <td className="px-4 py-2.5 text-gray-500 whitespace-nowrap text-xs">
                       {e.date ? new Date(e.date).toLocaleDateString("en-IN") : "—"}
                     </td>
                   </tr>
@@ -718,24 +871,21 @@ const GRNPickerModal = ({ data = [], isLoading, onClose, onConfirm }) => {
         <div className="px-6 py-4 border-t border-gray-200 dark:border-gray-700 flex justify-between items-center rounded-b-2xl bg-gray-50 dark:bg-gray-800">
           <p className="text-xs text-gray-500 dark:text-gray-400">
             {selected.size > 0
-              ? <span className="font-semibold text-blue-600">{selected.size} entr{selected.size === 1 ? "y" : "ies"} selected</span>
-              : "Select GRN entries to populate the bill"}
+              ? <span className="font-semibold text-slate-700 dark:text-slate-300">{selected.size} entr{selected.size === 1 ? "y" : "ies"} selected</span>
+              : "Select one or more GRN entries to link"}
           </p>
           <div className="flex gap-3">
-            <button
-              type="button"
-              onClick={onClose}
-              className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
-            >
+            <button type="button" onClick={onClose} className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
               Cancel
             </button>
             <button
               type="button"
               onClick={handleOk}
               disabled={selected.size === 0}
-              className="px-6 py-2 text-sm font-medium text-white bg-slate-600 rounded-lg hover:bg-slate-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+              className="px-6 py-2 text-sm font-semibold text-white bg-slate-700 rounded-lg hover:bg-slate-800 disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-2 transition-colors shadow-sm"
             >
-              OK — Fill Bill
+              <FiLink size={14} />
+              Link {selected.size > 0 ? `${selected.size} ` : ""}GRN{selected.size !== 1 ? "s" : ""}
             </button>
           </div>
         </div>
@@ -748,11 +898,11 @@ const GRNPickerModal = ({ data = [], isLoading, onClose, onConfirm }) => {
 /* ── Field wrapper ──────────────────────────────────────────────────────── */
 const Field = ({ label, required, error, children }) => (
   <div className="w-full">
-    <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
+    <label className="block text-xs font-semibold text-gray-600 dark:text-gray-400 mb-1.5 tracking-wide">
       {label}{required && <span className="text-red-500 ml-0.5">*</span>}
     </label>
     {children}
-    {error && <p className="text-red-500 text-[10px] mt-0.5">{error.message}</p>}
+    {error && <p className="text-red-500 text-[10px] mt-1">{error.message}</p>}
   </div>
 );
 
