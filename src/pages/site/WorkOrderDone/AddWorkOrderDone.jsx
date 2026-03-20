@@ -81,7 +81,7 @@ const validate = (reportDate, sections) => {
 const AddWorkOrderDone = ({ onclose, onSuccess }) => {
   const { tenderId } = useProject();
   const [workOrders, setWorkOrders] = useState([]);
-  const [managers, setManagers] = useState([]);
+
   const [loading, setLoading] = useState(false);
   const [reportDate, setReportDate] = useState(
     new Date().toISOString().split("T")[0],
@@ -338,7 +338,6 @@ const AddWorkOrderDone = ({ onclose, onSuccess }) => {
                 section={section}
                 sectionIndex={idx}
                 workOrders={workOrders}
-                managers={managers}
                 tenderId={tenderId}
                 usedWorkOrderIds={usedWorkOrderIds.filter(
                   (id) => id !== section.workOrderId,

@@ -71,17 +71,24 @@ const GenerateBillModal = ({ onClose, onSuccess, existingBills = [] }) => {
 
   const [fromDate, setFromDate] = useState(weekAgo);
   const [toDate, setToDate] = useState(today);
-  const [selectedVendor, setSelectedVendor] = useState("");
+  const [selectedVendorId, setSelectedVendorId] = useState("");
   const [gstPct, setGstPct] = useState("18");
 
-  // All vendors for this site (independent of date range)
+  // All vendors permitted for this site/tender
   const { data: siteVendors = [], isLoading: vendorsLoading } = useSiteVendors(tenderId);
+
+  // Derive the full vendor object from the selected id
+  const selectedVendorObj = useMemo(
+    () => siteVendors.find((v) => v.vendor_id === selectedVendorId) || null,
+    [siteVendors, selectedVendorId],
+  );
+  const selectedVendorName = selectedVendorObj?.vendor_name || "";
 
   // ── Compute unbilled date gaps for the selected vendor ──────────────────────
   const unbilledSegments = useMemo(() => {
-    if (!selectedVendor || !fromDate || !toDate) return null;
-    return computeUnbilledSegments(fromDate, toDate, existingBills, selectedVendor);
-  }, [existingBills, selectedVendor, fromDate, toDate]);
+    if (!selectedVendorName || !fromDate || !toDate) return null;
+    return computeUnbilledSegments(fromDate, toDate, existingBills, selectedVendorName);
+  }, [existingBills, selectedVendorName, fromDate, toDate]);
 
   // The first (earliest) unbilled segment is what we'll fetch & bill
   const effectiveFrom = unbilledSegments?.[0]?.from ?? fromDate;
@@ -95,15 +102,15 @@ const GenerateBillModal = ({ onClose, onSuccess, existingBills = [] }) => {
 
   // Which existing bills caused the trim (for the notice UI)
   const overlappingBills = useMemo(() => {
-    if (!selectedVendor || !fromDate || !toDate) return [];
+    if (!selectedVendorName || !fromDate || !toDate) return [];
     return existingBills.filter(
       (b) =>
-        b.vendor_name === selectedVendor &&
+        b.vendor_name === selectedVendorName &&
         b.status !== "Cancelled" &&
         b.from_date.split("T")[0] <= toDate &&
         b.to_date.split("T")[0] >= fromDate,
     );
-  }, [existingBills, selectedVendor, fromDate, toDate]);
+  }, [existingBills, selectedVendorName, fromDate, toDate]);
 
   // Fetch vendor work summary for only the effective (unbilled) window
   const { data: vendorSummaryList = [], isLoading: workDoneLoading } = useVendorWorkSummary(
@@ -119,12 +126,18 @@ const GenerateBillModal = ({ onClose, onSuccess, existingBills = [] }) => {
 
   // Find this vendor's aggregated data from the summary response
   const vendorData = useMemo(() => {
-    if (!selectedVendor || fullyBilled) return null;
+    if (!selectedVendorName || fullyBilled) return null;
     const match = vendorSummaryList.find(
-      (v) => v.vendor_name?.trim() === selectedVendor.trim(),
+      (v) => v.vendor_name?.trim() === selectedVendorName.trim(),
     );
-    return match && (match.items?.length ?? 0) > 0 ? match : null;
-  }, [vendorSummaryList, selectedVendor, fullyBilled]);
+    return match && (match.sub_bills?.length ?? 0) > 0 ? match : null;
+  }, [vendorSummaryList, selectedVendorName, fullyBilled]);
+
+  // Flatten all line items across sub_bills for table display
+  const allItems = useMemo(
+    () => vendorData?.sub_bills?.flatMap((sb) => sb.items) ?? [],
+    [vendorData],
+  );
 
   const baseAmount = vendorData?.base_amount || 0;
   const gstRate    = Number(gstPct) || 0;
@@ -135,29 +148,19 @@ const GenerateBillModal = ({ onClose, onSuccess, existingBills = [] }) => {
   const sgstAmt    = gstAmt / 2;
   const grandTotal = baseAmount + gstAmt;
 
-  const isLoading      = vendorsLoading || workDoneLoading;
   const hasWorkInPeriod = !!vendorData && baseAmount > 0;
-  const canGenerate    = !!selectedVendor && !fullyBilled && hasWorkInPeriod && gstRate >= 0;
-
+  const canGenerate    = !!selectedVendorId && !fullyBilled && hasWorkInPeriod && gstRate >= 0;
 
   const handleGenerate = () => {
     if (!canGenerate) return;
     generateBill({
-      tender_id:       tenderId,
-      vendor_name:     selectedVendor,
-      from_date:       effectiveFrom,
-      to_date:         effectiveTo,
-      base_amount:     baseAmount,
-      gst_pct:         gstRate,
-      cgst_pct:        cgstPct,
-      sgst_pct:        sgstPct,
-      gst_amount:      gstAmt,
-      cgst_amount:     cgstAmt,
-      sgst_amount:     sgstAmt,
-      total_amount:    grandTotal,
-      work_order_ids:  vendorData?.work_order_ids || [],
-      work_done_ids:   vendorData?.work_done_ids  || [],
-      items:           vendorData?.items          || [],
+      tender_id:   tenderId,
+      vendor_id:   selectedVendorId,
+      vendor_name: selectedVendorName,
+      from_date:   effectiveFrom,
+      to_date:     effectiveTo,
+      gst_pct:     gstRate,
+      sub_bills:   vendorData?.sub_bills || [],
     });
   };
 
@@ -208,7 +211,7 @@ const GenerateBillModal = ({ onClose, onSuccess, existingBills = [] }) => {
                     type="date"
                     value={fromDate}
                     max={toDate}
-                    onChange={(e) => { setFromDate(e.target.value); setSelectedVendor(""); }}
+                    onChange={(e) => { setFromDate(e.target.value); setSelectedVendorId(""); }}
                     className="w-full pl-9 border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 text-sm bg-gray-50 dark:bg-gray-800 dark:text-white focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
                   />
                 </div>
@@ -225,7 +228,7 @@ const GenerateBillModal = ({ onClose, onSuccess, existingBills = [] }) => {
                     type="date"
                     value={toDate}
                     min={fromDate}
-                    onChange={(e) => { setToDate(e.target.value); setSelectedVendor(""); }}
+                    onChange={(e) => { setToDate(e.target.value); setSelectedVendorId(""); }}
                     className="w-full pl-9 border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 text-sm bg-gray-50 dark:bg-gray-800 dark:text-white focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
                   />
                 </div>
@@ -237,22 +240,19 @@ const GenerateBillModal = ({ onClose, onSuccess, existingBills = [] }) => {
                   Vendor <span className="text-red-500">*</span>
                 </label>
                 <select
-                  value={selectedVendor}
-                  onChange={(e) => setSelectedVendor(e.target.value)}
+                  value={selectedVendorId}
+                  onChange={(e) => setSelectedVendorId(e.target.value)}
                   disabled={vendorsLoading || siteVendors.length === 0}
                   className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 text-sm bg-white dark:bg-gray-800 dark:text-white focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 disabled:opacity-60 disabled:cursor-not-allowed"
                 >
                   <option value="">
                     {vendorsLoading ? "Loading vendors…" : siteVendors.length === 0 ? "No vendors for this site" : "Select vendor"}
                   </option>
-                  {siteVendors.map((v) => {
-                    const vendorName = typeof v === "string" ? v : v.vendor_name;
-                    return (
-                      <option key={vendorName} value={vendorName}>
-                        {vendorName}
-                      </option>
-                    );
-                  })}
+                  {siteVendors.map((v) => (
+                    <option key={v.vendor_id} value={v.vendor_id}>
+                      {v.vendor_name}
+                    </option>
+                  ))}
                 </select>
               </div>
             </div>
@@ -269,7 +269,7 @@ const GenerateBillModal = ({ onClose, onSuccess, existingBills = [] }) => {
                 <p className="text-xs text-red-600 dark:text-red-400 mt-0.5">
                   All dates from <strong>{fmtDate(fromDate)}</strong> to{" "}
                   <strong>{fmtDate(toDate)}</strong> are covered by existing bill(s) for{" "}
-                  <strong>{selectedVendor}</strong>. Cancel the existing bill(s) to re-generate.
+                  <strong>{selectedVendorName}</strong>. Cancel the existing bill(s) to re-generate.
                 </p>
               </div>
             </div>
@@ -304,11 +304,11 @@ const GenerateBillModal = ({ onClose, onSuccess, existingBills = [] }) => {
           )}
 
           {/* ── No work in the effective period ── */}
-          {selectedVendor && !workDoneLoading && !fullyBilled && !vendorData && (
+          {selectedVendorId && !workDoneLoading && !fullyBilled && !vendorData && (
             <div className="mx-7 mt-4 flex items-start gap-3 bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-xl px-4 py-3">
               <AlertTriangle size={16} className="text-gray-400 shrink-0 mt-0.5" />
               <p className="text-sm text-gray-500 dark:text-gray-400">
-                No work done by <strong>{selectedVendor}</strong> in{" "}
+                No work done by <strong>{selectedVendorName}</strong> in{" "}
                 {rangeAdjusted
                   ? <>the unbilled period <strong>{fmtDate(effectiveFrom)} – {fmtDate(effectiveTo)}</strong></>
                   : "the selected period"
@@ -348,7 +348,7 @@ const GenerateBillModal = ({ onClose, onSuccess, existingBills = [] }) => {
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-100 dark:divide-gray-700/50">
-                      {vendorData.items.map((item, i) => {
+                      {allItems.map((item, i) => {
                         const amount = (item.quantity || 0) * (item.quoted_rate || 0);
                         return (
                           <tr key={i} className="hover:bg-blue-50/30 dark:hover:bg-blue-900/10 transition-colors">
@@ -490,8 +490,8 @@ const GenerateBillModal = ({ onClose, onSuccess, existingBills = [] }) => {
             {vendorData ? (
               <span className="flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400 font-semibold">
                 <CheckCircle2 size={14} />
-                {vendorData.items.length} item{vendorData.items.length !== 1 ? "s" : ""} across{" "}
-                {(vendorData.work_order_ids || []).length} work order{(vendorData.work_order_ids || []).length !== 1 ? "s" : ""}
+                {allItems.length} item{allItems.length !== 1 ? "s" : ""} across{" "}
+                {(vendorData.sub_bills || []).length} work order{(vendorData.sub_bills || []).length !== 1 ? "s" : ""}
                 {rangeAdjusted && (
                   <span className="ml-1 text-blue-500 font-normal">
                     · {fmtDate(effectiveFrom)} – {fmtDate(effectiveTo)}

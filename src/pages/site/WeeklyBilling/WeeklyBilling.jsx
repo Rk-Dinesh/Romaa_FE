@@ -14,7 +14,7 @@ import {
   Hash,
 } from "lucide-react";
 import { TbPlus } from "react-icons/tb";
-import { useWeeklyBillingList } from "./hooks/useWeeklyBilling";
+import { useWeeklyBillingList, useWeeklyBillingDetail, useUpdateBillStatus } from "./hooks/useWeeklyBilling";
 import { useProject } from "../../../context/ProjectContext";
 import GenerateBillModal from "./GenerateBillModal";
 
@@ -219,7 +219,7 @@ const WeeklyBilling = () => {
                       </td>
                       <td className="px-4 py-3 text-center">
                         <span className="text-xs font-bold text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/20 px-2 py-0.5 rounded-full">
-                          {(bill.work_order_ids || []).length}
+                          {(bill.sub_bills || []).length}
                         </span>
                       </td>
                       <td className="px-4 py-3 tabular-nums text-right font-semibold text-gray-700 dark:text-gray-300">
@@ -276,6 +276,7 @@ const WeeklyBilling = () => {
       {selectedBill && (
         <BillDetailModal
           bill={selectedBill}
+          tenderId={tenderId}
           onClose={() => setSelectedBill(null)}
         />
       )}
@@ -283,10 +284,31 @@ const WeeklyBilling = () => {
   );
 };
 
+// Allowed status transitions per MD spec
+const NEXT_STATUSES = {
+  Generated: ["Pending", "Cancelled"],
+  Pending:   ["Paid", "Cancelled"],
+  Paid:      [],
+  Cancelled: [],
+};
+
+const STATUS_BTN = {
+  Pending:   "bg-amber-500 hover:bg-amber-600 text-white",
+  Paid:      "bg-blue-600 hover:bg-blue-700 text-white",
+  Cancelled: "bg-red-500 hover:bg-red-600 text-white",
+};
+
 // ── Bill Detail Modal ───────────────────────────────────────────────────────────
-const BillDetailModal = ({ bill, onClose }) => {
-  const items = bill.items || [];
-  const gstRate = bill.gst_pct || 0;
+const BillDetailModal = ({ bill, onClose, tenderId }) => {
+  const { data: detail, isLoading: detailLoading } = useWeeklyBillingDetail(bill.bill_no);
+  const { mutate: updateStatus, isPending: updatingStatus } = useUpdateBillStatus(tenderId);
+
+  // Use detail data when loaded, fall back to list item for amounts
+  const currentStatus = detail?.status ?? bill.status ?? "Generated";
+  const transactions  = detail?.transactions || [];
+  const subBills      = detail?.sub_bills   ?? bill.sub_bills ?? [];
+  const gstRate       = detail?.gst_pct     ?? bill.gst_pct ?? 0;
+  const nextStatuses  = NEXT_STATUSES[currentStatus] || [];
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4 font-roboto-flex">
@@ -306,8 +328,8 @@ const BillDetailModal = ({ bill, onClose }) => {
                 <code className="text-xs font-mono bg-gray-100 dark:bg-gray-800 px-2 py-0.5 rounded text-gray-600 dark:text-gray-300">
                   {bill.bill_no}
                 </code>
-                <span className={`text-[10px] font-bold uppercase tracking-wider border px-2.5 py-0.5 rounded-full ${STATUS_STYLE[bill.status] || STATUS_STYLE.Pending}`}>
-                  {bill.status || "Generated"}
+                <span className={`text-[10px] font-bold uppercase tracking-wider border px-2.5 py-0.5 rounded-full ${STATUS_STYLE[currentStatus] || STATUS_STYLE.Pending}`}>
+                  {currentStatus}
                 </span>
               </div>
               <p className="text-xs text-gray-400 mt-0.5 flex items-center gap-1.5">
@@ -342,18 +364,23 @@ const BillDetailModal = ({ bill, onClose }) => {
             <InfoChip
               icon={<Layers size={13} />}
               label="Work Orders"
-              value={`${(bill.work_order_ids || []).length} order${(bill.work_order_ids || []).length !== 1 ? "s" : ""}`}
+              value={`${subBills.length} order${subBills.length !== 1 ? "s" : ""}`}
             />
           </div>
 
-          {/* ── Items Table ── */}
+          {/* ── Transactions Table ── */}
           <div className="px-7 py-5">
             <p className="text-xs font-extrabold uppercase tracking-widest text-gray-400 mb-3">
               Line Items
             </p>
 
             <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden mb-5">
-              {items.length === 0 ? (
+              {detailLoading ? (
+                <div className="flex items-center justify-center py-12 gap-3 text-gray-400">
+                  <span className="animate-spin h-6 w-6 border-2 border-emerald-500 border-t-transparent rounded-full" />
+                  <span className="text-sm">Loading line items…</span>
+                </div>
+              ) : transactions.length === 0 ? (
                 <div className="py-12 text-center text-gray-400 text-sm">
                   No line items recorded for this bill.
                 </div>
@@ -362,7 +389,7 @@ const BillDetailModal = ({ bill, onClose }) => {
                   <table className="w-full text-sm">
                     <thead className="bg-gray-50 dark:bg-gray-800/60 border-b border-gray-200 dark:border-gray-700">
                       <tr>
-                        {["#", "Work Order", "Item Description", "Detailed Description", "Qty", "Unit", "Rate (₹)", "Amount (₹)"].map((h) => (
+                        {["#", "Sub-Bill", "Work Order", "Item Description", "Detailed Description", "Qty", "Unit", "Rate (₹)", "Amount (₹)"].map((h) => (
                           <th key={h} className="px-4 py-2.5 text-[10px] font-extrabold uppercase tracking-wider text-gray-500 dark:text-gray-400 text-left whitespace-nowrap">
                             {h}
                           </th>
@@ -370,45 +397,47 @@ const BillDetailModal = ({ bill, onClose }) => {
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-100 dark:divide-gray-700/50">
-                      {items.map((item, i) => {
-                        const amount = (item.quantity || 0) * (item.quoted_rate || 0);
-                        return (
-                          <tr key={i} className={i % 2 === 0 ? "bg-white dark:bg-gray-900" : "bg-gray-50/60 dark:bg-gray-800/30"}>
-                            <td className="px-4 py-3 text-xs text-gray-400">{i + 1}</td>
-                            <td className="px-4 py-3">
-                              <code className="text-xs bg-gray-100 dark:bg-gray-800 px-2 py-0.5 rounded font-mono text-gray-600 dark:text-gray-300">
-                                {item.work_order_id || "—"}
-                              </code>
-                            </td>
-                            <td className="px-4 py-3 font-medium text-gray-800 dark:text-gray-100">
-                              {item.item_description || "—"}
-                            </td>
-                            <td className="px-4 py-3 text-xs text-gray-500 dark:text-gray-400 max-w-[220px]">
-                              {item.description || <span className="text-gray-300 dark:text-gray-600">—</span>}
-                            </td>
-                            <td className="px-4 py-3 tabular-nums text-blue-600 dark:text-blue-400 font-semibold">
-                              {item.quantity ?? "—"}
-                            </td>
-                            <td className="px-4 py-3 text-gray-500 dark:text-gray-400 uppercase text-xs">
-                              {item.unit || "—"}
-                            </td>
-                            <td className="px-4 py-3 tabular-nums text-gray-700 dark:text-gray-300">
-                              ₹{fmt(item.quoted_rate)}
-                            </td>
-                            <td className="px-4 py-3 tabular-nums font-semibold text-emerald-600 dark:text-emerald-400">
-                              ₹{fmt(amount)}
-                            </td>
-                          </tr>
-                        );
-                      })}
+                      {transactions.map((item, i) => (
+                        <tr key={item._id || i} className={i % 2 === 0 ? "bg-white dark:bg-gray-900" : "bg-gray-50/60 dark:bg-gray-800/30"}>
+                          <td className="px-4 py-3 text-xs text-gray-400">{i + 1}</td>
+                          <td className="px-4 py-3">
+                            <code className="text-[10px] bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 dark:text-indigo-400 px-1.5 py-0.5 rounded font-mono">
+                              {item.sub_bill_no?.split("/").slice(-1)[0] || "—"}
+                            </code>
+                          </td>
+                          <td className="px-4 py-3">
+                            <code className="text-xs bg-gray-100 dark:bg-gray-800 px-2 py-0.5 rounded font-mono text-gray-600 dark:text-gray-300">
+                              {item.work_order_id || "—"}
+                            </code>
+                          </td>
+                          <td className="px-4 py-3 font-medium text-gray-800 dark:text-gray-100">
+                            {item.item_description || "—"}
+                          </td>
+                          <td className="px-4 py-3 text-xs text-gray-500 dark:text-gray-400 max-w-[180px]">
+                            {item.description || <span className="text-gray-300 dark:text-gray-600">—</span>}
+                          </td>
+                          <td className="px-4 py-3 tabular-nums text-blue-600 dark:text-blue-400 font-semibold">
+                            {item.quantity ?? "—"}
+                          </td>
+                          <td className="px-4 py-3 text-gray-500 dark:text-gray-400 uppercase text-xs">
+                            {item.unit || "—"}
+                          </td>
+                          <td className="px-4 py-3 tabular-nums text-gray-700 dark:text-gray-300">
+                            ₹{fmt(item.quoted_rate)}
+                          </td>
+                          <td className="px-4 py-3 tabular-nums font-semibold text-emerald-600 dark:text-emerald-400">
+                            ₹{fmt(item.amount)}
+                          </td>
+                        </tr>
+                      ))}
                     </tbody>
                     <tfoot className="border-t-2 border-gray-200 dark:border-gray-700">
                       <tr>
-                        <td colSpan={7} className="px-4 py-2.5 text-xs font-bold text-right text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                        <td colSpan={8} className="px-4 py-2.5 text-xs font-bold text-right text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                           Base Total
                         </td>
                         <td className="px-4 py-2.5 tabular-nums font-extrabold text-emerald-600 dark:text-emerald-400">
-                          ₹{fmt(bill.base_amount)}
+                          ₹{fmt(detail?.base_amount ?? bill.base_amount)}
                         </td>
                       </tr>
                     </tfoot>
@@ -425,7 +454,7 @@ const BillDetailModal = ({ bill, onClose }) => {
               <div className="flex items-center justify-between text-sm text-gray-600 dark:text-gray-400">
                 <span>Base Amount</span>
                 <span className="font-semibold tabular-nums text-gray-800 dark:text-gray-100">
-                  ₹{fmt(bill.base_amount)}
+                  ₹{fmt(detail?.base_amount ?? bill.base_amount)}
                 </span>
               </div>
 
@@ -434,25 +463,25 @@ const BillDetailModal = ({ bill, onClose }) => {
                   <div className="flex items-center justify-between text-sm text-gray-500 dark:text-gray-400 pl-2 border-l-2 border-indigo-200 dark:border-indigo-800">
                     <span className="flex items-center gap-1">
                       <Percent size={11} className="text-indigo-400" />
-                      CGST ({bill.cgst_pct ?? gstRate / 2}%)
+                      CGST ({(detail?.cgst_pct ?? bill.cgst_pct ?? gstRate / 2)}%)
                     </span>
                     <span className="font-medium tabular-nums text-indigo-500 dark:text-indigo-400">
-                      + ₹{fmt(bill.cgst_amount)}
+                      + ₹{fmt(detail?.cgst_amount ?? bill.cgst_amount)}
                     </span>
                   </div>
                   <div className="flex items-center justify-between text-sm text-gray-500 dark:text-gray-400 pl-2 border-l-2 border-indigo-200 dark:border-indigo-800">
                     <span className="flex items-center gap-1">
                       <Percent size={11} className="text-indigo-400" />
-                      SGST ({bill.sgst_pct ?? gstRate / 2}%)
+                      SGST ({(detail?.sgst_pct ?? bill.sgst_pct ?? gstRate / 2)}%)
                     </span>
                     <span className="font-medium tabular-nums text-indigo-500 dark:text-indigo-400">
-                      + ₹{fmt(bill.sgst_amount)}
+                      + ₹{fmt(detail?.sgst_amount ?? bill.sgst_amount)}
                     </span>
                   </div>
                   <div className="flex items-center justify-between text-sm text-gray-600 dark:text-gray-400">
                     <span>Total GST ({gstRate}%)</span>
                     <span className="font-semibold tabular-nums text-indigo-600 dark:text-indigo-400">
-                      + ₹{fmt(bill.gst_amount)}
+                      + ₹{fmt(detail?.gst_amount ?? bill.gst_amount)}
                     </span>
                   </div>
                 </>
@@ -469,7 +498,7 @@ const BillDetailModal = ({ bill, onClose }) => {
                   Grand Total
                 </span>
                 <span className="text-xl font-extrabold tabular-nums text-emerald-600 dark:text-emerald-400">
-                  ₹{fmt(bill.total_amount)}
+                  ₹{fmt(detail?.total_amount ?? bill.total_amount)}
                 </span>
               </div>
             </div>
@@ -479,15 +508,27 @@ const BillDetailModal = ({ bill, onClose }) => {
         {/* ── Footer ── */}
         <div className="px-7 py-3.5 bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-700 flex items-center justify-between shrink-0">
           <span className="text-xs text-gray-400">
-            {items.length} item{items.length !== 1 ? "s" : ""} ·{" "}
-            {(bill.work_order_ids || []).length} work order{(bill.work_order_ids || []).length !== 1 ? "s" : ""}
+            {transactions.length} item{transactions.length !== 1 ? "s" : ""} ·{" "}
+            {subBills.length} work order{subBills.length !== 1 ? "s" : ""}
           </span>
-          <button
-            onClick={onClose}
-            className="px-5 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 dark:bg-gray-800 dark:text-gray-200 dark:border-gray-600 dark:hover:bg-gray-700"
-          >
-            Close
-          </button>
+          <div className="flex items-center gap-2">
+            {nextStatuses.map((s) => (
+              <button
+                key={s}
+                onClick={() => updateStatus({ billId: bill._id, status: s })}
+                disabled={updatingStatus}
+                className={`px-4 py-2 text-xs font-semibold rounded-lg transition-colors disabled:opacity-50 ${STATUS_BTN[s]}`}
+              >
+                {updatingStatus ? "Updating…" : `Mark as ${s}`}
+              </button>
+            ))}
+            <button
+              onClick={onClose}
+              className="px-5 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 dark:bg-gray-800 dark:text-gray-200 dark:border-gray-600 dark:hover:bg-gray-700"
+            >
+              Close
+            </button>
+          </div>
         </div>
       </div>
     </div>

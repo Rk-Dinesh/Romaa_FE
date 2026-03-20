@@ -49,6 +49,39 @@ export const useVendorWorkSummary = (tenderId, fromDate, toDate) =>
     staleTime: 30 * 1000,
   });
 
+// ── Bill detail (with transactions) ───────────────────────────────────────────
+const fetchBillDetail = async (billNo) => {
+  const { data } = await api.get(
+    `/weeklybilling/api/detail/${encodeURIComponent(billNo)}`
+  );
+  return data?.data || null;
+};
+
+export const useWeeklyBillingDetail = (billNo) =>
+  useQuery({
+    queryKey: ["weekly-billing-detail", billNo],
+    queryFn: () => fetchBillDetail(billNo),
+    enabled: !!billNo,
+    staleTime: 30 * 1000,
+  });
+
+// ── Update bill status ─────────────────────────────────────────────────────────
+export const useUpdateBillStatus = (tenderId) => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ billId, status }) =>
+      api.patch(`/weeklybilling/api/status/${billId}`, { status }),
+    onSuccess: (_, vars) => {
+      toast.success(`Bill status updated to ${vars.status}`);
+      qc.invalidateQueries({ queryKey: ["weekly-billing-list", tenderId] });
+      qc.invalidateQueries({ queryKey: ["weekly-billing-detail"] });
+    },
+    onError: (err) => {
+      toast.error(err.response?.data?.message || "Failed to update status");
+    },
+  });
+};
+
 // ── Generate a bill ────────────────────────────────────────────────────────────
 export const useGenerateBill = ({ onSuccess, onClose }) => {
   const qc = useQueryClient();
@@ -61,7 +94,7 @@ export const useGenerateBill = ({ onSuccess, onClose }) => {
       if (onClose) onClose();
     },
     onError: (err) => {
-      toast.error(err.response?.data?.error || "Failed to generate bill");
+      toast.error(err.response?.data?.message || "Failed to generate bill");
     },
   });
 };
