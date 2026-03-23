@@ -678,7 +678,7 @@ const CreateBill = ({ onclose, onSuccess }) => {
                     {itemRows.map((row, i) => (
                       <tr key={i} className={`border-b border-gray-100 dark:border-gray-800 last:border-0 ${i % 2 === 0 ? "" : "bg-gray-50/50 dark:bg-gray-800/20"}`}>
                         <td className="px-4 py-2.5 text-center text-xs text-gray-400">{i + 1}</td>
-                        <td className="px-4 py-2.5 font-medium text-gray-800 dark:text-gray-200">{row.item_id || <span className="text-gray-300">—</span>}</td>
+                        <td className="px-4 py-2.5 font-medium text-gray-800 dark:text-gray-200">{row.item_description || <span className="text-gray-300">—</span>}</td>
                         <td className="px-4 py-2.5 text-gray-500 dark:text-gray-400">
                           {row.unit ? (
                             <span className="inline-block px-2 py-0.5 bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 rounded text-xs font-medium">{row.unit}</span>
@@ -963,8 +963,11 @@ const GRNPickerModal = ({ data = [], isLoading, onClose, onConfirm }) => {
 
   const toggleOne = (id) =>
     setSelected(prev => {
-      const next = new Set(prev);
-      next.has(id) ? next.delete(id) : next.add(id);
+      const entry   = data.find(e => e._id === id);
+      const sameGrn = data.filter(e => e.grn_bill_no === entry?.grn_bill_no).map(e => e._id);
+      const next    = new Set(prev);
+      if (next.has(id)) sameGrn.forEach(i => next.delete(i));
+      else              sameGrn.forEach(i => next.add(i));
       return next;
     });
 

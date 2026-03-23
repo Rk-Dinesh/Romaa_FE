@@ -2,6 +2,34 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "../../../../services/api";
 import { toast } from "react-toastify";
 
+/* ── All-tenders summary (finance overview table) ──────────────────────── */
+const fetchAllTendersSummary = async () => {
+  const { data } = await api.get("/purchasebill/summary-all");
+  return data?.data || [];
+};
+
+export const useAllTendersSummary = () =>
+  useQuery({
+    queryKey: ["purchase-bill-summary-all"],
+    queryFn:  fetchAllTendersSummary,
+    staleTime: 60 * 1000,
+  });
+
+/* ── Bills by tender ────────────────────────────────────────────────────── */
+const fetchBillsByTender = async ({ queryKey }) => {
+  const [, tenderId] = queryKey;
+  const { data } = await api.get(`/purchasebill/by-tender/${tenderId}`);
+  return data?.data || [];
+};
+
+export const useBillsByTender = (tenderId) =>
+  useQuery({
+    queryKey: ["bills-by-tender", tenderId],
+    queryFn:  fetchBillsByTender,
+    enabled:  !!tenderId,
+    staleTime: 30 * 1000,
+  });
+
 /* ── Fetch all tender IDs (for dropdown) ────────────────────────────────── */
 const fetchTenderIds = async () => {
   const { data } = await api.get("/tender/gettendersid");
