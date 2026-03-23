@@ -4,7 +4,7 @@ import { useForm } from "react-hook-form";
 import { yupResolver } from "@hookform/resolvers/yup";
 import * as yup from "yup";
 import { toast } from "react-toastify";
-import { useAllowedQuantities, useCreateWorkOrderRequest, usePermittedVendors } from "../../hooks/useProjects";
+import { useAllowedQuantities, useCreateWorkOrderRequest, usePermittedContractors } from "../../hooks/useProjects";
 
 /* ---------------- Validation Schema ---------------- */
 const workOrderSchema = yup.object().shape({
@@ -39,15 +39,16 @@ const CreateRequest = ({ onclose, onSuccess }) => {
   });
 
   // --- Fetch Data using TanStack Query ---
-  const { data: vendors = [] } = usePermittedVendors(tenderId);
+  const { data: contractors = [] } = usePermittedContractors(tenderId);
   const { data: availableItems = [] } = useAllowedQuantities(tenderId);
   const { mutateAsync: createRequest, isPending: loading } = useCreateWorkOrderRequest();
+
 
   // --- State ---
   const [materials, setMaterials] = useState([]);
 
-  // Vendor Selection State
-  const [selectedVendors, setSelectedVendors] = useState([{ vendorId: "", vendorName: "" }]);
+  // Contractor Selection State
+  const [selectedContractors, setSelectedContractors] = useState([{ contractorId: "", contractorName: "" }]);
 
   // Material Input State
   const [materialInput, setMaterialInput] = useState({
@@ -58,29 +59,29 @@ const CreateRequest = ({ onclose, onSuccess }) => {
     maxQuantity: 0 // To track limit
   });
 
-  /* ---------------- Vendor Handlers ---------------- */
-  const handleAddVendor = () => {
-    setSelectedVendors([...selectedVendors, { vendorId: "", vendorName: "" }]);
+  /* ---------------- Contractor Handlers ---------------- */
+  const handleAddContractor = () => {
+    setSelectedContractors([...selectedContractors, { contractorId: "", contractorName: "" }]);
   };
 
-  const handleRemoveVendor = (index) => {
-    if (selectedVendors.length === 1) return;
-    setSelectedVendors(selectedVendors.filter((_, i) => i !== index));
+  const handleRemoveContractor = (index) => {
+    if (selectedContractors.length === 1) return;
+    setSelectedContractors(selectedContractors.filter((_, i) => i !== index));
   };
 
-  const handleVendorChange = (index, field, value) => {
-    const updated = [...selectedVendors];
+  const handleContractorChange = (index, field, value) => {
+    const updated = [...selectedContractors];
     updated[index][field] = value;
 
-    if (field === "vendorId") {
-      const found = vendors.find(v => v.vendor_id === value);
-      if (found) updated[index].vendorName = found.vendor_name;
-    } else if (field === "vendorName") {
-      const found = vendors.find(v => v.vendor_name === value);
-      if (found) updated[index].vendorId = found.vendor_id;
+    if (field === "contractorId") {
+      const found = contractors.find(v => v.contractor_id === value);
+      if (found) updated[index].contractorName = found.contractor_name;
+    } else if (field === "contractorName") {
+      const found = contractors.find(v => v.contractor_name === value);
+      if (found) updated[index].contractorId = found.contractor_id;
     }
 
-    setSelectedVendors(updated);
+    setSelectedContractors(updated);
   };
 
   /* ---------------- Material Handlers (Enhanced) ---------------- */
@@ -148,9 +149,9 @@ const CreateRequest = ({ onclose, onSuccess }) => {
       return;
     }
 
-    const validVendors = selectedVendors.filter(v => v.vendorId && v.vendorName);
-    if (validVendors.length === 0) {
-      toast.warning("Please select at least one valid vendor.");
+    const validContractors = selectedContractors.filter(v => v.contractorId && v.contractorName);
+    if (validContractors.length === 0) {
+      toast.warning("Please select at least one valid contractor.");
       return;
     }
 
@@ -158,9 +159,9 @@ const CreateRequest = ({ onclose, onSuccess }) => {
       ...data,
       projectId: tenderId,
       materialsRequired: materials.map(({ ...rest }) => rest),
-      permittedVendor: validVendors.map(v => ({
-        vendorId: v.vendorId,
-        vendorName: v.vendorName
+      permittedContractor: validContractors.map(v => ({
+        contractorId: v.contractorId,
+        contractorName: v.contractorName
       })),
     };
 
@@ -275,19 +276,22 @@ const CreateRequest = ({ onclose, onSuccess }) => {
 
           <hr className="border-gray-200 dark:border-gray-800" />
 
-          {/* SECTION 3: VENDOR SELECTION */}
+          {/* SECTION 3: CONTRACTOR SELECTION */}
           <div>
             <div className="flex justify-between items-center mb-3">
               <h3 className="text-sm font-bold text-gray-800 dark:text-gray-200 flex items-center gap-2">
-                <span className="w-1 h-4 bg-green-500 rounded-full"></span> Select Vendors
+                <span className="w-1 h-4 bg-green-500 rounded-full"></span> Select Contractors
               </h3>
-              <button
-                type="button"
-                onClick={handleAddVendor}
-                className="text-xs font-medium text-blue-600 dark:text-blue-400 hover:underline flex items-center gap-1"
-              >
-                + Add Vendor
-              </button>
+              {selectedContractors[selectedContractors.length - 1]?.contractorId &&
+                selectedContractors.filter(r => r.contractorId).length < contractors.length && (
+                <button
+                  type="button"
+                  onClick={handleAddContractor}
+                  className="text-xs font-medium text-blue-600 dark:text-blue-400 hover:underline flex items-center gap-1"
+                >
+                  + Add Contractor
+                </button>
+              )}
             </div>
 
             <div className="overflow-x-auto rounded-lg border border-gray-200 dark:border-gray-700">
@@ -295,44 +299,52 @@ const CreateRequest = ({ onclose, onSuccess }) => {
                 <thead className="bg-gray-50 dark:bg-gray-800/50 text-gray-500 dark:text-gray-400 text-xs uppercase font-semibold">
                   <tr>
                     <th className="px-4 py-3 w-12 text-center">#</th>
-                    <th className="px-4 py-3">Vendor ID</th>
-                    <th className="px-4 py-3">Vendor Name</th>
+                    <th className="px-4 py-3">Contractor ID</th>
+                    <th className="px-4 py-3">Contractor Name</th>
                     <th className="px-4 py-3 w-20 text-center">Action</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-200 dark:divide-gray-800">
-                  {selectedVendors.map((row, i) => (
+                  {selectedContractors.map((row, i) => {
+                    const takenIds = selectedContractors
+                      .filter((_, idx) => idx !== i)
+                      .map((r) => r.contractorId)
+                      .filter(Boolean);
+                    const availableContractors = contractors.filter(
+                      (v) => !takenIds.includes(v.contractor_id)
+                    );
+                    return (
                     <tr key={i} className="bg-white dark:bg-gray-900 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
                       <td className="px-4 py-3 text-center text-gray-400">{i + 1}</td>
                       <td className="px-4 py-3">
                         <select
-                          value={row.vendorId}
-                          onChange={(e) => handleVendorChange(i, "vendorId", e.target.value)}
+                          value={row.contractorId}
+                          onChange={(e) => handleContractorChange(i, "contractorId", e.target.value)}
                           className="w-full bg-transparent border-b border-transparent hover:border-gray-300 dark:hover:border-gray-600 focus:border-blue-500 outline-none text-gray-800 dark:text-gray-200 py-1 transition-colors"
                         >
-                          <option value="" className="dark:bg-gray-800">Select ID</option>
-                          {vendors.map((v) => (
-                            <option key={v.vendor_id} value={v.vendor_id} className="dark:bg-gray-800">{v.vendor_id}</option>
+                          <option value="" className="dark:bg-gray-800">Select Contractor ID</option>
+                          {availableContractors.map((v) => (
+                            <option key={v.contractor_id} value={v.contractor_id} className="dark:bg-gray-800">{v.contractor_id}</option>
                           ))}
                         </select>
                       </td>
                       <td className="px-4 py-3">
                         <select
-                          value={row.vendorName}
-                          onChange={(e) => handleVendorChange(i, "vendorName", e.target.value)}
+                          value={row.contractorName}
+                          onChange={(e) => handleContractorChange(i, "contractorName", e.target.value)}
                           className="w-full bg-transparent border-b border-transparent hover:border-gray-300 dark:hover:border-gray-600 focus:border-blue-500 outline-none text-gray-800 dark:text-gray-200 py-1 transition-colors"
                         >
-                          <option value="" className="dark:bg-gray-800">Select Name</option>
-                          {vendors.map((v) => (
-                            <option key={v.vendor_id} value={v.vendor_name} className="dark:bg-gray-800">{v.vendor_name}</option>
+                          <option value="" className="dark:bg-gray-800">Select Contractor Name</option>
+                          {availableContractors.map((v) => (
+                            <option key={v.contractor_id} value={v.contractor_name} className="dark:bg-gray-800">{v.contractor_name}</option>
                           ))}
                         </select>
                       </td>
                       <td className="px-4 py-3 text-center">
-                        {selectedVendors.length > 1 && (
+                        {selectedContractors.length > 1 && (
                           <button
                             type="button"
-                            onClick={() => handleRemoveVendor(i)}
+                            onClick={() => handleRemoveContractor(i)}
                             className="text-gray-400 hover:text-red-500 transition-colors"
                           >
                             <IoClose size={18} />
@@ -340,7 +352,8 @@ const CreateRequest = ({ onclose, onSuccess }) => {
                         )}
                       </td>
                     </tr>
-                  ))}
+                  );
+                  })}
                 </tbody>
               </table>
             </div>

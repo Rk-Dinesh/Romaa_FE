@@ -60,7 +60,7 @@ const DetailRow = ({ label, value, highlight = false }) => (
 );
 
 // --- Confirmation Modal Component ---
-const ConfirmationModal = ({ isOpen, onClose, onConfirm, actionType, vendorName }) => {
+const ConfirmationModal = ({ isOpen, onClose, onConfirm, actionType, contractorName }) => {
   if (!isOpen) return null;
 
   const isApprove = actionType === "Approved";
@@ -77,7 +77,7 @@ const ConfirmationModal = ({ isOpen, onClose, onConfirm, actionType, vendorName 
             {isApprove ? "Accept Quotation?" : "Reject Quotation?"}
           </h3>
           <p className="text-sm text-gray-500 dark:text-gray-400 mb-6">
-            Are you sure you want to <span className={`font-bold ${isApprove ? "text-green-600" : "text-red-600"}`}>{isApprove ? "Accept" : "Reject"}</span> the quotation from <span className="font-semibold text-gray-800 dark:text-gray-200">"{vendorName}"</span>?
+            Are you sure you want to <span className={`font-bold ${isApprove ? "text-green-600" : "text-red-600"}`}>{isApprove ? "Accept" : "Reject"}</span> the quotation from <span className="font-semibold text-gray-800 dark:text-gray-200">"{contractorName}"</span>?
             {isApprove && <span className="block mt-2 text-xs bg-yellow-50 text-yellow-700 p-2 rounded border border-yellow-200">Note: Accepting this will automatically reject other pending quotations.</span>}
           </p>
 
@@ -122,7 +122,7 @@ const ViewWORequest = () => {
     isOpen: false,
     quotationId: null,
     actionType: null, // "Approved" or "Rejected"
-    vendorName: ""
+    contractorName: ""
   });
 
 
@@ -152,12 +152,12 @@ const ViewWORequest = () => {
   }, [requestIdParam, projectIdParam]);
 
   // 1. Triggered when user clicks a button in table
-  const openConfirmation = (quotationId, actionType, vendorName) => {
+  const openConfirmation = (quotationId, actionType, contractorName) => {
     setModalConfig({
       isOpen: true,
       quotationId,
       actionType,
-      vendorName
+      contractorName
     });
   };
 
@@ -168,8 +168,8 @@ const ViewWORequest = () => {
 
     try {
       const endpoint = actionType === "Approved"
-        ? `${API}/workorderrequest/api/workorder-requests/${requestIdParam}/approve-vendor`
-        : `${API}/workorderrequest/api/workorder-requests/${requestIdParam}/reject-vendor`;
+        ? `${API}/workorderrequest/api/workorder-requests/${requestIdParam}/approve-contractor`
+        : `${API}/workorderrequest/api/workorder-requests/${requestIdParam}/reject-contractor`;
 
       const res = await axios.put(endpoint, { quotationId });
 
@@ -182,7 +182,7 @@ const ViewWORequest = () => {
             return {
               ...prev,
               status: "Work Order Issued",
-              vendorQuotations: prev.vendorQuotations.map((q) => {
+              contractorQuotations: prev.contractorQuotations.map((q) => {
                 if (q.quotationId === quotationId) return { ...q, approvalStatus: "Approved" };
                 return { ...q, approvalStatus: "Rejected" };
               }),
@@ -191,7 +191,7 @@ const ViewWORequest = () => {
           // Rejected logic
           return {
             ...prev,
-            vendorQuotations: prev.vendorQuotations.map((q) =>
+            contractorQuotations: prev.contractorQuotations.map((q) =>
               q.quotationId === quotationId ? { ...q, approvalStatus: "Rejected" } : q
             ),
           };
@@ -235,9 +235,9 @@ const ViewWORequest = () => {
   }
 
   // Logic to Find L1
-  const quotations = data.vendorQuotations || [];
+  const quotations = data.contractorQuotations || [];
   const sortedQuotes = [...quotations].sort((a, b) => a.totalQuotedValue - b.totalQuotedValue);
-  const l1VendorId = sortedQuotes.length > 0 ? sortedQuotes[0].quotationId : null;
+  const l1ContractorId = sortedQuotes.length > 0 ? sortedQuotes[0].quotationId : null;
 
   return (
     <div className="h-full flex flex-col dark:bg-[#0b0f19] p-4 overflow-hidden font-roboto-flex">
@@ -298,16 +298,16 @@ const ViewWORequest = () => {
             <DetailRow label="PO Status" value={data.workOrder?.progressStatus} />
           </InfoCard>
 
-          <InfoCard title="Invited Vendors" icon={<User size={16} className="text-purple-500" />}>
-            {data.permittedVendor?.length > 0 ? (
+          <InfoCard title="Invited Contractors" icon={<User size={16} className="text-purple-500" />}>
+            {data.permittedContractor?.length > 0 ? (
               <div className="space-y-2 max-h-[150px] overflow-y-auto custom-scrollbar">
-                {data.permittedVendor.map((v) => {
-                  const hasResponded = quotations.some(q => q.vendorId === v.vendorId);
+                {data.permittedContractor.map((v) => {
+                  const hasResponded = quotations.some(q => q.contractorId === v.contractorId);
                   return (
                     <div key={v._id} className="flex justify-between items-center bg-gray-50 dark:bg-gray-800 p-2 rounded border border-gray-100 dark:border-gray-700">
                       <div className="flex flex-col">
-                        <span className="text-xs font-bold text-gray-700 dark:text-gray-200">{v.vendorName}</span>
-                        <span className="text-[10px] text-gray-400 font-mono">{v.vendorId}</span>
+                        <span className="text-xs font-bold text-gray-700 dark:text-gray-200">{v.contractorName}</span>
+                        <span className="text-[10px] text-gray-400 font-mono">{v.contractorId}</span>
                       </div>
                       {hasResponded ? (
                         <span className="flex items-center gap-1 text-[10px] text-green-600 bg-green-100 dark:bg-green-900/30 px-1.5 py-0.5 rounded font-medium">
@@ -323,7 +323,7 @@ const ViewWORequest = () => {
                 })}
               </div>
             ) : (
-              <p className="text-sm text-gray-400 italic text-center py-4">No specific vendors assigned.</p>
+              <p className="text-sm text-gray-400 italic text-center py-4">No specific contractors assigned.</p>
             )}
           </InfoCard>
         </div>
@@ -338,10 +338,10 @@ const ViewWORequest = () => {
               </h3>
               <p className="text-xs text-gray-500 mt-1">Comparing {quotations.length} received quotations.</p>
             </div>
-            {l1VendorId && (
+            {l1ContractorId && (
               <div className="flex items-center gap-2 text-xs bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300 px-3 py-2 rounded-lg border border-green-200 dark:border-green-800">
                 <Award size={14} />
-                L1 Vendor: <strong>{quotations.find(q => q.quotationId === l1VendorId)?.vendorName}</strong>
+                L1 Contractor: <strong>{quotations.find(q => q.quotationId === l1ContractorId)?.contractorName}</strong>
               </div>
             )}
           </div>
@@ -360,21 +360,21 @@ const ViewWORequest = () => {
                     <th className="px-6 py-4 min-w-[200px] border-r dark:border-gray-700 sticky left-0 bg-gray-100 dark:bg-gray-900 z-10 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)]">
                       Material Request
                     </th>
-                    {quotations.map((vendor) => (
-                      <th key={vendor._id} className={`px-6 py-4 min-w-[240px] text-center border-r dark:border-gray-700 relative align-top ${vendor.quotationId === l1VendorId ? "bg-green-50/50 dark:bg-green-900/10" : ""}`}>
-                        {vendor.quotationId === l1VendorId && (
+                    {quotations.map((contractor) => (
+                      <th key={contractor._id} className={`px-6 py-4 min-w-[240px] text-center border-r dark:border-gray-700 relative align-top ${contractor.quotationId === l1ContractorId ? "bg-green-50/50 dark:bg-green-900/10" : ""}`}>
+                        {contractor.quotationId === l1ContractorId && (
                           <div className="absolute top-0 left-0 w-full h-1 bg-green-500"></div>
                         )}
                         <div className="flex flex-col items-center gap-1">
-                          <span className="text-sm text-gray-800 dark:text-white font-bold">{vendor.vendorName}</span>
+                          <span className="text-sm text-gray-800 dark:text-white font-bold">{contractor.contractorName}</span>
                           <span className="text-[10px] font-normal text-gray-500 flex items-center gap-1">
-                            <Briefcase size={10} /> {vendor.quotationId}
+                            <Briefcase size={10} /> {contractor.quotationId}
                           </span>
                           <span className="text-[10px] font-normal text-gray-400">
-                            {new Date(vendor.quotationDate).toLocaleDateString("en-GB")}
+                            {new Date(contractor.quotationDate).toLocaleDateString("en-GB")}
                           </span>
                           <p className="text-blue-700 lowercase first-letter:uppercase"> Delivery Date:
-                            <span >{new Date(vendor.deliveryPeriod).toLocaleDateString("en-GB")}</span>
+                            <span >{new Date(contractor.deliveryPeriod).toLocaleDateString("en-GB")}</span>
                           </p>
                         </div>
                       </th>
@@ -392,10 +392,10 @@ const ViewWORequest = () => {
                           </span>
                         </div>
                       </td>
-                      {quotations.map((vendor) => {
-                        const quoteItem = vendor.quoteItems?.find(q => q.materialName === reqMat.materialName);
+                      {quotations.map((contractor) => {
+                        const quoteItem = contractor.quoteItems?.find(q => q.materialName === reqMat.materialName);
                         return (
-                          <td key={vendor._id} className={`px-6 py-4 text-center border-r dark:border-gray-700 ${vendor.quotationId === l1VendorId ? "bg-green-50/20 dark:bg-green-900/5" : ""}`}>
+                          <td key={contractor._id} className={`px-6 py-4 text-center border-r dark:border-gray-700 ${contractor.quotationId === l1ContractorId ? "bg-green-50/20 dark:bg-green-900/5" : ""}`}>
                             {quoteItem ? (
                               <div className="flex flex-col items-center gap-1">
                                 <span className="font-bold text-gray-800 dark:text-gray-200">
@@ -417,13 +417,13 @@ const ViewWORequest = () => {
                     <td className="px-6 py-4 text-right font-bold text-gray-600 dark:text-gray-300 uppercase text-xs sticky left-0 bg-gray-50 dark:bg-gray-800 z-10 border-r dark:border-gray-700 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)]">
                       Total Quoted Value
                     </td>
-                    {quotations.map((vendor) => (
-                      <td key={vendor._id} className={`px-6 py-4 text-center border-r dark:border-gray-700 ${vendor.quotationId === l1VendorId ? "bg-green-100/30 dark:bg-green-900/20" : ""}`}>
-                        <div className={`text-lg font-bold flex items-center justify-center gap-0.5 ${vendor.quotationId === l1VendorId ? "text-green-600 dark:text-green-400" : "text-gray-800 dark:text-white"}`}>
+                    {quotations.map((contractor) => (
+                      <td key={contractor._id} className={`px-6 py-4 text-center border-r dark:border-gray-700 ${contractor.quotationId === l1ContractorId ? "bg-green-100/30 dark:bg-green-900/20" : ""}`}>
+                        <div className={`text-lg font-bold flex items-center justify-center gap-0.5 ${contractor.quotationId === l1ContractorId ? "text-green-600 dark:text-green-400" : "text-gray-800 dark:text-white"}`}>
 
-                          ₹{vendor.totalQuotedValue?.toLocaleString()}
+                          ₹{contractor.totalQuotedValue?.toLocaleString()}
                         </div>
-                        {vendor.quotationId === l1VendorId && (
+                        {contractor.quotationId === l1ContractorId && (
                           <span className="text-[10px] uppercase font-bold text-green-600 tracking-wide block mt-1">Lowest Bid (L1)</span>
                         )}
                       </td>
@@ -433,25 +433,25 @@ const ViewWORequest = () => {
                     <td className="px-6 py-4 text-right font-bold text-gray-400 uppercase text-xs sticky left-0 bg-white dark:bg-layout-dark z-10 border-r dark:border-gray-700 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)]">
                       Decision
                     </td>
-                    {quotations.map((vendor) => (
-                      <td key={vendor._id} className={`px-6 py-4 text-center border-r dark:border-gray-700 ${vendor.quotationId === l1VendorId ? "bg-green-50/10 dark:bg-green-900/5" : ""}`}>
-                        {vendor.approvalStatus === "Pending" ? (
+                    {quotations.map((contractor) => (
+                      <td key={contractor._id} className={`px-6 py-4 text-center border-r dark:border-gray-700 ${contractor.quotationId === l1ContractorId ? "bg-green-50/10 dark:bg-green-900/5" : ""}`}>
+                        {contractor.approvalStatus === "Pending" ? (
                           <div className="flex justify-center gap-3">
                             <button
-                              onClick={() => openConfirmation(vendor.quotationId, "Approved", vendor.vendorName)}
+                              onClick={() => openConfirmation(contractor.quotationId, "Approved", contractor.contractorName)}
                               className="flex items-center gap-1 px-3 py-1.5 bg-green-600 text-white rounded text-xs font-semibold hover:bg-green-700 transition-colors shadow-sm"
                             >
                               <CheckCircle2 size={14} /> Accept
                             </button>
                             <button
-                              onClick={() => openConfirmation(vendor.quotationId, "Rejected", vendor.vendorName)}
+                              onClick={() => openConfirmation(contractor.quotationId, "Rejected", contractor.contractorName)}
                               className="flex items-center gap-1 px-3 py-1.5 border border-red-200 text-red-600 rounded text-xs font-semibold hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
                             >
                               <XCircle size={14} /> Reject
                             </button>
                           </div>
                         ) : (
-                          <StatusBadge status={vendor.approvalStatus} />
+                          <StatusBadge status={contractor.approvalStatus} />
                         )}
                       </td>
                     ))}
@@ -469,7 +469,7 @@ const ViewWORequest = () => {
         onClose={() => setModalConfig({ ...modalConfig, isOpen: false })}
         onConfirm={handleConfirmAction}
         actionType={modalConfig.actionType}
-        vendorName={modalConfig.vendorName}
+        contractorName={modalConfig.contractorName}
       />
     </div>
   );

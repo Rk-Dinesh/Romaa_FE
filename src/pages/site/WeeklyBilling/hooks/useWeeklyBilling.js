@@ -17,35 +17,51 @@ export const useWeeklyBillingList = (tenderId) =>
     staleTime: 60 * 1000,
   });
 
-// ── All vendors linked to this site/tender ─────────────────────────────────────
-const fetchSiteVendors = async (tenderId) => {
-  const { data } = await api.get(`/permittedvendor/getvendor/${tenderId}`);
-  return data?.data?.permitted_vendors || [];
+// ── All contractors linked to this site/tender ─────────────────────────────────────
+const fetchSiteContractors = async (tenderId) => {
+  const { data } = await api.get(`/contractor/getbytender/${tenderId}`);
+  return data?.data || [];
 };
 
-export const useSiteVendors = (tenderId) =>
+export const useSiteContractors = (tenderId) =>
   useQuery({
-    queryKey: ["billing-site-vendors", tenderId],
-    queryFn: () => fetchSiteVendors(tenderId),
+    queryKey: ["billing-site-contractors", tenderId],
+    queryFn: () => fetchSiteContractors(tenderId),
     enabled: !!tenderId,
     staleTime: 5 * 60 * 1000,
   });
 
-// ── Vendor work-done summary for a date range ──────────────────────────────────
-// Returns vendors with their aggregated work done items between fromDate..toDate
-const fetchVendorSummary = async (tenderId, fromDate, toDate) => {
+// ── Contractor work-done summary for a date range ──────────────────────────────────
+// Returns contractors with their aggregated work done items between fromDate..toDate
+const fetchContractorSummary = async (tenderId, fromDate, toDate) => {
   const { data } = await api.get(
-    `/weeklybilling/api/vendor-summary/${tenderId}`,
+    `/weeklybilling/api/contractor-summary/${tenderId}`,
     { params: { fromDate, toDate } }
   );
   return data?.data || [];
 };
 
-export const useVendorWorkSummary = (tenderId, fromDate, toDate) =>
+export const useContractorWorkSummary = (tenderId, fromDate, toDate) =>
   useQuery({
-    queryKey: ["billing-vendor-summary", tenderId, fromDate, toDate],
-    queryFn: () => fetchVendorSummary(tenderId, fromDate, toDate),
+    queryKey: ["billing-contractor-summary", tenderId, fromDate, toDate],
+    queryFn: () => fetchContractorSummary(tenderId, fromDate, toDate),
     enabled: !!tenderId && !!fromDate && !!toDate,
+    staleTime: 30 * 1000,
+  });
+
+// ── Sub-bill transactions ──────────────────────────────────────────────────────
+const fetchSubBillTransactions = async (subBillNo) => {
+  const { data } = await api.get(
+    `/weeklybilling/api/sub-bill/${encodeURIComponent(subBillNo)}`
+  );
+  return data?.data || null;
+};
+
+export const useSubBillTransactions = (subBillNo) =>
+  useQuery({
+    queryKey: ["weekly-sub-bill", subBillNo],
+    queryFn: () => fetchSubBillTransactions(subBillNo),
+    enabled: !!subBillNo,
     staleTime: 30 * 1000,
   });
 

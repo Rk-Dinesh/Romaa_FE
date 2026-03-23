@@ -33,7 +33,7 @@ const onlyNumbers = (e) => {
 const emptySection = () => ({
   sectionId: Date.now() + Math.random(),
   workOrderId: "",
-  vendorName: "",
+  contractorName: "",
   items: [],
 });
 
@@ -121,16 +121,16 @@ const AddWorkOrderDone = ({ onclose, onSuccess }) => {
     setSections((prev) =>
       prev.map((s) =>
         s.sectionId === sectionId
-          ? { ...s, workOrderId, vendorName: "", items: [] }
+          ? { ...s, workOrderId, contractorName: "", items: [] }
           : s,
       ),
     );
     clearSectionError(sectionId, "workOrderId");
   };
 
-  const updateVendorName = (sectionId, vendorName) =>
+  const updateContractorName = (sectionId, contractorName) =>
     setSections((prev) =>
-      prev.map((s) => (s.sectionId === sectionId ? { ...s, vendorName } : s)),
+      prev.map((s) => (s.sectionId === sectionId ? { ...s, contractorName } : s)),
     );
 
   const updateItems = (sectionId, items) =>
@@ -211,7 +211,7 @@ const AddWorkOrderDone = ({ onclose, onSuccess }) => {
       payloads.push({
         tender_id: tenderId,
         work_order_id: s.workOrderId,
-        vendor_name: s.vendorName,
+        contractor_name: s.contractorName,
         report_date: reportDate,
         dailyWorkDone: validItems,
         created_by: "Site Engineer",
@@ -347,8 +347,8 @@ const AddWorkOrderDone = ({ onclose, onSuccess }) => {
                 onChangeWorkOrder={(woId) =>
                   updateWorkOrder(section.sectionId, woId)
                 }
-                onVendorLoaded={(name) =>
-                  updateVendorName(section.sectionId, name)
+                onContractorLoaded={(name) =>
+                  updateContractorName(section.sectionId, name)
                 }
                 onItemsLoaded={(items) => updateItems(section.sectionId, items)}
                 onItemChange={(i, field, val) =>
@@ -414,7 +414,7 @@ const WorkOrderSection = ({
   canRemove,
   sectionErrors,
   onChangeWorkOrder,
-  onVendorLoaded,
+  onContractorLoaded,
 
   onItemsLoaded,
   onItemChange,
@@ -439,9 +439,9 @@ const WorkOrderSection = ({
           : res.data?.data;
 
         // Auto-fill vendor name
-        onVendorLoaded(details?.selectedVendor?.vendorName || "");
+        onContractorLoaded(details?.selectedContractor?.contractorName || "");
 
-        const quoteItems = details?.selectedVendor?.quoteItems || [];
+        const quoteItems = details?.selectedContractor?.quoteItems || [];
         const rateByName = Object.fromEntries(
           quoteItems.map((q) => [q.materialName, q.quotedUnitRate ?? 0]),
         );
@@ -452,7 +452,7 @@ const WorkOrderSection = ({
         );
       } catch {
         toast.error("Failed to load work order items");
-        onVendorLoaded("");
+        onContractorLoaded("");
         onItemsLoaded([]);
       } finally {
         setFetchLoading(false);
@@ -509,17 +509,17 @@ const WorkOrderSection = ({
               )}
             </div>
 
-            {/* Vendor Name auto-fill */}
+            {/* Contractor Name auto-fill */}
             <div>
               <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">
-                Vendor Name
+                Contractor Name
               </label>
               <input
                 readOnly
-                value={section.vendorName}
+                value={section.contractorName}
                 placeholder={
                   section.workOrderId
-                    ? "No vendor linked"
+                    ? "No contractor linked"
                     : "Auto-filled on WO select"
                 }
                 className="w-full border border-gray-200 dark:border-gray-600 rounded-lg px-3 py-2 text-sm bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 cursor-not-allowed"

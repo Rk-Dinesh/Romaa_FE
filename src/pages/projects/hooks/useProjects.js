@@ -1,7 +1,11 @@
-import { useQuery, keepPreviousData, useMutation, useQueryClient } from "@tanstack/react-query";
+import {
+  useQuery,
+  keepPreviousData,
+  useMutation,
+  useQueryClient,
+} from "@tanstack/react-query";
 import { api } from "../../../services/api";
 import { toast } from "react-toastify";
-
 
 // ==========================================
 // 1. Fetch ALL Projects (For Dropdowns, etc.)
@@ -47,7 +51,6 @@ export const useProjects = (queryParams) => {
   });
 };
 
-
 // BOQ Cost
 
 const fetchZeroCostItems = async ({ queryKey }) => {
@@ -66,7 +69,7 @@ const fetchZeroCostItems = async ({ queryKey }) => {
 export const useZeroCostItems = (tenderId, queryParams) => {
   return useQuery({
     // Include tenderId in the queryKey so it refetches automatically when the project changes
-    queryKey: ["zero-cost-items", tenderId, queryParams], 
+    queryKey: ["zero-cost-items", tenderId, queryParams],
     queryFn: fetchZeroCostItems,
     enabled: !!tenderId, // ONLY run the query if a tenderId is actually selected
     placeholderData: keepPreviousData, // Keeps table UI stable while loading the next page
@@ -75,7 +78,7 @@ export const useZeroCostItems = (tenderId, queryParams) => {
 };
 
 // Detailed Estimate
-    //Headings:
+//Headings:
 const fetchDetailedHeadings = async ({ queryKey }) => {
   const [_, tenderId] = queryKey;
 
@@ -94,7 +97,7 @@ export const useDetailedEstimateHeadings = (tenderId) => {
     staleTime: 5 * 60 * 1000, // Cache for 5 minutes
   });
 };
-    // General Abstract
+// General Abstract
 
 const fetchGeneralAbstract = async ({ queryKey }) => {
   const [_, tenderId] = queryKey;
@@ -113,15 +116,15 @@ export const useGeneralAbstract = (tenderId) => {
   });
 };
 
-    // Bill of Qty
+// Bill of Qty
 
 const fetchBOQData = async ({ queryKey }) => {
   const [_, tenderId] = queryKey;
-  
+
   const { data } = await api.get(`/detailedestimate/getbillofqty`, {
     params: { tender_id: tenderId },
   });
-  
+
   return data?.data || null;
 };
 
@@ -134,18 +137,18 @@ export const useBOQProject = (tenderId) => {
   });
 };
 
-// Abstract 
+// Abstract
 
 const fetchNewInletAbs = async ({ queryKey }) => {
   const [_, tenderId, name] = queryKey;
-  
+
   const { data } = await api.get(`/detailedestimate/getdatacustomhead`, {
-    params: { 
-      tender_id: tenderId, 
-      nametype: name 
+    params: {
+      tender_id: tenderId,
+      nametype: name,
     },
   });
-  
+
   return data?.data || [];
 };
 
@@ -160,17 +163,16 @@ export const useNewInletAbs = (tenderId, name) => {
 
 // detail
 
-
 const fetchNewInletDet = async ({ queryKey }) => {
   const [_, tenderId, name] = queryKey;
-  
+
   const { data } = await api.get(`/detailedestimate/getdatacustomhead`, {
-    params: { 
-      tender_id: tenderId, 
-      nametype: name 
+    params: {
+      tender_id: tenderId,
+      nametype: name,
     },
   });
-  
+
   return data?.data || [];
 };
 
@@ -185,12 +187,11 @@ export const useNewInletDet = (tenderId, name) => {
 
 // Drawing vs BOQ
 
-
 // --- 1. Query: Fetch Drawing BOQ ---
 const fetchDrawingBoq = async ({ queryKey }) => {
   const [_, tenderId] = queryKey;
   const { data } = await api.get(`/boq/get-drawing-quantity/${tenderId}`);
-  
+
   // Ensure numeric fields are numbers before returning
   return (data?.data || []).map((item) => ({
     ...item,
@@ -213,7 +214,10 @@ export const useDrawingBoq = (tenderId) => {
 
 // --- 2. Mutation: Save Drawing BOQ ---
 const updateDrawingBoq = async ({ tenderId, payload }) => {
-  const { data } = await api.put(`/boq/bulk-update-drawing-quantity/${tenderId}`, payload);
+  const { data } = await api.put(
+    `/boq/bulk-update-drawing-quantity/${tenderId}`,
+    payload,
+  );
   return data;
 };
 
@@ -236,14 +240,15 @@ export const useUpdateDrawingBoq = ({ onSuccess }) => {
 
 // Work Order Request => Create Enquiry
 
-// --- 1. Fetch Permitted Vendors ---
-export const usePermittedVendors = (tenderId) => {
+// --- 1. Fetch Permitted Contractors ---
+export const usePermittedContractors = (tenderId) => {
   return useQuery({
-    queryKey: ["permitted-vendors", tenderId],
+    queryKey: ["permitted-contractors", tenderId],
     queryFn: async () => {
-      const { data } = await api.get(`/permittedvendor/permitted-vendors/${tenderId}`);
+      const { data } = await api.get(`/contractor/getbytender/${tenderId}`);
       return data?.data || [];
     },
+
     enabled: !!tenderId,
     staleTime: 5 * 60 * 1000, // Cache for 5 mins
   });
@@ -254,7 +259,9 @@ export const useAllowedQuantities = (tenderId) => {
   return useQuery({
     queryKey: ["allowed-quantities", tenderId],
     queryFn: async () => {
-      const { data } = await api.get(`/raquantities/quantites/allowed/${tenderId}/contractor`);
+      const { data } = await api.get(
+        `/raquantities/quantites/allowed/${tenderId}/contractor`,
+      );
       return data?.data || [];
     },
     enabled: !!tenderId,
@@ -279,7 +286,7 @@ export const useWORequestDetails = (projectId, requestId) => {
     queryKey: ["wo-request", projectId, requestId],
     queryFn: async () => {
       const { data } = await api.get(
-        `/workorderrequest/api/getQuotationRequested/${projectId}/${requestId}`
+        `/workorderrequest/api/getQuotationRequested/${projectId}/${requestId}`,
       );
       // Ensure we always return the single object
       return Array.isArray(data?.data) ? data.data[0] : data?.data;
@@ -295,10 +302,11 @@ export const useRespondToQuotation = (projectId, requestId) => {
 
   return useMutation({
     mutationFn: async ({ quotationId, actionType }) => {
-      const endpoint = actionType === "Approved"
-        ? `/workorderrequest/api/workorder-requests/${requestId}/approve-vendor`
-        : `/workorderrequest/api/workorder-requests/${requestId}/reject-vendor`;
-        
+      const endpoint =
+        actionType === "Approved"
+          ? `/workorderrequest/api/workorder-requests/${requestId}/approve-contractor`
+          : `/workorderrequest/api/workorder-requests/${requestId}/reject-contractor`;
+
       const { data } = await api.put(endpoint, { quotationId });
       return data;
     },
@@ -316,11 +324,13 @@ export const useWORequests = (projectId) => {
   return useQuery({
     queryKey: ["wo-requests", projectId],
     queryFn: async () => {
-      const { data } = await api.get(`/workorderrequest/api/getbyIdNewRequest/${projectId}`);
+      const { data } = await api.get(
+        `/workorderrequest/api/getbyIdNewRequest/${projectId}`,
+      );
       return data?.data || [];
     },
     // The select function formats the data right after fetching, keeping your component clean
-    select: (data) => 
+    select: (data) =>
       data.map((item) => ({
         ...item, // Keep the rest of the original data just in case
         requestId: item.requestId,
@@ -349,7 +359,7 @@ export const useWorkOrderRequestDetails = (tenderId, requestId) => {
     queryKey: ["wo-request-details", tenderId, requestId],
     queryFn: async () => {
       const { data } = await api.get(
-        `/workorderrequest/api/getdetailbyId/${tenderId}/${requestId}`
+        `/workorderrequest/api/getdetailbyId/${tenderId}/${requestId}`,
       );
       return data?.data || {};
     },
@@ -363,8 +373,8 @@ export const useSubmitVendorQuotation = () => {
   return useMutation({
     mutationFn: async ({ workOrderRequestId, payload }) => {
       const { data } = await api.post(
-        `/workorderrequest/api/workorder-requests/${workOrderRequestId}/vendor-quotation`,
-        payload
+        `/workorderrequest/api/workorder-requests/${workOrderRequestId}/contractor-quotation`,
+        payload,
       );
       return data;
     },
@@ -378,7 +388,7 @@ export const useQuotationApprovedRequests = (projectId) => {
     queryKey: ["wo-approved-requests", projectId],
     queryFn: async () => {
       const { data } = await api.get(
-        `/workorderrequest/api/getbyIdQuotationApproved/${projectId}`
+        `/workorderrequest/api/getbyIdQuotationApproved/${projectId}`,
       );
       return data?.data || [];
     },
@@ -403,6 +413,3 @@ export const useQuotationApprovedRequests = (projectId) => {
     staleTime: 5 * 60 * 1000, // Cache for 5 minutes
   });
 };
-
-
-

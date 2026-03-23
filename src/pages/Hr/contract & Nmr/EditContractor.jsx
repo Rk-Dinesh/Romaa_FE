@@ -44,6 +44,10 @@ const schema = Yup.object().shape({
   account_holder_name: Yup.string(),
   upi_id: Yup.string(),
   payment_terms: Yup.string(),
+  place_of_supply: Yup.string().oneOf(["InState", "Others"]),
+  credit_day: Yup.number()
+    .transform((v, o) => (o === "" ? undefined : v))
+    .nullable(),
 });
 
 const businessTypes = ["Civil", "Electrical", "Plumbing", "Mechanical", "HVAC", "Fire Safety", "Painting", "Carpentry", "Other"];
@@ -100,6 +104,8 @@ const EditContractor = ({ onUpdated, onclose }) => {
       account_holder_name: contractor.account_details?.account_holder_name || "",
       upi_id: contractor.account_details?.upi_id || "",
       payment_terms: contractor.account_details?.payment_terms || "",
+      place_of_supply: contractor.place_of_supply || "",
+      credit_day: contractor.credit_day ?? "",
     },
   });
 
@@ -147,6 +153,8 @@ const EditContractor = ({ onUpdated, onclose }) => {
       license_number: data.license_number,
       gst_number: data.gst_number,
       pan_number: data.pan_number,
+      place_of_supply: data.place_of_supply,
+      credit_day: data.credit_day,
       contract_start_date: data.contract_start_date,
       contract_end_date: data.contract_end_date,
       status: data.status,
@@ -218,6 +226,8 @@ const EditContractor = ({ onUpdated, onclose }) => {
             <Input label="Contact Email *" type="email" name="contact_email" register={register} error={errors.contact_email} />
             <Select label="Business Type *" name="business_type" register={register} error={errors.business_type} options={businessTypes} />
             <Input label="License Number" name="license_number" register={register} error={errors.license_number} />
+            <Select label="Place of Supply" name="place_of_supply" register={register} error={errors.place_of_supply} options={["InState", "Others"]} />
+            <Input label="Credit Days" name="credit_day" register={register} error={errors.credit_day} placeholder="30" onKeyDown={(e) => { if (!/[0-9]/.test(e.key) && !["Backspace","Delete","Tab","ArrowLeft","ArrowRight"].includes(e.key)) e.preventDefault(); }} />
 
             {/* 2. Legal Documents */}
             <div className={sectionHeaderClass}>
@@ -480,7 +490,7 @@ const WageFixingTable = ({ rows, onAdd, onUpdate, onRemove }) => {
 };
 
 // --- Reusable Components ---
-const Input = ({ label, name, type = "text", register, error, placeholder }) => (
+const Input = ({ label, name, type = "text", register, error, placeholder, ...rest }) => (
   <div className="w-full">
     <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">{label}</label>
     <input
@@ -488,6 +498,7 @@ const Input = ({ label, name, type = "text", register, error, placeholder }) => 
       {...register(name)}
       placeholder={placeholder}
       className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 text-sm bg-gray-50 dark:bg-gray-800 dark:text-white focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all"
+      {...rest}
     />
     {error && <p className="text-red-500 text-[10px] mt-0.5">{error.message}</p>}
   </div>

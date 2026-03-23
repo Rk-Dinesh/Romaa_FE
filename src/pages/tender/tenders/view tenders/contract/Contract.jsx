@@ -1,30 +1,23 @@
-import { LuUserRoundSearch } from "react-icons/lu";
-import DeleteModal from "../../../../../components/DeleteModal";
 import Table from "../../../../../components/Table";
-import AddContractWorker from "./AddContract";
 import axios from "axios";
 import { API } from "../../../../../constant";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import { toast } from "react-toastify";
 
 const customerColumns = [
-  { label: "Contractor_id", key: "contractWorker_id" },
-  { label: "Company Name", key: "contractWorker_name" },
-  { label: "Contract Start", key: "contractStart_date" ,
-     render: (item) => item.contractStart_date ? new Date(item.contractStart_date).toLocaleDateString() : "-"
-  },
-  { label: "End Date", key: "contractEnd_date" ,
-     render: (item) => item.contractEnd_date ? new Date(item.contractEnd_date).toLocaleDateString() : "-"
-  },
-  { label: "Site", key: "contratctSite" },
-  { label: "Status", key: "contractStatus" },
+  { label: "Contractor_id", key: "contractor_id" },
+  { label: "Company Name", key: "contractor_name" },
+  { label: "Phone", key: "contact_phone" },
+  { label: "Email", key: "contact_email" },
+  { label: "Business Type", key: "business_type" },
+  { label: "Status", key: "status" },
 ];
 
 const Contract = () => {
   const { tender_id } = useParams(); 
   const [contracts, setContracts] = useState([]);
-  const [loading, setLoading] = useState(false);
+  const [_Loading, setLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(0);
@@ -34,10 +27,10 @@ const Contract = () => {
   });
 
   // Fetch contracts list
-  const fetchContracts = async () => {
+  const fetchContracts = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await axios.get(`${API}/permittedcontractor/permitted-contractor/${tender_id}`, {
+      const res = await axios.get(`${API}/contractor/getbytender/${tender_id}`, {
         params: {
           page: currentPage,
           limit: 10,
@@ -46,32 +39,24 @@ const Contract = () => {
           todate: filterParams.todate,
         },
       });
-
+console.log(res.data.data);
       setContracts(res.data.data);
       console.log(res.data.data);
       
       setTotalPages(res.data.totalPages);
     } catch (err) {
+      console.log(err);
       toast.error("Failed to fetch contracts");
     } finally {
       setLoading(false);
     }
-  };
+  }, [tender_id, currentPage, searchTerm, filterParams]);
 
   useEffect(() => {
     fetchContracts();
-  }, [currentPage, searchTerm, filterParams]);
+  }, [fetchContracts]);
 
-  // Handle delete contract
-  const handleDeleteContract = async (contract_id) => {
-    try {
-      await axios.delete(`${API}/permittedcontractor/remove/${tender_id}/${contract_id}`);
-      toast.success("Contract was successfully removed!");
-      fetchContracts();
-    } catch (error) {
-      toast.error("Failed to remove contract.");
-    }
-  };
+
 
   return (
     <>
@@ -80,20 +65,16 @@ const Contract = () => {
         endpoint={contracts}
         columns={customerColumns}
         ViewModal={true}
-        AddModal={AddContractWorker}
-        addButtonLabel="Add Contractor"
-        addButtonIcon={<LuUserRoundSearch size={24} />}
         exportModal={false}
-        DeleteModal={DeleteModal}
-        deletetitle="Contract"
         totalPages={totalPages}
         currentPage={currentPage}
         setCurrentPage={setCurrentPage}
         filterParams={filterParams}
         setFilterParams={setFilterParams}
+        searchTerm={searchTerm}
+        setSearchTerm={setSearchTerm}
         onUpdated={fetchContracts}
         onSuccess={fetchContracts}
-        onDelete={handleDeleteContract}
         idKey="contractWorker_id" 
       />
     </>

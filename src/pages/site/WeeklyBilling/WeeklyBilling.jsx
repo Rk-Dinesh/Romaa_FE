@@ -43,14 +43,14 @@ const WeeklyBilling = () => {
   const [showModal, setShowModal]       = useState(false);
   const [selectedBill, setSelectedBill] = useState(null);
   const [search, setSearch]             = useState("");
-  const [vendorFilter, setVendorFilter] = useState("");
+  const [contractorFilter, setContractorFilter] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
 
   const { data: bills = [], isLoading, isFetching, refetch } =
     useWeeklyBillingList(tenderId);
 
-  const vendors = useMemo(
-    () => [...new Set(bills.map((b) => b.vendor_name).filter(Boolean))],
+  const contractors = useMemo(
+    () => [...new Set(bills.map((b) => b.contractor_name).filter(Boolean))],
     [bills],
   );
 
@@ -60,12 +60,12 @@ const WeeklyBilling = () => {
       list = list.filter(
         (b) =>
           b.bill_no?.toLowerCase().includes(search.toLowerCase()) ||
-          b.vendor_name?.toLowerCase().includes(search.toLowerCase()),
+          b.contractor_name?.toLowerCase().includes(search.toLowerCase()),
       );
-    if (vendorFilter) list = list.filter((b) => b.vendor_name === vendorFilter);
+    if (contractorFilter) list = list.filter((b) => b.contractor_name === contractorFilter);
     if (statusFilter) list = list.filter((b) => b.status === statusFilter);
     return list;
-  }, [bills, search, vendorFilter, statusFilter]);
+  }, [bills, search, contractorFilter, statusFilter]);
 
   const totalBilled = useMemo(
     () => bills.filter((b) => b.status !== "Cancelled").reduce((s, b) => s + (b.total_amount || 0), 0),
@@ -110,7 +110,7 @@ const WeeklyBilling = () => {
         <div className="grid grid-cols-3 gap-4 mb-5">
           <SummaryCard icon={<Receipt size={20} />}    color="emerald" label="Total Bills"  value={bills.length}          sub="all time" />
           <SummaryCard icon={<TrendingUp size={20} />} color="blue"    label="Total Billed" value={`₹${fmt(totalBilled)}`} sub="excl. cancelled" />
-          <SummaryCard icon={<Building2 size={20} />}  color="violet"  label="Vendors"      value={vendors.length}         sub="with billing" />
+          <SummaryCard icon={<Building2 size={20} />}  color="violet"  label="Contractors"  value={contractors.length}         sub="with billing" />
         </div>
 
         {/* ── Filters ── */}
@@ -119,7 +119,7 @@ const WeeklyBilling = () => {
             <Search size={14} className="absolute left-3 top-2.5 text-gray-400" />
             <input
               type="text"
-              placeholder="Search bill no. or vendor…"
+              placeholder="Search bill no. or contractor…"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               className="w-full pl-9 border border-gray-200 dark:border-gray-700 rounded-lg px-3 py-2 text-sm bg-gray-50 dark:bg-gray-800 dark:text-white focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
@@ -127,12 +127,12 @@ const WeeklyBilling = () => {
           </div>
 
           <select
-            value={vendorFilter}
-            onChange={(e) => setVendorFilter(e.target.value)}
+            value={contractorFilter}
+            onChange={(e) => setContractorFilter(e.target.value)}
             className="border border-gray-200 dark:border-gray-700 rounded-lg px-3 py-2 text-sm bg-gray-50 dark:bg-gray-800 dark:text-white focus:outline-none focus:ring-1 focus:ring-blue-500"
           >
-            <option value="">All Vendors</option>
-            {vendors.map((v) => <option key={v} value={v}>{v}</option>)}
+            <option value="">All Contractors</option>
+            {contractors.map((v) => <option key={v} value={v}>{v}</option>)}
           </select>
 
           <select
@@ -182,7 +182,7 @@ const WeeklyBilling = () => {
               <table className="w-full text-sm">
                 <thead className="bg-gray-50 dark:bg-gray-800/60 border-b border-gray-200 dark:border-gray-700">
                   <tr>
-                    {["#", "Bill No.", "Vendor", "Period", "Work Orders", "Base Amount", "GST", "Total Amount", "Status", ""].map((h) => (
+                    {["#", "Bill No.", "Contractor", "Period", "Work Orders", "Base Amount", "GST", "Total Amount", "Status", ""].map((h) => (
                       <th
                         key={h}
                         className="px-4 py-3 text-[10px] font-extrabold uppercase tracking-wider text-gray-500 dark:text-gray-400 text-left whitespace-nowrap"
@@ -208,7 +208,7 @@ const WeeklyBilling = () => {
                       <td className="px-4 py-3">
                         <span className="flex items-center gap-1.5 font-semibold text-gray-800 dark:text-gray-100">
                           <Building2 size={13} className="text-gray-400 shrink-0" />
-                          {bill.vendor_name}
+                          {bill.contractor_name}
                         </span>
                       </td>
                       <td className="px-4 py-3 whitespace-nowrap">
@@ -334,7 +334,7 @@ const BillDetailModal = ({ bill, onClose, tenderId }) => {
               </div>
               <p className="text-xs text-gray-400 mt-0.5 flex items-center gap-1.5">
                 <Building2 size={11} />
-                {bill.vendor_name}
+                {bill.contractor_name}
                 <span className="text-gray-300 dark:text-gray-600 mx-1">·</span>
                 <CalendarDays size={11} />
                 {fmtDate(bill.from_date)} – {fmtDate(bill.to_date)}
@@ -355,7 +355,7 @@ const BillDetailModal = ({ bill, onClose, tenderId }) => {
           {/* ── Info strip ── */}
           <div className="px-7 py-4 bg-white dark:bg-gray-900 border-b border-gray-100 dark:border-gray-800 grid grid-cols-4 gap-4">
             <InfoChip icon={<Hash size={13} />} label="Bill No." value={bill.bill_no} />
-            <InfoChip icon={<Building2 size={13} />} label="Vendor" value={bill.vendor_name} />
+            <InfoChip icon={<Building2 size={13} />} label="Contractor" value={bill.contractor_name} />
             <InfoChip
               icon={<CalendarDays size={13} />}
               label="Period"

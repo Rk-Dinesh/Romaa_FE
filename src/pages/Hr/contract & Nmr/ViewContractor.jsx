@@ -73,6 +73,8 @@ const ViewContractor = () => {
                 </div>
                 <InfoBlock label="Total Employees" value={contractor.total_employees} />
                 <InfoBlock label="License Number" value={contractor.license_number} />
+                <InfoBlock label="Place of Supply" value={contractor.place_of_supply} />
+                <InfoBlock label="Credit Days" value={contractor.credit_day ?? "-"} />
               </div>
             </div>
 

@@ -10,7 +10,7 @@ import {
   TrendingUp,
   Info,
 } from "lucide-react";
-import { useSiteVendors, useGenerateBill, useVendorWorkSummary } from "./hooks/useWeeklyBilling";
+import { useSiteContractors, useGenerateBill, useContractorWorkSummary } from "./hooks/useWeeklyBilling";
 import { useProject } from "../../../context/ProjectContext";
 
 const fmt = (n) => Number(n || 0).toLocaleString("en-IN", { minimumFractionDigits: 2 });
@@ -31,13 +31,13 @@ const subtractDay = (dateStr) => {
   return d.toISOString().split("T")[0];
 };
 
-// Returns array of unbilled {from, to} segments within [fromDate, toDate] for a vendor.
+// Returns array of unbilled {from, to} segments within [fromDate, toDate] for a contractor.
 // Empty array = fully billed. Single element = one gap. Multiple = multiple gaps.
-const computeUnbilledSegments = (fromDate, toDate, existingBills, vendorName) => {
+const computeUnbilledSegments = (fromDate, toDate, existingBills, contractorName) => {
   const overlap = existingBills
     .filter(
       (b) =>
-        b.vendor_name === vendorName &&
+        b.contractor_name === contractorName &&
         b.status !== "Cancelled" &&
         b.from_date.split("T")[0] <= toDate &&
         b.to_date.split("T")[0] >= fromDate,
@@ -71,24 +71,24 @@ const GenerateBillModal = ({ onClose, onSuccess, existingBills = [] }) => {
 
   const [fromDate, setFromDate] = useState(weekAgo);
   const [toDate, setToDate] = useState(today);
-  const [selectedVendorId, setSelectedVendorId] = useState("");
+  const [selectedContractorId, setSelectedContractorId] = useState("");
   const [gstPct, setGstPct] = useState("18");
 
-  // All vendors permitted for this site/tender
-  const { data: siteVendors = [], isLoading: vendorsLoading } = useSiteVendors(tenderId);
+  // All contractors permitted for this site/tender
+  const { data: siteContractors = [], isLoading: contractorsLoading } = useSiteContractors(tenderId);
 
-  // Derive the full vendor object from the selected id
-  const selectedVendorObj = useMemo(
-    () => siteVendors.find((v) => v.vendor_id === selectedVendorId) || null,
-    [siteVendors, selectedVendorId],
+  // Derive the full contractor object from the selected id
+  const selectedContractorObj = useMemo(
+    () => siteContractors.find((v) => v.contractor_id === selectedContractorId) || null,
+    [siteContractors, selectedContractorId],
   );
-  const selectedVendorName = selectedVendorObj?.vendor_name || "";
+  const selectedContractorName = selectedContractorObj?.contractor_name || "";
 
-  // ── Compute unbilled date gaps for the selected vendor ──────────────────────
+  // ── Compute unbilled date gaps for the selected contractor ──────────────────────
   const unbilledSegments = useMemo(() => {
-    if (!selectedVendorName || !fromDate || !toDate) return null;
-    return computeUnbilledSegments(fromDate, toDate, existingBills, selectedVendorName);
-  }, [existingBills, selectedVendorName, fromDate, toDate]);
+    if (!selectedContractorName || !fromDate || !toDate) return null;
+    return computeUnbilledSegments(fromDate, toDate, existingBills, selectedContractorName);
+  }, [existingBills, selectedContractorName, fromDate, toDate]);
 
   // The first (earliest) unbilled segment is what we'll fetch & bill
   const effectiveFrom = unbilledSegments?.[0]?.from ?? fromDate;
@@ -102,18 +102,18 @@ const GenerateBillModal = ({ onClose, onSuccess, existingBills = [] }) => {
 
   // Which existing bills caused the trim (for the notice UI)
   const overlappingBills = useMemo(() => {
-    if (!selectedVendorName || !fromDate || !toDate) return [];
+    if (!selectedContractorName || !fromDate || !toDate) return [];
     return existingBills.filter(
       (b) =>
-        b.vendor_name === selectedVendorName &&
+        b.contractor_name === selectedContractorName &&
         b.status !== "Cancelled" &&
         b.from_date.split("T")[0] <= toDate &&
         b.to_date.split("T")[0] >= fromDate,
     );
-  }, [existingBills, selectedVendorName, fromDate, toDate]);
+  }, [existingBills, selectedContractorName, fromDate, toDate]);
 
-  // Fetch vendor work summary for only the effective (unbilled) window
-  const { data: vendorSummaryList = [], isLoading: workDoneLoading } = useVendorWorkSummary(
+  // Fetch contractor work summary for only the effective (unbilled) window
+  const { data: contractorSummaryList = [], isLoading: workDoneLoading } = useContractorWorkSummary(
     tenderId,
     effectiveFrom,
     effectiveTo,
@@ -124,22 +124,22 @@ const GenerateBillModal = ({ onClose, onSuccess, existingBills = [] }) => {
     onClose,
   });
 
-  // Find this vendor's aggregated data from the summary response
-  const vendorData = useMemo(() => {
-    if (!selectedVendorName || fullyBilled) return null;
-    const match = vendorSummaryList.find(
-      (v) => v.vendor_name?.trim() === selectedVendorName.trim(),
+  // Find this contractor's aggregated data from the summary response
+  const contractorData = useMemo(() => {
+    if (!selectedContractorName || fullyBilled) return null;
+    const match = contractorSummaryList.find(
+      (v) => v.contractor_name?.trim() === selectedContractorName.trim(),
     );
     return match && (match.sub_bills?.length ?? 0) > 0 ? match : null;
-  }, [vendorSummaryList, selectedVendorName, fullyBilled]);
+  }, [contractorSummaryList, selectedContractorName, fullyBilled]);
 
   // Flatten all line items across sub_bills for table display
   const allItems = useMemo(
-    () => vendorData?.sub_bills?.flatMap((sb) => sb.items) ?? [],
-    [vendorData],
+    () => contractorData?.sub_bills?.flatMap((sb) => sb.items) ?? [],
+    [contractorData],
   );
 
-  const baseAmount = vendorData?.base_amount || 0;
+  const baseAmount = contractorData?.base_amount || 0;
   const gstRate    = Number(gstPct) || 0;
   const gstAmt     = (baseAmount * gstRate) / 100;
   const cgstPct    = gstRate / 2;
@@ -148,19 +148,19 @@ const GenerateBillModal = ({ onClose, onSuccess, existingBills = [] }) => {
   const sgstAmt    = gstAmt / 2;
   const grandTotal = baseAmount + gstAmt;
 
-  const hasWorkInPeriod = !!vendorData && baseAmount > 0;
-  const canGenerate    = !!selectedVendorId && !fullyBilled && hasWorkInPeriod && gstRate >= 0;
+  const hasWorkInPeriod = !!contractorData && baseAmount > 0;
+  const canGenerate    = !!selectedContractorId && !fullyBilled && hasWorkInPeriod && gstRate >= 0;
 
   const handleGenerate = () => {
     if (!canGenerate) return;
     generateBill({
       tender_id:   tenderId,
-      vendor_id:   selectedVendorId,
-      vendor_name: selectedVendorName,
+      contractor_id:   selectedContractorId,
+      contractor_name: selectedContractorName,
       from_date:   effectiveFrom,
       to_date:     effectiveTo,
       gst_pct:     gstRate,
-      sub_bills:   vendorData?.sub_bills || [],
+      sub_bills:   contractorData?.sub_bills || [],
     });
   };
 
@@ -179,7 +179,7 @@ const GenerateBillModal = ({ onClose, onSuccess, existingBills = [] }) => {
                 Generate Weekly Bill
               </h2>
               <p className="text-xs text-gray-400 mt-0.5">
-                Select date range → vendor → enter GST → generate
+                Select date range → contractor → enter GST → generate
               </p>
             </div>
           </div>
@@ -194,10 +194,10 @@ const GenerateBillModal = ({ onClose, onSuccess, existingBills = [] }) => {
         {/* ── Body ── */}
         <div className="flex-1 overflow-y-auto bg-gray-50 dark:bg-gray-950">
 
-          {/* ── Step 1: Date Range + Vendor ── */}
+          {/* ── Step 1: Date Range + Contractor ── */}
           <div className="px-7 py-5 bg-white dark:bg-gray-900 border-b border-gray-100 dark:border-gray-800">
             <p className="text-xs font-extrabold uppercase tracking-widest text-gray-400 mb-4">
-              Step 1 — Select Period &amp; Vendor
+              Step 1 — Select Period &amp; Contractor
             </p>
             <div className="grid grid-cols-3 gap-4 items-end">
               {/* From */}
@@ -211,7 +211,7 @@ const GenerateBillModal = ({ onClose, onSuccess, existingBills = [] }) => {
                     type="date"
                     value={fromDate}
                     max={toDate}
-                    onChange={(e) => { setFromDate(e.target.value); setSelectedVendorId(""); }}
+                    onChange={(e) => { setFromDate(e.target.value); setSelectedContractorId(""); }}
                     className="w-full pl-9 border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 text-sm bg-gray-50 dark:bg-gray-800 dark:text-white focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
                   />
                 </div>
@@ -228,29 +228,29 @@ const GenerateBillModal = ({ onClose, onSuccess, existingBills = [] }) => {
                     type="date"
                     value={toDate}
                     min={fromDate}
-                    onChange={(e) => { setToDate(e.target.value); setSelectedVendorId(""); }}
+                    onChange={(e) => { setToDate(e.target.value); setSelectedContractorId(""); }}
                     className="w-full pl-9 border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 text-sm bg-gray-50 dark:bg-gray-800 dark:text-white focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
                   />
                 </div>
               </div>
 
-              {/* Vendor Select */}
+              {/* Contractor Select */}
               <div>
                 <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">
-                  Vendor <span className="text-red-500">*</span>
+                  Contractor <span className="text-red-500">*</span>
                 </label>
                 <select
-                  value={selectedVendorId}
-                  onChange={(e) => setSelectedVendorId(e.target.value)}
-                  disabled={vendorsLoading || siteVendors.length === 0}
+                  value={selectedContractorId}
+                  onChange={(e) => setSelectedContractorId(e.target.value)}
+                  disabled={contractorsLoading || siteContractors.length === 0}
                   className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 text-sm bg-white dark:bg-gray-800 dark:text-white focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 disabled:opacity-60 disabled:cursor-not-allowed"
                 >
                   <option value="">
-                    {vendorsLoading ? "Loading vendors…" : siteVendors.length === 0 ? "No vendors for this site" : "Select vendor"}
+                    {contractorsLoading ? "Loading contractors…" : siteContractors.length === 0 ? "No contractors for this site" : "Select contractor"}
                   </option>
-                  {siteVendors.map((v) => (
-                    <option key={v.vendor_id} value={v.vendor_id}>
-                      {v.vendor_name}
+                  {siteContractors.map((v) => (
+                    <option key={v.contractor_id} value={v.contractor_id}>
+                      {v.contractor_name}
                     </option>
                   ))}
                 </select>
@@ -269,7 +269,7 @@ const GenerateBillModal = ({ onClose, onSuccess, existingBills = [] }) => {
                 <p className="text-xs text-red-600 dark:text-red-400 mt-0.5">
                   All dates from <strong>{fmtDate(fromDate)}</strong> to{" "}
                   <strong>{fmtDate(toDate)}</strong> are covered by existing bill(s) for{" "}
-                  <strong>{selectedVendorName}</strong>. Cancel the existing bill(s) to re-generate.
+                  <strong>{selectedContractorName}</strong>. Cancel the existing bill(s) to re-generate.
                 </p>
               </div>
             </div>
@@ -304,11 +304,11 @@ const GenerateBillModal = ({ onClose, onSuccess, existingBills = [] }) => {
           )}
 
           {/* ── No work in the effective period ── */}
-          {selectedVendorId && !workDoneLoading && !fullyBilled && !vendorData && (
+          {selectedContractorId && !workDoneLoading && !fullyBilled && !contractorData && (
             <div className="mx-7 mt-4 flex items-start gap-3 bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-xl px-4 py-3">
               <AlertTriangle size={16} className="text-gray-400 shrink-0 mt-0.5" />
               <p className="text-sm text-gray-500 dark:text-gray-400">
-                No work done by <strong>{selectedVendorName}</strong> in{" "}
+                No work done by <strong>{selectedContractorName}</strong> in{" "}
                 {rangeAdjusted
                   ? <>the unbilled period <strong>{fmtDate(effectiveFrom)} – {fmtDate(effectiveTo)}</strong></>
                   : "the selected period"
@@ -318,7 +318,7 @@ const GenerateBillModal = ({ onClose, onSuccess, existingBills = [] }) => {
           )}
 
           {/* ── Step 2: Preview ── */}
-          {vendorData && (
+          {contractorData && (
             <div className="px-7 py-5">
               <p className="text-xs font-extrabold uppercase tracking-widest text-gray-400 mb-4">
                 Step 2 — Work Done Preview
@@ -329,7 +329,7 @@ const GenerateBillModal = ({ onClose, onSuccess, existingBills = [] }) => {
                 <div className="px-5 py-3 border-b border-gray-200 dark:border-gray-700 flex items-center gap-2 bg-blue-50/60 dark:bg-blue-900/10">
                   <Building2 size={15} className="text-blue-600 dark:text-blue-400" />
                   <span className="font-semibold text-sm text-gray-800 dark:text-white">
-                    {vendorData.vendor_name}
+                    {contractorData.contractor_name}
                   </span>
                   <span className="ml-auto text-xs text-gray-400">
                     {fmtDate(effectiveFrom)} — {fmtDate(effectiveTo)}
@@ -487,11 +487,11 @@ const GenerateBillModal = ({ onClose, onSuccess, existingBills = [] }) => {
         {/* ── Footer ── */}
         <div className="px-7 py-4 bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-700 flex items-center justify-between shrink-0">
           <div className="text-xs text-gray-400">
-            {vendorData ? (
+            {contractorData ? (
               <span className="flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400 font-semibold">
                 <CheckCircle2 size={14} />
                 {allItems.length} item{allItems.length !== 1 ? "s" : ""} across{" "}
-                {(vendorData.sub_bills || []).length} work order{(vendorData.sub_bills || []).length !== 1 ? "s" : ""}
+                {(contractorData.sub_bills || []).length} work order{(contractorData.sub_bills || []).length !== 1 ? "s" : ""}
                 {rangeAdjusted && (
                   <span className="ml-1 text-blue-500 font-normal">
                     · {fmtDate(effectiveFrom)} – {fmtDate(effectiveTo)}
@@ -499,7 +499,7 @@ const GenerateBillModal = ({ onClose, onSuccess, existingBills = [] }) => {
                 )}
               </span>
             ) : (
-              "Select a vendor to preview work done"
+              "Select a contractor to preview work done"
             )}
           </div>
           <div className="flex gap-3">

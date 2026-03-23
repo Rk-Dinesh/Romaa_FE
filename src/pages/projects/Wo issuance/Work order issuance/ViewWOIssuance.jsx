@@ -16,7 +16,7 @@ const fmtDate = (v) =>
   v ? new Date(v).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" }) : "—";
 
 const STATUS_STYLES = {
-  "Vendor Approved":  "bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-900/20 dark:text-emerald-400 dark:border-emerald-800",
+  "Contractor Approved":  "bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-900/20 dark:text-emerald-400 dark:border-emerald-800",
   "Work Order Issued":"bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-900/20 dark:text-blue-400 dark:border-blue-800",
   "In Progress":      "bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-900/20 dark:text-amber-400 dark:border-amber-800",
   "Completed":        "bg-purple-50 text-purple-700 border-purple-200 dark:bg-purple-900/20 dark:text-purple-400 dark:border-purple-800",
@@ -101,9 +101,9 @@ const ViewWOIssuance = () => {
       </div>
     );
 
-  const vendor     = data.selectedVendor || {};
-  const items      = vendor.quoteItems   || [];
-  const gross      = vendor.totalQuotedValue || items.reduce((s, i) => s + (i.totalAmount || 0), 0);
+  const contractor     = data.selectedContractor || {};
+  const items      = contractor.quoteItems   || [];
+  const gross      = contractor.totalQuotedValue || items.reduce((s, i) => s + (i.totalAmount || 0), 0);
   const cgst       = gross * 0.09;
   const sgst       = gross * 0.09;
   const total      = gross + cgst + sgst;
@@ -194,7 +194,7 @@ const ViewWOIssuance = () => {
             <SectionCard title="Project Info" icon={<FileText size={15} className="text-blue-500" />} accent="blue">
               <Field label="Project ID"   value={data.projectId} mono />
               <Field label="Title"        value={data.title} />
-              <Field label="Delivery By"  value={vendor?.deliveryPeriod ? fmtDate(vendor.deliveryPeriod) : null} />
+              <Field label="Delivery By"  value={contractor?.deliveryPeriod ? fmtDate(contractor.deliveryPeriod) : null} />
               {data.description && (
                 <div className="pt-1">
                   <p className="text-[10px] text-gray-400 uppercase font-bold tracking-wider mb-1">Description</p>
@@ -210,15 +210,15 @@ const ViewWOIssuance = () => {
               <Field label="Progress"   value={data.workOrder?.progressStatus} />
             </SectionCard>
 
-            <SectionCard title="Vendor" icon={<User size={15} className="text-purple-500" />} accent="purple">
-              <Field label="Name"       value={vendor?.vendorName} highlight />
-              <Field label="Vendor ID"  value={vendor?.vendorId} mono />
-              <Field label="Contact"    value={vendor?.contact} />
-              <Field label="Quotation"  value={vendor?.quotationId} mono />
-              {vendor?.address && (
+            <SectionCard title="Contractor" icon={<User size={15} className="text-purple-500" />} accent="purple">
+              <Field label="Name"       value={contractor?.contractorName} highlight />
+              <Field label="Contractor ID"  value={contractor?.contractorId} mono />
+              <Field label="Contact"    value={contractor?.contact} />
+              <Field label="Quotation"  value={contractor?.quotationId} mono />
+              {contractor?.address && (
                 <div className="pt-1">
                   <p className="text-[10px] text-gray-400 uppercase font-bold tracking-wider mb-1">Address</p>
-                  <p className="text-xs text-gray-500 dark:text-gray-400 leading-relaxed">{vendor.address}</p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 leading-relaxed">{contractor.address}</p>
                 </div>
               )}
             </SectionCard>
@@ -236,9 +236,9 @@ const ViewWOIssuance = () => {
                   </span>
                 )}
               </div>
-              {vendor?.quotationId && (
+              {contractor?.quotationId && (
                 <span className="text-[11px] text-gray-500 dark:text-gray-400">
-                  Ref: <span className="font-mono font-bold text-gray-700 dark:text-gray-300">{vendor.quotationId}</span>
+                  Ref: <span className="font-mono font-bold text-gray-700 dark:text-gray-300">{contractor.quotationId}</span>
                 </span>
               )}
             </div>
@@ -307,7 +307,7 @@ const ViewWOIssuance = () => {
 
       {/* ── PRINT / INVOICE ─────────────────────────────────────────────────── */}
       {(() => {
-        const pGross  = vendor?.totalQuotedValue || items.reduce((s, i) => s + (i.totalAmount || 0), 0) || 0;
+        const pGross  = contractor?.totalQuotedValue || items.reduce((s, i) => s + (i.totalAmount || 0), 0) || 0;
         const pCgst   = pGross * 0.09;
         const pSgst   = pGross * 0.09;
         const pTotal  = pGross + pCgst + pSgst;
@@ -349,11 +349,11 @@ const ViewWOIssuance = () => {
                 </div>
                 <div style={{ paddingLeft: "16px" }}>
                   <p style={{ fontSize: "8px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.12em", color: "#2B3A6B", marginBottom: "5px" }}>To</p>
-                  <p style={{ fontWeight: 800, fontSize: "13px", color: "#111827", lineHeight: 1.3 }}>{vendor?.vendorName || "—"}</p>
+                  <p style={{ fontWeight: 800, fontSize: "13px", color: "#111827", lineHeight: 1.3 }}>{contractor?.contractorName || "—"}</p>
                   <div style={{ fontSize: "10px", color: "#6b7280", lineHeight: 1.6, marginTop: "3px" }}>
-                    {vendor?.address && <p style={{ whiteSpace: "pre-line" }}>{vendor.address}</p>}
-                    {vendor?.contact && <p>Ph: {vendor.contact}</p>}
-                    {vendor?.gstin   && <p>GSTIN: {vendor.gstin}</p>}
+                    {contractor?.address && <p style={{ whiteSpace: "pre-line" }}>{contractor.address}</p>}
+                    {contractor?.contact && <p>Ph: {contractor.contact}</p>}
+                    {contractor?.gstin   && <p>GSTIN: {contractor.gstin}</p>}
                   </div>
                 </div>
               </div>
@@ -363,8 +363,8 @@ const ViewWOIssuance = () => {
                 {data.siteDetails?.location && (
                   <span>Site &nbsp;<strong style={{ color: "#1f2937" }}>{data.siteDetails.location}</strong></span>
                 )}
-                <span>Ref No. &nbsp;<strong style={{ color: "#1f2937" }}>{vendor?.quotationId || "—"}</strong></span>
-                <span>Ref Date &nbsp;<strong style={{ color: "#1f2937" }}>{pDate(vendor?.deliveryPeriod)}</strong></span>
+                <span>Ref No. &nbsp;<strong style={{ color: "#1f2937" }}>{contractor?.quotationId || "—"}</strong></span>
+                <span>Ref Date &nbsp;<strong style={{ color: "#1f2937" }}>{pDate(contractor?.deliveryPeriod)}</strong></span>
               </div>
             </div>
 
