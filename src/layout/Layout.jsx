@@ -1,132 +1,162 @@
-import React, { Suspense } from "react";
+import React, { Suspense, useState } from "react";
 import Headers from "./Headers";
-import { NavLink, Outlet, useLocation } from "react-router-dom";
+import { NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { Menus } from "../helperConfigData/helperData";
 import Loader from "../components/Loader";
+import { PanelLeftClose, PanelLeftOpen } from "lucide-react";
 
 const LayOut = () => {
   const location = useLocation();
-  const { user } = useAuth(); // 1. Get Logged-in User Data
-  // --- 2. Permission Checker Function ---
-  const checkAccess = (module, subModule) => {
-    // Safety check: if no user or permissions, hide everything
-    if (!user || !user.role || !user.role.permissions) return false;
+  const navigate = useNavigate();
+  const { user } = useAuth();
+  const [subSidebarOpen, setSubSidebarOpen] = useState(true);
+  const [ripple, setRipple] = useState(null);
 
-    // Get permissions for the specific module (e.g., 'tender')
+  // --- Permission Checker ---
+  const checkAccess = (module, subModule) => {
+    if (!user || !user.role || !user.role.permissions) return false;
     const modulePerms = user.role.permissions[module];
     if (!modulePerms) return false;
-
-    // Case A: SubModule (e.g., 'clients')
-    if (subModule) {
-      // Check if the submodule exists and 'read' is true
-      return modulePerms[subModule] && modulePerms[subModule].read === true;
-    }
-
-    // Case B: Simple Module (e.g., 'dashboard')
-    // Check if 'read' is true directly on the module
+    if (subModule) return modulePerms[subModule] && modulePerms[subModule].read === true;
     return modulePerms.read === true;
   };
 
-  // --- 3. Filter Parent Menus ---
-  // Only show a Parent Icon if:
-  // A. It's a simple menu (Dashboard) AND user has access.
-  // B. It has nested items AND user has access to AT LEAST ONE child.
+  // --- Filter Parent Menus ---
   const visibleMenus = Menus.filter((menu) => {
-    if (!menu.nested) {
-      return checkAccess(menu.module, null);
-    }
-    // Check if ANY child is visible
+    if (!menu.nested) return checkAccess(menu.module, null);
     return menu.nested.some((child) => checkAccess(menu.module, child.subModule));
   });
 
-  // --- Helper: Active State Logic ---
+  // --- Active State Logic ---
   const isMenuActive = (menu) => {
-    if (location.pathname.startsWith(menu.to)) {
-      return true;
-    }
-    if (
-      menu.nested &&
-      menu.nested.some((item) => location.pathname.startsWith(item.to))
-    ) {
-      return true;
-    }
+    if (location.pathname.startsWith(menu.to)) return true;
+    if (menu.nested && menu.nested.some((item) => location.pathname.startsWith(item.to))) return true;
     return false;
   };
 
-  // --- Helper: Sidebar Visibility Logic (UX) ---
+  // --- Sub Sidebar URL Visibility Logic ---
   const isNestedSidebarVisible = (menuTitle, pathname) => {
-    // Keep your existing specific logic for Projects/Site
-    if (menuTitle === "Projects") {
-      return pathname.startsWith("/projects/") && pathname !== "/projects";
-    }
-    if (menuTitle === "Site") {
-      return pathname.startsWith("/site/") && pathname !== "/site";
-    }
+    if (menuTitle === "Projects") return pathname.startsWith("/projects/") && pathname !== "/projects";
+    if (menuTitle === "Site") return pathname.startsWith("/site/") && pathname !== "/site";
     return pathname.startsWith(`/${menuTitle.toLowerCase()}`);
+  };
+
+  // --- Active menu that should show sub sidebar ---
+  const activeNestedMenu = visibleMenus.find(
+    (menu) =>
+      menu.nested &&
+      isNestedSidebarVisible(menu.title, location.pathname) &&
+      isMenuActive(menu)
+  );
+
+  // --- Click main sidebar: ripple + navigate + auto-open sub sidebar ---
+  const handleMenuClick = (e, menu, index) => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    setRipple({ x, y, index });
+    setTimeout(() => setRipple(null), 500);
+    if (menu.nested) setSubSidebarOpen(true);
+    navigate(menu.to);
   };
 
   return (
     <div className="font-roboto-flex w-full fixed h-screen">
       <Headers />
       <div className="flex dark:bg-overall_bg-dark bg-light-blue dark:text-white h-11/12">
-        
-        {/* --- MAIN SIDEBAR (Filtered by Permissions) --- */}
-        <div className="px-6 dark:bg-overall_bg-dark bg-light-blue overflow-auto no-scrollbar">
+
+        {/* --- MAIN SIDEBAR --- */}
+        <div className="flex-shrink-0 flex flex-col dark:bg-overall_bg-dark bg-light-blue overflow-y-auto overflow-x-hidden no-scrollbar px-6">
+
+          {/* Panel button */}
+          <button
+            onClick={() => setSubSidebarOpen((prev) => !prev)}
+            className="flex items-center justify-center h-10 mt-3 mx-auto dark:text-white text-darkest-blue opacity-40 hover:opacity-100 transition-all duration-200 hover:scale-110"
+            title={subSidebarOpen ? "Hide sub menu" : "Show sub menu"}
+          >
+            {subSidebarOpen
+              ? <PanelLeftClose className="size-5" />
+              : <PanelLeftOpen className="size-5" />
+            }
+          </button>
+
           <ul>
-            {visibleMenus.map((menu, index) => (
-              <React.Fragment key={index}>
-                <NavLink to={menu.to}>
-                  <li
-                    className={`w-[80px] text-sm font-extralight flex flex-col items-center gap-1 px-3 py-3 my-4 border dark:border-border-dark-grey border-border-sidebar rounded-xl ${
-                      isMenuActive(menu)
-                        ? "text-white bg-darkest-blue"
-                        : "dark:text-white text-darkest-blue"
-                    }`}
-                  >
-                    <span>{menu.icon}</span>
-                    <p>{menu.title}</p>
-                  </li>
-                </NavLink>
-              </React.Fragment>
-            ))}
+            {visibleMenus.map((menu, index) => {
+              const active = isMenuActive(menu);
+              return (
+                <li
+                  key={index}
+                  onClick={(e) => handleMenuClick(e, menu, index)}
+                  className={`
+                    relative overflow-hidden w-[80px] text-sm font-extralight
+                    flex flex-col items-center gap-1 px-3 py-3 my-4
+                    border rounded-xl cursor-pointer select-none
+                    transition-all duration-200
+                    ${active
+                      ? "text-white bg-darkest-blue border-darkest-blue shadow-lg shadow-darkest-blue/30 scale-[1.04]"
+                      : "dark:text-white text-darkest-blue dark:border-border-dark-grey border-border-sidebar hover:scale-[1.04] hover:shadow-md hover:border-darkest-blue/40"
+                    }
+                  `}
+                >
+                  {/* Ripple effect */}
+                  {ripple && ripple.index === index && (
+                    <span
+                      className="absolute rounded-full bg-white/30 animate-ping"
+                      style={{
+                        width: 60,
+                        height: 60,
+                        top: ripple.y - 30,
+                        left: ripple.x - 30,
+                        pointerEvents: "none",
+                      }}
+                    />
+                  )}
+
+                  {/* Icon with bounce on active */}
+                  <span className={`transition-transform duration-200 ${active ? "scale-110" : "group-hover:scale-110"}`}>
+                    {menu.icon}
+                  </span>
+                  <p className="text-center leading-tight">{menu.title}</p>
+
+                  {/* Active indicator dot */}
+                  {active && (
+                    <span className="absolute top-1.5 right-1.5 w-1.5 h-1.5 rounded-full bg-white/70" />
+                  )}
+                </li>
+              );
+            })}
           </ul>
         </div>
 
-        {/* --- SUB SIDEBAR (Filtered by Permissions) --- */}
-        {visibleMenus.map((menu, index) => {
-          
-          // 1. Check UX Logic: Should we show this panel based on URL?
-          const shouldShowSidebar =
-            menu.nested &&
-            isNestedSidebarVisible(menu.title, location.pathname) &&
-            isMenuActive(menu);
-
-          if (!shouldShowSidebar) return null;
-
-          return (
-            <div
-              key={index}
-              className="mx-2 w-56 text-sm my-4 rounded-lg dark:bg-layout-dark bg-white overflow-auto no-scrollbar py-6"
-            >
+        {/* --- SUB SIDEBAR --- */}
+        {activeNestedMenu && (
+          <div
+            className={`flex-shrink-0 transition-all duration-300 ease-in-out ${
+              subSidebarOpen ? "w-56 mx-2 opacity-100" : "w-0 mx-0 opacity-0 overflow-hidden"
+            }`}
+          >
+            <div className="text-sm my-4 rounded-lg dark:bg-layout-dark bg-white overflow-auto no-scrollbar py-6 h-full min-w-[224px]">
               <ul>
-                {menu.nested.map((item, subIndex) => {
-                  
-                  // 2. Check RBAC Logic: Does user have read access to this specific link?
-                  // If NOT, do not render this <li>
-                  if (!checkAccess(menu.module, item.subModule)) return null;
-
+                {activeNestedMenu.nested.map((item, subIndex) => {
+                  if (!checkAccess(activeNestedMenu.module, item.subModule)) return null;
+                  const isActive = location.pathname.startsWith(item.to);
                   return (
-                    <li key={subIndex} className="mb-2">
+                    <li key={subIndex} className="mb-1">
                       <NavLink to={item.to}>
                         <div
-                          className={`w-full flex items-center gap-2 py-3 px-3 cursor-pointer ${
-                            location.pathname.startsWith(item.to)
-                              ? "dark:bg-overall_bg-dark bg-select-subbar dark:text-white text-darkest-blue border-r-4 border-r-darkest-blue"
-                              : "dark:text-white text-darkest-blue"
-                          }`}
+                          className={`
+                            w-full flex items-center gap-2 py-3 px-3 cursor-pointer
+                            transition-all duration-150
+                            ${isActive
+                              ? "dark:bg-overall_bg-dark bg-select-subbar dark:text-white text-darkest-blue border-r-4 border-r-darkest-blue translate-x-0"
+                              : "dark:text-white text-darkest-blue hover:translate-x-1"
+                            }
+                          `}
                         >
-                          <span>{item.icon}</span>
+                          <span className={`transition-transform duration-150 ${isActive ? "scale-110" : ""}`}>
+                            {item.icon}
+                          </span>
                           <p>{item.title}</p>
                         </div>
                       </NavLink>
@@ -135,8 +165,8 @@ const LayOut = () => {
                 })}
               </ul>
             </div>
-          );
-        })}
+          </div>
+        )}
 
         {/* --- MAIN CONTENT AREA --- */}
         <div className="w-full p-4 overflow-auto no-scrollbar">

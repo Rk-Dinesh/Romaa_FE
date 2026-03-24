@@ -495,7 +495,7 @@ const AppRoutes = () => {
                 <Route path="cashentry" element={<CashEntry />} />
                 <Route path="ledgerentry">
                   <Route index element={<LedgerEntry />} />
-                  <Route path="viewledgerentry" element={<ViewLedgerEntry />} />
+                  <Route path="viewledgerentry/:supplierId" element={<ViewLedgerEntry />} />
                 </Route>{" "}
                 <Route
                   path="supplieroutstanding"
