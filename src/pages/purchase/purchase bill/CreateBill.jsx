@@ -161,9 +161,9 @@ const CreateBill = ({ onclose, onSuccess }) => {
   const [selectedTenderRef,      setSelectedTenderRef]      = useState("");
   const [selectedTenderName,     setSelectedTenderName]     = useState("");
   const [selectedVendorId,       setSelectedVendorId]       = useState("");
-  const [selectedVendorRef,      setSelectedVendorRef]      = useState("");
-  const [selectedVendorName,     setSelectedVendorName]     = useState("");
-  const [selectedVendorGstin,    setSelectedVendorGstin]    = useState("");
+  const [_selectedVendorRef,     setSelectedVendorRef]      = useState("");
+  const [_selectedVendorName,    setSelectedVendorName]     = useState("");
+  const [_selectedVendorGstin,    setSelectedVendorGstin]    = useState("");
   const [selectedPlaceOfSupply,  setSelectedPlaceOfSupply]  = useState(""); // "InState" | "Others"
 
   // additional charges: [{ id, type, amt, gst_pct }]
@@ -414,27 +414,18 @@ const CreateBill = ({ onclose, onSuccess }) => {
       tender_ref:  selectedTenderRef  || undefined,
       tender_name: selectedTenderName || undefined,
 
-      // Vendor snapshot
-      vendor_id:    selectedVendorId,
-      vendor_ref:   selectedVendorRef   || undefined,
-      vendor_name:  selectedVendorName  || undefined,
-      vendor_gstin: selectedVendorGstin || undefined,
+      // Vendor — only send vendor_id; server auto-fills name/gstin/place_of_supply
+      vendor_id: selectedVendorId,
 
-      // Tax
-      place_of_supply: selectedPlaceOfSupply,
-      tax_mode:        isInState ? "instate" : "otherstate",
+      // Tax mode
+      tax_mode: isInState ? "instate" : "otherstate",
 
-      // GRN rows — only API fields (drop display-only grn_ref_no)
-      grn_rows: grnRows.map(r => ({
-        grn_no:   r.grn_no,
-        grn_ref:  r.grn_ref  || undefined,
-        ref_date: r.ref_date || undefined,
-        grn_qty:  r.grn_qty,
-      })),
-
-      // Line items — drop display-only net_amt; server recomputes it
-      line_items: itemRows.map(r => ({
-        item_id:          r.item_id          || undefined,
+      // Line items — grn_no/grn_ref/ref_date merged per item; server recomputes tax/net amounts
+      line_items: itemRows.map((r, i) => ({
+        grn_no:           grnRows[i]?.grn_no   || undefined,
+        grn_ref:          grnRows[i]?.grn_ref   || undefined,
+        ref_date:         grnRows[i]?.ref_date  || undefined,
+        item_id:          r.item_id             || undefined,
         item_description: r.item_description,
         unit:             r.unit,
         accepted_qty:     Number(r.accepted_qty),
@@ -445,7 +436,7 @@ const CreateBill = ({ onclose, onSuccess }) => {
         igst_pct:         r.igst_pct,
       })),
 
-      // Additional charges — include is_deduction as required by API
+      // Additional charges
       additional_charges: chargeDetails.map(c => {
         const typeDef = CHARGE_TYPES.find(t => t.value === c.type);
         return {

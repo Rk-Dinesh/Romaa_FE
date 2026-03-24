@@ -1,6 +1,6 @@
 import { useState, useMemo } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import { ChevronLeft, ChevronDown, ChevronRight, RefreshCw, FileText, Search, AlertCircle, SlidersHorizontal, X, Link2, Truck } from "lucide-react";
+import { ChevronLeft, ChevronDown, ChevronRight, RefreshCw, FileText, Search, AlertCircle, SlidersHorizontal, X, Link2, Truck, MessageSquare } from "lucide-react";
 import { useBillsByTender } from "./hooks/usePurchaseBill";
 
 /* ── helpers ── */
@@ -310,13 +310,13 @@ const ViewPurchaseBill = () => {
                 const st       = STATUS_CFG[bill.status] || STATUS_CFG.pending;
                 const overdue  = isOverdue(bill.due_date, bill.status);
                 const rowNo    = (page - 1) * ITEMS_PER_PAGE + i + 1;
-                const expanded = expandedId === bill._id;
+                const expanded = expandedId === bill.doc_id;
 
                 return [
                   /* ── Summary row ── */
                   <tr
-                    key={bill._id}
-                    onClick={() => setExpandedId(expanded ? null : bill._id)}
+                    key={bill.doc_id}
+                    onClick={() => setExpandedId(expanded ? null : bill.doc_id)}
                     className={`cursor-pointer transition-colors ${expanded ? "bg-slate-50 dark:bg-gray-800/60" : "hover:bg-slate-50 dark:hover:bg-gray-800/40"} border-b ${expanded ? "border-transparent" : "border-gray-100 dark:border-gray-800"}`}
                   >
                     <td className="pl-4 py-3 text-gray-400">
@@ -358,49 +358,39 @@ const ViewPurchaseBill = () => {
 
                   /* ── Expanded detail row ── */
                   expanded && (
-                    <tr key={`${bill._id}-detail`}>
+                    <tr key={`${bill.doc_id}-detail`}>
                       <td colSpan={13} className="bg-slate-50 dark:bg-gray-800/40 border-b border-gray-200 dark:border-gray-700 px-6 py-5">
                         <div className="flex flex-col gap-5">
 
-                          {/* ── GRN Linkage + Line Items (combined) ── */}
-                          <DetailSection icon={<Link2 size={13} />} title="GRN Linkage &amp; Line Items" count={(bill.grn_rows?.length || 0) + (bill.line_items?.length || 0)} fullWidth>
-                            <div className="flex flex-col gap-3">
-                              {/* GRN rows */}
-                              {(bill.grn_rows?.length || 0) > 0 && (
-                                <div>
-                                  <p className="text-[10px] font-semibold uppercase tracking-wider text-gray-400 mb-1.5">GRN References</p>
-                                  <MiniTable
-                                    headers={["GRN No.", "Date", "Qty"]}
-                                    rows={(bill.grn_rows || []).map((g) => [
-                                      <code key="g" className="font-mono text-[11px] text-blue-600 dark:text-blue-400">{g.grn_no}</code>,
-                                      fmtDate(g.ref_date),
-                                      <span key="q" className="tabular-nums font-semibold text-gray-800 dark:text-gray-100">{g.grn_qty}</span>,
-                                    ])}
-                                  />
-                                </div>
-                              )}
-                              {/* Line items */}
-                              <div>
-                                <p className="text-[10px] font-semibold uppercase tracking-wider text-gray-400 mb-1.5">Line Items</p>
-                                <MiniTable
-                                  headers={["Item", "Unit", "Qty", "Rate", "Gross", "CGST%", "CGST Amt", "SGST%", "SGST Amt", "IGST%", "IGST Amt", "Net Amt"]}
-                                  rows={(bill.line_items || []).map((it) => [
-                                    <span key="i" className="font-medium text-gray-800 dark:text-gray-100">{it.item_description}</span>,
-                                    it.unit || "—",
-                                    <span key="q" className="tabular-nums">{it.accepted_qty}</span>,
-                                    `₹${fmt(it.unit_price)}`,
-                                    `₹${fmt(it.gross_amt)}`,
-                                    `${it.cgst_pct}%`,
-                                    `₹${fmt(it.cgst_amt)}`,
-                                    `${it.sgst_pct}%`,
-                                    `₹${fmt(it.sgst_amt)}`,
-                                    `${it.igst_pct}%`,
-                                    `₹${fmt(it.igst_amt)}`,
-                                    <span key="n" className="tabular-nums font-semibold text-gray-900 dark:text-white">₹{fmt(it.net_amt)}</span>,
-                                  ])}
-                                />
-                              </div>
+                          {/* ── Narration ── */}
+                          {bill.narration && (
+                            <div className="flex items-start gap-2 bg-amber-50 dark:bg-amber-900/10 border border-amber-100 dark:border-amber-800/30 rounded-lg px-3 py-2">
+                              <MessageSquare size={13} className="text-amber-500 mt-0.5 shrink-0" />
+                              <p className="text-xs text-amber-800 dark:text-amber-300 italic">{bill.narration}</p>
                             </div>
+                          )}
+
+                          {/* ── Line Items (GRN info embedded per row) ── */}
+                          <DetailSection icon={<Link2 size={13} />} title="Line Items" count={bill.line_items?.length} fullWidth>
+                            <MiniTable
+                              headers={["GRN No.", "GRN Date", "Item", "Unit", "Qty", "Rate", "Gross", "CGST%", "CGST Amt", "SGST%", "SGST Amt", "IGST%", "IGST Amt", "Net Amt"]}
+                              rows={(bill.line_items || []).map((it) => [
+                                <code key="g" className="font-mono text-[11px] text-blue-600 dark:text-blue-400">{it.grn_no || "—"}</code>,
+                                fmtDate(it.ref_date),
+                                <span key="i" className="font-medium text-gray-800 dark:text-gray-100">{it.item_description}</span>,
+                                it.unit || "—",
+                                <span key="q" className="tabular-nums">{it.accepted_qty}</span>,
+                                `₹${fmt(it.unit_price)}`,
+                                `₹${fmt(it.gross_amt)}`,
+                                `${it.cgst_pct}%`,
+                                `₹${fmt(it.cgst_amt)}`,
+                                `${it.sgst_pct}%`,
+                                `₹${fmt(it.sgst_amt)}`,
+                                `${it.igst_pct}%`,
+                                `₹${fmt(it.igst_amt)}`,
+                                <span key="n" className="tabular-nums font-semibold text-gray-900 dark:text-white">₹{fmt(it.net_amt)}</span>,
+                              ])}
+                            />
                           </DetailSection>
 
                           {/* ── Additional Charges ── */}
@@ -412,7 +402,7 @@ const ViewPurchaseBill = () => {
                                 `₹${fmt(c.amount)}`,
                                 `${c.gst_pct}%`,
                                 <span key="n" className={`tabular-nums font-semibold ${c.is_deduction ? "text-red-600 dark:text-red-400" : "text-emerald-600 dark:text-emerald-400"}`}>
-                                  {c.is_deduction ? "−" : "+"}₹{fmt(c.net)}
+                                  {c.is_deduction ? "−" : "+"}₹{fmt(Math.abs(c.net))}
                                 </span>,
                                 c.is_deduction
                                   ? <span key="d" className="text-red-500 text-[10px] font-semibold">Yes</span>
@@ -420,6 +410,26 @@ const ViewPurchaseBill = () => {
                               ])}
                             />
                           </DetailSection>
+
+                          {/* ── Bill Totals ── */}
+                          <div className="flex justify-end">
+                            <div className="min-w-[260px] bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden text-xs">
+                              <TotalRow label="Base Amount" value={`₹${fmt(bill.grand_total)}`} />
+                              <TotalRow label="Total Tax" value={`₹${fmt(bill.total_tax)}`} valueClass="text-indigo-600 dark:text-indigo-400" />
+                              {(bill.additional_charges || []).map((c) => (
+                                <TotalRow
+                                  key={c.type}
+                                  label={c.type}
+                                  value={`${c.is_deduction ? "−" : "+"}₹${fmt(Math.abs(c.net))}`}
+                                  valueClass={c.is_deduction ? "text-red-600 dark:text-red-400" : "text-emerald-600 dark:text-emerald-400"}
+                                />
+                              ))}
+                              {bill.round_off !== 0 && bill.round_off != null && (
+                                <TotalRow label="Round Off" value={`${bill.round_off > 0 ? "+" : ""}${fmt(bill.round_off)}`} valueClass="text-gray-400" />
+                              )}
+                              <TotalRow label="Net Amount" value={`₹${fmt(bill.net_amount)}`} bold divider />
+                            </div>
+                          </div>
 
                         </div>
                       </td>
@@ -544,6 +554,13 @@ const MiniTable = ({ headers, rows }) => (
         )}
       </tbody>
     </table>
+  </div>
+);
+
+const TotalRow = ({ label, value, valueClass = "text-gray-700 dark:text-gray-200", bold = false, divider = false }) => (
+  <div className={`flex items-center justify-between px-3 py-1.5 ${divider ? "border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/60" : ""}`}>
+    <span className={`text-gray-500 dark:text-gray-400 ${bold ? "font-semibold text-gray-700 dark:text-gray-200" : ""}`}>{label}</span>
+    <span className={`tabular-nums ${bold ? "font-bold text-sm" : ""} ${valueClass}`}>{value}</span>
   </div>
 );
 
