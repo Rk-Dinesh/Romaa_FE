@@ -7,7 +7,6 @@ import {
   FiUserPlus,
   FiShield,
   FiSave,
-  FiChevronDown,
   FiAlertCircle,
   FiUser,
   FiMail,
@@ -15,6 +14,7 @@ import {
   FiMonitor,
 } from "react-icons/fi";
 import { useReassignUserRole, useRolesDropdown } from "./hooks/useUsers";
+import SearchableSelect from "../../../components/SearchableSelect";
 
 // --- Validation Schema ---
 const schema = yup.object().shape({
@@ -35,11 +35,12 @@ const EditUser = ({ item, onclose, onUpdated }) => {
   });
 
   const {
-    register,
     handleSubmit,
     control,
+    watch,
+    setValue,
     formState: { errors },
-    reset, // Need reset to update form when item changes
+    reset,
   } = useForm({
     resolver: yupResolver(schema),
     defaultValues: {
@@ -151,27 +152,15 @@ const EditUser = ({ item, onclose, onUpdated }) => {
                 <label className="text-xs font-bold text-gray-500 uppercase tracking-wider flex items-center gap-1">
                   <FiShield className="text-emerald-500" /> Assign New Role
                 </label>
-                <div className="relative group">
-                  <select
-                    {...register("role")}
-                    disabled={isLoadingRoles}
-                    className="w-full border border-gray-300 dark:border-gray-700 rounded-xl px-4 py-3 text-sm bg-white dark:bg-gray-800 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 transition-all appearance-none cursor-pointer hover:border-gray-400 disabled:opacity-50"
-                  >
-                    <option value="">
-                      {isLoadingRoles
-                        ? "Loading roles..."
-                        : "-- Select Role --"}
-                    </option>
-                    {roles.map((role) => (
-                      <option key={role._id} value={role._id}>
-                        {role.roleName}
-                      </option>
-                    ))}
-                  </select>
-                  <div className="absolute inset-y-0 right-0 flex items-center px-4 pointer-events-none text-gray-400 group-hover:text-gray-600">
-                    <FiChevronDown />
-                  </div>
-                </div>
+                <SearchableSelect
+                  name="role"
+                  watch={watch}
+                  setValue={(n, v) => setValue(n, v, { shouldValidate: true })}
+                  options={roles.map((r) => ({ value: r._id, label: r.roleName }))}
+                  placeholder={isLoadingRoles ? "Loading roles..." : "-- Select Role --"}
+                  disabled={isLoadingRoles}
+                  hasError={!!errors.role}
+                />
                 {errors.role && (
                   <p className="text-red-500 text-xs flex items-center gap-1 mt-1">
                     <FiAlertCircle /> {errors.role.message}
@@ -184,20 +173,18 @@ const EditUser = ({ item, onclose, onUpdated }) => {
                 <label className="text-xs font-bold text-gray-500 uppercase tracking-wider flex items-center gap-1">
                   <FiMonitor className="text-purple-500" /> Access Mode
                 </label>
-                <div className="relative group">
-                  <select
-                    {...register("accessMode")}
-                    className="w-full border border-gray-300 dark:border-gray-700 rounded-xl px-4 py-3 text-sm bg-white dark:bg-gray-800 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-purple-500/50 focus:border-purple-500 transition-all appearance-none cursor-pointer hover:border-gray-400"
-                  >
-                    <option value="">-- Select Platform --</option>
-                    <option value="WEBSITE">Website Only</option>
-                    <option value="MOBILE">Mobile App Only</option>
-                    <option value="BOTH">Both (Web & Mobile)</option>
-                  </select>
-                  <div className="absolute inset-y-0 right-0 flex items-center px-4 pointer-events-none text-gray-400 group-hover:text-gray-600">
-                    <FiChevronDown />
-                  </div>
-                </div>
+                <SearchableSelect
+                  name="accessMode"
+                  watch={watch}
+                  setValue={(n, v) => setValue(n, v, { shouldValidate: true })}
+                  options={[
+                    { value: "WEBSITE", label: "Website Only" },
+                    { value: "MOBILE", label: "Mobile App Only" },
+                    { value: "BOTH", label: "Both (Web & Mobile)" },
+                  ]}
+                  placeholder="-- Select Platform --"
+                  hasError={!!errors.accessMode}
+                />
                 {errors.accessMode && (
                   <p className="text-red-500 text-xs flex items-center gap-1 mt-1">
                     <FiAlertCircle /> {errors.accessMode.message}

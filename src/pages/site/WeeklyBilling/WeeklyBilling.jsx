@@ -1,4 +1,5 @@
 import { useState, useMemo } from "react";
+import SearchableSelect from "../../../components/SearchableSelect";
 import {
   Receipt,
   Building2,
@@ -114,7 +115,7 @@ const WeeklyBilling = () => {
         </div>
 
         {/* ── Filters ── */}
-        <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 px-5 py-3.5 mb-4 flex items-center gap-3 flex-wrap">
+        <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 px-5 py-3.5 mb-4 flex items-center gap-3 flex-wrap relative z-10">
           <div className="relative flex-1 min-w-[200px]">
             <Search size={14} className="absolute left-3 top-2.5 text-gray-400" />
             <input
@@ -126,25 +127,23 @@ const WeeklyBilling = () => {
             />
           </div>
 
-          <select
-            value={contractorFilter}
-            onChange={(e) => setContractorFilter(e.target.value)}
-            className="border border-gray-200 dark:border-gray-700 rounded-lg px-3 py-2 text-sm bg-gray-50 dark:bg-gray-800 dark:text-white focus:outline-none focus:ring-1 focus:ring-blue-500"
-          >
-            <option value="">All Contractors</option>
-            {contractors.map((v) => <option key={v} value={v}>{v}</option>)}
-          </select>
+          <div className="min-w-[180px]">
+            <SearchableSelect
+              value={contractorFilter}
+              onChange={(val) => setContractorFilter(val)}
+              options={[{ value: "", label: "All Contractors" }, ...contractors.map((v) => ({ value: v, label: v }))]}
+              placeholder="All Contractors"
+            />
+          </div>
 
-          <select
-            value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value)}
-            className="border border-gray-200 dark:border-gray-700 rounded-lg px-3 py-2 text-sm bg-gray-50 dark:bg-gray-800 dark:text-white focus:outline-none focus:ring-1 focus:ring-blue-500"
-          >
-            <option value="">All Status</option>
-            {["Generated", "Pending", "Paid", "Cancelled"].map((s) => (
-              <option key={s} value={s}>{s}</option>
-            ))}
-          </select>
+          <div className="min-w-[140px]">
+            <SearchableSelect
+              value={statusFilter}
+              onChange={(val) => setStatusFilter(val)}
+              options={[{ value: "", label: "All Status" }, ...["Generated", "Pending", "Paid", "Cancelled"].map((s) => ({ value: s, label: s }))]}
+              placeholder="All Status"
+            />
+          </div>
 
           <button
             onClick={refetch}

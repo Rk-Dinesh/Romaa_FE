@@ -1,11 +1,12 @@
 import React, { useEffect, useState, useMemo } from "react";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
-import { 
-  Search, Filter, MoreHorizontal, MapPin, AlertTriangle, 
-  CheckCircle2, Calendar, Zap, Truck, Activity, 
-  Eye, RefreshCw, ArrowRightLeft, X, AlertCircle 
+import {
+  Search, Filter, MoreHorizontal, MapPin, AlertTriangle,
+  CheckCircle2, Calendar, Zap, Truck, Activity,
+  Eye, RefreshCw, ArrowRightLeft, X, AlertCircle
 } from "lucide-react";
+import SearchableSelect from "../../../../components/SearchableSelect";
 import { API } from "../../../../constant";
 import { toast } from "react-toastify";
 
@@ -389,16 +390,12 @@ const MachineryTable = () => {
                 <>
                   <div>
                     <label className="text-xs font-semibold text-slate-500 uppercase">New Status</label>
-                    <select 
-                      className="w-full mt-1 p-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none dark:text-white"
+                    <SearchableSelect
                       value={statusForm.status}
-                      onChange={(e) => setStatusForm({...statusForm, status: e.target.value})}
-                    >
-                      <option value="Active">Active</option>
-                      <option value="Maintenance">Maintenance</option>
-                      <option value="Idle">Idle</option>
-                      <option value="Breakdown">Breakdown</option>
-                    </select>
+                      onChange={(val) => setStatusForm({...statusForm, status: val})}
+                      options={["Active", "Maintenance", "Idle", "Breakdown"]}
+                      placeholder="Select status"
+                    />
                   </div>
                   <div>
                     <label className="text-xs font-semibold text-slate-500 uppercase">Remarks</label>

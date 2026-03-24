@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import SearchableSelect from "../../../../components/SearchableSelect";
 import Button from "../../../../components/Button";
 import Title from "../../../../components/Title";
 import { TbPencil, TbPlus } from "react-icons/tb";
@@ -33,10 +34,15 @@ const ViewRoadDetailsSite = () => {
   const {
     register,
     handleSubmit,
+    watch,
+    setValue,
     formState: { errors },
     reset,
   } = useForm({
     resolver: yupResolver(schema),
+    defaultValues: {
+      units: "",
+    },
   });
 
   const [data, setData] = useState({
@@ -154,18 +160,12 @@ const ViewRoadDetailsSite = () => {
     if (isEditing) {
       if (field.key === "units") {
         return (
-          <select
-            className="w-full px-2 py-2 rounded text-xs border dark:border-border-dark-grey dark:bg-layout-dark border-input-bordergrey"
+          <SearchableSelect
             value={field.value}
-            onChange={(e) => updateField(field.key, e.target.value, section)}
-          >
-            <option value="">Select unit</option>
-            <option value="Cubic Meter">Cubic Meter</option>
-            <option value="Square Meter">Square Meter</option>
-            <option value="Kilogram">Kilogram</option>
-            <option value="Litre">Litre</option>
-            <option value="Meter">Meter</option>
-          </select>
+            onChange={(val) => updateField(field.key, val, section)}
+            options={["Cubic Meter", "Square Meter", "Kilogram", "Litre", "Meter"]}
+            placeholder="Select unit"
+          />
         );
       }
       return (
@@ -288,6 +288,8 @@ const ViewRoadDetailsSite = () => {
                       name="units"
                       register={register}
                       errors={errors}
+                      watch={watch}
+                      setValue={setValue}
                       placeholder="Enter units"
                       type="select"
                       options={[

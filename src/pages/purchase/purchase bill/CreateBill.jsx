@@ -1,14 +1,15 @@
-import { useState, useMemo, useRef, useEffect } from "react";
+ import { useState, useMemo,  useEffect } from "react";
 import { useForm }     from "react-hook-form";
 import { yupResolver } from "@hookform/resolvers/yup";
 import * as yup        from "yup";
 import { IoClose }     from "react-icons/io5";
 import {
-  FiSave, FiFileText, FiSettings, FiChevronDown,
+  FiSave, FiFileText, FiSettings,
   FiLink, FiList, FiDollarSign, FiUser, FiCalendar,
 } from "react-icons/fi";
 import { toast } from "react-toastify";
 import { useTenderIds, usePermittedVendors, useCreateBill, useGRNForBilling, useNextBillId } from "./hooks/usePurchaseBill";
+import SearchableSelect from "../../../components/SearchableSelect";
 
 /* ── Schema ─────────────────────────────────────────────────────────────── */
 const schema = yup.object().shape({
@@ -62,83 +63,6 @@ const SectionCard = ({ iconEl, title, accent = "slate", children, noPad = false,
   </div>
 );
 
-/* ── SearchableSelect ───────────────────────────────────────────────────── */
-const SearchableSelect = ({ options = [], value, onChange, placeholder = "Search...", disabled = false, isLoading = false }) => {
-  const [open,   setOpen]   = useState(false);
-  const [search, setSearch] = useState("");
-  const ref = useRef(null);
-
-  useEffect(() => {
-    const handler = (e) => { if (ref.current && !ref.current.contains(e.target)) setOpen(false); };
-    document.addEventListener("mousedown", handler);
-    return () => document.removeEventListener("mousedown", handler);
-  }, []);
-
-  const filtered = (options || []).filter(o =>
-    o.label.toLowerCase().includes(search.toLowerCase())
-  );
-  const selected = (options || []).find(o => o.value === value);
-
-  return (
-    <div className="relative w-full" ref={ref}>
-      <button
-        type="button"
-        disabled={disabled}
-        onClick={() => { if (!disabled) { setOpen(o => !o); setSearch(""); } }}
-        className={`${inputCls} flex items-center justify-between text-left ${disabled ? "opacity-50 cursor-not-allowed" : "cursor-pointer"}`}
-      >
-        <span className={`truncate ${selected ? "text-gray-800 dark:text-white" : "text-gray-400"}`}>
-          {selected ? selected.label : placeholder}
-        </span>
-        {isLoading
-          ? <span className="shrink-0 ml-1 w-3.5 h-3.5 border-2 border-gray-300 border-t-slate-500 rounded-full animate-spin" />
-          : <FiChevronDown className={`text-gray-400 shrink-0 ml-1 transition-transform ${open ? "rotate-180" : ""}`} />
-        }
-      </button>
-
-      {open && !disabled && (
-        <div className="absolute z-[200] w-full mt-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-lg shadow-xl max-h-56 overflow-hidden flex flex-col">
-          <div className="p-2 border-b border-gray-100 dark:border-gray-700">
-            <input
-              autoFocus
-              type="text"
-              value={search}
-              onChange={e => setSearch(e.target.value)}
-              placeholder="Type to search..."
-              onClick={e => e.stopPropagation()}
-              onKeyDown={e => e.stopPropagation()}
-              className="w-full text-sm px-2 py-1.5 border border-gray-200 dark:border-gray-600 rounded bg-gray-50 dark:bg-gray-900 dark:text-white focus:outline-none focus:border-slate-400"
-            />
-          </div>
-          <div className="overflow-y-auto">
-            {isLoading ? (
-              <p className="text-xs text-gray-400 px-3 py-2 flex items-center gap-2">
-                <span className="w-3 h-3 border-2 border-gray-300 border-t-slate-500 rounded-full animate-spin inline-block" />
-                Loading...
-              </p>
-            ) : filtered.length === 0 ? (
-              <p className="text-xs text-gray-400 px-3 py-2">No results found</p>
-            ) : (
-              filtered.map(o => (
-                <div
-                  key={o.value}
-                  onClick={() => { onChange(o); setOpen(false); setSearch(""); }}
-                  className={`px-3 py-2 text-sm cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-900/20 ${
-                    o.value === value
-                      ? "bg-slate-50 dark:bg-slate-900/20 text-slate-700 font-medium"
-                      : "text-gray-700 dark:text-gray-300"
-                  }`}
-                >
-                  {o.label}
-                </div>
-              ))
-            )}
-          </div>
-        </div>
-      )}
-    </div>
-  );
-};
 
 /* ── Additional charge type definitions ─────────────────────────────────── */
 const CHARGE_TYPES = [
@@ -161,9 +85,9 @@ const CreateBill = ({ onclose, onSuccess }) => {
   const [selectedTenderRef,      setSelectedTenderRef]      = useState("");
   const [selectedTenderName,     setSelectedTenderName]     = useState("");
   const [selectedVendorId,       setSelectedVendorId]       = useState("");
-  const [_selectedVendorRef,     setSelectedVendorRef]      = useState("");
-  const [_selectedVendorName,    setSelectedVendorName]     = useState("");
-  const [_selectedVendorGstin,    setSelectedVendorGstin]    = useState("");
+  const [selectedVendorRef,      setSelectedVendorRef]      = useState("");
+  const [selectedVendorName,     setSelectedVendorName]     = useState("");
+  const [selectedVendorGstin,    setSelectedVendorGstin]    = useState("");
   const [selectedPlaceOfSupply,  setSelectedPlaceOfSupply]  = useState(""); // "InState" | "Others"
 
   // additional charges: [{ id, type, amt, gst_pct }]
@@ -181,8 +105,8 @@ const CreateBill = ({ onclose, onSuccess }) => {
 
   /* ── Hooks ──────────────────────────────────────────────────────────── */
   const { data: nextBillId }                                    = useNextBillId();
-  const { data: tendersRaw = [],  isLoading: loadingTenders  } = useTenderIds();
-  const { data: vendorsRaw = [],  isLoading: loadingVendors  } = usePermittedVendors(selectedTenderId);
+  const { data: tendersRaw = [],  isLoading: _loadingTenders  } = useTenderIds();
+  const { data: vendorsRaw = [],  isLoading: _loadingVendors  } = usePermittedVendors(selectedTenderId);
   const { data: grnData = [],     isLoading: loadingGrn      } = useGRNForBilling(selectedTenderId, selectedVendorId);
   const createBillMutation = useCreateBill({ onSuccess, onClose: onclose });
 
@@ -414,18 +338,27 @@ const CreateBill = ({ onclose, onSuccess }) => {
       tender_ref:  selectedTenderRef  || undefined,
       tender_name: selectedTenderName || undefined,
 
-      // Vendor — only send vendor_id; server auto-fills name/gstin/place_of_supply
-      vendor_id: selectedVendorId,
+      // Vendor snapshot
+      vendor_id:    selectedVendorId,
+      vendor_ref:   selectedVendorRef   || undefined,
+      vendor_name:  selectedVendorName  || undefined,
+      vendor_gstin: selectedVendorGstin || undefined,
 
-      // Tax mode
-      tax_mode: isInState ? "instate" : "otherstate",
+      // Tax
+      place_of_supply: selectedPlaceOfSupply,
+      tax_mode:        isInState ? "instate" : "otherstate",
 
-      // Line items — grn_no/grn_ref/ref_date merged per item; server recomputes tax/net amounts
-      line_items: itemRows.map((r, i) => ({
-        grn_no:           grnRows[i]?.grn_no   || undefined,
-        grn_ref:          grnRows[i]?.grn_ref   || undefined,
-        ref_date:         grnRows[i]?.ref_date  || undefined,
-        item_id:          r.item_id             || undefined,
+      // GRN rows — only API fields (drop display-only grn_ref_no)
+      grn_rows: grnRows.map(r => ({
+        grn_no:   r.grn_no,
+        grn_ref:  r.grn_ref  || undefined,
+        ref_date: r.ref_date || undefined,
+        grn_qty:  r.grn_qty,
+      })),
+
+      // Line items — drop display-only net_amt; server recomputes it
+      line_items: itemRows.map(r => ({
+        item_id:          r.item_id          || undefined,
         item_description: r.item_description,
         unit:             r.unit,
         accepted_qty:     Number(r.accepted_qty),
@@ -436,7 +369,7 @@ const CreateBill = ({ onclose, onSuccess }) => {
         igst_pct:         r.igst_pct,
       })),
 
-      // Additional charges
+      // Additional charges — include is_deduction as required by API
       additional_charges: chargeDetails.map(c => {
         const typeDef = CHARGE_TYPES.find(t => t.value === c.type);
         return {
@@ -533,9 +466,11 @@ const CreateBill = ({ onclose, onSuccess }) => {
                     <SearchableSelect
                       options={tenderOptions}
                       value={selectedTenderId}
-                      onChange={handleTenderSelect}
+                      onChange={(val) => {
+                        const option = tenderOptions.find(o => o.value === val);
+                        if (option) handleTenderSelect(option);
+                      }}
                       placeholder="Select tender..."
-                      isLoading={loadingTenders}
                     />
                   )}
                 </Field>
@@ -547,10 +482,12 @@ const CreateBill = ({ onclose, onSuccess }) => {
                       key={selectedTenderId || "__no_tender__"}
                       options={vendorOptions}
                       value={selectedVendorId}
-                      onChange={handleVendorSelect}
+                      onChange={(val) => {
+                        const option = vendorOptions.find(o => o.value === val);
+                        if (option) handleVendorSelect(option);
+                      }}
                       placeholder={!selectedTenderId ? "Select a tender first" : "Select vendor..."}
                       disabled={!selectedTenderId}
-                      isLoading={loadingVendors}
                     />
                   )}
                 </Field>
@@ -804,18 +741,17 @@ const CreateBill = ({ onclose, onSuccess }) => {
                       <td colSpan={5} className="px-4 py-2.5">
                         <div className="flex items-center gap-2">
                           <span className="text-xs text-gray-400 shrink-0">+ Add charge:</span>
-                          <select
-                            value=""
-                            onChange={e => { addCharge(e.target.value); e.target.value = ""; }}
-                            className="border border-dashed border-amber-300 dark:border-amber-700 rounded-lg px-3 py-1.5 text-sm bg-white dark:bg-gray-800 text-amber-700 dark:text-amber-400 focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-400 cursor-pointer"
-                          >
-                            <option value="" disabled>— Select charge type —</option>
-                            {availableTypes.map(t => (
-                              <option key={t.value} value={t.value}>
-                                {t.isDeduction ? "(-) " : "(+) "}{t.label}
-                              </option>
-                            ))}
-                          </select>
+                          <div className="w-56">
+                            <SearchableSelect
+                              value=""
+                              onChange={(val) => { if (val) addCharge(val); }}
+                              options={availableTypes.map(t => ({
+                                value: t.value,
+                                label: `${t.isDeduction ? "(-) " : "(+) "}${t.label}`,
+                              }))}
+                              placeholder="— Select charge type —"
+                            />
+                          </div>
                         </div>
                       </td>
                     </tr>

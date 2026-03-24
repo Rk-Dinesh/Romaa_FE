@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
 import { API } from "../../../constant";
+import SearchableSelect from "../../../components/SearchableSelect";
 import { 
   Package, 
   ArrowDownToLine, 
@@ -118,15 +119,16 @@ const StockRegister = () => {
         </div>
         <div className="flex items-center gap-2">
           <Filter size={20} className="text-gray-400" />
-          <select 
+          <SearchableSelect
             value={filterCategory}
-            onChange={(e) => setFilterCategory(e.target.value)}
-            className="px-4 py-2 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg text-sm font-medium focus:ring-2 focus:ring-blue-500 outline-none"
-          >
-            <option value="All">All Categories</option>
-            <option value="MT-BL">Bulk (MT-BL)</option>
-            <option value="MT-CM">Consumable (MT-CM)</option>
-          </select>
+            onChange={(val) => setFilterCategory(val)}
+            options={[
+              { value: "All", label: "All Categories" },
+              { value: "MT-BL", label: "Bulk (MT-BL)" },
+              { value: "MT-CM", label: "Consumable (MT-CM)" },
+            ]}
+            placeholder="All Categories"
+          />
         </div>
       </div>
 

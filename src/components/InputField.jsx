@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Eye, EyeOff } from "lucide-react";
+import SearchableSelect from "./SearchableSelect";
 
 // Resolves dot-notation paths (e.g. "emd.emd_amount") into the nested errors object.
 // RHF stores nested field errors as { emd: { emd_amount: {...} } }, not as flat keys.
@@ -18,33 +19,29 @@ export const InputField = ({
   options = [],
   onChange,
   readOnly = false,
+  // For type="select" with SearchableSelect
+  watch,
+  setValue,
 }) => {
   const [showPassword, setShowPassword] = useState(false);
-  const registerProps = register(name);
   return (
     <div className="grid grid-cols-8 items-center gap-4">
       <label className={`${colLab} text-sm font-medium`}>{label}</label>
 
       {type === "select" ? (
-        <select
-          defaultValue=""
-          {...register(name)}
-          onChange={(e) => {
-            registerProps.onChange(e); // react-hook-form handler
-            if (onChange) onChange(e); // custom handler
-          }}
-          className={`col-span-5 dark:bg-overall_bg-dark border dark:border-border-dark-grey border-input-bordergrey rounded-lg outline-none py-2.5 pl-2 text-xs font-light 
-        ${getError(errors, name) ? "border-red-500" : ""}`}
-        >
-          <option value="" disabled>
-            {placeholder}
-          </option>
-          {options?.map((option, index) => (
-            <option key={option.value || `${index}`} value={option.value}>
-              {option.label}
-            </option>
-          ))}
-        </select>
+        <div className="col-span-5">
+          <SearchableSelect
+            name={name}
+            watch={watch}
+            setValue={(n, v) => {
+              setValue && setValue(n, v, { shouldValidate: true });
+              if (onChange) onChange({ target: { name: n, value: v } });
+            }}
+            options={options}
+            placeholder={placeholder || "Select..."}
+            hasError={!!getError(errors, name)}
+          />
+        </div>
       ) : type === "textarea" ? (
         <textarea
           placeholder={placeholder}

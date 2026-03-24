@@ -3,6 +3,7 @@ import { IoClose } from "react-icons/io5";
 import { toast } from "react-toastify";
 import axios from "axios";
 import { API } from "../../../constant";
+import SearchableSelect from "../../../components/SearchableSelect";
 
 // Initial row state now includes category
 const initialMaterial = { 
@@ -284,36 +285,26 @@ const AddPurchaseRequestSite = ({ onclose, onSuccess }) => {
                       
                       {/* Category Selection */}
                       <td className="px-4 py-3">
-                        <select
+                        <SearchableSelect
                           value={row.category}
-                          onChange={(e) => handleChange(i, "category", e.target.value)}
-                          className="w-full bg-transparent border-b border-transparent hover:border-gray-300 dark:hover:border-gray-600 focus:border-blue-500 outline-none text-gray-800 dark:text-gray-200 py-1 transition-colors"
-                        >
-                          <option value="" className="dark:bg-gray-800">Select...</option>
-                          <option value="MT-BL" className="dark:bg-gray-800">Bulk</option>
-                          <option value="MT-CM" className="dark:bg-gray-800">Consumable</option>
-                        </select>
+                          onChange={(val) => handleChange(i, "category", val)}
+                          placeholder="Select..."
+                          options={[
+                            { value: "MT-BL", label: "Bulk" },
+                            { value: "MT-CM", label: "Consumable" },
+                          ]}
+                        />
                       </td>
 
                       {/* Material Dropdown (Filtered) */}
                       <td className="px-4 py-3">
-                        <select
+                        <SearchableSelect
                           value={row.materialName}
-                          onChange={(e) => handleChange(i, "materialName", e.target.value)}
+                          onChange={(val) => handleChange(i, "materialName", val)}
                           disabled={!row.category}
-                          className={`w-full bg-transparent border-b border-transparent hover:border-gray-300 dark:hover:border-gray-600 focus:border-blue-500 outline-none py-1 transition-colors ${
-                            !row.category ? "text-gray-400 cursor-not-allowed" : "text-gray-800 dark:text-gray-200"
-                          }`}
-                        >
-                          <option value="" className="dark:bg-gray-800">
-                            {row.category ? "Select Material" : "Select Category First"}
-                          </option>
-                          {getFilteredMaterials(row.category).map((mat) => (
-                            <option key={mat.item_id} value={mat.description} className="dark:bg-gray-800">
-                              {mat.description}
-                            </option>
-                          ))}
-                        </select>
+                          placeholder={row.category ? "Select Material" : "Select Category First"}
+                          options={getFilteredMaterials(row.category).map((mat) => ({ value: mat.description, label: mat.description }))}
+                        />
                       </td>
 
                       {/* Allowed Quantity (Read Only) */}

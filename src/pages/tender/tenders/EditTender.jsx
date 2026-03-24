@@ -84,6 +84,7 @@ const EditTender = ({ item, onclose, onUpdated }) => {
     register,
     handleSubmit,
     setValue,
+    watch,
     formState: { errors },
   } = useForm({
     resolver: yupResolver(schema),
@@ -170,6 +171,8 @@ const EditTender = ({ item, onclose, onUpdated }) => {
                 name="tender_type"
                 register={register}
                 errors={errors}
+                watch={watch}
+                setValue={setValue}
                 options={[
                   { value: "item rate contarct", label: "Item Rate" },
                   { value: "percentage", label: "Percentage" },
@@ -205,6 +208,8 @@ const EditTender = ({ item, onclose, onUpdated }) => {
                 name="client_id"
                 register={register}
                 errors={errors}
+                watch={watch}
+                setValue={setValue}
                 options={clients.map((c) => ({
                   value: c.client_id,
                   label: c.client_id,
@@ -221,6 +226,8 @@ const EditTender = ({ item, onclose, onUpdated }) => {
                 name="client_name"
                 register={register}
                 errors={errors}
+                watch={watch}
+                setValue={setValue}
                 options={clients.map((c) => ({
                   value: c.client_name,
                   label: c.client_name,

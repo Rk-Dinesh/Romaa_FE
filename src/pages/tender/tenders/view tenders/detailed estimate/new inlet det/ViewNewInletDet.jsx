@@ -28,10 +28,15 @@ const ViewNewInletDet = () => {
   const {
     register,
     handleSubmit,
+    watch,
+    setValue,
     formState: { errors },
     reset,
   } = useForm({
     resolver: yupResolver(schema),
+    defaultValues: {
+      topic: "",
+    },
   });
 
   const [data, setData] = useState({
@@ -245,6 +250,8 @@ const ViewNewInletDet = () => {
                   type="select"
                   register={register}
                   errors={errors}
+                  watch={watch}
+                  setValue={setValue}
                   placeholder="Select topic"
                   options={[
                     { label: "A", value: "A" },

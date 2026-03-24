@@ -14,6 +14,7 @@ import {
   FiUser,
   FiBriefcase,
 } from "react-icons/fi";
+import SearchableSelect from "../../../../components/SearchableSelect";
 import { API } from "../../../../constant";
 import ApplyLeaveModal from "./ApplyLeaveModal";
 import LeaveActionModal from "./LeaveActionModal"; // Assuming you have this
@@ -219,32 +220,28 @@ const Leave = () => {
             <div className="h-6 w-px bg-gray-200 hidden md:block"></div>
 
             {/* Status Filter */}
-            <select
+            <SearchableSelect
               value={filterStatus}
-              onChange={(e) => setFilterStatus(e.target.value)}
-              className="px-3 py-2 text-sm border border-gray-200 rounded-lg bg-gray-50 focus:bg-white outline-none cursor-pointer hover:border-blue-300 transition-colors"
-            >
-              <option value="All">All Status</option>
-              <option value="Pending">Pending</option>
-              <option value="Approved">Approved</option>
-              <option value="Rejected">Rejected</option>
-              <option value="Cancelled">Cancelled</option>
-            </select>
+              onChange={(val) => setFilterStatus(val)}
+              options={["All", "Pending", "Approved", "Rejected", "Cancelled"].map((s) => ({ value: s, label: s === "All" ? "All Status" : s }))}
+              placeholder="All Status"
+            />
 
             {/* Type Filter */}
-            <select
+            <SearchableSelect
               value={filterType}
-              onChange={(e) => setFilterType(e.target.value)}
-              className="px-3 py-2 text-sm border border-gray-200 rounded-lg bg-gray-50 focus:bg-white outline-none cursor-pointer hover:border-blue-300 transition-colors"
-            >
-              <option value="All">All Types</option>
-              <option value="CL">Casual (CL)</option>
-              <option value="SL">Sick (SL)</option>
-              <option value="PL">Privilege (PL)</option>
-              <option value="LWP">LWP</option>
-              <option value="CompOff">Comp Off</option>
-              <option value="Permission">Permission</option>
-            </select>
+              onChange={(val) => setFilterType(val)}
+              options={[
+                { value: "All", label: "All Types" },
+                { value: "CL", label: "Casual (CL)" },
+                { value: "SL", label: "Sick (SL)" },
+                { value: "PL", label: "Privilege (PL)" },
+                { value: "LWP", label: "LWP" },
+                { value: "CompOff", label: "Comp Off" },
+                { value: "Permission", label: "Permission" },
+              ]}
+              placeholder="All Types"
+            />
 
             {/* Date Filter */}
             <div className="flex items-center gap-2 bg-gray-50 border border-gray-200 rounded-lg px-2 py-1.5">

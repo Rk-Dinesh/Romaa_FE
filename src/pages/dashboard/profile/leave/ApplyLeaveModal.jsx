@@ -4,6 +4,7 @@ import { API } from "../../../../constant";
 import { toast } from "react-toastify";
 import { FiX, FiAlertTriangle, FiCheckCircle, FiInfo, FiClock } from "react-icons/fi";
 import { ChevronLeft, ChevronRight } from "lucide-react";
+import SearchableSelect from "../../../../components/SearchableSelect";
 
 const ApplyLeaveModal = ({ isOpen, onClose, onSuccess, user }) => {
   const [loading, setLoading] = useState(false);
@@ -262,30 +263,34 @@ const initialFormState = {
                 <div className="grid grid-cols-2 gap-4">
                     <div>
                         <label className="text-xs font-semibold text-gray-600 mb-1 block">Leave Type</label>
-                        <select name="leaveType" value={formData.leaveType} onChange={handleChange} className="w-full border border-gray-300 rounded-lg p-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none">
-                            <option value="CL">Casual Leave (CL)</option>
-                            <option value="SL">Sick Leave (SL)</option>
-                            <option value="PL">Privilege Leave (PL)</option>
-                            <option value="LWP">Loss of Pay (LWP)</option>
-                            <option value="CompOff">Compensatory Leave (CompOff)</option>
-                            <option value="Permission" className="font-bold text-blue-600">Permission</option>
-                        </select>
+                        <SearchableSelect
+                            value={formData.leaveType}
+                            onChange={(val) => handleChange({ target: { name: "leaveType", value: val } })}
+                            options={[
+                              { value: "CL", label: "Casual Leave (CL)" },
+                              { value: "SL", label: "Sick Leave (SL)" },
+                              { value: "PL", label: "Privilege Leave (PL)" },
+                              { value: "LWP", label: "Loss of Pay (LWP)" },
+                              { value: "CompOff", label: "Compensatory Leave (CompOff)" },
+                              { value: "Permission", label: "Permission" },
+                            ]}
+                            placeholder="Select Leave Type"
+                        />
                     </div>
                     <div>
                         <label className="text-xs font-semibold text-gray-600 mb-1 block">Request Duration</label>
-                        <select 
-                            name="requestType" 
-                            value={formData.requestType} 
-                            onChange={handleChange} 
-                            // Lock this if Permission is selected
+                        <SearchableSelect
+                            value={formData.requestType}
+                            onChange={(val) => handleChange({ target: { name: "requestType", value: val } })}
                             disabled={formData.leaveType === "Permission" || formData.leaveType === "CompOff"}
-                            className={`w-full border border-gray-300 rounded-lg p-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none ${formData.leaveType === "Permission" || formData.leaveType === "CompOff" ? "bg-gray-100 cursor-not-allowed" : ""}`}
-                        >
-                            <option value="Full Day">Full Day</option>
-                            <option value="First Half">First Half</option>
-                            <option value="Second Half">Second Half</option>
-                            <option value="Short Leave">Short Leave (Permission)</option>
-                        </select>
+                            options={[
+                              { value: "Full Day", label: "Full Day" },
+                              { value: "First Half", label: "First Half" },
+                              { value: "Second Half", label: "Second Half" },
+                              { value: "Short Leave", label: "Short Leave (Permission)" },
+                            ]}
+                            placeholder="Select Duration"
+                        />
                     </div>
                 </div>
 

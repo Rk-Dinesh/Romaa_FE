@@ -1,11 +1,12 @@
 import { useForm, useFieldArray } from "react-hook-form";
 import { IoClose } from "react-icons/io5";
 import { useUpdateNMRAttendance } from "./hooks/useNMRAttendance";
+import SearchableSelect from "../../../components/SearchableSelect";
 
 const STATUSES = ["PRESENT", "ABSENT", "HALF_DAY"];
 
 const EditNMRAttendance = ({ record, onClose }) => {
-  const { control, register, handleSubmit } = useForm({
+  const { control, register, handleSubmit, watch, setValue } = useForm({
     defaultValues: {
       verified_by: record.verified_by || "",
       attendance_list: (record.attendance_list || []).map((w) => ({
@@ -89,16 +90,13 @@ const EditNMRAttendance = ({ record, onClose }) => {
                     </td>
                     <td className="px-2 py-2 text-gray-500">{field.category || "-"}</td>
                     <td className="px-2 py-2">
-                      <select
-                        {...register(`attendance_list.${idx}.status`)}
-                        className="border border-gray-200 dark:border-gray-600 rounded-md px-2 py-1 text-xs outline-none bg-white dark:bg-gray-800 dark:text-white"
-                      >
-                        {STATUSES.map((s) => (
-                          <option key={s} value={s}>
-                            {s}
-                          </option>
-                        ))}
-                      </select>
+                      <SearchableSelect
+                        name={`attendance_list.${idx}.status`}
+                        watch={watch}
+                        setValue={(n, v) => setValue(n, v, { shouldValidate: true })}
+                        options={STATUSES}
+                        placeholder="Select status"
+                      />
                     </td>
                     <td className="px-2 py-2">
                       <input

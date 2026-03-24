@@ -31,9 +31,16 @@ const AddSite = ({ onclose }) => {
   const {
     register,
     handleSubmit,
+    watch,
+    setValue,
     formState: { errors },
   } = useForm({
     resolver: yupResolver(schema),
+    defaultValues: {
+      siteName: "",
+      problemTitle: "",
+      category: "",
+    },
   });
 
   const onSubmit = (data) => {
@@ -64,6 +71,8 @@ const AddSite = ({ onclose }) => {
                   placeholder="Select a site"
                   register={register}
                   errors={errors}
+                  watch={watch}
+                  setValue={setValue}
                   options={[
                     {
                       value: "site 1",
@@ -80,6 +89,8 @@ const AddSite = ({ onclose }) => {
                   placeholder="Select a problem title"
                   register={register}
                   errors={errors}
+                  watch={watch}
+                  setValue={setValue}
                   options={[
                     {
                       value: "item rate contarct",
@@ -96,6 +107,8 @@ const AddSite = ({ onclose }) => {
                   placeholder="Select a category"
                   register={register}
                   errors={errors}
+                  watch={watch}
+                  setValue={setValue}
                   options={[
                     {
                       value: "category 1",

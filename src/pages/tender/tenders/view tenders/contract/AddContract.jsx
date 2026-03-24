@@ -36,6 +36,11 @@ const AddContractWorker = ({ onclose, onSuccess }) => {
     setValue,
   } = useForm({
     resolver: yupResolver(schema),
+    defaultValues: {
+      contractWorker_id: "",
+      contractWorker_name: "",
+      contractStatus: "",
+    },
   });
 
   const workerId = watch("contractWorker_id");
@@ -112,6 +117,8 @@ const AddContractWorker = ({ onclose, onSuccess }) => {
               name="contractWorker_id"
               register={register}
               errors={errors}
+              watch={watch}
+              setValue={setValue}
               options={contractWorkers.map((cw) => ({
                 label: cw.contractor_id,
                 value: cw.contractor_id,
@@ -130,6 +137,8 @@ const AddContractWorker = ({ onclose, onSuccess }) => {
               name="contractWorker_name"
               register={register}
               errors={errors}
+              watch={watch}
+              setValue={setValue}
               options={contractWorkers.map((cw) => ({
                 label: cw.company_name,
                 value: cw.company_name,
@@ -171,6 +180,8 @@ const AddContractWorker = ({ onclose, onSuccess }) => {
               type="select"
               register={register}
               errors={errors}
+              watch={watch}
+              setValue={setValue}
               options={[
                 { value: "Active", label: "Active" },
                 { value: "Inactive", label: "Inactive" },

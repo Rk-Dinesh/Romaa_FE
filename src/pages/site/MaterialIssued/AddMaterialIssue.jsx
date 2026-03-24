@@ -7,6 +7,7 @@ import Modal from "../../../components/Modal";
 import { toast } from "react-toastify";
 import { Trash2, Box } from "lucide-react";
 import { API } from "../../../constant";
+import SearchableSelect from "../../../components/SearchableSelect";
 
 // --- Validation Schema ---
 const schema = yup.object().shape({
@@ -87,8 +88,8 @@ const AddMaterialIssue = ({ onclose, onSuccess }) => {
   }, [tenderId]);
 
   // 2. Handle Material Selection for a specific row
-  const handleMaterialSelect = (index, e) => {
-    const selectedDesc = e.target.value;
+  const handleMaterialSelect = (index, selectedDesc) => {
+    setValue(`issued_items.${index}.item_description`, selectedDesc, { shouldValidate: true });
     const material = materials.find((m) => m.description === selectedDesc);
 
     if (material) {
@@ -238,18 +239,13 @@ const AddMaterialIssue = ({ onclose, onSuccess }) => {
                         
                         {/* Material Select */}
                         <td className="px-4 py-2">
-                          <select
-                            {...register(`issued_items.${index}.item_description`)}
-                            onChange={(e) => handleMaterialSelect(index, e)}
-                            className="w-full rounded border-gray-300 bg-transparent py-1.5 text-sm outline-none dark:border-gray-600 dark:text-white"
-                          >
-                            <option value="">Select Material</option>
-                            {materials.map((mat) => (
-                              <option key={mat.item_id} value={mat.description}>
-                                {mat.description}
-                              </option>
-                            ))}
-                          </select>
+                          <SearchableSelect
+                            value={watch(`issued_items.${index}.item_description`)}
+                            onChange={(val) => handleMaterialSelect(index, val)}
+                            placeholder="Select Material"
+                            options={materials.map((mat) => ({ value: mat.description, label: mat.description }))}
+                            hasError={!!errors.issued_items?.[index]?.item_description}
+                          />
                           {errors.issued_items?.[index]?.item_description && (
                             <p className="text-[10px] text-red-500 mt-0.5">Required</p>
                           )}
@@ -308,13 +304,14 @@ const AddMaterialIssue = ({ onclose, onSuccess }) => {
 
                         {/* Priority Select */}
                         <td className="px-4 py-2">
-                          <select
-                            {...register(`issued_items.${index}.priority`)}
-                            className="w-full rounded border border-gray-300 py-1.5 text-sm dark:bg-gray-800 dark:border-gray-600"
-                          >
-                            <option value="Normal">Normal</option>
-                            <option value="Urgent">Urgent</option>
-                          </select>
+                          <SearchableSelect
+                            value={watch(`issued_items.${index}.priority`)}
+                            onChange={(val) => setValue(`issued_items.${index}.priority`, val, { shouldValidate: true })}
+                            options={[
+                              { value: "Normal", label: "Normal" },
+                              { value: "Urgent", label: "Urgent" },
+                            ]}
+                          />
                         </td>
 
                         {/* Remove Button */}

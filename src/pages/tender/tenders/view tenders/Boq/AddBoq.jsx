@@ -55,8 +55,11 @@ const AddBoq = ({ onclose,  onSuccess }) => {
   const [isNewBoq, setIsNewBoq] = useState(false);
   const [loading, setLoading] = useState(true);
 
-  const { register, handleSubmit, formState: { errors }, reset } = useForm({
+  const { register, handleSubmit, watch, setValue, formState: { errors } } = useForm({
     resolver: yupResolver(schema, { context: { isNewBoq } }),
+    defaultValues: {
+      status: "",
+    },
   });
 
 
@@ -168,7 +171,7 @@ const onSubmit = async (data) => {
                 <InputField label="Prepared Date" name="prepared_date" type="date" register={register} errors={errors} />
                 <InputField label="Approved By" name="approved_by" register={register} errors={errors} placeholder="Enter approved by" />
                 <InputField label="Approved Date" name="approved_date" type="date" register={register} errors={errors} />
-                <InputField label="Status" name="status" type="select" register={register} errors={errors}
+                <InputField label="Status" name="status" type="select" register={register} errors={errors} watch={watch} setValue={setValue}
                   options={[
                     { value: "Draft", label: "Draft" },
                     { value: "Verified", label: "Verified" },

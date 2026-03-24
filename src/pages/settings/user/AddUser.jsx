@@ -3,12 +3,11 @@ import { useForm, useWatch } from "react-hook-form";
 import { yupResolver } from "@hookform/resolvers/yup";
 import * as yup from "yup";
 import { IoClose } from "react-icons/io5";
-import { 
-  FiUserPlus, 
-  FiShield, 
-  FiUserCheck, 
-  FiSave, 
-  FiChevronDown,
+import {
+  FiUserPlus,
+  FiShield,
+  FiUserCheck,
+  FiSave,
   FiAlertCircle,
   FiLock,
   FiEye,
@@ -16,6 +15,7 @@ import {
   FiMonitor
 } from "react-icons/fi";
 import { useRolesDropdown, useUnassignedEmployees, useGrantUserAccess } from "./hooks/useUsers";
+import SearchableSelect from "../../../components/SearchableSelect";
 
 
 // --- Validation Schema ---
@@ -39,12 +39,16 @@ const AddUser = ({ onclose, onSuccess }) => {
     register,
     handleSubmit,
     control,
+    watch,
+    setValue,
     formState: { errors },
   } = useForm({
     resolver: yupResolver(schema),
     defaultValues: {
-      accessMode: "" // Default empty
-    }
+      employeeId: "",
+      role: "",
+      accessMode: "",
+    },
   });
 
   const selectedEmployeeId = useWatch({ control, name: "employeeId" });
@@ -105,23 +109,15 @@ const AddUser = ({ onclose, onSuccess }) => {
               <label className="text-xs font-bold text-gray-500 uppercase tracking-wider flex items-center gap-1">
                 Select Staff Member
               </label>
-              <div className="relative group">
-                  <select 
-                      {...register("employeeId")}
-                      disabled={isLoadingUsers}
-                      className="w-full border border-gray-300 dark:border-gray-700 rounded-xl px-4 py-3 text-sm bg-white dark:bg-gray-800 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 transition-all appearance-none cursor-pointer hover:border-gray-400 disabled:opacity-50"
-                  >
-                      <option value="">{isLoadingUsers ? "Loading staff..." : "-- Choose Unassigned Staff --"}</option>
-                      {unassignedUsers.map((user) => (
-                          <option key={user._id} value={user.employeeId}>
-                              {user.name} — {user.employeeId}
-                          </option>
-                      ))}
-                  </select>
-                  <div className="absolute inset-y-0 right-0 flex items-center px-4 pointer-events-none text-gray-400 group-hover:text-gray-600">
-                      <FiChevronDown />
-                  </div>
-              </div>
+              <SearchableSelect
+                name="employeeId"
+                watch={watch}
+                setValue={(n, v) => setValue(n, v, { shouldValidate: true })}
+                options={unassignedUsers.map((u) => ({ value: u.employeeId, label: `${u.name} — ${u.employeeId}` }))}
+                placeholder={isLoadingUsers ? "Loading staff..." : "-- Choose Unassigned Staff --"}
+                disabled={isLoadingUsers}
+                hasError={!!errors.employeeId}
+              />
               {errors.employeeId && (
                 <p className="text-red-500 text-xs flex items-center gap-1 mt-1"><FiAlertCircle /> {errors.employeeId.message}</p>
               )}
@@ -175,25 +171,17 @@ const AddUser = ({ onclose, onSuccess }) => {
                 {/* Role Selection */}
                 <div className="space-y-2">
                   <label className="text-xs font-bold text-gray-500 uppercase tracking-wider flex items-center gap-1">
-                      <FiShield className="text-emerald-500" /> Assign Role
+                    <FiShield className="text-emerald-500" /> Assign Role
                   </label>
-                  <div className="relative group">
-                      <select 
-                          {...register("role")}
-                          disabled={isLoadingRoles}
-                          className="w-full border border-gray-300 dark:border-gray-700 rounded-xl px-4 py-3 text-sm bg-white dark:bg-gray-800 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500 transition-all appearance-none cursor-pointer hover:border-gray-400 disabled:opacity-50"
-                      >
-                          <option value="">{isLoadingRoles ? "Loading roles..." : "-- Select Role --"}</option>
-                          {roles.map((role) => (
-                              <option key={role._id} value={role._id}>
-                                  {role.roleName}
-                              </option>
-                          ))}
-                      </select>
-                      <div className="absolute inset-y-0 right-0 flex items-center px-4 pointer-events-none text-gray-400 group-hover:text-gray-600">
-                          <FiChevronDown />
-                      </div>
-                  </div>
+                  <SearchableSelect
+                    name="role"
+                    watch={watch}
+                    setValue={(n, v) => setValue(n, v, { shouldValidate: true })}
+                    options={roles.map((r) => ({ value: r._id, label: r.roleName }))}
+                    placeholder={isLoadingRoles ? "Loading roles..." : "-- Select Role --"}
+                    disabled={isLoadingRoles}
+                    hasError={!!errors.role}
+                  />
                   {errors.role && (
                     <p className="text-red-500 text-xs flex items-center gap-1 mt-1"><FiAlertCircle /> {errors.role.message}</p>
                   )}
@@ -202,22 +190,20 @@ const AddUser = ({ onclose, onSuccess }) => {
                 {/* Access Mode Selection */}
                 <div className="space-y-2">
                   <label className="text-xs font-bold text-gray-500 uppercase tracking-wider flex items-center gap-1">
-                      <FiMonitor className="text-purple-500" /> Access Mode
+                    <FiMonitor className="text-purple-500" /> Access Mode
                   </label>
-                  <div className="relative group">
-                      <select 
-                          {...register("accessMode")}
-                          className="w-full border border-gray-300 dark:border-gray-700 rounded-xl px-4 py-3 text-sm bg-white dark:bg-gray-800 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-purple-500/50 focus:border-purple-500 transition-all appearance-none cursor-pointer hover:border-gray-400"
-                      >
-                          <option value="">-- Select Platform --</option>
-                          <option value="WEBSITE">Website Only</option>
-                          <option value="MOBILE">Mobile App Only</option>
-                          <option value="BOTH">Both (Web & Mobile)</option>
-                      </select>
-                      <div className="absolute inset-y-0 right-0 flex items-center px-4 pointer-events-none text-gray-400 group-hover:text-gray-600">
-                          <FiChevronDown />
-                      </div>
-                  </div>
+                  <SearchableSelect
+                    name="accessMode"
+                    watch={watch}
+                    setValue={(n, v) => setValue(n, v, { shouldValidate: true })}
+                    options={[
+                      { value: "WEBSITE", label: "Website Only" },
+                      { value: "MOBILE", label: "Mobile App Only" },
+                      { value: "BOTH", label: "Both (Web & Mobile)" },
+                    ]}
+                    placeholder="-- Select Platform --"
+                    hasError={!!errors.accessMode}
+                  />
                   {errors.accessMode && (
                     <p className="text-red-500 text-xs flex items-center gap-1 mt-1"><FiAlertCircle /> {errors.accessMode.message}</p>
                   )}

@@ -1,3 +1,5 @@
+import SearchableSelect from "./SearchableSelect";
+
 // Resolves dot-notation paths (e.g. "emd.emd_amount") into the nested errors object.
 // RHF stores nested field errors as { emd: { emd_amount: {...} } }, not as flat keys.
 const getError = (errors, name) =>
@@ -15,6 +17,9 @@ export const InputFieldTender = ({
   rows = 3, // Only for type="textarea"
   className = "",
   step,
+  // For type="select" with SearchableSelect
+  watch,
+  setValue,
   ...rest // Capture other props like onChange, maxLength, etc.
 }) => {
   // 1. Base styles shared across all inputs
@@ -49,31 +54,19 @@ export const InputFieldTender = ({
 
       {/* --- Input Logic --- */}
       {type === "select" ? (
-        // A. DROPDOWN
-        <div className="relative">
-          <select
-            id={name}
-            disabled={disabled}
-            {...register(name)}
-            {...rest}
-            className={`${baseStyles} ${errorStyles} appearance-none cursor-pointer`}
-          >
-            <option value="" disabled hidden>
-              {placeholder || "Select an option"}
-            </option>
-            {options.map((opt, index) => (
-              <option key={index} value={opt.value}>
-                {opt.label}
-              </option>
-            ))}
-          </select>
-          {/* Custom Arrow Icon */}
-          <div className="absolute inset-y-0 right-0 flex items-center px-3 pointer-events-none text-gray-500">
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
-            </svg>
-          </div>
-        </div>
+        // A. DROPDOWN — SearchableSelect
+        <SearchableSelect
+          name={name}
+          watch={watch}
+          setValue={(n, v) => {
+            setValue && setValue(n, v, { shouldValidate: true });
+            if (rest.onChange) rest.onChange({ target: { name: n, value: v } });
+          }}
+          options={options}
+          placeholder={placeholder || "Select an option"}
+          disabled={disabled}
+          hasError={!!getError(errors, name)}
+        />
       ) : type === "textarea" ? (
         // B. TEXTAREA
         <textarea

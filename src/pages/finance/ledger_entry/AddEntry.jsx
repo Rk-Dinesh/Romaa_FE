@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React from "react";
 import Modal from "../../../components/Modal";
 import { useForm } from "react-hook-form";
 import { yupResolver } from "@hookform/resolvers/yup";
@@ -25,9 +25,15 @@ const AddEntry = ({ onclose }) => {
   const {
     register,
     handleSubmit,
+    watch,
+    setValue,
     formState: { errors },
   } = useForm({
     resolver: yupResolver(schema),
+    defaultValues: {
+      location: "",
+      itc: "",
+    },
   });
 
   const onSubmit = (data) => {
@@ -70,6 +76,8 @@ const AddEntry = ({ onclose }) => {
               placeholder="select location"
               register={register}
               errors={errors}
+              watch={watch}
+              setValue={setValue}
               options={[
                 { label: "Chennai", value: "Chennai" },
                 { label: "Mumbai", value: "Mumbai" },
@@ -91,6 +99,8 @@ const AddEntry = ({ onclose }) => {
               type="select"
               register={register}
               errors={errors}
+              watch={watch}
+              setValue={setValue}
               options={[
                 { label: "Yes", value: "Yes" },
                 { label: "No", value: "No" },

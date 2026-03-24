@@ -14,6 +14,7 @@ import {
   FiSave,
   FiCreditCard,
 } from "react-icons/fi";
+import SearchableSelect from "../../../components/SearchableSelect";
 
 const schema = yup.object().shape({
   type: yup.string().required("Vendor Type is required"),
@@ -57,8 +58,17 @@ const CreateVendorSupplier = ({ onclose, onSuccess }) => {
   const {
     register,
     handleSubmit,
+    watch,
+    setValue,
     formState: { errors },
-  } = useForm({ resolver: yupResolver(schema) });
+  } = useForm({
+    resolver: yupResolver(schema),
+    defaultValues: {
+      type: "",
+      place_of_supply: "",
+      status: "",
+    },
+  });
 
   const onSubmit = async (data) => {
     const payload = {
@@ -136,24 +146,26 @@ const CreateVendorSupplier = ({ onclose, onSuccess }) => {
               <FiBriefcase /> Vendor Information
             </div>
 
-            <Select
+            <SearchableSelect
               label="Vendor Type *"
               name="type"
-              register={register}
-              error={errors.type}
+              watch={watch}
+              setValue={(name, val) => setValue(name, val, { shouldValidate: true })}
               options={VENDOR_TYPES}
+              error={errors.type}
             />
             <Input label="Company Name *" name="company_name" register={register} error={errors.company_name} placeholder="Enter company name" />
             <Input label="Contact Person *" name="contact_person" register={register} error={errors.contact_person} placeholder="Enter contact person" />
             <Input label="Contact Phone *" name="contact_phone" register={register} error={errors.contact_phone} placeholder="Enter phone number" />
             <Input label="Contact Email *" type="email" name="contact_email" register={register} error={errors.contact_email} placeholder="Enter email" />
             <Input label="Credit Days *" type="number" name="credit_day" register={register} error={errors.credit_day} placeholder="Enter credit days" />
-            <Select
+            <SearchableSelect
               label="Place of Supply *"
               name="place_of_supply"
-              register={register}
-              error={errors.place_of_supply}
+              watch={watch}
+              setValue={(name, val) => setValue(name, val, { shouldValidate: true })}
               options={["InState", "Others"]}
+              error={errors.place_of_supply}
             />
 
             {/* Section 2: Address */}
@@ -195,12 +207,13 @@ const CreateVendorSupplier = ({ onclose, onSuccess }) => {
               <FiUser /> Status
             </div>
 
-            <Select
+            <SearchableSelect
               label="Status *"
               name="status"
-              register={register}
-              error={errors.status}
+              watch={watch}
+              setValue={(name, val) => setValue(name, val, { shouldValidate: true })}
               options={["ACTIVE", "INACTIVE", "BLACKLISTED"]}
+              error={errors.status}
             />
 
           </form>
@@ -245,23 +258,6 @@ const Input = ({ label, name, type = "text", register, error, placeholder }) => 
       placeholder={placeholder}
       className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 text-sm bg-gray-50 dark:bg-gray-800 dark:text-white focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all"
     />
-    {error && <p className="text-red-500 text-[10px] mt-0.5">{error.message}</p>}
-  </div>
-);
-
-// Reusable Select
-const Select = ({ label, name, register, error, options }) => (
-  <div className="w-full">
-    <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">{label}</label>
-    <select
-      {...register(name)}
-      className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 text-sm bg-gray-50 dark:bg-gray-800 dark:text-white focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all"
-    >
-      <option value="">Select...</option>
-      {options.map((opt, i) => (
-        <option key={i} value={opt}>{opt}</option>
-      ))}
-    </select>
     {error && <p className="text-red-500 text-[10px] mt-0.5">{error.message}</p>}
   </div>
 );

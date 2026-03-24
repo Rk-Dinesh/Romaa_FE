@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import React from "react";
 import { useForm } from "react-hook-form";
 import { yupResolver } from "@hookform/resolvers/yup";
 import * as Yup from "yup";
@@ -12,10 +12,9 @@ import {
   FiPhone,
   FiDollarSign,
   FiCalendar,
-  FiChevronDown,
-  FiSearch
 } from "react-icons/fi";
 import { useCreateEmployee, useManagersDropdown } from "./hooks/useEmployees";
+import SearchableSelect from "../../../components/SearchableSelect";
 
 
 // --- Schema ---
@@ -85,6 +84,8 @@ const AddEmployee = ({ onclose, onSuccess }) => {
     defaultValues: {
       userType: "Office",
       hrStatus: "Probation",
+      department: "",
+      id_proof_type: "",
       leave_pl: 0,
       leave_cl: 12,
       leave_sl: 12,
@@ -174,19 +175,19 @@ const AddEmployee = ({ onclose, onSuccess }) => {
               <FiBriefcase /> Job Profile & Reporting
             </div>
 
-            <Select label="Department *" name="department" register={register} error={errors.department} options={departments} />
+            <Select label="Department *" name="department" watch={watch} setValue={setValue} error={errors.department} options={departments} />
             <Input label="Designation *" name="designation" register={register} error={errors.designation} placeholder="e.g. Site Engineer" />
             <Input label="Date of Joining *" type="date" name="dateOfJoining" register={register} error={errors.dateOfJoining} />
-            
-            <Select label="Work Type *" name="userType" register={register} error={errors.userType} options={["Office", "Site"]} />
-            <Select label="HR Status *" name="hrStatus" register={register} error={errors.hrStatus} options={["Probation", "Confirmed", "Notice Period"]} />
-            
+
+            <Select label="Work Type *" name="userType" watch={watch} setValue={setValue} error={errors.userType} options={["Office", "Site"]} />
+            <Select label="HR Status *" name="hrStatus" watch={watch} setValue={setValue} error={errors.hrStatus} options={["Probation", "Confirmed", "Notice Period"]} />
+
             {/* Searchable Select for Reports To */}
-            <SearchableSelect 
-              label="Reports To (Manager)" 
-              name="reportsTo" 
-              options={managers} 
-              setValue={setValue} 
+            <SearchableSelect
+              label="Reports To (Manager)"
+              name="reportsTo"
+              options={managers}
+              setValue={setValue}
               watch={watch}
               error={errors.reportsTo}
               placeholder="Search Manager..."
@@ -241,7 +242,7 @@ const AddEmployee = ({ onclose, onSuccess }) => {
               <FiShield /> Legal Documents
             </div>
 
-            <Select label="ID Proof Type *" name="id_proof_type" register={register} error={errors.id_proof_type} options={["Aadhar", "Passport", "Voter ID"]} />
+            <Select label="ID Proof Type *" name="id_proof_type" watch={watch} setValue={setValue} error={errors.id_proof_type} options={["Aadhar", "Passport", "Voter ID"]} />
             <Input label="ID Proof Number *" name="id_proof_number" register={register} error={errors.id_proof_number} placeholder="XXXX-XXXX-XXXX" />
             <div className="md:col-span-1"></div>
 
@@ -295,106 +296,17 @@ const Input = ({ label, name, type = "text", register, error, placeholder }) => 
   </div>
 );
 
-const Select = ({ label, name, register, error, options, isObject = false }) => (
-  <div className="w-full">
-    <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">{label}</label>
-    <select
-      {...register(name)}
-      className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 text-sm bg-gray-50 dark:bg-gray-800 dark:text-white focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all"
-    >
-      <option value="">Select...</option>
-      {options.map((opt, i) => (
-        <option key={i} value={isObject ? opt.value : opt}>{isObject ? opt.label : opt}</option>
-      ))}
-    </select>
-    {error && <p className="text-red-500 text-[10px] mt-0.5">{error.message}</p>}
-  </div>
+const Select = ({ label, name, watch, setValue, error, options, disabled, placeholder }) => (
+  <SearchableSelect
+    label={label}
+    name={name}
+    watch={watch}
+    setValue={(n, v) => setValue(n, v, { shouldValidate: true })}
+    options={options}
+    placeholder={placeholder || "Select..."}
+    disabled={disabled}
+    error={error}
+  />
 );
-
-// --- New Component: Searchable Select ---
-const SearchableSelect = ({ label, name, options, setValue, watch, error, placeholder }) => {
-  const [isOpen, setIsOpen] = useState(false);
-  const [searchTerm, setSearchTerm] = useState("");
-  const wrapperRef = useRef(null);
-
-  const selectedValue = watch(name);
-  const selectedLabel = options.find((opt) => opt.value === selectedValue)?.label || "";
-
-  // Close dropdown when clicking outside
-  useEffect(() => {
-    function handleClickOutside(event) {
-      if (wrapperRef.current && !wrapperRef.current.contains(event.target)) {
-        setIsOpen(false);
-      }
-    }
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, [wrapperRef]);
-
-  // Filter options based on search term
-  const filteredOptions = options.filter((opt) =>
-    opt.label.toLowerCase().includes(searchTerm.toLowerCase())
-  );
-
-  return (
-    <div className="w-full relative" ref={wrapperRef}>
-      <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">{label}</label>
-      
-      {/* Input Display Area */}
-      <div
-        className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 text-sm bg-gray-50 dark:bg-gray-800 dark:text-white focus:outline-none focus:border-blue-500 cursor-pointer flex justify-between items-center"
-        onClick={() => setIsOpen(!isOpen)}
-      >
-        <span className={!selectedLabel ? "text-gray-400" : ""}>
-          {selectedLabel || placeholder || "Select..."}
-        </span>
-        <FiChevronDown className="text-gray-500" />
-      </div>
-
-      {/* Dropdown Menu */}
-      {isOpen && (
-        <div className="absolute z-50 w-full mt-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg max-h-60 overflow-hidden flex flex-col">
-          {/* Search Input */}
-          <div className="p-2 border-b border-gray-100 dark:border-gray-700 flex items-center gap-2">
-            <FiSearch className="text-gray-400" />
-            <input
-              type="text"
-              className="w-full text-sm bg-transparent outline-none text-gray-700 dark:text-gray-200"
-              placeholder="Search..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              autoFocus
-            />
-          </div>
-
-          {/* Options List */}
-          <div className="overflow-y-auto flex-1">
-            {filteredOptions.length > 0 ? (
-              filteredOptions.map((opt) => (
-                <div
-                  key={opt.value}
-                  className={`px-3 py-2 text-sm cursor-pointer hover:bg-blue-50 dark:hover:bg-blue-900/30 ${
-                    selectedValue === opt.value ? "bg-blue-50 dark:bg-blue-900/30 font-medium text-blue-600 dark:text-blue-400" : "text-gray-700 dark:text-gray-200"
-                  }`}
-                  onClick={() => {
-                    setValue(name, opt.value);
-                    setIsOpen(false);
-                    setSearchTerm("");
-                  }}
-                >
-                  {opt.label}
-                </div>
-              ))
-            ) : (
-              <div className="px-3 py-2 text-xs text-gray-500 text-center">No results found</div>
-            )}
-          </div>
-        </div>
-      )}
-      
-      {error && <p className="text-red-500 text-[10px] mt-0.5">{error.message}</p>}
-    </div>
-  );
-};
 
 export default AddEmployee;

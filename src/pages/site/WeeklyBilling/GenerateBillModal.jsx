@@ -1,6 +1,7 @@
 import { useState, useMemo } from "react";
 import { IoClose } from "react-icons/io5";
 import { FiCalendar } from "react-icons/fi";
+import SearchableSelect from "../../../components/SearchableSelect";
 import {
   Receipt,
   Building2,
@@ -239,21 +240,13 @@ const GenerateBillModal = ({ onClose, onSuccess, existingBills = [] }) => {
                 <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">
                   Contractor <span className="text-red-500">*</span>
                 </label>
-                <select
+                <SearchableSelect
                   value={selectedContractorId}
-                  onChange={(e) => setSelectedContractorId(e.target.value)}
+                  onChange={(val) => setSelectedContractorId(val)}
                   disabled={contractorsLoading || siteContractors.length === 0}
-                  className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 text-sm bg-white dark:bg-gray-800 dark:text-white focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 disabled:opacity-60 disabled:cursor-not-allowed"
-                >
-                  <option value="">
-                    {contractorsLoading ? "Loading contractors…" : siteContractors.length === 0 ? "No contractors for this site" : "Select contractor"}
-                  </option>
-                  {siteContractors.map((v) => (
-                    <option key={v.contractor_id} value={v.contractor_id}>
-                      {v.contractor_name}
-                    </option>
-                  ))}
-                </select>
+                  placeholder={contractorsLoading ? "Loading contractors…" : siteContractors.length === 0 ? "No contractors for this site" : "Select contractor"}
+                  options={siteContractors.map((v) => ({ value: v.contractor_id, label: v.contractor_name }))}
+                />
               </div>
             </div>
           </div>

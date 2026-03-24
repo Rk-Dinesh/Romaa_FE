@@ -3,6 +3,7 @@ import { useForm } from "react-hook-form";
 import { yupResolver } from "@hookform/resolvers/yup";
 import * as yup from "yup";
 import { IoClose } from "react-icons/io5";
+import SearchableSelect from "../../../components/SearchableSelect";
 
 const schema = yup.object().shape({
   Refno: yup.string().required("Reference number is required"),
@@ -39,26 +40,23 @@ const InputField = ({
   placeholder,
   type = "text",
   options = [],
+  watch,
+  setValue,
 }) => (
   <div className="grid grid-cols-8 items-center gap-4">
     <label className="col-span-3 text-sm font-medium">{label}</label>
 
     {type === "select" ? (
-      <select
-        defaultValue=""
-        {...register(name)}
-        className={`col-span-5  rounded-lg outline-none py-2 px-2 text-xs font-light 
-        ${errors[name] ? "border-red-500" : ""}`}
-      >
-        <option value="" disabled>
-          {placeholder}
-        </option>
-        {options?.map((option) => (
-          <option key={option.value} value={option.value}>
-            {option.label}
-          </option>
-        ))}
-      </select>
+      <div className="col-span-5">
+        <SearchableSelect
+          name={name}
+          watch={watch}
+          setValue={(n, val) => setValue(n, val, { shouldValidate: true })}
+          placeholder={placeholder}
+          options={options}
+          hasError={!!errors[name]}
+        />
+      </div>
     ) : type === "textarea" ? (
       <textarea
         placeholder={placeholder}
@@ -100,6 +98,9 @@ const EditBOQSite = ({ onclose }) => {
     formState: { errors },
   } = useForm({
     resolver: yupResolver(schema),
+    defaultValues: {
+      unit: "",
+    },
   });
 
   const onSubmit = (data) => {

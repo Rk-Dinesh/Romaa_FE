@@ -29,28 +29,29 @@ const schema = yup.object().shape({
 const EditEMD = ({ onclose, item, onUpdated }) => {
   const { tender_id } = useParams();
   const [emdData, setEmdData] = useState([]);
-  const fetchEMD = async () => {
-    try {
-      const res = await axios.get(`${API}/emd/getemd/${tender_id}`);
-      if (res.data.status && res.data.data) {
-        console.log(res.data.data);
-
-        setEmdData(res.data.data || []);
-      } else {
-        setEmdData([]);
-      }
-    } catch {
-      toast.error("Failed to load EMD data");
-    }
-  };
-
   useEffect(() => {
+    const fetchEMD = async () => {
+      try {
+        const res = await axios.get(`${API}/emd/getemd/${tender_id}`);
+        if (res.data.status && res.data.data) {
+          console.log(res.data.data);
+
+          setEmdData(res.data.data || []);
+        } else {
+          setEmdData([]);
+        }
+      } catch {
+        toast.error("Failed to load EMD data");
+      }
+    };
     fetchEMD();
   }, [tender_id]);
 
   const {
     register,
     handleSubmit,
+    watch,
+    setValue,
     formState: { errors },
   } = useForm({
     resolver: yupResolver(schema),
@@ -84,7 +85,7 @@ const EditEMD = ({ onclose, item, onUpdated }) => {
       }
 
       // Now proceed with your update API call
-      const res = await axios.put(
+      await axios.put(
         `${API}/emd/updateproposal/${tender_id}/${item.proposal_id}`,
         data
       );
@@ -117,6 +118,8 @@ const EditEMD = ({ onclose, item, onUpdated }) => {
                 type="select"
                 register={register}
                 errors={errors}
+                watch={watch}
+                setValue={setValue}
                 options={[{ value: "APPROVED", label: "Approved" }]}
               />
               <InputField

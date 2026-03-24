@@ -18,6 +18,7 @@ import {
   FiTrash2,
 } from "react-icons/fi";
 import { useEditContractor, useTendersForAssignment } from "./hooks/useContractors";
+import SearchableSelect from "../../../components/SearchableSelect";
 
 const schema = Yup.object().shape({
   contractor_name: Yup.string().required("Contractor name is required"),
@@ -76,6 +77,8 @@ const EditContractor = ({ onUpdated, onclose }) => {
   const {
     register,
     handleSubmit,
+    watch,
+    setValue,
     formState: { errors },
   } = useForm({
     resolver: yupResolver(schema),
@@ -224,9 +227,9 @@ const EditContractor = ({ onUpdated, onclose }) => {
             <Input label="Contact Person *" name="contact_person" register={register} error={errors.contact_person} />
             <Input label="Contact Phone *" name="contact_phone" register={register} error={errors.contact_phone} />
             <Input label="Contact Email *" type="email" name="contact_email" register={register} error={errors.contact_email} />
-            <Select label="Business Type *" name="business_type" register={register} error={errors.business_type} options={businessTypes} />
+            <Select label="Business Type *" name="business_type" watch={watch} setValue={setValue} error={errors.business_type} options={businessTypes} />
             <Input label="License Number" name="license_number" register={register} error={errors.license_number} />
-            <Select label="Place of Supply" name="place_of_supply" register={register} error={errors.place_of_supply} options={["InState", "Others"]} />
+            <Select label="Place of Supply" name="place_of_supply" watch={watch} setValue={setValue} error={errors.place_of_supply} options={["InState", "Others"]} />
             <Input label="Credit Days" name="credit_day" register={register} error={errors.credit_day} placeholder="30" onKeyDown={(e) => { if (!/[0-9]/.test(e.key) && !["Backspace","Delete","Tab","ArrowLeft","ArrowRight"].includes(e.key)) e.preventDefault(); }} />
 
             {/* 2. Legal Documents */}
@@ -235,7 +238,7 @@ const EditContractor = ({ onUpdated, onclose }) => {
             </div>
             <Input label="GST Number" name="gst_number" register={register} error={errors.gst_number} />
             <Input label="PAN Number" name="pan_number" register={register} error={errors.pan_number} />
-            <Select label="Status *" name="status" register={register} error={errors.status} options={["ACTIVE", "INACTIVE", "SUSPENDED", "BLACKLISTED"]} />
+            <Select label="Status *" name="status" watch={watch} setValue={setValue} error={errors.status} options={["ACTIVE", "INACTIVE", "SUSPENDED", "BLACKLISTED"]} />
 
             {/* 3. Contract Period */}
             <div className={sectionHeaderClass}>
@@ -293,7 +296,7 @@ const EditContractor = ({ onUpdated, onclose }) => {
             <Input label="Account Number" name="account_number" register={register} error={errors.account_number} />
             <Input label="IFSC Code" name="ifsc_code" register={register} error={errors.ifsc_code} />
             <Input label="UPI ID" name="upi_id" register={register} error={errors.upi_id} />
-            <Select label="Payment Terms" name="payment_terms" register={register} error={errors.payment_terms} options={["Net 15", "Net 30", "Net 45", "Net 60", "Immediate"]} />
+            <Select label="Payment Terms" name="payment_terms" watch={watch} setValue={setValue} error={errors.payment_terms} options={["Net 15", "Net 30", "Net 45", "Net 60", "Immediate"]} />
             <div className="md:col-span-2">
               <Input label="Remarks" name="remarks" register={register} error={errors.remarks} />
             </div>
@@ -443,16 +446,12 @@ const WageFixingTable = ({ rows, onAdd, onUpdate, onRemove }) => {
               {rows.map((row, index) => (
                 <tr key={index} className="border-t border-gray-100 dark:border-gray-700">
                   <td className="px-3 py-2">
-                    <select
+                    <SearchableSelect
                       value={row.category}
-                      onChange={(e) => onUpdate(index, "category", e.target.value)}
-                      className="w-full border border-gray-300 dark:border-gray-600 rounded-md px-2 py-1.5 text-sm bg-white dark:bg-gray-800 dark:text-white focus:outline-none focus:border-blue-500"
-                    >
-                      <option value="">Select category...</option>
-                      {wageCategories.map((cat) => (
-                        <option key={cat} value={cat}>{cat}</option>
-                      ))}
-                    </select>
+                      onChange={(val) => onUpdate(index, "category", val)}
+                      options={wageCategories}
+                      placeholder="Select category..."
+                    />
                   </td>
                   <td className="px-3 py-2">
                     <input
@@ -504,20 +503,17 @@ const Input = ({ label, name, type = "text", register, error, placeholder, ...re
   </div>
 );
 
-const Select = ({ label, name, register, error, options }) => (
-  <div className="w-full">
-    <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">{label}</label>
-    <select
-      {...register(name)}
-      className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 text-sm bg-gray-50 dark:bg-gray-800 dark:text-white focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all"
-    >
-      <option value="">Select...</option>
-      {options.map((opt, i) => (
-        <option key={i} value={opt}>{opt}</option>
-      ))}
-    </select>
-    {error && <p className="text-red-500 text-[10px] mt-0.5">{error.message}</p>}
-  </div>
+const Select = ({ label, name, watch, setValue, error, options, disabled, placeholder }) => (
+  <SearchableSelect
+    label={label}
+    name={name}
+    watch={watch}
+    setValue={(n, v) => setValue(n, v, { shouldValidate: true })}
+    options={options}
+    placeholder={placeholder || "Select..."}
+    disabled={disabled}
+    error={error}
+  />
 );
 
 export default EditContractor;

@@ -6,6 +6,7 @@ import { IoClose } from "react-icons/io5";
 import { toast } from "react-toastify";
 import { API } from "../../../../constant";
 import axios from "axios";
+import SearchableSelect from "../../../../components/SearchableSelect";
 
 // --- Validation Schema (Same as Add Form) ---
 const schema = Yup.object().shape({
@@ -72,6 +73,7 @@ const EditMachinery = ({ asset, onclose, onUpdate }) => {
     register,
     handleSubmit,
     watch,
+    setValue,
     reset,
     formState: { errors, isSubmitting },
   } = useForm({
@@ -185,21 +187,28 @@ const EditMachinery = ({ asset, onclose, onUpdate }) => {
 
           <div>
             <label className={labelClass}>Category *</label>
-            <select {...register("assetCategory")} className={inputClass}>
-              <option value="Heavy Earthmover">Heavy Earthmover</option>
-              <option value="Transport Vehicle">Transport Vehicle</option>
-              <option value="Stationary Equipment">Stationary Equipment</option>
-              <option value="Lifting">Lifting</option>
-            </select>
+            <SearchableSelect
+              name="assetCategory"
+              watch={watch}
+              setValue={(name, val) => setValue(name, val, { shouldValidate: true })}
+              options={["Heavy Earthmover", "Transport Vehicle", "Stationary Equipment", "Lifting"]}
+              hasError={!!errors.assetCategory}
+            />
             <p className={errorClass}>{errors.assetCategory?.message}</p>
           </div>
 
           <div>
             <label className={labelClass}>Asset Type *</label>
-            <select {...register("assetType")} className={inputClass}>
-              <option value="OWN ASSET">Own Asset</option>
-              <option value="RENTAL ASSET">Rental Asset</option>
-            </select>
+            <SearchableSelect
+              name="assetType"
+              watch={watch}
+              setValue={(name, val) => setValue(name, val, { shouldValidate: true })}
+              options={[
+                { value: "OWN ASSET", label: "Own Asset" },
+                { value: "RENTAL ASSET", label: "Rental Asset" },
+              ]}
+              hasError={!!errors.assetType}
+            />
             <p className={errorClass}>{errors.assetType?.message}</p>
           </div>
 
@@ -250,11 +259,12 @@ const EditMachinery = ({ asset, onclose, onUpdate }) => {
 
           <div>
             <label className={labelClass}>Fuel Type</label>
-            <select {...register("fuelType")} className={inputClass}>
-              <option value="Diesel">Diesel</option>
-              <option value="Petrol">Petrol</option>
-              <option value="Electric">Electric</option>
-            </select>
+            <SearchableSelect
+              name="fuelType"
+              watch={watch}
+              setValue={(name, val) => setValue(name, val, { shouldValidate: true })}
+              options={["Diesel", "Petrol", "Electric"]}
+            />
           </div>
 
           <div>
@@ -267,11 +277,16 @@ const EditMachinery = ({ asset, onclose, onUpdate }) => {
 
           <div>
             <label className={labelClass}>Tracking Mode</label>
-            <select {...register("trackingMode")} className={inputClass}>
-              <option value="HOURS">Hours (HMR)</option>
-              <option value="KILOMETERS">Kilometers (Odometer)</option>
-              <option value="UNITS">Units (Production)</option>
-            </select>
+            <SearchableSelect
+              name="trackingMode"
+              watch={watch}
+              setValue={(name, val) => setValue(name, val, { shouldValidate: true })}
+              options={[
+                { value: "HOURS", label: "Hours (HMR)" },
+                { value: "KILOMETERS", label: "Kilometers (Odometer)" },
+                { value: "UNITS", label: "Units (Production)" },
+              ]}
+            />
           </div>
 
           <div>

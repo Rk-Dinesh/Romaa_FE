@@ -1,7 +1,8 @@
 import React, { useEffect, useState, useMemo } from "react";
-import { useParams, useNavigate, useLocation } from "react-router-dom";
+import {  useNavigate, useLocation } from "react-router-dom";
 import axios from "axios";
 import { API } from "../../../constant";
+import SearchableSelect from "../../../components/SearchableSelect";
 import { 
   ArrowLeft, 
   CalendarDays, 
@@ -221,21 +222,18 @@ const ViewMaterialReceived = () => {
                 {/* Filter Controls */}
                 <div className="flex gap-2">
                   <div className="relative">
-                    <select
+                    <SearchableSelect
                       value={dateFilterType}
-                      onChange={(e) => {
-                        setDateFilterType(e.target.value);
-                        setDateValue(""); // Reset value when type changes
-                      }}
-                      className="h-full pl-3 pr-8 py-2 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg text-sm font-medium text-gray-600 dark:text-gray-300  outline-none appearance-none cursor-pointer"
-                    >
-                      <option value="all">All Time</option>
-                      <option value="date">Date</option>
-                      <option value="week">Week</option>
-                      <option value="month">Month</option>
-                      <option value="year">Year</option>
-                    </select>
-                    <Filter className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" size={14} />
+                      onChange={(val) => { setDateFilterType(val); setDateValue(""); }}
+                      options={[
+                        { value: "all", label: "All Time" },
+                        { value: "date", label: "Date" },
+                        { value: "week", label: "Week" },
+                        { value: "month", label: "Month" },
+                        { value: "year", label: "Year" },
+                      ]}
+                      placeholder="Filter by"
+                    />
                   </div>
 
                   {dateFilterType !== "all" && (

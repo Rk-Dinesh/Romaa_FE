@@ -7,6 +7,7 @@ import Modal from "../../../components/Modal";
 import { toast } from "react-toastify";
 import { API } from "../../../constant";
 import { Box } from "lucide-react"; // Added for empty state UI
+import SearchableSelect from "../../../components/SearchableSelect";
 
 // --- Validation Schema ---
 const schema = yup.object().shape({
@@ -41,6 +42,7 @@ const AddMaterial = ({ onclose, onSuccess }) => {
     control,
     handleSubmit,
     setValue,
+    watch,
     formState: { errors },
   } = useForm({
     resolver: yupResolver(schema),
@@ -75,8 +77,7 @@ const AddMaterial = ({ onclose, onSuccess }) => {
   }, [tenderId]);
 
   // 2. Handle Request ID Change
-  const handleRequestSelect = async (e) => {
-    const selectedId = e.target.value;
+  const handleRequestSelect = async (selectedId) => {
     setValue("requestId", selectedId);
 
     if (!selectedId) {
@@ -208,18 +209,14 @@ const AddMaterial = ({ onclose, onSuccess }) => {
               <label className="text-sm font-semibold text-gray-700 dark:text-gray-300">
                 Select Purchase Order <span className="text-red-500">*</span>
               </label>
-              <select
-                {...register("requestId")}
-                onChange={handleRequestSelect}
-                className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-700 shadow-sm transition-colors focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-800 dark:text-white dark:focus:border-blue-400"
-              >
-                <option value="">-- Select PO --</option>
-                {purchaseRequests.map((r) => (
-                  <option key={r._id} value={r.requestId}>
-                    {r.requestId} - {r.title}
-                  </option>
-                ))}
-              </select>
+              <SearchableSelect
+                name="requestId"
+                watch={watch}
+                setValue={(name, val) => handleRequestSelect(val)}
+                placeholder="-- Select PO --"
+                options={purchaseRequests.map((r) => ({ value: r.requestId, label: `${r.requestId} - ${r.title}` }))}
+                hasError={!!errors.requestId}
+              />
               <p className="text-xs text-red-500 min-h-[16px]">{errors.requestId?.message}</p>
             </div>
 

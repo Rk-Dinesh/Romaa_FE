@@ -17,9 +17,14 @@ const RaiseTickets = ({ onclose }) => {
   const {
     register,
     handleSubmit,
+    watch,
+    setValue,
     formState: { errors },
   } = useForm({
     resolver: yupResolver(schema),
+    defaultValues: {
+      status: "",
+    },
   });
 
   const onSubmit = (data) => {
@@ -64,6 +69,8 @@ const RaiseTickets = ({ onclose }) => {
                   name="status"
                   register={register}
                   errors={errors}
+                  watch={watch}
+                  setValue={setValue}
                   placeholder="Select"
                   options={[
                     { label: "Completed", value: "complete" },

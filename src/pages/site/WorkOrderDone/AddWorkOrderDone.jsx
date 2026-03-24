@@ -1,13 +1,12 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { IoClose } from "react-icons/io5";
 import {
   FiSave,
   FiPlus,
   FiTrash2,
   FiFileText,
-  FiChevronDown,
-  FiSearch,
 } from "react-icons/fi";
+import SearchableSelect from "../../../components/SearchableSelect";
 import { Calculator, CalendarDays } from "lucide-react";
 import { toast } from "react-toastify";
 import axios from "axios";
@@ -739,103 +738,5 @@ const WorkOrderSection = ({
   );
 };
 
-// ─── Searchable Select ────────────────────────────────────────────────────────
-
-const SearchableSelect = ({
-  value,
-  onChange,
-  options,
-  placeholder,
-  hasError,
-}) => {
-  const [isOpen, setIsOpen] = useState(false);
-  const [searchTerm, setSearchTerm] = useState("");
-  const wrapperRef = useRef(null);
-
-  const selectedLabel = options.find((opt) => opt.value === value)?.label || "";
-
-  useEffect(() => {
-    const handleClickOutside = (e) => {
-      if (wrapperRef.current && !wrapperRef.current.contains(e.target)) {
-        setIsOpen(false);
-        setSearchTerm("");
-      }
-    };
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
-
-  const filtered = options.filter((opt) =>
-    opt.label.toLowerCase().includes(searchTerm.toLowerCase()),
-  );
-
-  return (
-    <div className="relative w-full" ref={wrapperRef}>
-      <div
-        onClick={() => setIsOpen((o) => !o)}
-        className={`w-full border rounded-lg px-3 py-2 text-sm bg-white dark:bg-gray-900 dark:text-white cursor-pointer flex justify-between items-center focus:outline-none transition-all ${
-          hasError
-            ? "border-red-400"
-            : isOpen
-              ? "border-blue-500 ring-1 ring-blue-500"
-              : "border-gray-300 dark:border-gray-600 hover:border-gray-400"
-        }`}
-      >
-        <span
-          className={
-            !selectedLabel ? "text-gray-400" : "text-gray-800 dark:text-white"
-          }
-        >
-          {selectedLabel || placeholder || "Select..."}
-        </span>
-        <FiChevronDown
-          size={14}
-          className={`text-gray-400 transition-transform ${isOpen ? "rotate-180" : ""}`}
-        />
-      </div>
-
-      {isOpen && (
-        <div className="absolute z-50 w-full mt-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg max-h-56 flex flex-col overflow-hidden">
-          <div className="p-2 border-b border-gray-100 dark:border-gray-700 flex items-center gap-2">
-            <FiSearch size={13} className="text-gray-400 shrink-0" />
-            <input
-              autoFocus
-              type="text"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              placeholder="Search..."
-              className="w-full text-sm bg-transparent outline-none text-gray-700 dark:text-gray-200"
-            />
-          </div>
-          <div className="overflow-y-auto flex-1">
-            {filtered.length > 0 ? (
-              filtered.map((opt) => (
-                <div
-                  key={opt.value}
-                  onClick={() => {
-                    onChange(opt.value);
-                    setIsOpen(false);
-                    setSearchTerm("");
-                  }}
-                  className={`px-3 py-2 text-sm cursor-pointer hover:bg-blue-50 dark:hover:bg-blue-900/30 ${
-                    value === opt.value
-                      ? "bg-blue-50 dark:bg-blue-900/30 font-medium text-blue-600 dark:text-blue-400"
-                      : "text-gray-700 dark:text-gray-200"
-                  }`}
-                >
-                  {opt.label}
-                </div>
-              ))
-            ) : (
-              <div className="px-3 py-3 text-xs text-gray-400 text-center">
-                No results found
-              </div>
-            )}
-          </div>
-        </div>
-      )}
-    </div>
-  );
-};
 
 export default AddWorkOrderDone;

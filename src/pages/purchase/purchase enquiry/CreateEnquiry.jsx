@@ -3,6 +3,7 @@ import { IoClose, IoSearch } from "react-icons/io5";
 import { toast } from "react-toastify";
 import axios from "axios";
 import { API } from "../../../constant";
+import SearchableSelect from "../../../components/SearchableSelect";
 
 // --- INITIAL STATES ---
 const initialMaterial = {
@@ -400,50 +401,34 @@ const CreateEnquiry = ({ onclose, onSuccess }) => {
               <label className="block text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase mb-1">
                 Entry Type
               </label>
-              <select
+              <SearchableSelect
                 value={entryType}
-                onChange={(e) => {
-                  setEntryType(e.target.value);
+                onChange={(val) => {
+                  setEntryType(val);
                   setProjectId("");
                   setRequestId("");
                   resetForm();
                   setRequests([]);
                 }}
-                className="w-full bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-md px-3 py-2 text-sm text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none"
-              >
-                <option value="" className="dark:bg-gray-800">
-                  Select
-                </option>
-                <option value="manual" className="dark:bg-gray-800">
-                  Manual Entry
-                </option>
-                <option value="existing" className="dark:bg-gray-800">
-                  Existing Request
-                </option>
-              </select>
+                options={[
+                  { value: "manual", label: "Manual Entry" },
+                  { value: "existing", label: "Existing Request" },
+                ]}
+                placeholder="Select"
+              />
             </div>
 
             <div>
               <label className="block text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase mb-1">
                 Project
               </label>
-              <select
+              <SearchableSelect
                 value={projectId}
-                onChange={(e) => handleProjectSelect(e.target.value)}
+                onChange={(val) => handleProjectSelect(val)}
                 disabled={isReadOnly}
-                className={`w-full bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-md px-3 py-2 text-sm text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none ${
-                  isReadOnly ? "cursor-not-allowed opacity-70" : ""
-                }`}
-              >
-                <option value="" className="dark:bg-gray-800">
-                  Select Project
-                </option>
-                {projects.map((p, i) => (
-                  <option key={i} value={p.tender_id} className="dark:bg-gray-800">
-                    {p.tender_id}
-                  </option>
-                ))}
-              </select>
+                options={projects.map((p) => ({ value: p.tender_id, label: p.tender_id }))}
+                placeholder="Select Project"
+              />
             </div>
 
             {/* Conditional Request ID */}
@@ -452,20 +437,12 @@ const CreateEnquiry = ({ onclose, onSuccess }) => {
                 <label className="block text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase mb-1">
                   Request ID
                 </label>
-                <select
+                <SearchableSelect
                   value={requestId}
-                  onChange={(e) => handleRequestSelect(e.target.value)}
-                  className="w-full bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-md px-3 py-2 text-sm text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none"
-                >
-                  <option value="" className="dark:bg-gray-800">
-                    Select Request
-                  </option>
-                  {requests.map((r, i) => (
-                    <option key={i} value={r.requestId} className="dark:bg-gray-800">
-                      {r.requestId}
-                    </option>
-                  ))}
-                </select>
+                  onChange={(val) => handleRequestSelect(val)}
+                  options={requests.map((r) => ({ value: r.requestId, label: r.requestId }))}
+                  placeholder="Select Request"
+                />
               </div>
             )}
           </div>
@@ -498,34 +475,20 @@ const CreateEnquiry = ({ onclose, onSuccess }) => {
                     <tr key={i} className="bg-white dark:bg-gray-900 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
                       <td className="px-4 py-3 text-center text-gray-400">{i + 1}</td>
                       <td className="px-4 py-3">
-                        <select
+                        <SearchableSelect
                           value={row.vendorId}
-                          onChange={(e) => handleVendorChange(i, "vendorId", e.target.value)}
-                          className="w-full bg-transparent border-b border-transparent hover:border-gray-300 dark:hover:border-gray-600 focus:border-blue-500 outline-none text-gray-800 dark:text-gray-200 py-1 transition-colors"
-                        >
-                          <option value="" className="dark:bg-gray-800">Select ID</option>
-                          {Array.isArray(projectVendors) &&
-                            projectVendors.map((v, idx) => (
-                              <option key={v.vendor_id || idx} value={v.vendor_id} className="dark:bg-gray-800">
-                                {v.vendor_id}
-                              </option>
-                            ))}
-                        </select>
+                          onChange={(val) => handleVendorChange(i, "vendorId", val)}
+                          options={Array.isArray(projectVendors) ? projectVendors.map((v) => ({ value: v.vendor_id, label: v.vendor_id })) : []}
+                          placeholder="Select ID"
+                        />
                       </td>
                       <td className="px-4 py-3">
-                        <select
+                        <SearchableSelect
                           value={row.vendorName}
-                          onChange={(e) => handleVendorChange(i, "vendorName", e.target.value)}
-                          className="w-full bg-transparent border-b border-transparent hover:border-gray-300 dark:hover:border-gray-600 focus:border-blue-500 outline-none text-gray-800 dark:text-gray-200 py-1 transition-colors"
-                        >
-                          <option value="" className="dark:bg-gray-800">Select Name</option>
-                          {Array.isArray(projectVendors) &&
-                            projectVendors.map((v, idx) => (
-                              <option key={v.vendor_id || idx} value={v.vendor_name} className="dark:bg-gray-800">
-                                {v.vendor_name}
-                              </option>
-                            ))}
-                        </select>
+                          onChange={(val) => handleVendorChange(i, "vendorName", val)}
+                          options={Array.isArray(projectVendors) ? projectVendors.map((v) => ({ value: v.vendor_name, label: v.vendor_name })) : []}
+                          placeholder="Select Name"
+                        />
                       </td>
                       <td className="px-4 py-3 text-center">
                         {selectedVendors.length > 1 && (

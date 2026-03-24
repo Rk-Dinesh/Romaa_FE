@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useMemo } from "react";
+import { useEffect, useMemo } from "react";
 import { useForm } from "react-hook-form";
 import { yupResolver } from "@hookform/resolvers/yup";
 import * as Yup from "yup";
@@ -9,11 +9,10 @@ import {
   FiMapPin,
   FiShield,
   FiSave,
-  FiChevronDown,
-  FiSearch,
 } from "react-icons/fi";
 import { useCreateContractWorker } from "./hooks/useContractWorkers";
 import { useContractorsDropdown } from "../contract & Nmr/hooks/useContractors";
+import SearchableSelect from "../../../components/SearchableSelect";
 
 const schema = Yup.object().shape({
   contractor_id: Yup.string().required("Contractor is required"),
@@ -50,6 +49,9 @@ const AddNMR = ({ onclose, onSuccess }) => {
     defaultValues: {
       gender: "",
       contractor_id: "",
+      role: "",
+      site_assigned: "",
+      id_proof_type: "",
       address_country: "India",
     },
   });
@@ -143,7 +145,7 @@ const AddNMR = ({ onclose, onSuccess }) => {
             </div>
             <Input label="Full Name *" name="employee_name" register={register} error={errors.employee_name} placeholder="Suresh Kumar" />
             <Input label="Phone *" name="contact_phone" register={register} error={errors.contact_phone} placeholder="9876543210" />
-            <Select label="Gender *" name="gender" register={register} error={errors.gender} options={["Male", "Female", "Other"]} />
+            <Select label="Gender *" name="gender" watch={watch} setValue={setValue} error={errors.gender} options={["Male", "Female", "Other"]} />
             <Input label="Age *" type="number" name="age" register={register} error={errors.age} placeholder="35" />
             <div className="md:col-span-2"></div>
 
@@ -160,14 +162,15 @@ const AddNMR = ({ onclose, onSuccess }) => {
               error={errors.contractor_id}
               placeholder="Search Contractor..."
             />
-            <Select label="Role *" name="role" register={register} error={errors.role} options={roles} />
+            <Select label="Role *" name="role" watch={watch} setValue={setValue} error={errors.role} options={roles} />
             <Input label="Daily Wage (Rs) *" type="number" name="daily_wage" register={register} error={errors.daily_wage} placeholder="800" />
 
             {/* Site — dropdown from contractor's assigned projects */}
             <Select
               label="Site Assigned"
               name="site_assigned"
-              register={register}
+              watch={watch}
+              setValue={setValue}
               error={errors.site_assigned}
               options={siteOptions}
               disabled={siteOptions.length === 0}
@@ -211,7 +214,7 @@ const AddNMR = ({ onclose, onSuccess }) => {
             <div className={sectionHeaderClass}>
               <FiShield /> Identity Document
             </div>
-            <Select label="ID Proof Type *" name="id_proof_type" register={register} error={errors.id_proof_type} options={["Aadhaar", "PAN", "Voter ID", "Driving License", "Passport"]} />
+            <Select label="ID Proof Type *" name="id_proof_type" watch={watch} setValue={setValue} error={errors.id_proof_type} options={["Aadhaar", "PAN", "Voter ID", "Driving License", "Passport"]} />
             <Input label="ID Proof Number *" name="id_proof_number" register={register} error={errors.id_proof_number} placeholder="1234-5678-9012" />
             <div className="md:col-span-1"></div>
 
@@ -257,97 +260,17 @@ const Input = ({ label, name, type = "text", register, error, placeholder }) => 
   </div>
 );
 
-const Select = ({ label, name, register, error, options, disabled, placeholder }) => (
-  <div className="w-full">
-    <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">{label}</label>
-    <select
-      {...register(name)}
-      disabled={disabled}
-      className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 text-sm bg-gray-50 dark:bg-gray-800 dark:text-white focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-    >
-      <option value="">{placeholder || "Select..."}</option>
-      {options.map((opt, i) => (
-        <option key={i} value={opt}>{opt}</option>
-      ))}
-    </select>
-    {error && <p className="text-red-500 text-[10px] mt-0.5">{error.message}</p>}
-  </div>
+const Select = ({ label, name, watch, setValue, error, options, disabled, placeholder }) => (
+  <SearchableSelect
+    label={label}
+    name={name}
+    watch={watch}
+    setValue={(n, v) => setValue(n, v, { shouldValidate: true })}
+    options={options}
+    placeholder={placeholder || "Select..."}
+    disabled={disabled}
+    error={error}
+  />
 );
-
-const SearchableSelect = ({ label, name, options, setValue, watch, error, placeholder }) => {
-  const [isOpen, setIsOpen] = useState(false);
-  const [searchTerm, setSearchTerm] = useState("");
-  const wrapperRef = useRef(null);
-
-  const selectedValue = watch(name);
-  const selectedLabel = options.find((opt) => opt.value === selectedValue)?.label || "";
-
-  useEffect(() => {
-    function handleClickOutside(event) {
-      if (wrapperRef.current && !wrapperRef.current.contains(event.target)) {
-        setIsOpen(false);
-      }
-    }
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
-
-  const filteredOptions = options.filter((opt) =>
-    opt.label.toLowerCase().includes(searchTerm.toLowerCase())
-  );
-
-  return (
-    <div className="w-full relative" ref={wrapperRef}>
-      <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">{label}</label>
-      <div
-        className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 text-sm bg-gray-50 dark:bg-gray-800 dark:text-white focus:outline-none focus:border-blue-500 cursor-pointer flex justify-between items-center"
-        onClick={() => setIsOpen(!isOpen)}
-      >
-        <span className={!selectedLabel ? "text-gray-400" : ""}>
-          {selectedLabel || placeholder || "Select..."}
-        </span>
-        <FiChevronDown className="text-gray-500" />
-      </div>
-
-      {isOpen && (
-        <div className="absolute z-50 w-full mt-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg max-h-60 overflow-hidden flex flex-col">
-          <div className="p-2 border-b border-gray-100 dark:border-gray-700 flex items-center gap-2">
-            <FiSearch className="text-gray-400" />
-            <input
-              type="text"
-              className="w-full text-sm bg-transparent outline-none text-gray-700 dark:text-gray-200"
-              placeholder="Search..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              autoFocus
-            />
-          </div>
-          <div className="overflow-y-auto flex-1">
-            {filteredOptions.length > 0 ? (
-              filteredOptions.map((opt) => (
-                <div
-                  key={opt.value}
-                  className={`px-3 py-2 text-sm cursor-pointer hover:bg-blue-50 dark:hover:bg-blue-900/30 ${
-                    selectedValue === opt.value ? "bg-blue-50 dark:bg-blue-900/30 font-medium text-blue-600 dark:text-blue-400" : "text-gray-700 dark:text-gray-200"
-                  }`}
-                  onClick={() => {
-                    setValue(name, opt.value);
-                    setIsOpen(false);
-                    setSearchTerm("");
-                  }}
-                >
-                  {opt.label}
-                </div>
-              ))
-            ) : (
-              <div className="px-3 py-2 text-xs text-gray-500 text-center">No results found</div>
-            )}
-          </div>
-        </div>
-      )}
-      {error && <p className="text-red-500 text-[10px] mt-0.5">{error.message}</p>}
-    </div>
-  );
-};
 
 export default AddNMR;

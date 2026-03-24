@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import SearchableSelect from "../../../../../../components/SearchableSelect";
 import Button from "../../../../../../components/Button";
 import Title from "../../../../../../components/Title";
 import { TbPencil, TbPlus } from "react-icons/tb";
@@ -35,10 +36,15 @@ const EditRateAnalysis = () => {
   const {
     register,
     handleSubmit,
+    watch,
+    setValue,
     formState: { errors },
     reset,
   } = useForm({
     resolver: yupResolver(schema),
+    defaultValues: {
+      units: "",
+    },
   });
 
   const [data, setData] = useState({
@@ -152,16 +158,16 @@ const EditRateAnalysis = () => {
   const renderField = (field, section) => {
     if (field.key === "units") {
       return (
-        <select
-          className="w-full px-2 py-2 rounded text-xs border border-input-bordergrey"
+        <SearchableSelect
           value={field.value}
-          onChange={(e) => updateField(field.key, e.target.value, section)}
-        >
-          <option value="">Select unit</option>
-          <option value="A">A</option>
-          <option value="B">B</option>
-          <option value="C">C</option>
-        </select>
+          onChange={(val) => updateField(field.key, val, section)}
+          options={[
+            { value: "A", label: "A" },
+            { value: "B", label: "B" },
+            { value: "C", label: "C" },
+          ]}
+          placeholder="Select unit"
+        />
       );
     }
 
@@ -279,6 +285,8 @@ const EditRateAnalysis = () => {
                       type="select"
                       register={register}
                       errors={errors}
+                      watch={watch}
+                      setValue={setValue}
                       placeholder="Select unit"
                       options={[
                         { label: "A", value: "A" },

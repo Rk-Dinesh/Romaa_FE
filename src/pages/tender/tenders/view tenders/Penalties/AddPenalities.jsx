@@ -7,6 +7,7 @@ import Modal from "../../../../../components/Modal";
 import { InputField } from "../../../../../components/InputField";
 import { API } from "../../../../../constant";
 import { useParams } from "react-router-dom";
+import { toast } from "react-toastify";
 
 const schema = yup.object().shape({
   penalty_type: yup.string().required("Penalty type is required"),
@@ -29,10 +30,16 @@ const [loading, setLoading] = useState(false);
   const {
     register,
     handleSubmit,
+    watch,
+    setValue,
     formState: { errors },
     reset,
   } = useForm({
     resolver: yupResolver(schema),
+    defaultValues: {
+      penalty_type: "",
+      status: "",
+    },
   });
 
   const onSubmit = async (data) => {
@@ -77,6 +84,8 @@ const [loading, setLoading] = useState(false);
               type="select"
               register={register}
               errors={errors}
+              watch={watch}
+              setValue={setValue}
               options={[
                 { value: "late delivery", label: "Late Delivery" },
                 { value: "non-compliance", label: "Non Compliance" },
@@ -113,6 +122,8 @@ const [loading, setLoading] = useState(false);
               type="select"
               register={register}
               errors={errors}
+              watch={watch}
+              setValue={setValue}
               options={[
                 { value: "pending", label: "Pending" },
                 { value: "paid", label: "Paid" },

@@ -37,9 +37,14 @@ const AddMaterial = ({ onclose }) => {
   const {
     register,
     handleSubmit,
+    watch,
+    setValue,
     formState: { errors },
   } = useForm({
     resolver: yupResolver(schema),
+    defaultValues: {
+      units: "",
+    },
   });
 
   const onSubmit = (data) => {
@@ -71,6 +76,8 @@ const AddMaterial = ({ onclose }) => {
                     type="select"
                     register={register}
                     errors={errors}
+                    watch={watch}
+                    setValue={setValue}
                     placeholder={"Select unit"}
                     options={[
                       { label: "Cubic Meter", value: "Cubic Meter" },

@@ -4,6 +4,7 @@ import { FiSave, FiPlus, FiTrash2, FiFileText } from "react-icons/fi";
 import { CalendarDays } from "lucide-react";
 import { useProject } from "../../../context/ProjectContext";
 import { useAddWorkDone, useBOQItems } from "./hooks/useWorkDone";
+import SearchableSelect from "../../../components/SearchableSelect";
 
 const UNITS = ["Nos", "CUM", "SQM", "RMT", "MT", "KG", "Ltr", "Set", "Pair", "LS"];
 
@@ -173,16 +174,14 @@ const ItemCard = ({ item, idx, boqItems, boqLoading, errors, onUpdate, onSelectB
 
       <div className="w-28 shrink-0">
         <Field label="Unit">
-          <select
+          <SearchableSelect
             value={item.unit}
-            onChange={(e) => onUpdate(item._key, "unit", e.target.value)}
-            className="w-full border border-gray-200 dark:border-gray-600 rounded-lg px-2 py-2 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 dark:bg-gray-800 dark:text-white transition-colors"
-          >
-            {!UNITS.includes(item.unit) && item.unit && (
-              <option value={item.unit}>{item.unit}</option>
-            )}
-            {UNITS.map((u) => <option key={u} value={u}>{u}</option>)}
-          </select>
+            onChange={(val) => onUpdate(item._key, "unit", val)}
+            options={[
+              ...(!UNITS.includes(item.unit) && item.unit ? [{ value: item.unit, label: item.unit }] : []),
+              ...UNITS.map((u) => ({ value: u, label: u })),
+            ]}
+          />
         </Field>
       </div>
 

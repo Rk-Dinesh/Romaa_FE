@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import { useForm } from "react-hook-form";
 import { yupResolver } from "@hookform/resolvers/yup";
 import * as yup from "yup";
@@ -37,34 +37,19 @@ const schema = yup.object().shape({
 
 const AddEMD = ({ onclose, onSuccess }) => {
   const { tender_id } = useParams();
-  const [emdData, setEmdData] = useState([]);
   const [loading, setLoading] = useState(false);
-  const fetchEMD = async () => {
-    try {
-    
-      const res = await axios.get(`${API}/tender/gettenderemd/${tender_id}`);
-      if (res.data.status && res.data.data) {
-        console.log(res.data.data);
-
-        setEmdData(res.data.data || []);
-      } else {
-        setEmdData([]);
-      }
-      } catch {
-      toast.error("Failed to load EMD data");
-    }
-  };
-
-  useEffect(() => {
-    fetchEMD();
-  }, [tender_id]);
 
   const {
     register,
     handleSubmit,
+    watch,
+    setValue,
     formState: { errors },
   } = useForm({
     resolver: yupResolver(schema),
+    defaultValues: {
+      status: "",
+    },
   });
 
   const onSubmit = async (data) => {
@@ -180,6 +165,8 @@ const AddEMD = ({ onclose, onSuccess }) => {
                   type="select"
                   register={register}
                   errors={errors}
+                  watch={watch}
+                  setValue={setValue}
                   options={[
                     { value: "SUBMITTED", label: "Submitted" },
                     { value: "PENDING", label: "Pending" },

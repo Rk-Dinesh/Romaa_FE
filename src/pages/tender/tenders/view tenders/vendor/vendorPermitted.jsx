@@ -7,6 +7,7 @@ import Modal from "../../../../../components/Modal";
 import { InputField } from "../../../../../components/InputField";
 import { API } from "../../../../../constant";
 import { useParams } from "react-router-dom";
+import { toast } from "react-toastify";
 
 // ✅ Validation Schema
 const schema = yup.object().shape({
@@ -37,6 +38,12 @@ const AddPermittedVendor = ({ onclose, onSuccess }) => {
     reset,
   } = useForm({
     resolver: yupResolver(schema),
+    defaultValues: {
+      type: "",
+      vendor_id: "",
+      company_name: "",
+      permitted_status: "",
+    },
   });
 
   const vendorType = watch("type");
@@ -72,7 +79,7 @@ const AddPermittedVendor = ({ onclose, onSuccess }) => {
         setValue("company_name", found.company_name);
       }
     }
-  }, [vendorId, setValue]);
+  }, [vendorId, vendors, vendorName, setValue]);
 
   useEffect(() => {
     if (vendorName) {
@@ -81,7 +88,7 @@ const AddPermittedVendor = ({ onclose, onSuccess }) => {
         setValue("vendor_id", found.vendor_id);
       }
     }
-  }, [vendorName, setValue]);
+  }, [vendorName, vendors, vendorId, setValue]);
 
   const onSubmit = async (data) => {
     try {
@@ -133,6 +140,8 @@ const AddPermittedVendor = ({ onclose, onSuccess }) => {
               type="select"
               register={register}
               errors={errors}
+              watch={watch}
+              setValue={setValue}
               placeholder="Select Vendor type"
               options={[
                 { label: "Cement Supplier", value: "Cement Supplier" },
@@ -159,6 +168,8 @@ const AddPermittedVendor = ({ onclose, onSuccess }) => {
               name="vendor_id"
               register={register}
               errors={errors}
+              watch={watch}
+              setValue={setValue}
               options={vendors.map((v) => ({
                 label: v.vendor_id,
                 value: v.vendor_id,
@@ -180,6 +191,8 @@ const AddPermittedVendor = ({ onclose, onSuccess }) => {
               name="company_name"
               register={register}
               errors={errors}
+              watch={watch}
+              setValue={setValue}
               options={vendors.map((v) => ({
                 label: v.company_name,
                 value: v.company_name,
@@ -231,6 +244,8 @@ const AddPermittedVendor = ({ onclose, onSuccess }) => {
               type="select"
               register={register}
               errors={errors}
+              watch={watch}
+              setValue={setValue}
               options={[
                 { value: "APPROVED", label: "Approved" },
                 { value: "PENDING", label: "Pending" },

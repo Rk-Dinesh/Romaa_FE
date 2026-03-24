@@ -41,9 +41,16 @@ const RequestRegister = ({ onclose }) => {
   const {
     register,
     handleSubmit,
+    watch,
+    setValue,
     formState: { errors },
   } = useForm({
     resolver: yupResolver(schema),
+    defaultValues: {
+      requesttype: "",
+      costcenter: "",
+      priority: "",
+    },
   });
 
   const onSubmit = (data) => {
@@ -68,6 +75,8 @@ const RequestRegister = ({ onclose }) => {
                     type="select"
                     register={register}
                     errors={errors}
+                    watch={watch}
+                    setValue={setValue}
                     placeholder={"Select Request type"}
                     options={[
                       { label: "Material", value: "Material" },
@@ -81,6 +90,8 @@ const RequestRegister = ({ onclose }) => {
                     type="select"
                     register={register}
                     errors={errors}
+                    watch={watch}
+                    setValue={setValue}
                     placeholder={"Select cost center"}
                     options={[
                       { label: "Site", value: "Site" },
@@ -94,6 +105,8 @@ const RequestRegister = ({ onclose }) => {
                     type="select"
                     register={register}
                     errors={errors}
+                    watch={watch}
+                    setValue={setValue}
                     placeholder={"Select priority"}
                     options={[
                       { label: "High", value: "High" },

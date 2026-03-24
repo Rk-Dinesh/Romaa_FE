@@ -59,6 +59,11 @@ const AddTender = ({ onclose, onSuccess }) => {
 
   const { register, handleSubmit, setValue, watch, formState: { errors } } = useForm({
     resolver: yupResolver(schema),
+    defaultValues: {
+      tender_type: "",
+      client_id: "",
+      client_name: "",
+    },
   });
 
   // 3. Auto-fill Logic (Using cached clients)
@@ -105,12 +110,14 @@ const AddTender = ({ onclose, onSuccess }) => {
             </div>
             
             <div className="col-span-1">
-              <InputFieldTender 
-                label="Tender Type" 
-                type="select" 
-                name="tender_type" 
-                register={register} 
+              <InputFieldTender
+                label="Tender Type"
+                type="select"
+                name="tender_type"
+                register={register}
                 errors={errors}
+                watch={watch}
+                setValue={setValue}
                 options={[
                   { value: "item rate contarct", label: "Item Rate" },
                   { value: "percentage", label: "Percentage" },
@@ -127,22 +134,26 @@ const AddTender = ({ onclose, onSuccess }) => {
 
             <SectionHeader title="Client Information" />
             <div className="col-span-1">
-              <InputFieldTender 
-                label="Client ID" 
-                type="select" 
-                name="client_id" 
-                register={register} 
+              <InputFieldTender
+                label="Client ID"
+                type="select"
+                name="client_id"
+                register={register}
                 errors={errors}
+                watch={watch}
+                setValue={setValue}
                 options={clients.map(c => ({ value: c.client_id, label: c.client_id }))}
               />
             </div>
             <div className="col-span-1">
-              <InputFieldTender 
-                label="Client Name" 
-                type="select" 
-                name="client_name" 
-                register={register} 
+              <InputFieldTender
+                label="Client Name"
+                type="select"
+                name="client_name"
+                register={register}
                 errors={errors}
+                watch={watch}
+                setValue={setValue}
                 options={clients.map(c => ({ value: c.client_name, label: c.client_name }))}
               />
             </div>

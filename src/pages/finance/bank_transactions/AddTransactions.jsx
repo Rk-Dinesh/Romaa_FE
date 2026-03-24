@@ -20,9 +20,14 @@ const AddTransactions = ({ onclose }) => {
   const {
     register,
     handleSubmit,
+    watch,
+    setValue,
     formState: { errors },
   } = useForm({
     resolver: yupResolver(schema),
+    defaultValues: {
+      fromBank: "",
+    },
   });
 
   const onSubmit = (data) => {
@@ -54,6 +59,8 @@ const AddTransactions = ({ onclose }) => {
                     placeholder="from bank"
                     register={register}
                     errors={errors}
+                    watch={watch}
+                    setValue={setValue}
                     options={[
                       { label: "Bank A", value: "Bank A" },
                       { label: "Bank B", value: "Bank B" },

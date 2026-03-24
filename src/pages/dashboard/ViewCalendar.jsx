@@ -12,6 +12,7 @@ import Title from "../../components/Title";
 import Button from "../../components/Button";
 import { TbCalendarDue } from "react-icons/tb";
 import AddEvents from "./AddEvents";
+import SearchableSelect from "../../components/SearchableSelect";
 
 const Projectsdata = [
   { date: "2025-04-06", status: "Completed", name: "Foundation Work" },
@@ -96,30 +97,20 @@ const ViewCalendar = () => {
       <div className="flex   dark:text-white text-black  ">
         <div className="w-2/3 px-1 ">
           <div className="flex justify-between my-1 dark:bg-layout-dark bg-white  rounded-md px-2 py-2 items-center ">
-            <div className="space-x-2">
-              <select
-                value={selectedMonth}
-                onChange={(e) => setSelectedMonth(Number(e.target.value))}
-                className="  dark:text-white text-black dark:bg-layout-dark  outline-none p-2 rounded"
-              >
-                {months.map((month, idx) => (
-                  <option key={idx} value={idx}>
-                    {month}
-                  </option>
-                ))}
-              </select>
+            <div className="flex gap-2">
+              <SearchableSelect
+                value={String(selectedMonth)}
+                onChange={(val) => setSelectedMonth(Number(val))}
+                options={months.map((month, idx) => ({ value: String(idx), label: month }))}
+                placeholder="Select month"
+              />
 
-              <select
-                value={selectedYear}
-                onChange={(e) => setSelectedYear(Number(e.target.value))}
-                className=" dark:text-white text-black dark:bg-layout-dark  outline-none p-2 rounded"
-              >
-                {years.map((year) => (
-                  <option key={year} value={year}>
-                    {year}
-                  </option>
-                ))}
-              </select>
+              <SearchableSelect
+                value={String(selectedYear)}
+                onChange={(val) => setSelectedYear(Number(val))}
+                options={years.map((year) => ({ value: String(year), label: String(year) }))}
+                placeholder="Select year"
+              />
             </div>
 
             <span className="text-sm dark:text-white text-gray-400">Time zone</span>

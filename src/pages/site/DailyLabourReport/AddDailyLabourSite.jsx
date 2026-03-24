@@ -1,10 +1,11 @@
 import { useState, useEffect, useRef, useMemo } from "react";
 import { IoClose } from "react-icons/io5";
-import { FiSave, FiChevronDown, FiSearch, FiClipboard, FiPlus, FiTrash2 } from "react-icons/fi";
+import { FiSave, FiClipboard, FiPlus, FiTrash2 } from "react-icons/fi";
 import { toast } from "react-toastify";
 import { useContractorsDropdownTenderWise } from "../../Hr/contract & Nmr/hooks/useContractors";
 import { useContractorEmployees, useCreateBulkDLP, useBOQItems } from "./hooks/useDailyLabourReport";
 import { useProject } from "../../../context/ProjectContext";
+import SearchableSelect from "../../../components/SearchableSelect";
 
 const UNITS = ["CUM", "SQM", "RMT", "NOS", "KG", "MT", "LS"];
 
@@ -364,9 +365,14 @@ const ContractorSection = ({
       <div className="flex items-center gap-3 px-4 py-3 bg-gray-50 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 rounded-t-xl">
         <span className="text-xs font-bold text-gray-400 shrink-0">#{sectionIndex + 1}</span>
         <div className="flex-1">
-          <ContractorSelect
-            contractors={contractors} value={section.contractorId}
-            disabledIds={usedContractorIds} onChange={onChangeContractor} hasError={!!contractorError}
+          <SearchableSelect
+            value={section.contractorId}
+            onChange={onChangeContractor}
+            hasError={!!contractorError}
+            placeholder="Search contractor..."
+            options={contractors
+              .filter((c) => !usedContractorIds.includes(c.value))
+              .map((c) => ({ value: c.value, label: c.label }))}
           />
           {contractorError && <p className="text-red-500 text-[10px] mt-0.5">{contractorError}</p>}
         </div>
@@ -617,17 +623,21 @@ const WorkEntryRow = ({ entry, idx, boqItems, boqLoading, categories, rowError, 
 
       {/* Category (work type) */}
       <div className="px-1">
-        <select value={entry.category} onChange={(e) => onChange(idx, "category", e.target.value)} className={inputCls()}>
-          <option value="">Select...</option>
-          {categories.map((c) => <option key={c} value={c}>{c}</option>)}
-        </select>
+        <SearchableSelect
+          value={entry.category}
+          onChange={(val) => onChange(idx, "category", val)}
+          placeholder="Select..."
+          options={categories.map((c) => ({ value: c, label: c }))}
+        />
       </div>
 
       {/* Unit */}
       <div className="px-1">
-        <select value={entry.unit} onChange={(e) => onChange(idx, "unit", e.target.value)} className={inputCls()}>
-          {UNITS.map((u) => <option key={u} value={u}>{u}</option>)}
-        </select>
+        <SearchableSelect
+          value={entry.unit}
+          onChange={(val) => onChange(idx, "unit", val)}
+          options={UNITS.map((u) => ({ value: u, label: u }))}
+        />
       </div>
 
       {/* L */}
@@ -738,52 +748,6 @@ const DescriptionSelect = ({ boqItems, boqLoading, value, onChange, onSelect, ha
               Use &quot;{search.trim()}&quot; as description
             </div>
           )}
-        </div>
-      )}
-    </div>
-  );
-};
-
-// ─── Searchable Contractor Select ─────────────────────────────────────────────
-
-const ContractorSelect = ({ contractors, value, disabledIds = [], onChange, hasError }) => {
-  const [isOpen, setIsOpen] = useState(false);
-  const [searchTerm, setSearchTerm] = useState("");
-  const wrapperRef = useRef(null);
-
-  useEffect(() => {
-    const h = (e) => { if (wrapperRef.current && !wrapperRef.current.contains(e.target)) setIsOpen(false); };
-    document.addEventListener("mousedown", h);
-    return () => document.removeEventListener("mousedown", h);
-  }, []);
-
-  const selectedLabel = contractors.find((c) => c.value === value)?.label || "";
-  const filtered = contractors.filter((c) => !disabledIds.includes(c.value) && c.label.toLowerCase().includes(searchTerm.toLowerCase()));
-
-  return (
-    <div className="relative" ref={wrapperRef}>
-      <div
-        onClick={() => setIsOpen(!isOpen)}
-        className={`w-full border rounded-lg px-3 py-1.5 text-sm bg-white dark:bg-gray-900 dark:text-white cursor-pointer flex justify-between items-center ${hasError ? "border-red-400" : "border-gray-300 dark:border-gray-600"}`}
-      >
-        <span className={!selectedLabel ? "text-gray-400" : "text-gray-800 dark:text-white"}>{selectedLabel || "Search contractor..."}</span>
-        <FiChevronDown className="text-gray-400 shrink-0" />
-      </div>
-      {isOpen && (
-        <div className="absolute z-50 w-full mt-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg max-h-52 flex flex-col overflow-hidden">
-          <div className="p-2 border-b border-gray-100 dark:border-gray-700 flex items-center gap-2">
-            <FiSearch className="text-gray-400" />
-            <input autoFocus type="text" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)}
-              placeholder="Search..." className="w-full text-sm bg-transparent outline-none text-gray-700 dark:text-gray-200" />
-          </div>
-          <div className="overflow-y-auto flex-1">
-            {filtered.length > 0 ? filtered.map((c) => (
-              <div key={c.value} onClick={() => { onChange(c.value); setIsOpen(false); setSearchTerm(""); }}
-                className={`px-3 py-2 text-sm cursor-pointer hover:bg-blue-50 dark:hover:bg-blue-900/30 ${value === c.value ? "bg-blue-50 font-medium text-blue-600" : "text-gray-700 dark:text-gray-200"}`}>
-                {c.label}
-              </div>
-            )) : <div className="px-3 py-3 text-xs text-gray-400 text-center">No contractors available</div>}
-          </div>
         </div>
       )}
     </div>

@@ -7,10 +7,10 @@ import {
   AlertCircle,
   CalendarDays,
   ArrowRight,
-  ChevronDown
 } from "lucide-react";
 import { API } from "../../../../../../constant";
 import { useProject } from "../../../../../../context/ProjectContext";
+import SearchableSelect from "../../../../../../components/SearchableSelect";
 
 // --- HELPERS ---
 
@@ -145,33 +145,21 @@ const MonthlyProjects = () => {
 
           {/* Selectors */}
           <div className="flex items-center gap-2 bg-white dark:bg-gray-700 p-1 rounded-lg border border-gray-200 dark:border-gray-600 shadow-sm">
-            <div className="relative">
-              <select
-                value={selectedMonth}
-                onChange={(e) => setSelectedMonth(parseInt(e.target.value))}
-                className="appearance-none bg-transparent text-sm font-medium text-gray-700 dark:text-gray-200 py-1.5 pl-3 pr-8 rounded-md focus:outline-none cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-600"
-              >
-                {Array.from({ length: 12 }, (_, i) => (
-                  <option key={i} value={i}>{format(new Date(2000, i, 1), "MMMM")}</option>
-                ))}
-              </select>
-              <ChevronDown size={14} className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
-            </div>
+            <SearchableSelect
+              value={String(selectedMonth)}
+              onChange={(val) => setSelectedMonth(parseInt(val))}
+              options={Array.from({ length: 12 }, (_, i) => ({ value: String(i), label: format(new Date(2000, i, 1), "MMMM") }))}
+              placeholder="Select month"
+            />
 
             <div className="w-px h-4 bg-gray-300 dark:bg-gray-600"></div>
 
-            <div className="relative">
-              <select
-                value={selectedYear}
-                onChange={(e) => setSelectedYear(parseInt(e.target.value))}
-                className="appearance-none bg-transparent text-sm font-medium text-gray-700 dark:text-gray-200 py-1.5 pl-3 pr-8 rounded-md focus:outline-none cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-600"
-              >
-                {years.map((year) => (
-                  <option key={year} value={year}>{year}</option>
-                ))}
-              </select>
-              <ChevronDown size={14} className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
-            </div>
+            <SearchableSelect
+              value={String(selectedYear)}
+              onChange={(val) => setSelectedYear(parseInt(val))}
+              options={years.map((year) => ({ value: String(year), label: String(year) }))}
+              placeholder="Select year"
+            />
           </div>
 
         </div>

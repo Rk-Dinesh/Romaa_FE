@@ -20,6 +20,7 @@ import {
   useCreateContractor,
   useTendersForAssignment,
 } from "./hooks/useContractors";
+import SearchableSelect from "../../../components/SearchableSelect";
 
 const schema = Yup.object().shape({
   contractor_name: Yup.string().required("Contractor name is required"),
@@ -93,11 +94,16 @@ const AddContractor = ({ onclose, onSuccess }) => {
   const {
     register,
     handleSubmit,
+    watch,
+    setValue,
     formState: { errors },
   } = useForm({
     resolver: yupResolver(schema),
     defaultValues: {
       address_country: "India",
+      business_type: "",
+      place_of_supply: "",
+      payment_terms: "",
     },
   });
 
@@ -245,7 +251,8 @@ const AddContractor = ({ onclose, onSuccess }) => {
             <Select
               label="Business Type *"
               name="business_type"
-              register={register}
+              watch={watch}
+              setValue={setValue}
               error={errors.business_type}
               options={businessTypes}
             />
@@ -259,7 +266,8 @@ const AddContractor = ({ onclose, onSuccess }) => {
             <Select
               label="Place of Supply"
               name="place_of_supply"
-              register={register}
+              watch={watch}
+              setValue={setValue}
               error={errors.place_of_supply}
               options={["InState", "Others"]}
             />
@@ -429,7 +437,8 @@ const AddContractor = ({ onclose, onSuccess }) => {
             <Select
               label="Payment Terms"
               name="payment_terms"
-              register={register}
+              watch={watch}
+              setValue={setValue}
               error={errors.payment_terms}
               options={["Net 15", "Net 30", "Net 45", "Net 60", "Immediate"]}
             />
@@ -604,20 +613,12 @@ const WageFixingTable = ({ rows, onAdd, onUpdate, onRemove }) => {
                   className="border-t border-gray-100 dark:border-gray-700"
                 >
                   <td className="px-3 py-2">
-                    <select
+                    <SearchableSelect
                       value={row.category}
-                      onChange={(e) =>
-                        onUpdate(index, "category", e.target.value)
-                      }
-                      className="w-full border border-gray-300 dark:border-gray-600 rounded-md px-2 py-1.5 text-sm bg-white dark:bg-gray-800 dark:text-white focus:outline-none focus:border-blue-500"
-                    >
-                      <option value="">Select category...</option>
-                      {wageCategories.map((cat) => (
-                        <option key={cat} value={cat}>
-                          {cat}
-                        </option>
-                      ))}
-                    </select>
+                      onChange={(val) => onUpdate(index, "category", val)}
+                      options={wageCategories}
+                      placeholder="Select category..."
+                    />
                   </td>
                   <td className="px-3 py-2">
                     <input
@@ -681,26 +682,17 @@ const Input = ({
   </div>
 );
 
-const Select = ({ label, name, register, error, options }) => (
-  <div className="w-full">
-    <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
-      {label}
-    </label>
-    <select
-      {...register(name)}
-      className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 text-sm bg-gray-50 dark:bg-gray-800 dark:text-white focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all"
-    >
-      <option value="">Select...</option>
-      {options.map((opt, i) => (
-        <option key={i} value={opt}>
-          {opt}
-        </option>
-      ))}
-    </select>
-    {error && (
-      <p className="text-red-500 text-[10px] mt-0.5">{error.message}</p>
-    )}
-  </div>
+const Select = ({ label, name, watch, setValue, error, options, disabled, placeholder }) => (
+  <SearchableSelect
+    label={label}
+    name={name}
+    watch={watch}
+    setValue={(n, v) => setValue(n, v, { shouldValidate: true })}
+    options={options}
+    placeholder={placeholder || "Select..."}
+    disabled={disabled}
+    error={error}
+  />
 );
 
 export default AddContractor;

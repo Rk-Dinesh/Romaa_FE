@@ -5,6 +5,7 @@ import { yupResolver } from "@hookform/resolvers/yup";
 import * as yup from "yup";
 import { toast } from "react-toastify";
 import { useAllowedQuantities, useCreateWorkOrderRequest, usePermittedContractors } from "../../hooks/useProjects";
+import SearchableSelect from "../../../../components/SearchableSelect";
 
 /* ---------------- Validation Schema ---------------- */
 const workOrderSchema = yup.object().shape({
@@ -69,26 +70,20 @@ const CreateRequest = ({ onclose, onSuccess }) => {
     setSelectedContractors(selectedContractors.filter((_, i) => i !== index));
   };
 
-  const handleContractorChange = (index, field, value) => {
+  const handleContractorChange = (index, value) => {
     const updated = [...selectedContractors];
-    updated[index][field] = value;
-
-    if (field === "contractorId") {
-      const found = contractors.find(v => v.contractor_id === value);
-      if (found) updated[index].contractorName = found.contractor_name;
-    } else if (field === "contractorName") {
-      const found = contractors.find(v => v.contractor_name === value);
-      if (found) updated[index].contractorId = found.contractor_id;
-    }
-
+    const found = contractors.find(v => v.contractor_id === value);
+    updated[index] = {
+      contractorId: found?.contractor_id || "",
+      contractorName: found?.contractor_name || "",
+    };
     setSelectedContractors(updated);
   };
 
   /* ---------------- Material Handlers (Enhanced) ---------------- */
 
   // Handle Material Selection from Dropdown
-  const handleMaterialSelect = (e) => {
-    const selectedName = e.target.value;
+  const handleMaterialSelect = (selectedName) => {
     const item = availableItems.find(i => i.item_description === selectedName);
 
     if (item) {
@@ -294,68 +289,41 @@ const CreateRequest = ({ onclose, onSuccess }) => {
               )}
             </div>
 
-            <div className="overflow-x-auto rounded-lg border border-gray-200 dark:border-gray-700">
-              <table className="w-full text-sm text-left">
-                <thead className="bg-gray-50 dark:bg-gray-800/50 text-gray-500 dark:text-gray-400 text-xs uppercase font-semibold">
-                  <tr>
-                    <th className="px-4 py-3 w-12 text-center">#</th>
-                    <th className="px-4 py-3">Contractor ID</th>
-                    <th className="px-4 py-3">Contractor Name</th>
-                    <th className="px-4 py-3 w-20 text-center">Action</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-200 dark:divide-gray-800">
-                  {selectedContractors.map((row, i) => {
-                    const takenIds = selectedContractors
-                      .filter((_, idx) => idx !== i)
-                      .map((r) => r.contractorId)
-                      .filter(Boolean);
-                    const availableContractors = contractors.filter(
-                      (v) => !takenIds.includes(v.contractor_id)
-                    );
-                    return (
-                    <tr key={i} className="bg-white dark:bg-gray-900 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
-                      <td className="px-4 py-3 text-center text-gray-400">{i + 1}</td>
-                      <td className="px-4 py-3">
-                        <select
-                          value={row.contractorId}
-                          onChange={(e) => handleContractorChange(i, "contractorId", e.target.value)}
-                          className="w-full bg-transparent border-b border-transparent hover:border-gray-300 dark:hover:border-gray-600 focus:border-blue-500 outline-none text-gray-800 dark:text-gray-200 py-1 transition-colors"
-                        >
-                          <option value="" className="dark:bg-gray-800">Select Contractor ID</option>
-                          {availableContractors.map((v) => (
-                            <option key={v.contractor_id} value={v.contractor_id} className="dark:bg-gray-800">{v.contractor_id}</option>
-                          ))}
-                        </select>
-                      </td>
-                      <td className="px-4 py-3">
-                        <select
-                          value={row.contractorName}
-                          onChange={(e) => handleContractorChange(i, "contractorName", e.target.value)}
-                          className="w-full bg-transparent border-b border-transparent hover:border-gray-300 dark:hover:border-gray-600 focus:border-blue-500 outline-none text-gray-800 dark:text-gray-200 py-1 transition-colors"
-                        >
-                          <option value="" className="dark:bg-gray-800">Select Contractor Name</option>
-                          {availableContractors.map((v) => (
-                            <option key={v.contractor_id} value={v.contractor_name} className="dark:bg-gray-800">{v.contractor_name}</option>
-                          ))}
-                        </select>
-                      </td>
-                      <td className="px-4 py-3 text-center">
-                        {selectedContractors.length > 1 && (
-                          <button
-                            type="button"
-                            onClick={() => handleRemoveContractor(i)}
-                            className="text-gray-400 hover:text-red-500 transition-colors"
-                          >
-                            <IoClose size={18} />
-                          </button>
-                        )}
-                      </td>
-                    </tr>
-                  );
-                  })}
-                </tbody>
-              </table>
+            <div className="space-y-2">
+              {selectedContractors.map((row, i) => {
+                const takenIds = selectedContractors
+                  .filter((_, idx) => idx !== i)
+                  .map((r) => r.contractorId)
+                  .filter(Boolean);
+                const availableContractors = contractors.filter(
+                  (v) => !takenIds.includes(v.contractor_id)
+                );
+                return (
+                  <div key={i} className="flex items-center gap-3">
+                    <span className="text-xs text-gray-400 w-5 text-center shrink-0">{i + 1}</span>
+                    <div className="flex-1">
+                      <SearchableSelect
+                        value={row.contractorId}
+                        onChange={(val) => handleContractorChange(i, val)}
+                        options={availableContractors.map((v) => ({
+                          value: v.contractor_id,
+                          label: `${v.contractor_name} (${v.contractor_id})`,
+                        }))}
+                        placeholder="Select Contractor"
+                      />
+                    </div>
+                    {selectedContractors.length > 1 && (
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveContractor(i)}
+                        className="text-gray-400 hover:text-red-500 transition-colors shrink-0"
+                      >
+                        <IoClose size={18} />
+                      </button>
+                    )}
+                  </div>
+                );
+              })}
             </div>
           </div>
 
@@ -380,16 +348,12 @@ const CreateRequest = ({ onclose, onSuccess }) => {
                 {/* 1. Item Dropdown */}
                 <div className="md:col-span-2">
                   <label className="block text-[11px] font-bold text-gray-500 uppercase mb-1.5 ml-1">Item Description</label>
-                  <select
+                  <SearchableSelect
                     value={materialInput.materialName}
                     onChange={handleMaterialSelect}
-                    className="w-full bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-700 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none transition-all"
-                  >
-                    <option value="">Select Item</option>
-                    {availableItems.map((item, idx) => (
-                      <option key={idx} value={item.item_description}>{item.item_description}</option>
-                    ))}
-                  </select>
+                    options={availableItems.map((item) => ({ value: item.item_description, label: item.item_description }))}
+                    placeholder="Select Item"
+                  />
                 </div>
 
                 {/* 2. Quantity */}
