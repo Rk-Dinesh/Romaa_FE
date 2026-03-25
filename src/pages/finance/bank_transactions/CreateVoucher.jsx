@@ -162,6 +162,7 @@ const CreateVoucher = ({ onclose, onSuccess }) => {
   /* ── Bank selection ── */
   const [selectedBankId,   setSelectedBankId]    = useState("");
   const [selectedBankName, setSelectedBankName]  = useState("");
+  const [selectedBankCode, setSelectedBankCode]  = useState("");
 
   /* ── PV: single bill selection ── */
   const [selectedBill, setSelectedBill]   = useState(null);
@@ -247,8 +248,9 @@ const CreateVoucher = ({ onclose, onSuccess }) => {
 
   /* Bank options — rich display: account_name primary, bank + branch secondary */
   const bankOptions = bankAccountsRaw.map(b => ({
-    value:        b._id,
+    value:        b.account_code,
     label:        b.account_name,
+    account_code: b.account_code,
     account_name: b.account_name,
     bank_name:    b.bank_name     || "",
     branch_name:  b.branch_name   || "",
@@ -280,6 +282,7 @@ const CreateVoucher = ({ onclose, onSuccess }) => {
   const handleBankSelect = (option) => {
     setSelectedBankId(option.value);
     setSelectedBankName(option.account_name);
+    setSelectedBankCode(option.account_code);
   };
 
   const handleBillSelect = (option) => {
@@ -292,7 +295,7 @@ const CreateVoucher = ({ onclose, onSuccess }) => {
     setVoucherType(type);
     setSelectedTenderId(""); setSelectedTenderRef(""); setSelectedTenderName("");
     setSelectedSupplierId("");
-    setSelectedBankId(""); setSelectedBankName("");
+    setSelectedBankId(""); setSelectedBankName(""); setSelectedBankCode("");
     setSelectedBill(null); setSettledAmt("");
     setTxMode("NEFT");
     setEntries(makeEntries());
@@ -323,13 +326,14 @@ const CreateVoucher = ({ onclose, onSuccess }) => {
     if (validEntries.length === 0) { toast.warning("Add at least one voucher entry"); return; }
 
     const commonPayload = {
-      supplier_type: supplierType,
-      supplier_id:   selectedSupplierId,
-      tender_id:     selectedTenderId,
-      tender_ref:    selectedTenderRef   || undefined,
-      tender_name:   selectedTenderName  || undefined,
-      bank_name:     selectedBankName    || undefined,
-      bank_ref:      data.bank_ref       || undefined,
+      supplier_type:    supplierType,
+      supplier_id:      selectedSupplierId,
+      tender_id:        selectedTenderId,
+      tender_ref:       selectedTenderRef   || undefined,
+      tender_name:      selectedTenderName  || undefined,
+      bank_account_code: selectedBankCode   || undefined,
+      bank_name:        selectedBankName    || undefined,
+      bank_ref:         data.bank_ref       || undefined,
       cheque_no:     txMode === "Cheque" ? (data.cheque_no   || undefined) : undefined,
       cheque_date:   txMode === "Cheque" ? (data.cheque_date || undefined) : undefined,
       entries: validEntries.map(e => ({

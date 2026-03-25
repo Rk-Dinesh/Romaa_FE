@@ -9,10 +9,13 @@ export { useTenderIds, useVendors, useContractors } from "../../debit_creditnote
 export const useApprovePV = () => {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (id) => api.patch(`/paymentvoucher/approve/${id}`).then((r) => r.data),
+    mutationFn: ({ id, bank_account_code }) =>
+      api.patch(`/paymentvoucher/approve/${id}`, { bank_account_code }).then((r) => r.data),
     onSuccess: () => {
       toast.success("Payment voucher approved");
       queryClient.invalidateQueries({ queryKey: ["payment-vouchers"] });
+      queryClient.invalidateQueries({ queryKey: ["finance-bank-accounts"] });
+      queryClient.invalidateQueries({ queryKey: ["finance-payable-bills"] });
     },
     onError: (err) =>
       toast.error(err.response?.data?.message || "Failed to approve payment voucher"),
@@ -23,10 +26,12 @@ export const useApprovePV = () => {
 export const useApproveRV = () => {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (id) => api.patch(`/receiptvoucher/approve/${id}`).then((r) => r.data),
+    mutationFn: ({ id, bank_account_code }) =>
+      api.patch(`/receiptvoucher/approve/${id}`, { bank_account_code }).then((r) => r.data),
     onSuccess: () => {
       toast.success("Receipt voucher approved");
       queryClient.invalidateQueries({ queryKey: ["receipt-vouchers"] });
+      queryClient.invalidateQueries({ queryKey: ["finance-bank-accounts"] });
     },
     onError: (err) =>
       toast.error(err.response?.data?.message || "Failed to approve receipt voucher"),
@@ -75,6 +80,7 @@ export const useCreatePV = ({ onSuccess, onClose } = {}) => {
       toast.success("Payment voucher created successfully");
       queryClient.invalidateQueries({ queryKey: ["payment-vouchers"] });
       queryClient.invalidateQueries({ queryKey: ["next-pv-no"] });
+      queryClient.invalidateQueries({ queryKey: ["finance-payable-bills"] });
       if (onSuccess) onSuccess();
       if (onClose)   onClose();
     },

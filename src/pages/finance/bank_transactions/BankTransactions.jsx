@@ -312,7 +312,9 @@ const BankTransactions = () => {
                             <button
                               onClick={(e) => {
                                 e.stopPropagation();
-                                isPV ? approvePV(v._id) : approveRV(v._id);
+                                isPV
+                                  ? approvePV({ id: v._id, bank_account_code: v.bank_account_code })
+                                  : approveRV({ id: v._id, bank_account_code: v.bank_account_code });
                               }}
                               disabled={approvingPV || approvingRV}
                               className="px-3 py-1 text-[10px] font-bold rounded-lg bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 dark:bg-emerald-900/20 dark:hover:bg-emerald-900/40 dark:text-emerald-400 dark:border-emerald-800 transition-colors disabled:opacity-50 whitespace-nowrap"
