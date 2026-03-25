@@ -15,7 +15,7 @@ import {
   Hash,
 } from "lucide-react";
 import { TbPlus } from "react-icons/tb";
-import { useWeeklyBillingList, useWeeklyBillingDetail, useUpdateBillStatus } from "./hooks/useWeeklyBilling";
+import { useWeeklyBillingList, useWeeklyBillingDetail, useUpdateBillStatus, useApproveBill } from "./hooks/useWeeklyBilling";
 import { useProject } from "../../../context/ProjectContext";
 import GenerateBillModal from "./GenerateBillModal";
 
@@ -34,7 +34,7 @@ const fmtDate = (v) =>
 const STATUS_STYLE = {
   Generated: "bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-900/20 dark:text-emerald-400 dark:border-emerald-800",
   Pending:   "bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-900/20 dark:text-amber-400 dark:border-amber-800",
-  Paid:      "bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-900/20 dark:text-blue-400 dark:border-blue-800",
+  Approved:      "bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-900/20 dark:text-blue-400 dark:border-blue-800",
   Cancelled: "bg-red-50 text-red-700 border-red-200 dark:bg-red-900/20 dark:text-red-400 dark:border-red-800",
 };
 
@@ -140,7 +140,7 @@ const WeeklyBilling = () => {
             <SearchableSelect
               value={statusFilter}
               onChange={(val) => setStatusFilter(val)}
-              options={[{ value: "", label: "All Status" }, ...["Generated", "Pending", "Paid", "Cancelled"].map((s) => ({ value: s, label: s }))]}
+              options={[{ value: "", label: "All Status" }, ...["Generated", "Pending", "Approved", "Cancelled"].map((s) => ({ value: s, label: s }))]}
               placeholder="All Status"
             />
           </div>
@@ -286,14 +286,14 @@ const WeeklyBilling = () => {
 // Allowed status transitions per MD spec
 const NEXT_STATUSES = {
   Generated: ["Pending", "Cancelled"],
-  Pending:   ["Paid", "Cancelled"],
-  Paid:      [],
+  Pending:   ["Approved", "Cancelled"],
+  Approved:      [],
   Cancelled: [],
 };
 
 const STATUS_BTN = {
   Pending:   "bg-amber-500 hover:bg-amber-600 text-white",
-  Paid:      "bg-blue-600 hover:bg-blue-700 text-white",
+  Approved:      "bg-blue-600 hover:bg-blue-700 text-white",
   Cancelled: "bg-red-500 hover:bg-red-600 text-white",
 };
 
@@ -301,6 +301,7 @@ const STATUS_BTN = {
 const BillDetailModal = ({ bill, onClose, tenderId }) => {
   const { data: detail, isLoading: detailLoading } = useWeeklyBillingDetail(bill.bill_no);
   const { mutate: updateStatus, isPending: updatingStatus } = useUpdateBillStatus(tenderId);
+  const { mutate: approveBill,  isPending: approving      } = useApproveBill(tenderId);
 
   // Use detail data when loaded, fall back to list item for amounts
   const currentStatus = detail?.status ?? bill.status ?? "Generated";
@@ -511,16 +512,27 @@ const BillDetailModal = ({ bill, onClose, tenderId }) => {
             {subBills.length} work order{subBills.length !== 1 ? "s" : ""}
           </span>
           <div className="flex items-center gap-2">
-            {nextStatuses.map((s) => (
-              <button
-                key={s}
-                onClick={() => updateStatus({ billId: bill._id, status: s })}
-                disabled={updatingStatus}
-                className={`px-4 py-2 text-xs font-semibold rounded-lg transition-colors disabled:opacity-50 ${STATUS_BTN[s]}`}
-              >
-                {updatingStatus ? "Updating…" : `Mark as ${s}`}
-              </button>
-            ))}
+            {nextStatuses.map((s) =>
+              s === "Approved" ? (
+                <button
+                  key={s}
+                  onClick={() => approveBill(bill._id)}
+                  disabled={approving || updatingStatus}
+                  className={`px-4 py-2 text-xs font-semibold rounded-lg transition-colors disabled:opacity-50 ${STATUS_BTN[s]}`}
+                >
+                  {approving ? "Approving…" : "Approve"}
+                </button>
+              ) : (
+                <button
+                  key={s}
+                  onClick={() => updateStatus({ billId: bill._id, status: s })}
+                  disabled={updatingStatus || approving}
+                  className={`px-4 py-2 text-xs font-semibold rounded-lg transition-colors disabled:opacity-50 ${STATUS_BTN[s]}`}
+                >
+                  {updatingStatus ? "Updating…" : `Mark as ${s}`}
+                </button>
+              )
+            )}
             <button
               onClick={onClose}
               className="px-5 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 dark:bg-gray-800 dark:text-gray-200 dark:border-gray-600 dark:hover:bg-gray-700"

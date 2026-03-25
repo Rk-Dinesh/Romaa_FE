@@ -5,7 +5,7 @@ import {
   FileText, Hash,
 } from "lucide-react";
 import { TbPlus } from "react-icons/tb";
-import { usePVList, useRVList } from "./hooks/useVouchers";
+import { usePVList, useRVList, useApprovePV, useApproveRV, useDeletePV, useDeleteRV } from "./hooks/useVouchers";
 import CreateVoucher from "./CreateVoucher";
 
 const fmt = (n) =>
@@ -60,6 +60,10 @@ const BankTransactions = () => {
 
   const { data: pvList = [], isLoading: pvLoading, isFetching: pvFetching, refetch: refetchPV } = usePVList();
   const { data: rvList = [], isLoading: rvLoading, isFetching: rvFetching, refetch: refetchRV } = useRVList();
+  const { mutate: approvePV, isPending: approvingPV } = useApprovePV();
+  const { mutate: approveRV, isPending: approvingRV } = useApproveRV();
+  const { mutate: deletePV,  isPending: deletingPV  } = useDeletePV();
+  const { mutate: deleteRV,  isPending: deletingRV  } = useDeleteRV();
 
   const list       = isPV ? pvList : rvList;
   const isLoading  = isPV ? pvLoading  : rvLoading;
@@ -223,7 +227,7 @@ const BankTransactions = () => {
               <table className="w-full text-sm">
                 <thead className="bg-gray-50 dark:bg-gray-800/60 border-b border-gray-200 dark:border-gray-700">
                   <tr>
-                    {["#", isPV ? "PV No." : "RV No.", "Date", "Supplier", "Tender", "Mode", "Amount", "Status"].map(h => (
+                    {["#", isPV ? "PV No." : "RV No.", "Date", "Supplier", "Tender", "Mode", "Amount", "Status", ""].map(h => (
                       <th
                         key={h}
                         className="px-4 py-3 text-[10px] font-extrabold uppercase tracking-wider text-gray-500 dark:text-gray-400 text-left whitespace-nowrap"
@@ -300,6 +304,37 @@ const BankTransactions = () => {
                         <span className={`inline-block text-[10px] font-bold uppercase tracking-wider border px-2.5 py-0.5 rounded-full ${STATUS_STYLE[v.status] || STATUS_STYLE.pending}`}>
                           {v.status || "pending"}
                         </span>
+                      </td>
+
+                      <td className="px-4 py-3">
+                        <div className="flex items-center gap-1.5">
+                          {v.status === "pending" && (
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                isPV ? approvePV(v._id) : approveRV(v._id);
+                              }}
+                              disabled={approvingPV || approvingRV}
+                              className="px-3 py-1 text-[10px] font-bold rounded-lg bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 dark:bg-emerald-900/20 dark:hover:bg-emerald-900/40 dark:text-emerald-400 dark:border-emerald-800 transition-colors disabled:opacity-50 whitespace-nowrap"
+                            >
+                              Approve
+                            </button>
+                          )}
+                          {(v.status === "draft" || v.status === "pending") && (
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                if (window.confirm(`Delete ${v.pv_no || v.rv_no}?`)) {
+                                  isPV ? deletePV(v._id) : deleteRV(v._id);
+                                }
+                              }}
+                              disabled={deletingPV || deletingRV}
+                              className="px-3 py-1 text-[10px] font-bold rounded-lg bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 dark:bg-red-900/20 dark:hover:bg-red-900/40 dark:text-red-400 dark:border-red-800 transition-colors disabled:opacity-50 whitespace-nowrap"
+                            >
+                              Delete
+                            </button>
+                          )}
+                        </div>
                       </td>
                     </tr>
                   ))}

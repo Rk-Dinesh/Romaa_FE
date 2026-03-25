@@ -484,6 +484,12 @@ export const Menus = [
         to: "/finance/overallexpenses",
         subModule: "overall_expenses",
       },
+      {
+        title: "Company Bank Details",
+        icon: <RiBankLine size={23} />,
+        to: "/finance/companybankdetails",
+        subModule: "company_bank_details",
+      },
     ],
   },
   {

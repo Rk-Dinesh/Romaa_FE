@@ -5,6 +5,34 @@ import { toast } from "react-toastify";
 /* ── Shared party hooks (re-exported from DN/CN) ────────────────────────── */
 export { useTenderIds, useVendors, useContractors } from "../../debit_creditnote/hooks/useDebitCreditNote";
 
+/* ── Approve Payment Voucher ────────────────────────────────────────────── */
+export const useApprovePV = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (id) => api.patch(`/paymentvoucher/approve/${id}`).then((r) => r.data),
+    onSuccess: () => {
+      toast.success("Payment voucher approved");
+      queryClient.invalidateQueries({ queryKey: ["payment-vouchers"] });
+    },
+    onError: (err) =>
+      toast.error(err.response?.data?.message || "Failed to approve payment voucher"),
+  });
+};
+
+/* ── Approve Receipt Voucher ────────────────────────────────────────────── */
+export const useApproveRV = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (id) => api.patch(`/receiptvoucher/approve/${id}`).then((r) => r.data),
+    onSuccess: () => {
+      toast.success("Receipt voucher approved");
+      queryClient.invalidateQueries({ queryKey: ["receipt-vouchers"] });
+    },
+    onError: (err) =>
+      toast.error(err.response?.data?.message || "Failed to approve receipt voucher"),
+  });
+};
+
 /* ── Next PV Number ─────────────────────────────────────────────────────── */
 const fetchNextPVNo = async () => {
   const { data } = await api.get("/paymentvoucher/next-no");
@@ -105,4 +133,108 @@ export const useRVList = (params = {}) =>
     queryKey: ["receipt-vouchers", params],
     queryFn:  fetchRVList,
     staleTime: 30 * 1000,
+  });
+
+/* ── Finance Dropdown: Bank Accounts with Balance ───────────────────────── */
+const fetchBankAccounts = async () => {
+  const { data } = await api.get("/finance-dropdown/bank-accounts");
+  return data?.data || [];
+};
+
+export const useBankAccounts = () =>
+  useQuery({
+    queryKey: ["finance-bank-accounts"],
+    queryFn:  fetchBankAccounts,
+    staleTime: 60 * 1000,
+  });
+
+/* ── Finance Dropdown: Payable Bills ─────────────────────────────────────── */
+const fetchPayableBills = async ({ queryKey }) => {
+  const [, params] = queryKey;
+  const { data } = await api.get("/finance-dropdown/payable-bills", { params });
+  return data?.data || [];
+};
+
+export const usePayableBills = (params = {}) =>
+  useQuery({
+    queryKey: ["finance-payable-bills", params],
+    queryFn:  fetchPayableBills,
+    enabled:  !!params.supplier_id,
+    staleTime: 30 * 1000,
+  });
+
+/* ── Update Payment Voucher ─────────────────────────────────────────────── */
+export const useUpdatePV = ({ onSuccess, onClose } = {}) => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, payload }) => api.patch(`/paymentvoucher/update/${id}`, payload).then((r) => r.data),
+    onSuccess: () => {
+      toast.success("Payment voucher updated");
+      queryClient.invalidateQueries({ queryKey: ["payment-vouchers"] });
+      if (onSuccess) onSuccess();
+      if (onClose)   onClose();
+    },
+    onError: (err) =>
+      toast.error(err.response?.data?.message || "Failed to update payment voucher"),
+  });
+};
+
+/* ── Update Receipt Voucher ─────────────────────────────────────────────── */
+export const useUpdateRV = ({ onSuccess, onClose } = {}) => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, payload }) => api.patch(`/receiptvoucher/update/${id}`, payload).then((r) => r.data),
+    onSuccess: () => {
+      toast.success("Receipt voucher updated");
+      queryClient.invalidateQueries({ queryKey: ["receipt-vouchers"] });
+      if (onSuccess) onSuccess();
+      if (onClose)   onClose();
+    },
+    onError: (err) =>
+      toast.error(err.response?.data?.message || "Failed to update receipt voucher"),
+  });
+};
+
+/* ── Delete Payment Voucher ─────────────────────────────────────────────── */
+export const useDeletePV = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (id) => api.delete(`/paymentvoucher/delete/${id}`).then((r) => r.data),
+    onSuccess: () => {
+      toast.success("Payment voucher deleted");
+      queryClient.invalidateQueries({ queryKey: ["payment-vouchers"] });
+    },
+    onError: (err) =>
+      toast.error(err.response?.data?.message || "Failed to delete payment voucher"),
+  });
+};
+
+/* ── Delete Receipt Voucher ─────────────────────────────────────────────── */
+export const useDeleteRV = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (id) => api.delete(`/receiptvoucher/delete/${id}`).then((r) => r.data),
+    onSuccess: () => {
+      toast.success("Receipt voucher deleted");
+      queryClient.invalidateQueries({ queryKey: ["receipt-vouchers"] });
+    },
+    onError: (err) =>
+      toast.error(err.response?.data?.message || "Failed to delete receipt voucher"),
+  });
+};
+
+/* ── Finance Dropdown: Parties by Tender ─────────────────────────────────── */
+const fetchParties = async ({ queryKey }) => {
+  const [, tenderId, type] = queryKey;
+  const params = type ? { type } : {};
+  const { data } = await api.get(`/finance-dropdown/parties/${tenderId}`, { params });
+  return data?.data || [];
+};
+
+export const useParties = (tenderId, type) =>
+  useQuery({
+    queryKey: ["finance-parties", tenderId, type],
+    queryFn:  fetchParties,
+    enabled:  !!tenderId,
+    staleTime: 60 * 1000,
   });

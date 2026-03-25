@@ -81,7 +81,7 @@ export const useWeeklyBillingDetail = (billNo) =>
     staleTime: 30 * 1000,
   });
 
-// ── Update bill status ─────────────────────────────────────────────────────────
+// ── Update bill status (Pending / Cancelled) ───────────────────────────────────
 export const useUpdateBillStatus = (tenderId) => {
   const qc = useQueryClient();
   return useMutation({
@@ -94,6 +94,23 @@ export const useUpdateBillStatus = (tenderId) => {
     },
     onError: (err) => {
       toast.error(err.response?.data?.message || "Failed to update status");
+    },
+  });
+};
+
+// ── Approve bill (dedicated endpoint — posts ledger entry) ─────────────────────
+export const useApproveBill = (tenderId) => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (billId) =>
+      api.patch(`/weeklybilling/api/approve/${billId}`).then((r) => r.data),
+    onSuccess: () => {
+      toast.success("Bill approved and posted to ledger");
+      qc.invalidateQueries({ queryKey: ["weekly-billing-list", tenderId] });
+      qc.invalidateQueries({ queryKey: ["weekly-billing-detail"] });
+    },
+    onError: (err) => {
+      toast.error(err.response?.data?.message || "Failed to approve bill");
     },
   });
 };

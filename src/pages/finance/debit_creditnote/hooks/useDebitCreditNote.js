@@ -32,7 +32,7 @@ export const useVendors = (tenderId) =>
 /* ── Contractors for a tender ───────────────────────────────────────────── */
 const fetchContractors = async ({ queryKey }) => {
   const [, tenderId] = queryKey;
-  const { data } = await api.get(`/contractor/getcontractor/${tenderId}`);
+  const { data } = await api.get(`/contractor/getbytender/${tenderId}`);
   return data?.contractors ?? data?.data ?? [];
 };
 
@@ -114,6 +114,34 @@ export const useCreateDN = ({ onSuccess, onClose } = {}) => {
     onError: (err) => {
       toast.error(err.response?.data?.message || "Failed to create debit note");
     },
+  });
+};
+
+/* ── Approve Credit Note ────────────────────────────────────────────────── */
+export const useApproveCN = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (id) => api.patch(`/creditnote/approve/${id}`).then((r) => r.data),
+    onSuccess: () => {
+      toast.success("Credit note approved");
+      queryClient.invalidateQueries({ queryKey: ["credit-notes"] });
+    },
+    onError: (err) =>
+      toast.error(err.response?.data?.message || "Failed to approve credit note"),
+  });
+};
+
+/* ── Approve Debit Note ─────────────────────────────────────────────────── */
+export const useApproveDN = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (id) => api.patch(`/debitnote/approve/${id}`).then((r) => r.data),
+    onSuccess: () => {
+      toast.success("Debit note approved");
+      queryClient.invalidateQueries({ queryKey: ["debit-notes"] });
+    },
+    onError: (err) =>
+      toast.error(err.response?.data?.message || "Failed to approve debit note"),
   });
 };
 

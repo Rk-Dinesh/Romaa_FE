@@ -87,6 +87,26 @@ export const useNextBillId = () =>
     refetchOnMount: true,
   });
 
+/* ── Approve purchase bill ──────────────────────────────────────────────── */
+const approveBillApi = async (id) => {
+  const { data } = await api.patch(`/purchasebill/approve/${id}`);
+  return data;
+};
+
+export const useApprovePurchaseBill = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: approveBillApi,
+    onSuccess: () => {
+      toast.success("Purchase bill approved");
+      queryClient.invalidateQueries({ queryKey: ["purchase-bill-summary-all"] });
+      queryClient.invalidateQueries({ queryKey: ["bills-by-tender"] });
+    },
+    onError: (err) =>
+      toast.error(err.response?.data?.message || "Failed to approve purchase bill"),
+  });
+};
+
 /* ── Create purchase bill ───────────────────────────────────────────────── */
 const createBillApi = async (payload) => {
   const { data } = await api.post("/purchasebill/create", payload);

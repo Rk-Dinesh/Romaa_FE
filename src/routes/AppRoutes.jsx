@@ -156,6 +156,7 @@ const InternalBankTransfer = lazy(() => import("../pages/finance/internal_bank_t
 const LedgerEntry = lazy(() => import("../pages/finance/ledger_entry/LedgerEntry"));
 const ViewLedgerEntry = lazy(() => import("../pages/finance/ledger_entry/ViewLedgerEntry"));
 const Overall_expenses = lazy(() => import("../pages/finance/overall_expenses/Overall_expenses"));
+const CompanyBankDetails = lazy(() => import("../pages/finance/company_bank_details/CompanyBankDetails"));
 
 // Reports
 const ProjectDashboard = lazy(() => import("../pages/reports/project_dashboard/ProjectDashboard"));
@@ -502,6 +503,7 @@ const AppRoutes = () => {
                   element={<SupplierOutstanding />}
                 />
                 <Route path="overallexpenses" element={<Overall_expenses />} />
+                <Route path="companybankdetails" element={<CompanyBankDetails />} />
               </Route>
               <Route path="/reports">
                 <Route path="projectdashboard" element={<ProjectDashboard />} />
