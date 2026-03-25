@@ -2,10 +2,11 @@ import { useState, useMemo } from "react";
 import {
   ArrowUpRight, ArrowDownLeft, RefreshCw,
   Search, Building2, CalendarDays, CreditCard,
-  FileText, Hash,
+  FileText, Hash, X,
 } from "lucide-react";
 import { TbPlus } from "react-icons/tb";
-import { usePVList, useRVList, useApprovePV, useApproveRV, useDeletePV, useDeleteRV } from "./hooks/useVouchers";
+import { usePVList, useRVList, useApprovePV, useApproveRV, useDeletePV, useDeleteRV, useBankAccounts } from "./hooks/useVouchers";
+import { toast } from "react-toastify";
 import CreateVoucher from "./CreateVoucher";
 
 const fmt = (n) =>
@@ -56,6 +57,10 @@ const BankTransactions = () => {
   const [showForm, setShowForm] = useState(false);
   const [search, setSearch]   = useState("");
 
+  /* ── Approve-with-bank modal state ── */
+  const [approveModal, setApproveModal] = useState(null); // { voucher, type: "PV"|"RV" }
+  const [approveBank, setApproveBank]   = useState("");
+
   const isPV = tab === "PV";
 
   const { data: pvList = [], isLoading: pvLoading, isFetching: pvFetching, refetch: refetchPV } = usePVList();
@@ -64,6 +69,34 @@ const BankTransactions = () => {
   const { mutate: approveRV, isPending: approvingRV } = useApproveRV();
   const { mutate: deletePV,  isPending: deletingPV  } = useDeletePV();
   const { mutate: deleteRV,  isPending: deletingRV  } = useDeleteRV();
+  const { data: bankAccountsRaw = [], isLoading: loadingBanks } = useBankAccounts();
+
+  const handleApproveClick = (voucher) => {
+    if (voucher.bank_account_code) {
+      // Already has bank_account_code — approve directly
+      isPV
+        ? approvePV({ id: voucher._id, bank_account_code: voucher.bank_account_code })
+        : approveRV({ id: voucher._id, bank_account_code: voucher.bank_account_code });
+    } else {
+      // Missing bank_account_code — show modal to pick one
+      setApproveBank("");
+      setApproveModal({ voucher, type: isPV ? "PV" : "RV" });
+    }
+  };
+
+  const handleApproveConfirm = () => {
+    if (!approveBank) {
+      toast.warning("Please select a bank account");
+      return;
+    }
+    const { voucher, type } = approveModal;
+    if (type === "PV") {
+      approvePV({ id: voucher._id, bank_account_code: approveBank });
+    } else {
+      approveRV({ id: voucher._id, bank_account_code: approveBank });
+    }
+    setApproveModal(null);
+  };
 
   const list       = isPV ? pvList : rvList;
   const isLoading  = isPV ? pvLoading  : rvLoading;
@@ -312,9 +345,7 @@ const BankTransactions = () => {
                             <button
                               onClick={(e) => {
                                 e.stopPropagation();
-                                isPV
-                                  ? approvePV({ id: v._id, bank_account_code: v.bank_account_code })
-                                  : approveRV({ id: v._id, bank_account_code: v.bank_account_code });
+                                handleApproveClick(v);
                               }}
                               disabled={approvingPV || approvingRV}
                               className="px-3 py-1 text-[10px] font-bold rounded-lg bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 dark:bg-emerald-900/20 dark:hover:bg-emerald-900/40 dark:text-emerald-400 dark:border-emerald-800 transition-colors disabled:opacity-50 whitespace-nowrap"
@@ -365,6 +396,77 @@ const BankTransactions = () => {
           onclose={() => setShowForm(false)}
           onSuccess={() => { refetchPV(); refetchRV(); }}
         />
+      )}
+
+      {/* ── Approve Bank Selection Modal ── */}
+      {approveModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
+          <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 shadow-2xl w-full max-w-md mx-4">
+            {/* Header */}
+            <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100 dark:border-gray-800">
+              <div>
+                <h3 className="text-sm font-bold text-gray-900 dark:text-white">Select Bank Account</h3>
+                <p className="text-[11px] text-gray-400 mt-0.5">
+                  Required to approve <strong>{approveModal.voucher.pv_no || approveModal.voucher.rv_no}</strong>
+                </p>
+              </div>
+              <button onClick={() => setApproveModal(null)}
+                className="p-1.5 rounded-lg text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors">
+                <X size={16} />
+              </button>
+            </div>
+
+            {/* Bank list */}
+            <div className="px-5 py-4 max-h-64 overflow-y-auto space-y-2">
+              {loadingBanks ? (
+                <div className="flex items-center justify-center py-6 gap-2 text-gray-400 text-xs">
+                  <span className="w-4 h-4 border-2 border-gray-300 border-t-blue-500 rounded-full animate-spin" />
+                  Loading bank accounts...
+                </div>
+              ) : bankAccountsRaw.length === 0 ? (
+                <p className="text-xs text-gray-400 text-center py-6">No bank accounts found.</p>
+              ) : (
+                bankAccountsRaw.map(b => (
+                  <button key={b.account_code} type="button"
+                    onClick={() => setApproveBank(b.account_code)}
+                    className={`w-full text-left px-4 py-3 rounded-lg border transition-all ${
+                      approveBank === b.account_code
+                        ? "border-blue-500 bg-blue-50 dark:bg-blue-900/20 dark:border-blue-600 ring-1 ring-blue-500"
+                        : "border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-800"
+                    }`}
+                  >
+                    <p className={`text-sm font-semibold ${approveBank === b.account_code ? "text-blue-700 dark:text-blue-300" : "text-gray-800 dark:text-gray-200"}`}>
+                      {b.account_name}
+                    </p>
+                    <div className="flex items-center justify-between mt-1">
+                      <span className="text-[10px] text-gray-400">
+                        {[b.bank_name, b.branch_name].filter(Boolean).join(" · ")}
+                      </span>
+                      <span className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400">
+                        ₹{fmt(b.current_balance || b.opening_balance || 0)}
+                      </span>
+                    </div>
+                  </button>
+                ))
+              )}
+            </div>
+
+            {/* Footer */}
+            <div className="flex items-center justify-end gap-3 px-5 py-3 border-t border-gray-100 dark:border-gray-800">
+              <button onClick={() => setApproveModal(null)}
+                className="px-4 py-2 rounded-lg text-sm font-medium text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
+                Cancel
+              </button>
+              <button
+                onClick={handleApproveConfirm}
+                disabled={!approveBank || approvingPV || approvingRV}
+                className="px-5 py-2 rounded-lg text-sm font-semibold text-white bg-emerald-600 hover:bg-emerald-700 transition-colors disabled:opacity-50"
+              >
+                {approvingPV || approvingRV ? "Approving…" : "Approve"}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );
