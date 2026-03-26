@@ -2,7 +2,18 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "../../../../services/api";
 import { toast } from "react-toastify";
 
-export { useBankAccounts } from "../../bank_transactions/hooks/useVouchers";
+/* ── Bank + Cash Accounts (for transfer from/to dropdowns) ─────────────── */
+const fetchAllBankCashAccounts = async () => {
+  const { data } = await api.get("/finance-dropdown/bank-accounts");
+  return data?.data || [];
+};
+
+export const useBankAccounts = () =>
+  useQuery({
+    queryKey: ["finance-all-bank-cash-accounts"],
+    queryFn:  fetchAllBankCashAccounts,
+    staleTime: 60 * 1000,
+  });
 
 const QK = "bank-transfers";
 
@@ -64,7 +75,7 @@ export const useApproveBT = () => {
     onSuccess: () => {
       toast.success("Transfer approved — balances updated");
       queryClient.invalidateQueries({ queryKey: [QK] });
-      queryClient.invalidateQueries({ queryKey: ["finance-bank-accounts"] });
+      queryClient.invalidateQueries({ queryKey: ["finance-all-bank-cash-accounts"] });
     },
     onError: (err) =>
       toast.error(err.response?.data?.message || "Failed to approve bank transfer"),

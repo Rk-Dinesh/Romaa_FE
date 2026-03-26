@@ -13,8 +13,8 @@ export const useApprovePV = () => {
       api.patch(`/paymentvoucher/approve/${id}`, { bank_account_code }).then((r) => r.data),
     onSuccess: () => {
       toast.success("Payment voucher approved");
-      queryClient.invalidateQueries({ queryKey: ["bank-payment-vouchers"] });
-      queryClient.invalidateQueries({ queryKey: ["finance-bank-only-accounts"] });
+      queryClient.invalidateQueries({ queryKey: ["cash-payment-vouchers"] });
+      queryClient.invalidateQueries({ queryKey: ["finance-cash-only-accounts"] });
       queryClient.invalidateQueries({ queryKey: ["finance-payable-bills"] });
     },
     onError: (err) =>
@@ -30,8 +30,8 @@ export const useApproveRV = () => {
       api.patch(`/receiptvoucher/approve/${id}`, { bank_account_code }).then((r) => r.data),
     onSuccess: () => {
       toast.success("Receipt voucher approved");
-      queryClient.invalidateQueries({ queryKey: ["bank-receipt-vouchers"] });
-      queryClient.invalidateQueries({ queryKey: ["finance-bank-only-accounts"] });
+      queryClient.invalidateQueries({ queryKey: ["cash-receipt-vouchers"] });
+      queryClient.invalidateQueries({ queryKey: ["finance-cash-only-accounts"] });
     },
     onError: (err) =>
       toast.error(err.response?.data?.message || "Failed to approve receipt voucher"),
@@ -78,7 +78,7 @@ export const useCreatePV = ({ onSuccess, onClose } = {}) => {
     mutationFn: createPVApi,
     onSuccess: () => {
       toast.success("Payment voucher created successfully");
-      queryClient.invalidateQueries({ queryKey: ["bank-payment-vouchers"] });
+      queryClient.invalidateQueries({ queryKey: ["cash-payment-vouchers"] });
       queryClient.invalidateQueries({ queryKey: ["next-pv-no"] });
       queryClient.invalidateQueries({ queryKey: ["finance-payable-bills"] });
       if (onSuccess) onSuccess();
@@ -102,7 +102,7 @@ export const useCreateRV = ({ onSuccess, onClose } = {}) => {
     mutationFn: createRVApi,
     onSuccess: () => {
       toast.success("Receipt voucher created successfully");
-      queryClient.invalidateQueries({ queryKey: ["bank-receipt-vouchers"] });
+      queryClient.invalidateQueries({ queryKey: ["cash-receipt-vouchers"] });
       queryClient.invalidateQueries({ queryKey: ["next-rv-no"] });
       if (onSuccess) onSuccess();
       if (onClose)   onClose();
@@ -116,13 +116,13 @@ export const useCreateRV = ({ onSuccess, onClose } = {}) => {
 /* ── List Payment Vouchers ──────────────────────────────────────────────── */
 const fetchPVList = async ({ queryKey }) => {
   const [, params] = queryKey;
-  const { data } = await api.get("/paymentvoucher/list/bank", { params });
+  const { data } = await api.get("/paymentvoucher/list/cash", { params });
   return data?.data || [];
 };
 
 export const usePVList = (params = {}) =>
   useQuery({
-    queryKey: ["bank-payment-vouchers", params],
+    queryKey: ["cash-payment-vouchers", params],
     queryFn:  fetchPVList,
     staleTime: 30 * 1000,
   });
@@ -130,26 +130,26 @@ export const usePVList = (params = {}) =>
 /* ── List Receipt Vouchers ──────────────────────────────────────────────── */
 const fetchRVList = async ({ queryKey }) => {
   const [, params] = queryKey;
-  const { data } = await api.get("/receiptvoucher/list/bank", { params });
+  const { data } = await api.get("/receiptvoucher/list/cash", { params });
   return data?.data || [];
 };
 
 export const useRVList = (params = {}) =>
   useQuery({
-    queryKey: ["bank-receipt-vouchers", params],
+    queryKey: ["cash-receipt-vouchers", params],
     queryFn:  fetchRVList,
     staleTime: 30 * 1000,
   });
 
 /* ── Finance Dropdown: Bank Accounts with Balance ───────────────────────── */
 const fetchBankAccounts = async () => {
-  const { data } = await api.get("/finance-dropdown/bank-only");
+  const { data } = await api.get("/finance-dropdown/cash-only");
   return data?.data || [];
 };
 
 export const useBankAccounts = () =>
   useQuery({
-    queryKey: ["finance-bank-only-accounts"],
+    queryKey: ["finance-cash-only-accounts"],
     queryFn:  fetchBankAccounts,
     staleTime: 60 * 1000,
   });
@@ -176,7 +176,7 @@ export const useUpdatePV = ({ onSuccess, onClose } = {}) => {
     mutationFn: ({ id, payload }) => api.patch(`/paymentvoucher/update/${id}`, payload).then((r) => r.data),
     onSuccess: () => {
       toast.success("Payment voucher updated");
-      queryClient.invalidateQueries({ queryKey: ["bank-payment-vouchers"] });
+      queryClient.invalidateQueries({ queryKey: ["cash-payment-vouchers"] });
       if (onSuccess) onSuccess();
       if (onClose)   onClose();
     },
@@ -192,7 +192,7 @@ export const useUpdateRV = ({ onSuccess, onClose } = {}) => {
     mutationFn: ({ id, payload }) => api.patch(`/receiptvoucher/update/${id}`, payload).then((r) => r.data),
     onSuccess: () => {
       toast.success("Receipt voucher updated");
-      queryClient.invalidateQueries({ queryKey: ["bank-receipt-vouchers"] });
+      queryClient.invalidateQueries({ queryKey: ["cash-receipt-vouchers"] });
       if (onSuccess) onSuccess();
       if (onClose)   onClose();
     },
@@ -208,7 +208,7 @@ export const useDeletePV = () => {
     mutationFn: (id) => api.delete(`/paymentvoucher/delete/${id}`).then((r) => r.data),
     onSuccess: () => {
       toast.success("Payment voucher deleted");
-      queryClient.invalidateQueries({ queryKey: ["bank-payment-vouchers"] });
+      queryClient.invalidateQueries({ queryKey: ["cash-payment-vouchers"] });
     },
     onError: (err) =>
       toast.error(err.response?.data?.message || "Failed to delete payment voucher"),
@@ -222,7 +222,7 @@ export const useDeleteRV = () => {
     mutationFn: (id) => api.delete(`/receiptvoucher/delete/${id}`).then((r) => r.data),
     onSuccess: () => {
       toast.success("Receipt voucher deleted");
-      queryClient.invalidateQueries({ queryKey: ["bank-receipt-vouchers"] });
+      queryClient.invalidateQueries({ queryKey: ["cash-receipt-vouchers"] });
     },
     onError: (err) =>
       toast.error(err.response?.data?.message || "Failed to delete receipt voucher"),
