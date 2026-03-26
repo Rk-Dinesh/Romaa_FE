@@ -248,13 +248,16 @@ const CreateVoucher = ({ onclose, onSuccess }) => {
 
   /* Bank options — rich display: account_name primary, bank + branch secondary */
   const bankOptions = bankAccountsRaw.map(b => ({
-    value:        b.account_code,
-    label:        b.account_name,
-    account_code: b.account_code,
-    account_name: b.account_name,
-    bank_name:    b.bank_name     || "",
-    branch_name:  b.branch_name   || "",
-    balance:      b.current_balance || 0,
+    value:            b.account_code,
+    label:            b.account_name,
+    account_code:     b.account_code,
+    account_name:     b.account_name,
+    account_category: b.account_category || "bank",
+    bank_name:        b.bank_name        || "",
+    branch_name:      b.branch_name      || "",
+    location:         b.location         || "",
+    custodian_name:   b.custodian_name   || "",
+    balance:          b.current_balance  || 0,
   }));
 
   /* Bill option — one bill at a time */
@@ -377,11 +380,24 @@ const CreateVoucher = ({ onclose, onSuccess }) => {
   /* ── Bank option renderer ── */
   const renderBankOption = (o) => (
     <div className="py-0.5">
-      <p className={`text-sm font-semibold ${o.value === selectedBankId ? "text-blue-700 dark:text-blue-300" : "text-gray-800 dark:text-gray-200"}`}>
-        {o.account_name}
-      </p>
+      <div className="flex items-center gap-1.5">
+        <p className={`text-sm font-semibold ${o.value === selectedBankId ? "text-blue-700 dark:text-blue-300" : "text-gray-800 dark:text-gray-200"}`}>
+          {o.account_name}
+        </p>
+        <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded-full ${
+          o.account_category === "cash"
+            ? "bg-teal-100 dark:bg-teal-900/30 text-teal-600 dark:text-teal-400"
+            : "bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400"
+        }`}>
+          {o.account_category === "cash" ? "CASH" : "BANK"}
+        </span>
+      </div>
       <div className="flex items-center justify-between mt-0.5">
-        <span className="text-[10px] text-gray-400">{[o.bank_name, o.branch_name].filter(Boolean).join(" · ")}</span>
+        <span className="text-[10px] text-gray-400">
+          {o.account_category === "cash"
+            ? [o.custodian_name, o.location].filter(Boolean).join(" · ")
+            : [o.bank_name, o.branch_name].filter(Boolean).join(" · ")}
+        </span>
         <span className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400">₹{fmt(o.balance)}</span>
       </div>
     </div>
@@ -474,9 +490,9 @@ const CreateVoucher = ({ onclose, onSuccess }) => {
               <div className="space-y-3">
                 <Field label="Supplier Type" required>
                   <div className="flex bg-gray-100 dark:bg-gray-800 rounded-lg p-1 gap-1 w-fit">
-                    {["Vendor", "Contractor"].map(type => (
+                    {["Vendor", "Contractor", "Client"].map(type => (
                       <button key={type} type="button" onClick={() => setSupplierType(type)}
-                        className={`px-5 py-1.5 rounded-md text-xs font-semibold transition-all ${
+                        className={`px-4 py-1.5 rounded-md text-xs font-semibold transition-all ${
                           supplierType === type
                             ? "bg-white dark:bg-gray-700 text-gray-800 dark:text-white shadow-sm"
                             : "text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"
@@ -514,7 +530,7 @@ const CreateVoucher = ({ onclose, onSuccess }) => {
               <div className="space-y-3">
 
                 {/* Bank Account — rich dropdown showing bank, branch, balance */}
-                <Field label="Bank / Payment Account">
+                <Field label="Bank / Cash Account">
                   <SearchableSelect
                     options={bankOptions} value={selectedBankId}
                     onChange={handleBankSelect}
@@ -522,16 +538,32 @@ const CreateVoucher = ({ onclose, onSuccess }) => {
                     isLoading={loadingBanks}
                     renderOption={renderBankOption}
                   />
-                  {/* Selected bank detail pill */}
+                  {/* Selected bank/cash detail pill */}
                   {selectedBankId && (() => {
                     const b = bankOptions.find(x => x.value === selectedBankId);
+                    const isCash = b?.account_category === "cash";
                     return b ? (
-                      <div className="mt-1.5 flex items-center justify-between px-3 py-2 rounded-lg bg-blue-50 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-800">
+                      <div className={`mt-1.5 flex items-center justify-between px-3 py-2 rounded-lg border ${
+                        isCash
+                          ? "bg-teal-50 dark:bg-teal-900/20 border-teal-100 dark:border-teal-800"
+                          : "bg-blue-50 dark:bg-blue-900/20 border-blue-100 dark:border-blue-800"
+                      }`}>
                         <div>
-                          <p className="text-xs font-bold text-blue-700 dark:text-blue-300">{b.account_name}</p>
-                          {(b.bank_name || b.branch_name) && (
-                            <p className="text-[10px] text-blue-500 dark:text-blue-400">{[b.bank_name, b.branch_name].filter(Boolean).join(" · ")}</p>
-                          )}
+                          <p className={`text-xs font-bold ${isCash ? "text-teal-700 dark:text-teal-300" : "text-blue-700 dark:text-blue-300"}`}>
+                            {b.account_name}
+                          </p>
+                          {isCash
+                            ? [b.custodian_name, b.location].filter(Boolean).length > 0 && (
+                                <p className="text-[10px] text-teal-500 dark:text-teal-400">
+                                  {[b.custodian_name, b.location].filter(Boolean).join(" · ")}
+                                </p>
+                              )
+                            : (b.bank_name || b.branch_name) && (
+                                <p className="text-[10px] text-blue-500 dark:text-blue-400">
+                                  {[b.bank_name, b.branch_name].filter(Boolean).join(" · ")}
+                                </p>
+                              )
+                          }
                         </div>
                         <div className="text-right">
                           <p className="text-[10px] text-gray-400">Balance</p>

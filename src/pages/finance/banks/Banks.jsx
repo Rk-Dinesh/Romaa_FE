@@ -12,6 +12,7 @@ import AccountFormModal from "./components/AccountFormModal";
 import DeleteConfirmModal from "./components/DeleteConfirmModal";
 
 /* ── View toggle button ──────────────────────────────────────────────────── */
+// eslint-disable-next-line no-unused-vars
 const ViewBtn = ({ active, onClick, icon: Icon, label }) => (
   <button
     onClick={onClick}
@@ -27,7 +28,7 @@ const ViewBtn = ({ active, onClick, icon: Icon, label }) => (
 
 /* ═══════════════════════════════════════════════════════════════════════════ */
 const Banks = () => {
-  const [view, setView]                 = useState("list");
+  const [view, setView]                 = useState("tree");
   const [search, setSearch]             = useState("");
   const [filterType, setFilterType]     = useState("");
   const [filterBankCash, setFilterBankCash] = useState(false);

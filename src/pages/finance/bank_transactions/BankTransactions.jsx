@@ -426,28 +426,42 @@ const BankTransactions = () => {
               ) : bankAccountsRaw.length === 0 ? (
                 <p className="text-xs text-gray-400 text-center py-6">No bank accounts found.</p>
               ) : (
-                bankAccountsRaw.map(b => (
-                  <button key={b.account_code} type="button"
-                    onClick={() => setApproveBank(b.account_code)}
-                    className={`w-full text-left px-4 py-3 rounded-lg border transition-all ${
-                      approveBank === b.account_code
-                        ? "border-blue-500 bg-blue-50 dark:bg-blue-900/20 dark:border-blue-600 ring-1 ring-blue-500"
-                        : "border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-800"
-                    }`}
-                  >
-                    <p className={`text-sm font-semibold ${approveBank === b.account_code ? "text-blue-700 dark:text-blue-300" : "text-gray-800 dark:text-gray-200"}`}>
-                      {b.account_name}
-                    </p>
-                    <div className="flex items-center justify-between mt-1">
-                      <span className="text-[10px] text-gray-400">
-                        {[b.bank_name, b.branch_name].filter(Boolean).join(" · ")}
-                      </span>
-                      <span className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400">
-                        ₹{fmt(b.current_balance || b.opening_balance || 0)}
-                      </span>
-                    </div>
-                  </button>
-                ))
+                bankAccountsRaw.map(b => {
+                  const isCash = b.account_category === "cash";
+                  return (
+                    <button key={b.account_code} type="button"
+                      onClick={() => setApproveBank(b.account_code)}
+                      className={`w-full text-left px-4 py-3 rounded-lg border transition-all ${
+                        approveBank === b.account_code
+                          ? "border-blue-500 bg-blue-50 dark:bg-blue-900/20 dark:border-blue-600 ring-1 ring-blue-500"
+                          : "border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-800"
+                      }`}
+                    >
+                      <div className="flex items-center gap-2">
+                        <p className={`text-sm font-semibold ${approveBank === b.account_code ? "text-blue-700 dark:text-blue-300" : "text-gray-800 dark:text-gray-200"}`}>
+                          {b.account_name}
+                        </p>
+                        <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded-full ${
+                          isCash
+                            ? "bg-teal-100 dark:bg-teal-900/30 text-teal-600 dark:text-teal-400"
+                            : "bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400"
+                        }`}>
+                          {isCash ? "CASH" : "BANK"}
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-between mt-1">
+                        <span className="text-[10px] text-gray-400">
+                          {isCash
+                            ? [b.custodian_name, b.location].filter(Boolean).join(" · ")
+                            : [b.bank_name, b.branch_name].filter(Boolean).join(" · ")}
+                        </span>
+                        <span className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400">
+                          ₹{fmt(b.current_balance || b.available_balance || 0)}
+                        </span>
+                      </div>
+                    </button>
+                  );
+                })
               )}
             </div>
 

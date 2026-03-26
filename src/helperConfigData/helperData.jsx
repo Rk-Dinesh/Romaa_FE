@@ -425,16 +425,28 @@ export const Menus = [
         subModule: "contractor_bill",
       },
       {
-        title: "Debit, Credit Note",
-        icon: <FileWarning size={23} />,
-        to: "/finance/debitcreditnote",
-        subModule: "debit_credit_note",
+        title: "Banks Account Tree",
+        icon: <RiBankLine size={23} />,
+        to: "/finance/banks",
+        subModule: "banks",
+      },
+      {
+        title: "Company Bank Details",
+        icon: <RiBankLine size={23} />,
+        to: "/finance/companybankdetails",
+        subModule: "company_bank_details",
       },
       {
         title: "Internal Bank Transfer",
         icon: <TbReportMoney size={23} />,
         to: "/finance/internalbanktransfer",
         subModule: "internal_transfer",
+      },
+      {
+        title: "Ledger Entry",
+        icon: <MdLocalAtm size={23} />,
+        to: "/finance/ledgerentry",
+        subModule: "ledger_entry",
       },
       {
         title: "Bank Transcation",
@@ -449,10 +461,10 @@ export const Menus = [
         subModule: "journal_entry",
       },
       {
-        title: "Banks",
-        icon: <RiBankLine size={23} />,
-        to: "/finance/banks",
-        subModule: "banks",
+        title: "Debit, Credit Note",
+        icon: <FileWarning size={23} />,
+        to: "/finance/debitcreditnote",
+        subModule: "debit_credit_note",
       },
       {
         title: "TDS",
@@ -466,12 +478,7 @@ export const Menus = [
         to: "/finance/cashentry",
         subModule: "cash_entry",
       },
-      {
-        title: "Ledger Entry",
-        icon: <MdLocalAtm size={23} />,
-        to: "/finance/ledgerentry",
-        subModule: "ledger_entry",
-      },
+      
       {
         title: "Supplier Outstanding",
         icon: <Banknote size={23} />,
@@ -484,12 +491,7 @@ export const Menus = [
         to: "/finance/overallexpenses",
         subModule: "overall_expenses",
       },
-      {
-        title: "Company Bank Details",
-        icon: <RiBankLine size={23} />,
-        to: "/finance/companybankdetails",
-        subModule: "company_bank_details",
-      },
+      
     ],
   },
   {
