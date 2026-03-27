@@ -201,10 +201,10 @@ const AddTender = ({ onclose, onSuccess }) => {
                <InputFieldTender label="Country" name="tender_location.country" register={register} errors={errors} />
             </div>
             <div className="col-span-1">
-               <InputFieldTender label="Latitude" name="site_location.latitude" type="number" register={register} errors={errors} />
+               <InputFieldTender label="Latitude" name="site_location.latitude" step="0.000001" type="number" register={register} errors={errors} />
             </div>
             <div className="col-span-1">
-               <InputFieldTender label="Longitude" name="site_location.longitude" type="number" register={register} errors={errors} />
+               <InputFieldTender label="Longitude" name="site_location.longitude" step="0.000001" type="number" register={register} errors={errors} />
             </div>
 
           </form>

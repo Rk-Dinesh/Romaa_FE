@@ -6,15 +6,21 @@ import { IoClose } from "react-icons/io5";
 import {
   FiSave, FiFileText, FiUser, FiSettings,
   FiList, FiChevronDown, FiPlus, FiTrash2, FiDollarSign,
+  FiCheckCircle, FiAlertCircle,
 } from "react-icons/fi";
 import { toast } from "react-toastify";
 import {
   useTenderIds, useVendors, useContractors,
   useNextCNNo, useNextDNNo,
   useCreateCN, useCreateDN,
+  usePayableBills, useMaterials,
 } from "./hooks/useDebitCreditNote";
 
 /* ── Schema ─────────────────────────────────────────────────────────────── */
+// yup v1 no longer coerces "" → undefined for number fields, so we do it manually.
+const numField = () =>
+  yup.number().transform((val, orig) => (orig === "" ? undefined : val));
+
 const schema = yup.object().shape({
   doc_no:         yup.string().required("Note number is required"),
   doc_date:       yup.string().required("Date is required"),
@@ -22,8 +28,8 @@ const schema = yup.object().shape({
   reference_no:   yup.string().nullable(),
   reference_date: yup.string().nullable(),
   location:       yup.string().nullable(),
-  amount:         yup.number().typeError("Must be a number").positive("Must be positive").required("Amount is required"),
-  service_amt:    yup.number().typeError("Must be a number").min(0).nullable().optional(),
+  amount:         numField().typeError("Must be a number").positive("Must be positive").required("Amount is required"),
+  service_amt:    numField().typeError("Must be a number").min(0).nullable().optional(),
   narration:      yup.string().nullable(),
 });
 
@@ -32,7 +38,10 @@ const ADJ_TYPES   = ["Against Bill", "Advance Adjustment", "On Account"];
 const TAX_TYPES   = ["GST", "NonGST", "Exempt"];
 const SALES_TYPES = ["Local", "Interstate", "Export", "SEZ", "Exempt"];
 
-const emptyEntry = () => ({ dr_cr: "Dr", account_name: "", debit_amt: "", credit_amt: "" });
+const emptyEntry     = () => ({ dr_cr: "Dr", account_name: "", debit_amt: "", credit_amt: "", entry_type: "material" });
+const supplierEntry  = (isCN) => ({ dr_cr: isCN ? "Cr" : "Dr", account_name: "", debit_amt: "", credit_amt: "", entry_type: "supplier" });
+
+const fmt = (n) => Number(n || 0).toLocaleString("en-IN", { minimumFractionDigits: 2 });
 
 /* ── Shared class strings ───────────────────────────────────────────────── */
 const inputCls    = "w-full border border-gray-200 dark:border-gray-700 rounded-lg px-3 py-2 text-sm bg-white dark:bg-gray-800 dark:text-white focus:outline-none focus:border-slate-500 focus:ring-1 focus:ring-slate-400 transition-all placeholder:text-gray-400";
@@ -162,12 +171,19 @@ const CreateDebitCreditNote = ({ onclose, onSuccess }) => {
 
   /* ── Voucher config ── */
   const [adjType,   setAdjType]   = useState("Against Bill");
-  const [taxType,   setTaxType]   = useState("GST");
+  const [taxType,    setTaxType]    = useState("GST");
+  const [gstPercent, setGstPercent] = useState("");
   const [salesType, setSalesType] = useState("Local");
   const [revCharge, setRevCharge] = useState(false);
 
+  /* ── Bill selection ── */
+  const [selectedBill, setSelectedBill] = useState(null);
+
   /* ── Dr/Cr entries ── */
-  const [entries, setEntries] = useState([emptyEntry(), emptyEntry()]);
+  const [entries, setEntries] = useState([supplierEntry(true), emptyEntry()]);
+
+  /* ── Supplier display label (for auto-fill) ── */
+  const [selectedSupplierLabel, setSelectedSupplierLabel] = useState("");
 
   /* ── Save status ref (draft vs pending) ── */
   const saveStatusRef = useRef("pending");
@@ -188,6 +204,15 @@ const CreateDebitCreditNote = ({ onclose, onSuccess }) => {
   const { data: vendorsRaw = [],     isLoading: loadingVendors     } = useVendors(supplierType === "Vendor" ? selectedTenderId : null);
   const { data: contractorsRaw = [], isLoading: loadingContractors } = useContractors(supplierType === "Contractor" ? selectedTenderId : null);
 
+  const { data: materialsRaw = [], isLoading: loadingMaterials } = useMaterials(selectedTenderId);
+  const materialOptions = materialsRaw.map(m => ({ value: m.description, label: m.description }));
+
+  const { data: payableBillsRaw = [], isLoading: loadingBills } = usePayableBills(
+    selectedSupplierId
+      ? { supplier_id: selectedSupplierId, supplier_type: supplierType, tender_id: selectedTenderId }
+      : {}
+  );
+
   const createCN = useCreateCN({ onSuccess, onClose: onclose });
   const createDN = useCreateDN({ onSuccess, onClose: onclose });
 
@@ -200,10 +225,26 @@ const CreateDebitCreditNote = ({ onclose, onSuccess }) => {
     if (!isCN && nextDNNo) setValue("doc_no", nextDNNo, { shouldDirty: false });
   }, [nextDNNo, isCN, setValue]);
 
-  /* ── Reset supplier when tender or type changes ── */
+  /* ── Reset supplier + bill when tender or supplier type changes ── */
   useEffect(() => {
     setSelectedSupplierId("");
-  }, [supplierType, selectedTenderId]);
+    setSelectedSupplierLabel("");
+    setSelectedBill(null);
+    setValue("bill_no", "");
+  }, [supplierType, selectedTenderId, setValue]);
+
+  /* ── Auto-fill supplier entry when supplier label changes ── */
+  useEffect(() => {
+    setEntries(prev => prev.map(e =>
+      e.entry_type === "supplier" ? { ...e, account_name: selectedSupplierLabel } : e
+    ));
+  }, [selectedSupplierLabel]);
+
+  /* ── Reset bill when supplier changes ── */
+  useEffect(() => {
+    setSelectedBill(null);
+    setValue("bill_no", "");
+  }, [selectedSupplierId, setValue]);
 
   /* ── Dropdown options ── */
   const tenderOptions = tendersRaw.map(t => ({
@@ -211,6 +252,7 @@ const CreateDebitCreditNote = ({ onclose, onSuccess }) => {
     label:       t.tender_project_name ? `${t.tender_id} – ${t.tender_project_name}` : t.tender_id,
     _id:         t._id || "",
     tender_name: t.tender_project_name || t.tender_id,
+    location:    [t.tender_location?.city, t.tender_location?.state].filter(Boolean).join(", "),
   }));
 
   const supplierOptions = (supplierType === "Vendor" ? vendorsRaw : contractorsRaw).map(s => ({
@@ -220,12 +262,24 @@ const CreateDebitCreditNote = ({ onclose, onSuccess }) => {
 
   const isLoadingSuppliers = supplierType === "Vendor" ? loadingVendors : loadingContractors;
 
+  const billOptions = payableBillsRaw.map(b => ({
+    value:       b._id,
+    bill_no:     b.bill_no,
+    bill_type:   b.bill_type,
+    bill_amount: b.bill_amount  || 0,
+    amount_paid: b.amount_paid  || 0,
+    balance_due: b.balance_due  || 0,
+    paid_status: b.paid_status  || "unpaid",
+    due_date:    b.due_date     || null,
+  }));
+
   /* ── Handlers ── */
   const handleTenderSelect = (option) => {
     setSelectedTenderId(option.value);
     setSelectedTenderRef(option._id || "");
     setSelectedTenderName(option.tender_name || "");
     setSelectedSupplierId("");
+    setValue("location", option.location || "", { shouldDirty: true });
   };
 
   const handleNoteTypeChange = (type) => {
@@ -235,9 +289,12 @@ const CreateDebitCreditNote = ({ onclose, onSuccess }) => {
     setSelectedTenderRef("");
     setSelectedTenderName("");
     setSelectedSupplierId("");
-    setEntries([emptyEntry(), emptyEntry()]);
+    setSelectedBill(null);
+    setSelectedSupplierLabel("");
+    setEntries([supplierEntry(type === "CN"), emptyEntry()]);
     setAdjType("Against Bill");
     setTaxType("GST");
+    setGstPercent("");
     setSalesType("Local");
     setRevCharge(false);
     reset({
@@ -249,10 +306,12 @@ const CreateDebitCreditNote = ({ onclose, onSuccess }) => {
 
   /* ── Entry row helpers ── */
   const addEntry    = () => setEntries(prev => [...prev, emptyEntry()]);
-  const removeEntry = (idx) => setEntries(prev => prev.filter((_, i) => i !== idx));
+  const removeEntry = (idx) => setEntries(prev => prev.filter((_, i) => i !== idx || prev[i].entry_type === "supplier"));
   const updateEntry = (idx, field, val) =>
     setEntries(prev => prev.map((e, i) => {
       if (i !== idx) return e;
+      // lock supplier entry dr_cr — it's determined by note type
+      if (field === "dr_cr" && e.entry_type === "supplier") return e;
       const updated = { ...e, [field]: val };
       // auto-clear opposite amount when switching Dr/Cr
       if (field === "dr_cr") {
@@ -263,9 +322,11 @@ const CreateDebitCreditNote = ({ onclose, onSuccess }) => {
     }));
 
   /* ── Entry totals ── */
-  const totalDr = entries.reduce((s, e) => s + (parseFloat(e.debit_amt)  || 0), 0);
-  const totalCr = entries.reduce((s, e) => s + (parseFloat(e.credit_amt) || 0), 0);
-  const balanced = Math.abs(totalDr - totalCr) < 0.005;
+  const totalDr   = entries.reduce((s, e) => s + (parseFloat(e.debit_amt)  || 0), 0);
+  const totalCr   = entries.reduce((s, e) => s + (parseFloat(e.credit_amt) || 0), 0);
+  const diff      = parseFloat(Math.abs(totalDr - totalCr).toFixed(2));
+  const balanced  = diff < 0.005;
+  const roundOff  = !balanced && diff <= 1;
 
   /* ── Submit ── */
   const onSubmit = (data) => {
@@ -273,6 +334,7 @@ const CreateDebitCreditNote = ({ onclose, onSuccess }) => {
     if (!selectedSupplierId) { toast.warning("Please select a supplier");  return; }
     const validEntries = entries.filter(e => e.account_name.trim());
     if (validEntries.length === 0) { toast.warning("Add at least one voucher entry"); return; }
+    if (!balanced && !roundOff)   { toast.warning("Voucher entries are not balanced (difference exceeds ₹1)"); return; }
 
     const payload = {
       reference_no:   data.reference_no   || undefined,
@@ -281,6 +343,7 @@ const CreateDebitCreditNote = ({ onclose, onSuccess }) => {
       sales_type:     salesType,
       adj_type:       adjType,
       tax_type:       taxType,
+      gst_percent:    taxType === "GST" && gstPercent !== "" ? Number(gstPercent) : undefined,
       rev_charge:     revCharge,
       supplier_type:  supplierType,
       supplier_id:    selectedSupplierId,
@@ -288,6 +351,7 @@ const CreateDebitCreditNote = ({ onclose, onSuccess }) => {
       tender_ref:     selectedTenderRef  || undefined,
       tender_name:    selectedTenderName || undefined,
       bill_no:        data.bill_no       || undefined,
+      round_off:      roundOff ? (totalDr > totalCr ? diff : -diff) : 0,
       amount:         Number(data.amount),
       entries:        validEntries.map(e => ({
         dr_cr:        e.dr_cr,
@@ -464,7 +528,7 @@ const CreateDebitCreditNote = ({ onclose, onSuccess }) => {
                   <SearchableSelect
                     options={supplierOptions}
                     value={selectedSupplierId}
-                    onChange={(o) => setSelectedSupplierId(o.value)}
+                    onChange={(o) => { setSelectedSupplierId(o.value); setSelectedSupplierLabel(o.label); }}
                     placeholder={selectedTenderId ? `Select ${supplierType.toLowerCase()}...` : "Select a tender first"}
                     disabled={!selectedTenderId}
                     isLoading={isLoadingSuppliers}
@@ -474,6 +538,82 @@ const CreateDebitCreditNote = ({ onclose, onSuccess }) => {
               </div>
             </SectionCard>
           </div>
+
+          {/* ── Linked Bill (visible once supplier is selected) ─────────────── */}
+          {selectedSupplierId && (
+            <SectionCard iconEl={<FiList />} title="Linked Bill" accent="blue">
+              <div className="space-y-3">
+                <Field label="Select Bill">
+                  <SearchableSelect
+                    options={billOptions.map(b => ({
+                      value: b.value,
+                      label: b.bill_no,
+                      ...b,
+                    }))}
+                    value={selectedBill?.value || ""}
+                    onChange={(o) => {
+                      setSelectedBill(o);
+                      setValue("bill_no", o.bill_no, { shouldValidate: false });
+                    }}
+                    placeholder={
+                      loadingBills
+                        ? "Loading bills…"
+                        : billOptions.length === 0
+                        ? "No unpaid bills found for this supplier"
+                        : "Search and select a bill…"
+                    }
+                    isLoading={loadingBills}
+                    disabled={billOptions.length === 0 && !loadingBills}
+                  />
+                </Field>
+
+                {/* Selected bill detail card */}
+                {selectedBill && (
+                  <div className="rounded-xl border border-blue-100 dark:border-blue-800/50 bg-blue-50/60 dark:bg-blue-900/10 p-4">
+                    <div className="flex items-start justify-between gap-4">
+                      <div className="space-y-1.5">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="text-xs font-mono font-bold text-blue-700 dark:text-blue-300">
+                            {selectedBill.bill_no}
+                          </span>
+                          <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded-full ${
+                            selectedBill.paid_status === "partial"
+                              ? "bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400"
+                              : "bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400"
+                          }`}>
+                            {selectedBill.paid_status === "partial" ? "PARTIAL" : "UNPAID"}
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-5 text-xs text-gray-500 dark:text-gray-400">
+                          <span>Bill Total: <strong className="text-gray-700 dark:text-gray-200">₹{fmt(selectedBill.bill_amount)}</strong></span>
+                          <span>Paid: <strong className="text-emerald-600 dark:text-emerald-400">₹{fmt(selectedBill.amount_paid)}</strong></span>
+                          <span>Balance Due: <strong className="text-red-600 dark:text-red-400">₹{fmt(selectedBill.balance_due)}</strong></span>
+                        </div>
+                        <p className="text-[11px] text-blue-500 dark:text-blue-400 flex items-center gap-1">
+                          <FiCheckCircle size={11} />
+                          This {isCN ? "credit note" : "debit note"} will be linked against this bill for reconciliation.
+                        </p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => { setSelectedBill(null); setValue("bill_no", ""); }}
+                        className="shrink-0 text-gray-400 hover:text-red-500 transition-colors text-xs underline"
+                      >
+                        Clear
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {!selectedBill && !loadingBills && billOptions.length === 0 && (
+                  <p className="text-xs text-amber-600 dark:text-amber-400 flex items-center gap-1.5 italic">
+                    <FiAlertCircle size={12} />
+                    No unpaid or partially-paid bills found for this supplier under the selected tender.
+                  </p>
+                )}
+              </div>
+            </SectionCard>
+          )}
 
           {/* ── Row 2: Voucher Config + Amount & Narration ──────────────────── */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
@@ -488,10 +628,28 @@ const CreateDebitCreditNote = ({ onclose, onSuccess }) => {
                 </Field>
 
                 <Field label="Tax Type">
-                  <select value={taxType} onChange={e => setTaxType(e.target.value)} className={selectCls}>
+                  <select value={taxType} onChange={e => { setTaxType(e.target.value); setGstPercent(""); }} className={selectCls}>
                     {TAX_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
                   </select>
                 </Field>
+
+                {taxType === "GST" && (
+                  <Field label="GST %">
+                    <div className="relative">
+                      <input
+                        type="number"
+                        step="0.01"
+                        min="0"
+                        max="100"
+                        value={gstPercent}
+                        onChange={e => setGstPercent(e.target.value)}
+                        className={`${inputCls} pr-8`}
+                        placeholder="e.g. 18"
+                      />
+                      <span className="absolute right-3 top-2.5 text-xs text-gray-400 font-semibold">%</span>
+                    </div>
+                  </Field>
+                )}
 
                 <Field label="Sales Type">
                   <select value={salesType} onChange={e => setSalesType(e.target.value)} className={selectCls}>
@@ -521,23 +679,27 @@ const CreateDebitCreditNote = ({ onclose, onSuccess }) => {
               <div className="space-y-3">
                 <div className={`grid gap-3 ${!isCN ? "grid-cols-2" : "grid-cols-1"}`}>
                   <Field label="Total Amount" required error={errors.amount}>
-                    <input
-                      type="number" step="0.01" min="0"
-                      {...register("amount")}
-                      className={inputCls}
-                      placeholder="Total note value"
-                    />
-                  </Field>
-
-                  {/* DN-only: service amount */}
-                  {!isCN && (
-                    <Field label="Service Amount" error={errors.service_amt}>
+                    <div className="relative">
+                      <span className="absolute left-3 top-2.5 text-sm text-gray-400 font-semibold">₹</span>
                       <input
                         type="number" step="0.01" min="0"
-                        {...register("service_amt")}
-                        className={inputCls}
-                        placeholder="Service portion (if any)"
+                        {...register("amount")}
+                        className={`${inputCls} pl-7`}
+                        placeholder="Total note value"
                       />
+                    </div>
+                  </Field>
+                  {!isCN && (
+                    <Field label="Service Amount" error={errors.service_amt}>
+                      <div className="relative">
+                        <span className="absolute left-3 top-2.5 text-sm text-gray-400 font-semibold">₹</span>
+                        <input
+                          type="number" step="0.01" min="0"
+                          {...register("service_amt")}
+                          className={`${inputCls} pl-7`}
+                          placeholder="Service portion (if any)"
+                        />
+                      </div>
                     </Field>
                   )}
                 </div>
@@ -564,7 +726,7 @@ const CreateDebitCreditNote = ({ onclose, onSuccess }) => {
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b border-gray-100 dark:border-gray-800">
-                    {["Dr / Cr", "Account Name", "Debit Amount", "Credit Amount", ""].map(h => (
+                    {["Dr / Cr", "Account / Material", "Debit Amount", "Credit Amount", ""].map(h => (
                       <th
                         key={h}
                         className="text-left px-3 py-2 text-[10px] font-semibold uppercase tracking-wider text-gray-400"
@@ -582,33 +744,60 @@ const CreateDebitCreditNote = ({ onclose, onSuccess }) => {
                       <td className="px-3 py-2.5 w-28">
                         <div className="flex bg-gray-100 dark:bg-gray-800 rounded-lg p-0.5">
                           {["Dr", "Cr"].map(side => (
-                            <button
-                              key={side}
-                              type="button"
-                              onClick={() => updateEntry(i, "dr_cr", side)}
-                              className={`flex-1 py-1.5 rounded-md text-xs font-bold transition-all ${
-                                entry.dr_cr === side
-                                  ? side === "Dr"
-                                    ? "bg-red-500 text-white shadow-sm"
-                                    : "bg-blue-500 text-white shadow-sm"
-                                  : "text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
-                              }`}
-                            >
-                              {side}
-                            </button>
+                            entry.entry_type === "supplier" ? (
+                              <div
+                                key={side}
+                                className={`flex-1 py-1.5 rounded-md text-xs font-bold text-center ${
+                                  entry.dr_cr === side
+                                    ? side === "Dr" ? "bg-red-500 text-white shadow-sm" : "bg-blue-500 text-white shadow-sm"
+                                    : "text-gray-300 dark:text-gray-600"
+                                }`}
+                              >
+                                {side}
+                              </div>
+                            ) : (
+                              <button
+                                key={side}
+                                type="button"
+                                onClick={() => updateEntry(i, "dr_cr", side)}
+                                className={`flex-1 py-1.5 rounded-md text-xs font-bold transition-all ${
+                                  entry.dr_cr === side
+                                    ? side === "Dr" ? "bg-red-500 text-white shadow-sm" : "bg-blue-500 text-white shadow-sm"
+                                    : "text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+                                }`}
+                              >
+                                {side}
+                              </button>
+                            )
                           ))}
                         </div>
                       </td>
 
-                      {/* Account Name */}
+                      {/* Account Name / Material dropdown */}
                       <td className="px-3 py-2.5">
-                        <input
-                          type="text"
-                          value={entry.account_name}
-                          onChange={e => updateEntry(i, "account_name", e.target.value)}
-                          className={inputCls}
-                          placeholder="e.g. ABC Suppliers / Purchase Returns / CGST Input"
-                        />
+                        {entry.entry_type === "supplier" ? (
+                          <input
+                            type="text"
+                            value={entry.account_name}
+                            readOnly
+                            className={readonlyCls}
+                            placeholder="Auto-filled from supplier selection…"
+                          />
+                        ) : (
+                          <select
+                            value={entry.account_name}
+                            onChange={(e) => updateEntry(i, "account_name", e.target.value)}
+                            disabled={!selectedTenderId || loadingMaterials}
+                            className={selectCls}
+                          >
+                            <option value="">
+                              {loadingMaterials ? "Loading materials…" : selectedTenderId ? "Select material…" : "Select tender first"}
+                            </option>
+                            {materialOptions.map(m => (
+                              <option key={m.value} value={m.value}>{m.label}</option>
+                            ))}
+                          </select>
+                        )}
                       </td>
 
                       {/* Debit Amount */}
@@ -637,7 +826,7 @@ const CreateDebitCreditNote = ({ onclose, onSuccess }) => {
 
                       {/* Remove row */}
                       <td className="px-3 py-2.5 w-10">
-                        {entries.length > 1 && (
+                        {entry.entry_type !== "supplier" && (
                           <button
                             type="button"
                             onClick={() => removeEntry(i)}
@@ -679,13 +868,58 @@ const CreateDebitCreditNote = ({ onclose, onSuccess }) => {
                     <span className={`font-semibold px-2 py-0.5 rounded-full text-[10px] ${
                       balanced
                         ? "bg-emerald-50 text-emerald-600 dark:bg-emerald-900/20 dark:text-emerald-400"
+                        : roundOff
+                        ? "bg-blue-50 text-blue-600 dark:bg-blue-900/20 dark:text-blue-400"
                         : "bg-amber-50 text-amber-600 dark:bg-amber-900/20 dark:text-amber-400"
                     }`}>
-                      {balanced ? "✓ Balanced" : `Diff: ${Math.abs(totalDr - totalCr).toFixed(2)}`}
+                      {balanced ? "✓ Balanced" : roundOff ? `↻ Round Off ₹${diff.toFixed(2)}` : `Diff: ${diff.toFixed(2)}`}
                     </span>
                   )}
                 </div>
               </div>
+
+              {/* GST calculation panel — shown when GST is active and entries have amounts */}
+              {taxType === "GST" && gstPercent !== "" && Number(gstPercent) > 0 && totalDr > 0 && (() => {
+                const base        = parseFloat(totalDr.toFixed(2));
+                const gstAmt      = parseFloat((base * Number(gstPercent) / 100).toFixed(2));
+                const subTotal    = parseFloat((base + gstAmt).toFixed(2));
+                const rounded     = Math.round(subTotal);
+                const roundOffAmt = parseFloat((rounded - subTotal).toFixed(2));
+                const hasRoundOff = Math.abs(roundOffAmt) >= 0.01;
+                return (
+                  <div className="mx-3 mb-3 rounded-lg border border-amber-200 dark:border-amber-700/40 bg-amber-50/70 dark:bg-amber-900/10 px-4 py-3">
+                    <p className="text-[10px] font-bold uppercase tracking-wider text-amber-600 dark:text-amber-400 mb-2">
+                      GST Calculation (on Total Dr)
+                    </p>
+                    <div className="space-y-1.5">
+                      <div className="flex justify-between text-xs text-gray-500 dark:text-gray-400">
+                        <span>Base (Total Dr)</span>
+                        <span className="font-semibold text-gray-700 dark:text-gray-200 tabular-nums">₹{fmt(base)}</span>
+                      </div>
+                      <div className="flex justify-between text-xs text-gray-500 dark:text-gray-400">
+                        <span>GST @ {gstPercent}%</span>
+                        <span className="font-semibold text-amber-600 dark:text-amber-400 tabular-nums">+ ₹{fmt(gstAmt)}</span>
+                      </div>
+                      {hasRoundOff && (
+                        <>
+                          <div className="flex justify-between text-xs text-gray-400 dark:text-gray-500">
+                            <span>Sub Total</span>
+                            <span className="tabular-nums">₹{fmt(subTotal)}</span>
+                          </div>
+                          <div className="flex justify-between text-xs text-blue-500 dark:text-blue-400">
+                            <span>Round Off</span>
+                            <span className="tabular-nums">{roundOffAmt > 0 ? "+" : ""}₹{fmt(roundOffAmt)}</span>
+                          </div>
+                        </>
+                      )}
+                      <div className="flex justify-between text-xs font-bold border-t border-amber-200 dark:border-amber-600/40 pt-1.5">
+                        <span className="text-gray-700 dark:text-gray-200">Grand Total (incl. GST)</span>
+                        <span className="text-emerald-600 dark:text-emerald-400 tabular-nums">₹{fmt(rounded)}</span>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })()}
             </div>
           </SectionCard>
 

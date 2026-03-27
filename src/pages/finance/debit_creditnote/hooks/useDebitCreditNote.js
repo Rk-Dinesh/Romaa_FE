@@ -131,6 +131,9 @@ export const useApproveCN = () => {
   });
 };
 
+/* ── Re-export hooks shared with Payment Voucher ────────────────────────── */
+export { usePayableBills } from "../../bank_transactions/hooks/useVouchers";
+
 /* ── Approve Debit Note ─────────────────────────────────────────────────── */
 export const useApproveDN = () => {
   const queryClient = useQueryClient();
@@ -149,7 +152,7 @@ export const useApproveDN = () => {
 const fetchCNList = async ({ queryKey }) => {
   const [, params] = queryKey;
   const { data } = await api.get("/creditnote/list", { params });
-  return data?.data || [];
+  return { data: data?.data || [], pagination: data?.pagination || {} };
 };
 
 export const useCNList = (params = {}) =>
@@ -157,13 +160,14 @@ export const useCNList = (params = {}) =>
     queryKey: ["credit-notes", params],
     queryFn:  fetchCNList,
     staleTime: 30 * 1000,
+    placeholderData: (prev) => prev,
   });
 
 /* ── List Debit Notes ───────────────────────────────────────────────────── */
 const fetchDNList = async ({ queryKey }) => {
   const [, params] = queryKey;
   const { data } = await api.get("/debitnote/list", { params });
-  return data?.data || [];
+  return { data: data?.data || [], pagination: data?.pagination || {} };
 };
 
 export const useDNList = (params = {}) =>
@@ -171,4 +175,172 @@ export const useDNList = (params = {}) =>
     queryKey: ["debit-notes", params],
     queryFn:  fetchDNList,
     staleTime: 30 * 1000,
+    placeholderData: (prev) => prev,
+  });
+
+/* ── Get Credit Note by ID ──────────────────────────────────────────────── */
+const fetchCNById = async ({ queryKey }) => {
+  const [, id] = queryKey;
+  const { data } = await api.get(`/creditnote/${id}`);
+  return data?.data || null;
+};
+
+export const useCNById = (id) =>
+  useQuery({
+    queryKey: ["credit-note", id],
+    queryFn:  fetchCNById,
+    enabled:  !!id,
+  });
+
+/* ── Get Debit Note by ID ───────────────────────────────────────────────── */
+const fetchDNById = async ({ queryKey }) => {
+  const [, id] = queryKey;
+  const { data } = await api.get(`/debitnote/${id}`);
+  return data?.data || null;
+};
+
+export const useDNById = (id) =>
+  useQuery({
+    queryKey: ["debit-note", id],
+    queryFn:  fetchDNById,
+    enabled:  !!id,
+  });
+
+/* ── Update Credit Note ─────────────────────────────────────────────────── */
+export const useUpdateCN = ({ onSuccess, onClose } = {}) => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, ...payload }) => api.patch(`/creditnote/update/${id}`, payload).then((r) => r.data),
+    onSuccess: (_data, { id }) => {
+      toast.success("Credit note updated");
+      queryClient.invalidateQueries({ queryKey: ["credit-notes"] });
+      queryClient.invalidateQueries({ queryKey: ["credit-note", id] });
+      if (onSuccess) onSuccess();
+      if (onClose)   onClose();
+    },
+    onError: (err) =>
+      toast.error(err.response?.data?.message || "Failed to update credit note"),
+  });
+};
+
+/* ── Update Debit Note ──────────────────────────────────────────────────── */
+export const useUpdateDN = ({ onSuccess, onClose } = {}) => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, ...payload }) => api.patch(`/debitnote/update/${id}`, payload).then((r) => r.data),
+    onSuccess: (_data, { id }) => {
+      toast.success("Debit note updated");
+      queryClient.invalidateQueries({ queryKey: ["debit-notes"] });
+      queryClient.invalidateQueries({ queryKey: ["debit-note", id] });
+      if (onSuccess) onSuccess();
+      if (onClose)   onClose();
+    },
+    onError: (err) =>
+      toast.error(err.response?.data?.message || "Failed to update debit note"),
+  });
+};
+
+/* ── Delete Credit Note ─────────────────────────────────────────────────── */
+export const useDeleteCN = ({ onSuccess } = {}) => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (id) => api.delete(`/creditnote/delete/${id}`).then((r) => r.data),
+    onSuccess: () => {
+      toast.success("Credit note deleted");
+      queryClient.invalidateQueries({ queryKey: ["credit-notes"] });
+      if (onSuccess) onSuccess();
+    },
+    onError: (err) =>
+      toast.error(err.response?.data?.message || "Failed to delete credit note"),
+  });
+};
+
+/* ── Delete Debit Note ──────────────────────────────────────────────────── */
+export const useDeleteDN = ({ onSuccess } = {}) => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (id) => api.delete(`/debitnote/delete/${id}`).then((r) => r.data),
+    onSuccess: () => {
+      toast.success("Debit note deleted");
+      queryClient.invalidateQueries({ queryKey: ["debit-notes"] });
+      if (onSuccess) onSuccess();
+    },
+    onError: (err) =>
+      toast.error(err.response?.data?.message || "Failed to delete debit note"),
+  });
+};
+
+/* ── Credit Notes by Supplier ───────────────────────────────────────────── */
+const fetchCNBySupplier = async ({ queryKey }) => {
+  const [, supplierId, params] = queryKey;
+  const { data } = await api.get(`/creditnote/by-supplier/${supplierId}`, { params });
+  return data?.data || [];
+};
+
+export const useCNBySupplier = (supplierId, params = {}) =>
+  useQuery({
+    queryKey: ["credit-notes-by-supplier", supplierId, params],
+    queryFn:  fetchCNBySupplier,
+    enabled:  !!supplierId,
+    staleTime: 30 * 1000,
+  });
+
+/* ── Debit Notes by Supplier ────────────────────────────────────────────── */
+const fetchDNBySupplier = async ({ queryKey }) => {
+  const [, supplierId, params] = queryKey;
+  const { data } = await api.get(`/debitnote/by-supplier/${supplierId}`, { params });
+  return data?.data || [];
+};
+
+export const useDNBySupplier = (supplierId, params = {}) =>
+  useQuery({
+    queryKey: ["debit-notes-by-supplier", supplierId, params],
+    queryFn:  fetchDNBySupplier,
+    enabled:  !!supplierId,
+    staleTime: 30 * 1000,
+  });
+
+/* ── Credit Notes by Tender ─────────────────────────────────────────────── */
+const fetchCNByTender = async ({ queryKey }) => {
+  const [, tenderId, params] = queryKey;
+  const { data } = await api.get(`/creditnote/by-tender/${tenderId}`, { params });
+  return data?.data || [];
+};
+
+export const useCNByTender = (tenderId, params = {}) =>
+  useQuery({
+    queryKey: ["credit-notes-by-tender", tenderId, params],
+    queryFn:  fetchCNByTender,
+    enabled:  !!tenderId,
+    staleTime: 30 * 1000,
+  });
+
+/* ── Debit Notes by Tender ──────────────────────────────────────────────── */
+const fetchDNByTender = async ({ queryKey }) => {
+  const [, tenderId, params] = queryKey;
+  const { data } = await api.get(`/debitnote/by-tender/${tenderId}`, { params });
+  return data?.data || [];
+};
+
+export const useDNByTender = (tenderId, params = {}) =>
+  useQuery({
+    queryKey: ["debit-notes-by-tender", tenderId, params],
+    queryFn:  fetchDNByTender,
+    enabled:  !!tenderId,
+    staleTime: 30 * 1000,
+  });
+
+/* ── Materials for a project/tender ─────────────────────────────────────── */
+const fetchMaterials = async ({ queryKey }) => {
+  const [, projectId] = queryKey;
+  const { data } = await api.get(`/material/list/${projectId}`);
+  return data?.data || [];
+};
+
+export const useMaterials = (projectId) =>
+  useQuery({
+    queryKey: ["project-materials", projectId],
+    queryFn:  fetchMaterials,
+    enabled:  !!projectId,
+    staleTime: 5 * 60 * 1000,
   });
