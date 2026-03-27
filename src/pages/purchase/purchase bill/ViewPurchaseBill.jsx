@@ -1,7 +1,7 @@
 import { useState, useMemo } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import { ChevronLeft, ChevronDown, ChevronRight, RefreshCw, FileText, Search, AlertCircle, SlidersHorizontal, X, Link2, Truck } from "lucide-react";
-import { useBillsByTender } from "./hooks/usePurchaseBill";
+import { ChevronLeft, ChevronDown, ChevronRight, RefreshCw, FileText, Search, AlertCircle, SlidersHorizontal, X, Link2, Truck, CheckCircle } from "lucide-react";
+import { useBillsByTender, useApprovePurchaseBill } from "./hooks/usePurchaseBill";
 import SearchableSelect from "../../../components/SearchableSelect";
 
 /* ── helpers ── */
@@ -43,6 +43,7 @@ const ViewPurchaseBill = () => {
   const [expandedId, setExpandedId] = useState(null);
 
   const { data: bills = [], isLoading, isFetching, refetch } = useBillsByTender(tenderId);
+  const { mutate: approveBill, isPending: approving } = useApprovePurchaseBill();
 
   /* derived vendor list for dropdown */
   const vendors = useMemo(
@@ -295,6 +296,7 @@ const ViewPurchaseBill = () => {
                   ["Net Amt",     "text-right"],
                   ["Due Date",    ""],
                   ["Status",      ""],
+                  ["Actions",     ""],
                 ].map(([h, cls]) => (
                   <th key={h} className={`px-4 py-2.5 text-[10px] font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400 border-b border-gray-200 dark:border-gray-700 whitespace-nowrap ${cls}`}>
                     {h}
@@ -351,12 +353,29 @@ const ViewPurchaseBill = () => {
                     <td className="px-4 py-3">
                       <span className={`inline-block text-[10px] font-semibold uppercase tracking-wide px-2 py-0.5 rounded-full ${st.cls}`}>{st.label}</span>
                     </td>
+                    <td className="px-4 py-3">
+                      {bill.status === "pending" && (
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            if (window.confirm(`Approve ${bill.doc_id}?`)) {
+                              approveBill(bill._id);
+                            }
+                          }}
+                          disabled={approving}
+                          className="flex items-center gap-1 px-2.5 py-1 text-[10px] font-bold rounded-lg bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 dark:bg-emerald-900/20 dark:hover:bg-emerald-900/40 dark:text-emerald-400 dark:border-emerald-800 transition-colors disabled:opacity-50 whitespace-nowrap"
+                        >
+                          <CheckCircle size={11} />
+                          Approve
+                        </button>
+                      )}
+                    </td>
                   </tr>,
 
                   /* ── Expanded detail row ── */
                   expanded && (
                     <tr key={`${bill._id}-detail`}>
-                      <td colSpan={13} className="bg-slate-50 dark:bg-gray-800/40 border-b border-gray-200 dark:border-gray-700 px-6 py-5">
+                      <td colSpan={14} className="bg-slate-50 dark:bg-gray-800/40 border-b border-gray-200 dark:border-gray-700 px-6 py-5">
                         <div className="flex flex-col gap-5">
 
                           {/* ── GRN Linkage + Line Items (combined) ── */}
