@@ -321,6 +321,11 @@ const CreateVoucher = ({ onclose, onSuccess }) => {
   const totalCr  = entries.reduce((s, e) => s + (parseFloat(e.credit_amt) || 0), 0);
   const balanced = Math.abs(totalDr - totalCr) < 0.005;
 
+  /* ── Auto-fill amount from voucher entries ── */
+  useEffect(() => {
+    setValue("amount", totalDr > 0 ? parseFloat(totalDr.toFixed(2)) : "", { shouldValidate: false });
+  }, [totalDr, setValue]);
+
   /* ── Submit ── */
   const onSubmit = (data) => {
     if (!selectedTenderId)    { toast.warning("Please select a tender");   return; }
@@ -611,8 +616,8 @@ const CreateVoucher = ({ onclose, onSuccess }) => {
                 <Field label={isPV ? "Gross Amount" : "Amount"} required error={errors.amount}>
                   <div className="relative">
                     <span className="absolute left-3 top-2.5 text-sm text-gray-400 font-semibold">₹</span>
-                    <input type="number" step="0.01" min="0" {...register("amount")}
-                      className={`${inputCls} pl-7`} placeholder="0.00" />
+                    <input type="number" {...register("amount")} readOnly
+                      className={`${readonlyCls} pl-7`} placeholder="Auto-filled from entries" />
                   </div>
                 </Field>
 

@@ -107,6 +107,26 @@ export const useApprovePurchaseBill = () => {
   });
 };
 
+/* ── Delete purchase bill ───────────────────────────────────────────────── */
+const deleteBillApi = async (id) => {
+  const { data } = await api.delete(`/purchasebill/delete/${id}`);
+  return data;
+};
+
+export const useDeletePurchaseBill = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: deleteBillApi,
+    onSuccess: () => {
+      toast.success("Purchase bill deleted");
+      queryClient.invalidateQueries({ queryKey: ["purchase-bill-summary-all"] });
+      queryClient.invalidateQueries({ queryKey: ["bills-by-tender"] });
+    },
+    onError: (err) =>
+      toast.error(err.response?.data?.message || "Failed to delete purchase bill"),
+  });
+};
+
 /* ── Create purchase bill ───────────────────────────────────────────────── */
 const createBillApi = async (payload) => {
   const { data } = await api.post("/purchasebill/create", payload);

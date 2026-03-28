@@ -328,6 +328,15 @@ const CreateDebitCreditNote = ({ onclose, onSuccess }) => {
   const balanced  = diff < 0.005;
   const roundOff  = !balanced && diff <= 1;
 
+  /* ── Auto-fill amount from voucher entries (+ GST if applicable) ── */
+  useEffect(() => {
+    if (totalDr <= 0) { setValue("amount", "", { shouldValidate: false }); return; }
+    const gst = taxType === "GST" && Number(gstPercent) > 0
+      ? parseFloat((totalDr * Number(gstPercent) / 100).toFixed(2))
+      : 0;
+    setValue("amount", parseFloat((totalDr + gst).toFixed(2)), { shouldValidate: false });
+  }, [totalDr, taxType, gstPercent, setValue]);
+
   /* ── Submit ── */
   const onSubmit = (data) => {
     if (!selectedTenderId)   { toast.warning("Please select a tender");   return; }
@@ -682,10 +691,11 @@ const CreateDebitCreditNote = ({ onclose, onSuccess }) => {
                     <div className="relative">
                       <span className="absolute left-3 top-2.5 text-sm text-gray-400 font-semibold">₹</span>
                       <input
-                        type="number" step="0.01" min="0"
+                        type="number"
                         {...register("amount")}
-                        className={`${inputCls} pl-7`}
-                        placeholder="Total note value"
+                        readOnly
+                        className={`${readonlyCls} pl-7`}
+                        placeholder="Auto-filled from entries"
                       />
                     </div>
                   </Field>
@@ -889,11 +899,11 @@ const CreateDebitCreditNote = ({ onclose, onSuccess }) => {
                 return (
                   <div className="mx-3 mb-3 rounded-lg border border-amber-200 dark:border-amber-700/40 bg-amber-50/70 dark:bg-amber-900/10 px-4 py-3">
                     <p className="text-[10px] font-bold uppercase tracking-wider text-amber-600 dark:text-amber-400 mb-2">
-                      GST Calculation (on Total Dr)
+                      GST Calculation
                     </p>
                     <div className="space-y-1.5">
                       <div className="flex justify-between text-xs text-gray-500 dark:text-gray-400">
-                        <span>Base (Total Dr)</span>
+                        <span>Base (Dr entries)</span>
                         <span className="font-semibold text-gray-700 dark:text-gray-200 tabular-nums">₹{fmt(base)}</span>
                       </div>
                       <div className="flex justify-between text-xs text-gray-500 dark:text-gray-400">

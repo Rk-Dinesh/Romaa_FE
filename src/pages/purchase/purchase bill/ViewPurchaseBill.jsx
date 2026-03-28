@@ -1,7 +1,7 @@
 import { useState, useMemo } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import { ChevronLeft, ChevronDown, ChevronRight, RefreshCw, FileText, Search, AlertCircle, SlidersHorizontal, X, Link2, Truck, CheckCircle } from "lucide-react";
-import { useBillsByTender, useApprovePurchaseBill } from "./hooks/usePurchaseBill";
+import { ChevronLeft, ChevronDown, ChevronRight, RefreshCw, FileText, Search, AlertCircle, SlidersHorizontal, X, Link2, Truck, CheckCircle, Trash2 } from "lucide-react";
+import { useBillsByTender, useApprovePurchaseBill, useDeletePurchaseBill } from "./hooks/usePurchaseBill";
 import SearchableSelect from "../../../components/SearchableSelect";
 
 /* ── helpers ── */
@@ -44,6 +44,7 @@ const ViewPurchaseBill = () => {
 
   const { data: bills = [], isLoading, isFetching, refetch } = useBillsByTender(tenderId);
   const { mutate: approveBill, isPending: approving } = useApprovePurchaseBill();
+  const { mutate: deleteBill,  isPending: deleting  } = useDeletePurchaseBill();
 
   /* derived vendor list for dropdown */
   const vendors = useMemo(
@@ -354,21 +355,38 @@ const ViewPurchaseBill = () => {
                       <span className={`inline-block text-[10px] font-semibold uppercase tracking-wide px-2 py-0.5 rounded-full ${st.cls}`}>{st.label}</span>
                     </td>
                     <td className="px-4 py-3">
-                      {bill.status === "pending" && (
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            if (window.confirm(`Approve ${bill.doc_id}?`)) {
-                              approveBill(bill._id);
-                            }
-                          }}
-                          disabled={approving}
-                          className="flex items-center gap-1 px-2.5 py-1 text-[10px] font-bold rounded-lg bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 dark:bg-emerald-900/20 dark:hover:bg-emerald-900/40 dark:text-emerald-400 dark:border-emerald-800 transition-colors disabled:opacity-50 whitespace-nowrap"
-                        >
-                          <CheckCircle size={11} />
-                          Approve
-                        </button>
-                      )}
+                      <div className="flex items-center gap-1.5">
+                        {bill.status === "pending" && (
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              if (window.confirm(`Approve ${bill.doc_id}?`)) {
+                                approveBill(bill._id);
+                              }
+                            }}
+                            disabled={approving || deleting}
+                            className="flex items-center gap-1 px-2.5 py-1 text-[10px] font-bold rounded-lg bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 dark:bg-emerald-900/20 dark:hover:bg-emerald-900/40 dark:text-emerald-400 dark:border-emerald-800 transition-colors disabled:opacity-50 whitespace-nowrap"
+                          >
+                            <CheckCircle size={11} />
+                            Approve
+                          </button>
+                        )}
+                        {(bill.status === "draft" || bill.status === "pending") && (
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              if (window.confirm(`Delete ${bill.doc_id}? This cannot be undone.`)) {
+                                deleteBill(bill._id);
+                              }
+                            }}
+                            disabled={deleting || approving}
+                            className="flex items-center gap-1 px-2.5 py-1 text-[10px] font-bold rounded-lg bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 dark:bg-red-900/20 dark:hover:bg-red-900/40 dark:text-red-400 dark:border-red-800 transition-colors disabled:opacity-50 whitespace-nowrap"
+                          >
+                            <Trash2 size={11} />
+                            Delete
+                          </button>
+                        )}
+                      </div>
                     </td>
                   </tr>,
 
@@ -398,23 +416,37 @@ const ViewPurchaseBill = () => {
                               {/* Line items */}
                               <div>
                                 <p className="text-[10px] font-semibold uppercase tracking-wider text-gray-400 mb-1.5">Line Items</p>
-                                <MiniTable
-                                  headers={["Item", "Unit", "Qty", "Rate", "Gross", "CGST%", "CGST Amt", "SGST%", "SGST Amt", "IGST%", "IGST Amt", "Net Amt"]}
-                                  rows={(bill.line_items || []).map((it) => [
-                                    <span key="i" className="font-medium text-gray-800 dark:text-gray-100">{it.item_description}</span>,
-                                    it.unit || "—",
-                                    <span key="q" className="tabular-nums">{it.accepted_qty}</span>,
-                                    `₹${fmt(it.unit_price)}`,
-                                    `₹${fmt(it.gross_amt)}`,
-                                    `${it.cgst_pct}%`,
-                                    `₹${fmt(it.cgst_amt)}`,
-                                    `${it.sgst_pct}%`,
-                                    `₹${fmt(it.sgst_amt)}`,
-                                    `${it.igst_pct}%`,
-                                    `₹${fmt(it.igst_amt)}`,
-                                    <span key="n" className="tabular-nums font-semibold text-gray-900 dark:text-white">₹{fmt(it.net_amt)}</span>,
-                                  ])}
-                                />
+                                {bill.tax_mode === "instate" ? (
+                                  <MiniTable
+                                    headers={["Item", "Unit", "Qty", "Rate", "Gross", "CGST%", "CGST Amt", "SGST%", "SGST Amt", "Net Amt"]}
+                                    rows={(bill.line_items || []).map((it) => [
+                                      <span key="i" className="font-medium text-gray-800 dark:text-gray-100">{it.item_description}</span>,
+                                      it.unit || "—",
+                                      <span key="q" className="tabular-nums">{it.accepted_qty}</span>,
+                                      `₹${fmt(it.unit_price)}`,
+                                      `₹${fmt(it.gross_amt)}`,
+                                      `${it.cgst_pct ?? 0}%`,
+                                      `₹${fmt(it.cgst_amt)}`,
+                                      `${it.sgst_pct ?? 0}%`,
+                                      `₹${fmt(it.sgst_amt)}`,
+                                      <span key="n" className="tabular-nums font-semibold text-gray-900 dark:text-white">₹{fmt(it.net_amt)}</span>,
+                                    ])}
+                                  />
+                                ) : (
+                                  <MiniTable
+                                    headers={["Item", "Unit", "Qty", "Rate", "Gross", "IGST%", "IGST Amt", "Net Amt"]}
+                                    rows={(bill.line_items || []).map((it) => [
+                                      <span key="i" className="font-medium text-gray-800 dark:text-gray-100">{it.item_description}</span>,
+                                      it.unit || "—",
+                                      <span key="q" className="tabular-nums">{it.accepted_qty}</span>,
+                                      `₹${fmt(it.unit_price)}`,
+                                      `₹${fmt(it.gross_amt)}`,
+                                      `${it.igst_pct ?? 0}%`,
+                                      `₹${fmt(it.igst_amt)}`,
+                                      <span key="n" className="tabular-nums font-semibold text-gray-900 dark:text-white">₹{fmt(it.net_amt)}</span>,
+                                    ])}
+                                  />
+                                )}
                               </div>
                             </div>
                           </DetailSection>
@@ -436,6 +468,44 @@ const ViewPurchaseBill = () => {
                               ])}
                             />
                           </DetailSection>
+
+                          {/* ── Bill Totals Breakdown ── */}
+                          {(() => {
+                            const addlNet = (bill.additional_charges || []).reduce(
+                              (s, c) => s + (c.is_deduction ? -(c.net || 0) : (c.net || 0)), 0
+                            );
+                            return (
+                              <div className="flex justify-end">
+                                <div className="w-72 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden text-xs">
+                                  <div className="bg-gray-50 dark:bg-gray-800/60 px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider text-gray-400">
+                                    Bill Summary
+                                  </div>
+                                  <div className="divide-y divide-gray-100 dark:divide-gray-800">
+                                    <SummaryRow label="Gross (Line Items)" value={`₹${fmt(bill.grand_total)}`} />
+                                    {bill.tax_mode === "instate" ? (
+                                      <>
+                                        <SummaryRow label={`CGST`} value={`₹${fmt(bill.total_tax / 2)}`} color="text-indigo-600 dark:text-indigo-400" />
+                                        <SummaryRow label={`SGST`} value={`₹${fmt(bill.total_tax / 2)}`} color="text-indigo-600 dark:text-indigo-400" />
+                                      </>
+                                    ) : (
+                                      <SummaryRow label="IGST" value={`₹${fmt(bill.total_tax)}`} color="text-indigo-600 dark:text-indigo-400" />
+                                    )}
+                                    {(bill.additional_charges?.length > 0) && (
+                                      <SummaryRow
+                                        label="Additional Charges"
+                                        value={`${addlNet >= 0 ? "+" : "−"}₹${fmt(Math.abs(addlNet))}`}
+                                        color={addlNet >= 0 ? "text-emerald-600 dark:text-emerald-400" : "text-red-600 dark:text-red-400"}
+                                      />
+                                    )}
+                                    <div className="flex justify-between px-3 py-2 bg-gray-50 dark:bg-gray-800/60 font-bold">
+                                      <span className="text-gray-700 dark:text-gray-200">Net Payable</span>
+                                      <span className="tabular-nums text-gray-900 dark:text-white">₹{fmt(bill.net_amount)}</span>
+                                    </div>
+                                  </div>
+                                </div>
+                              </div>
+                            );
+                          })()}
 
                         </div>
                       </td>
@@ -525,6 +595,13 @@ const DetailSection = ({ icon, title, count, fullWidth = false, children }) => (
     ) : (
       children
     )}
+  </div>
+);
+
+const SummaryRow = ({ label, value, color = "text-gray-600 dark:text-gray-300" }) => (
+  <div className="flex justify-between px-3 py-1.5">
+    <span className="text-gray-500 dark:text-gray-400">{label}</span>
+    <span className={`tabular-nums font-semibold ${color}`}>{value}</span>
   </div>
 );
 
