@@ -7,9 +7,9 @@ import Title from "../../../components/Title";
 import Button from "../../../components/Button";
 
 // Import exact shared components
-import ComparativeTable from "../../projects/client billing/ComparativeTable";
-import BillAbstractTable from "../../projects/client billing/BillAbstractTable";
-import BillSummaryTab from "../../projects/client billing/BillSummaryTab";
+import ComparativeTable from "../../projects/client_billing/components/ComparativeTable";
+import BillAbstractTable from "../../projects/client_billing/components/BillAbstractTable";
+import BillSummaryTab from "../../projects/client_billing/components/BillSummaryTab";
 
 // Import finance-specific read-only clones
 import FinanceBillDetailedTable from "./FinanceBillDetailedTable";

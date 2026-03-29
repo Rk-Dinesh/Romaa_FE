@@ -9,12 +9,12 @@ import { toast } from "react-toastify";
 import { API } from "../../../constant";
 import Title from "../../../components/Title";
 import Button from "../../../components/Button";
-import ComparativeTable from "./ComparativeTable";
-import BillAbstractTable from "./BillAbstractTable";
-import BillDetailedTable from "./BillDetailedTable";
-import SteelDetailedTable from "./SteelDetailedTable";
-import BillSummaryTab from "./BillSummaryTab";
-import EditClientBill from "./EditClientBill";
+import ComparativeTable from "./components/ComparativeTable";
+import BillAbstractTable from "./components/BillAbstractTable";
+import BillDetailedTable from "./components/BillDetailedTable";
+import SteelDetailedTable from "./components/SteelDetailedTable";
+import BillSummaryTab from "./components/BillSummaryTab";
+import EditClientBill from "./modals/EditClientBill";
 
 const TABS = ["Bill Summary", "Comparative", "Bill Abstract", "Bill Detailed", "Steel"];
 

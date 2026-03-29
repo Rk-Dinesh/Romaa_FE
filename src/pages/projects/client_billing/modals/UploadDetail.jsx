@@ -5,15 +5,14 @@ import { IoClose } from "react-icons/io5";
 import { API } from "../../../constant";
 import { toast } from "react-toastify";
 import { useProject } from "../../../context/ProjectContext";
-import SampleBillAbstractExcel from "./BILLABSTRACT.xlsx";
+import SampleSteelAbstractExcel from "../docs/STEELABSTRACT.xlsx";
 
 
-const UploadBill = ({ onclose, onSuccess, bill_id }) => {
+const UploadDetail = ({ onclose, onSuccess, bill_id }) => {
     const [files, setFiles] = useState([]);
     const [saving, setSaving] = useState(false);
     const inputRef = useRef(null);
     const { tenderId } = useProject();
-    const user = JSON.parse(localStorage.getItem("crm_user") || "{}");
 
     const handleFiles = (selectedFiles) => {
         const fileArray = Array.from(selectedFiles);
@@ -38,7 +37,7 @@ const UploadBill = ({ onclose, onSuccess, bill_id }) => {
         e.preventDefault();
 
         if (files.length === 0) {
-            alert("Please select at least one file to upload.");
+            toast.error("Please select at least one file to upload.");
             return;
         }
 
@@ -47,32 +46,35 @@ const UploadBill = ({ onclose, onSuccess, bill_id }) => {
             const formData = new FormData();
             formData.append("tender_id", tenderId);
             formData.append("bill_id", bill_id);
-            formData.append("created_by_user", user._id || "");
             formData.append("file", files[0]);
-            await axios.post(`${API}/clientbilling/estimate/upload-csv`, formData, {
+
+            await axios.post(`${API}/steelestimate/upload-csv`, formData, {
                 headers: { "Content-Type": "multipart/form-data" },
+                withCredentials: true,
             });
+
+            toast.success("Files uploaded successfully");
             if (onSuccess) onSuccess();
             if (onclose) onclose();
-            toast.success("Files uploaded successfully");
-            setSaving(false);
         } catch (error) {
             console.error("Upload error:", error);
-            //  alert("Failed to upload files");
+            toast.error(error.response?.data?.message ?? "Failed to upload file");
+        } finally {
+            setSaving(false);
         }
     };
 
-const downloadSampleFile = () => {
-    const link = document.createElement("a");
-    link.href = SampleBillAbstractExcel;
-    link.setAttribute("download", "BILL ABSTRACT.xlsx");
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-  };
+    const downloadSampleFile = () => {
+        const link = document.createElement("a");
+        link.href = SampleSteelAbstractExcel;
+        link.setAttribute("download", "STEEL ABSTRACT.xlsx");
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    };
 
     return createPortal(
-        <div className="font-roboto-flex fixed inset-0 grid justify-center items-center backdrop-blur-xs backdrop-grayscale-50  drop-shadow-lg z-50">
+        <div className="font-roboto-flex fixed inset-0 grid justify-center items-center backdrop-blur-xs backdrop-grayscale-50 drop-shadow-lg z-50">
             <div className="relative bg-white rounded-lg shadow-2xl max-w-3xl w-full md:w-[600px] p-6 animate-fadeIn">
                 {/* Close Button */}
                 <button
@@ -84,7 +86,7 @@ const downloadSampleFile = () => {
                 </button>
 
                 <h2 className="text-xl font-semibold text-gray-800 mb-4 select-none">
-                 Upload Client Bill Details in Excel Format
+                    Update Steel Estimate
                 </h2>
 
                 <form
@@ -152,8 +154,7 @@ const downloadSampleFile = () => {
                             onClick={downloadSampleFile}
                             className="px-5 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-400"
                         >
-                            {" "}
-                            Download Sample File{" "}
+                            Download Sample File
                         </button>
                         <button
                             type="button"
@@ -165,7 +166,7 @@ const downloadSampleFile = () => {
                         <button
                             type="submit"
                             disabled={files.length === 0}
-                            className=" py-2 cursor-pointer px-6 bg-darkest-blue text-white rounded  disabled:opacity-50 disabled:cursor-not-allowed "
+                            className="py-2 cursor-pointer px-6 bg-darkest-blue text-white rounded disabled:opacity-50 disabled:cursor-not-allowed"
                         >
                             {saving ? "Uploading..." : "Upload"}
                         </button>
@@ -177,4 +178,4 @@ const downloadSampleFile = () => {
     );
 };
 
-export default UploadBill;
+export default UploadDetail;

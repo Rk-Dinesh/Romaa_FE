@@ -4,7 +4,7 @@ import { IoClose } from "react-icons/io5";
 import { API } from "../../../constant";
 import { toast } from "react-toastify";
 import { useProject } from "../../../context/ProjectContext";
-import SampleClientBillExcel from "./CLIENTBILL.xlsx";
+import SampleClientBillExcel from "../docs/CLIENTBILL.xlsx";
 
 const emptyDeduction = () => ({ description: "", amount: "" });
 

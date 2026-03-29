@@ -4,7 +4,7 @@ import { Loader2 } from "lucide-react";
 import { API } from "../../../constant";
 import { TbFileExport } from "react-icons/tb";
 import Button from "../../../components/Button";
-import UploadDetail from "./UploadDetail";
+import UploadDetail from "../modals/UploadDetail";
 
 const SteelDetailedTable = ({ tenderId, billId, status }) => {
     const [loading, setLoading] = useState(true);

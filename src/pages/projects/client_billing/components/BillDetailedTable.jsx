@@ -4,7 +4,7 @@ import { Loader2 } from "lucide-react";
 import { API } from "../../../constant";
 import { TbFileExport } from "react-icons/tb";
 import Button from "../../../components/Button";
-import UploadBill from "./UploadBill";
+import UploadBill from "../modals/UploadBill";
 
 const BillDetailedTable = ({ tenderId, billId, status }) => {
   const [loading, setLoading] = useState(true);

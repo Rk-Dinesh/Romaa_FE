@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useProject } from "../../../context/ProjectContext";
 import axios from "axios";
 import { API } from "../../../constant";
-import UploadClientBill from "./UploadClientBill";
+import UploadClientBill from "./modals/UploadClientBill";
 import { toast } from "react-toastify";
 import {
   TbFileExport, TbFileInvoice, TbCurrencyRupee,

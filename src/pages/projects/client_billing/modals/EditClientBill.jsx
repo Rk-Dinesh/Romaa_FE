@@ -92,7 +92,6 @@ function EditClientBill({ billId, billData, onClose, onSuccess }) {
     control,
     watch,
     reset,
-    formState: {},
   } = useForm({
     defaultValues: {
       bill_date:     "",

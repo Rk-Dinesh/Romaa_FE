@@ -62,8 +62,8 @@ const ViewMachinerySchedule = lazy(() => import("../pages/projects/schedule/sche
 const WoIssuance = lazy(() => import("../pages/projects/Wo issuance/WOIssuance"));
 const ViewWORequest = lazy(() => import("../pages/projects/Wo issuance/work order request/ViewWORequest"));
 const ViewWOIssuance = lazy(() => import("../pages/projects/Wo issuance/Work order issuance/ViewWOIssuance"));
-const ClientBillingProject = lazy(() => import("../pages/projects/client billing/ClientBillingProject"));
-const ViewClBillProjects = lazy(() => import("../pages/projects/client billing/ViewClBillProjects"));
+const ClientBillingProject = lazy(() => import("../pages/projects/client_billing/ClientBillingProject"));
+const ViewClBillProjects = lazy(() => import("../pages/projects/client_billing/ViewClBillProjects"));
 const ProjectWorkProgress = lazy(() => import("../pages/projects/work progress/ProjectWorkProgress"));
 const ViewProjectWorkProgress = lazy(() => import("../pages/projects/work progress/ViewProjectWorkProgress"));
 const ProjectMaterialQty = lazy(() => import("../pages/projects/Project Material quantity/ProjectMaterialQty"));
