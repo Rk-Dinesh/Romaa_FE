@@ -143,6 +143,7 @@ const EditNMR = lazy(() => import("../pages/Hr/nmr/EditNMR"));
 
 // Finance
 const ClientBilling = lazy(() => import("../pages/finance/client_billing/ClientBilling"));
+const ViewFinanceClientBill = lazy(() => import("../pages/finance/client_billing/ViewFinanceClientBill"));
 const Debit_CreditNote = lazy(() => import("../pages/finance/debit_creditnote/Debit_CreditNote"));
 const BankTransactions = lazy(() => import("../pages/finance/bank_transactions/BankTransactions"));
 const JournalEntry = lazy(() => import("../pages/finance/journal_entry/JournalEntry"));
@@ -480,7 +481,10 @@ const AppRoutes = () => {
               </Route>
 
               <Route path="/finance">
-                <Route path="clientbilling" element={<ClientBilling />} />
+                <Route path="clientbilling">
+                  <Route index element={<ClientBilling />} />
+                  <Route path="viewfinanceclientbill" element={<ViewFinanceClientBill />} />
+                </Route>
                 <Route path="purchasetotalbill" element={<PurchaseTotalBill />} />
                 <Route path="contractorbill" element={<ContractorBill />} />
                 <Route

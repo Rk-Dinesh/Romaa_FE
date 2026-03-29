@@ -58,6 +58,8 @@ import { RiShareBoxLine } from "react-icons/ri";
 import { HiOutlineCash } from "react-icons/hi";
 import { TfiLayoutListThumb } from "react-icons/tfi";
 import { HiOutlineClipboardDocumentList } from "react-icons/hi2";
+import { TbBuildingBank, TbTransferIn, TbExchange, TbReceiptTax, TbAlertCircle } from "react-icons/tb";
+import { LuBookOpen, LuBookMarked } from "react-icons/lu";
 
 import { BiShapeSquare } from "react-icons/bi";
 import { BsBoxSeam } from "react-icons/bs";
@@ -406,92 +408,94 @@ export const Menus = [
     to: "/finance/clientbilling",
     module: "finance",
     nested: [
+      // ── Core Billing ──
       {
         title: "Client Billing",
-        icon: <FileText size={23} />,
+        icon: <TbReceipt2 size={23} />,
         to: "/finance/clientbilling",
         subModule: "client_billing",
       },
       {
-        title: "Purchase Bill",
-        icon: <ClipboardList size={23} />,
+        title: "Purchase Bills",
+        icon: <TbFileInvoice size={23} />,
         to: "/finance/purchasetotalbill",
         subModule: "purchase_bill",
       },
       {
-        title: "Contractor Bill",
-        icon: <ClipboardList size={23} />,
+        title: "Contractor Bills",
+        icon: <TbFileDollar size={23} />,
         to: "/finance/contractorbill",
         subModule: "contractor_bill",
       },
       {
-        title: "Account Tree",
+        title: "Supplier Outstanding",
+        icon: <TbAlertCircle size={23} />,
+        to: "/finance/supplieroutstanding",
+        subModule: "supplier_outstanding",
+      },
+      // ── Banking & Setup ──
+      {
+        title: "Chart of Accounts",
         icon: <PiTreeStructureBold size={23} />,
         to: "/finance/banks",
         subModule: "banks",
       },
       {
-        title: "Company Bank Details",
+        title: "Company Banks",
         icon: <RiBankLine size={23} />,
         to: "/finance/companybankdetails",
         subModule: "company_bank_details",
       },
       {
-        title: "Internal Bank Transfer",
-        icon: <TbReportMoney size={23} />,
-        to: "/finance/internalbanktransfer",
-        subModule: "internal_transfer",
-      },
-      {
-        title: "Ledger Entry",
-        icon: <MdLocalAtm size={23} />,
-        to: "/finance/ledgerentry",
-        subModule: "ledger_entry",
-      },
-      {
-        title: "Bank Transcation",
-        icon: <TbReportMoney size={23} />,
+        title: "Bank Transactions",
+        icon: <TbBuildingBank size={23} />,
         to: "/finance/banktransaction",
         subModule: "bank_transaction",
       },
       {
-        title: "Journal Entry",
-        icon: <Workflow size={23} />,
+        title: "Internal Transfers",
+        icon: <TbTransferIn size={23} />,
+        to: "/finance/internalbanktransfer",
+        subModule: "internal_transfer",
+      },
+      // ── Ledger & Accounting ──
+      {
+        title: "Ledger Entries",
+        icon: <LuBookOpen size={23} />,
+        to: "/finance/ledgerentry",
+        subModule: "ledger_entry",
+      },
+      {
+        title: "Journal Entries",
+        icon: <LuBookMarked size={23} />,
         to: "/finance/journalentry",
         subModule: "journal_entry",
       },
       {
-        title: "Debit, Credit Note",
-        icon: <FileWarning size={23} />,
+        title: "Cash Entries",
+        icon: <HiOutlineCash size={23} />,
+        to: "/finance/cashentry",
+        subModule: "cash_entry",
+      },
+      // ── Adjustments & Compliance ──
+      {
+        title: "Debit & Credit Notes",
+        icon: <TbExchange size={23} />,
         to: "/finance/debitcreditnote",
         subModule: "debit_credit_note",
       },
       {
         title: "TDS",
-        icon: <TbCards size={23} />,
+        icon: <TbReceiptTax size={23} />,
         to: "/finance/tds",
         subModule: "tds",
       },
       {
-        title: "Cash Entry",
-        icon: <MdLocalAtm size={23} />,
-        to: "/finance/cashentry",
-        subModule: "cash_entry",
-      },
-      
-      {
-        title: "Supplier Outstanding",
-        icon: <Banknote size={23} />,
-        to: "/finance/supplieroutstanding",
-        subModule: "supplier_outstanding",
-      },
-      {
         title: "Overall Expenses",
-        icon: <FaBars size={23} />,
+        icon: <TbReportAnalytics size={23} />,
         to: "/finance/overallexpenses",
         subModule: "overall_expenses",
       },
-      
     ],
   },
   {
