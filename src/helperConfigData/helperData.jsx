@@ -43,7 +43,7 @@ import { TbFileOrientation } from "react-icons/tb";
 import { RiDiscountPercentLine } from "react-icons/ri";
 import { LuCalendar1 } from "react-icons/lu";
 import { TbBrandSurfshark } from "react-icons/tb";
-import { PiBoundingBoxBold, PiHash } from "react-icons/pi";
+import { PiBoundingBoxBold, PiHash, PiTreeStructureBold } from "react-icons/pi";
 import { RiNodeTree } from "react-icons/ri";
 import { TbCalendarStats } from "react-icons/tb";
 import { AiOutlineFileDone } from "react-icons/ai";
@@ -425,8 +425,8 @@ export const Menus = [
         subModule: "contractor_bill",
       },
       {
-        title: "Banks Account Tree",
-        icon: <RiBankLine size={23} />,
+        title: "Account Tree",
+        icon: <PiTreeStructureBold size={23} />,
         to: "/finance/banks",
         subModule: "banks",
       },

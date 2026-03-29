@@ -1,12 +1,12 @@
 import React, { useEffect, useState, useCallback } from "react";
 import axios from "axios";
-import { Loader2, AlertCircle } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import { API } from "../../../constant";
 import { TbFileExport } from "react-icons/tb";
 import Button from "../../../components/Button";
 import UploadDetail from "./UploadDetail";
 
-const SteelDetailedTable = ({ tenderId, billId, abstractName, billSequence, status }) => {
+const SteelDetailedTable = ({ tenderId, billId, status }) => {
     const [loading, setLoading] = useState(true);
     const [detailedData, setDetailedData] = useState(null);
     const [uploadDetail, setUploadDetail] = useState(false);
@@ -23,9 +23,8 @@ const SteelDetailedTable = ({ tenderId, billId, abstractName, billSequence, stat
             } else {
                 setDetailedData(null);
             }
-        } catch (error) {
-            console.log(error);
-            // Don't show error screen for 404/No Data, just set data to null
+        } catch {
+            // 404 / no data — show empty state
             setDetailedData(null);
         } finally {
             setLoading(false);
@@ -173,8 +172,6 @@ const SteelDetailedTable = ({ tenderId, billId, abstractName, billSequence, stat
                     onSuccess={fetchData}
                     onclose={handleClose}
                     bill_id={billId}
-                    bill_sequence={billSequence}
-                    abstractName={abstractName}
                 />
             )}
         </>

@@ -1,7 +1,8 @@
 import { useState, useEffect, useCallback } from "react";
+import { createPortal } from "react-dom";
 import { IoChevronBackSharp } from "react-icons/io5";
 import { useLocation, useNavigate } from "react-router-dom";
-import { TbPencil, TbCircleCheck } from "react-icons/tb";
+import { TbPencil, TbCircleCheck, TbTrash } from "react-icons/tb";
 import { Loader2 } from "lucide-react";
 import axios from "axios";
 import { toast } from "react-toastify";
@@ -24,16 +25,18 @@ const TABS = ["Bill Summary", "Comparative", "Bill Abstract", "Bill Detailed", "
 ─────────────────────────────────────────────────────────────── */
 const CAN_EDIT    = ["Draft"];
 const CAN_APPROVE = ["Draft", "Submitted", "Checked"];
+const CAN_DELETE  = ["Draft", "Submitted", "Checked"];
 
 /* ─── Approve confirm modal ──────────────────────────────────── */
 function ConfirmApprove({ billId, loading, onConfirm, onCancel }) {
-  return (
+  return createPortal(
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
       <div className="w-full max-w-sm bg-white dark:bg-gray-900 rounded-2xl shadow-2xl border border-gray-200 dark:border-gray-700 overflow-hidden">
         <div className="px-5 py-4 border-b border-gray-100 dark:border-gray-700">
           <p className="text-base font-bold text-gray-800 dark:text-white">Approve Bill</p>
           <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">
-            Approve <span className="font-semibold text-gray-700 dark:text-gray-200">{billId}</span>?
+            Are you sure you want to approve{" "}
+            <span className="font-semibold text-gray-700 dark:text-gray-200">{billId}</span>?
             This will post a receivable entry to the client ledger.
           </p>
         </div>
@@ -54,7 +57,43 @@ function ConfirmApprove({ billId, loading, onConfirm, onCancel }) {
           </button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
+  );
+}
+
+/* ─── Delete confirm modal ───────────────────────────────────── */
+function ConfirmDelete({ billId, loading, onConfirm, onCancel }) {
+  return createPortal(
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
+      <div className="w-full max-w-sm bg-white dark:bg-gray-900 rounded-2xl shadow-2xl border border-gray-200 dark:border-gray-700 overflow-hidden">
+        <div className="px-5 py-4 border-b border-gray-100 dark:border-gray-700">
+          <p className="text-base font-bold text-red-600 dark:text-red-400">Delete Bill</p>
+          <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">
+            Are you sure you want to delete{" "}
+            <span className="font-semibold text-gray-700 dark:text-gray-200">{billId}</span>?
+            This action cannot be undone.
+          </p>
+        </div>
+        <div className="flex justify-end gap-2 px-5 py-4">
+          <button
+            onClick={onCancel}
+            className="px-4 py-2 text-sm font-medium rounded-xl border border-gray-200 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={onConfirm}
+            disabled={loading}
+            className="flex items-center gap-2 px-5 py-2 text-sm font-semibold rounded-xl bg-red-600 hover:bg-red-700 text-white disabled:opacity-60 transition shadow-sm"
+          >
+            {loading && <Loader2 size={13} className="animate-spin" />}
+            Delete
+          </button>
+        </div>
+      </div>
+    </div>,
+    document.body
   );
 }
 
@@ -76,7 +115,7 @@ function ViewClBillProjects() {
 
   const tenderId     = rowData?.tender_id;
   const billId       = rowData?.bill_id;
-  const billSequence = rowData?.bill_sequence;
+
 
   const [activeTab,   setActiveTab]   = useState("Bill Summary");
   const [billData,    setBillData]    = useState(null);
@@ -84,6 +123,8 @@ function ViewClBillProjects() {
   const [showEdit,    setShowEdit]    = useState(false);
   const [showApprove, setShowApprove] = useState(false);
   const [approving,   setApproving]   = useState(false);
+  const [showDelete,  setShowDelete]  = useState(false);
+  const [deleting,    setDeleting]    = useState(false);
 
   /* Fetch full bill details — used for action button gating + EditClientBill pre-fill */
   const fetchBill = useCallback(async () => {
@@ -126,6 +167,25 @@ function ViewClBillProjects() {
     }
   };
 
+  /* ── Delete: DELETE /api/delete ── */
+  const handleDelete = async () => {
+    if (!billData?._id) return;
+    setDeleting(true);
+    try {
+      await axios.delete(
+        `${API}/clientbilling/api/delete`,
+        { data: { _id: billData._id }, withCredentials: true }
+      );
+      toast.success("Bill deleted successfully");
+      setShowDelete(false);
+      navigate("..");
+    } catch (err) {
+      toast.error(err.response?.data?.error ?? err.response?.data?.message ?? "Delete failed");
+    } finally {
+      setDeleting(false);
+    }
+  };
+
   /* ── Tab content ── */
   const renderTab = () => {
     switch (activeTab) {
@@ -136,9 +196,9 @@ function ViewClBillProjects() {
       case "Comparative":
         return <ComparativeTable tenderId={tenderId} billId={billId} />;
       case "Bill Detailed":
-        return <BillDetailedTable tenderId={tenderId} billId={billId} abstractName="Abstract Estimate" billSequence={billSequence} status={status} />;
+        return <BillDetailedTable tenderId={tenderId} billId={billId} status={status} />;
       case "Steel":
-        return <SteelDetailedTable tenderId={tenderId} billId={billId} abstractName="Steel 1000MT" billSequence={billSequence} status={status} />;
+        return <SteelDetailedTable tenderId={tenderId} billId={billId}status={status} />;
       default:
         return null;
     }
@@ -170,6 +230,14 @@ function ViewClBillProjects() {
                 className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-semibold rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white transition shadow-sm"
               >
                 <TbCircleCheck size={14} /> Approve
+              </button>
+            )}
+            {CAN_DELETE.includes(status) && (
+              <button
+                onClick={() => setShowDelete(true)}
+                className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-semibold rounded-xl bg-red-600 hover:bg-red-700 text-white transition shadow-sm"
+              >
+                <TbTrash size={14} /> Delete
               </button>
             )}
           </div>
@@ -231,6 +299,15 @@ function ViewClBillProjects() {
           loading={approving}
           onConfirm={handleApprove}
           onCancel={() => setShowApprove(false)}
+        />
+      )}
+
+      {showDelete && (
+        <ConfirmDelete
+          billId={billData?.bill_id ?? billId}
+          loading={deleting}
+          onConfirm={handleDelete}
+          onCancel={() => setShowDelete(false)}
         />
       )}
     </div>

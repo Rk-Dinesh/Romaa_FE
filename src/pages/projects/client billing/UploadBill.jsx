@@ -1,5 +1,6 @@
 import axios from "axios";
 import React, { useState, useRef } from "react";
+import { createPortal } from "react-dom";
 import { IoClose } from "react-icons/io5";
 import { API } from "../../../constant";
 import { toast } from "react-toastify";
@@ -7,11 +8,12 @@ import { useProject } from "../../../context/ProjectContext";
 import SampleBillAbstractExcel from "./BILLABSTRACT.xlsx";
 
 
-const UploadBill = ({ onclose, onSuccess }) => {
+const UploadBill = ({ onclose, onSuccess, bill_id }) => {
     const [files, setFiles] = useState([]);
     const [saving, setSaving] = useState(false);
     const inputRef = useRef(null);
     const { tenderId } = useProject();
+    const user = JSON.parse(localStorage.getItem("crm_user") || "{}");
 
     const handleFiles = (selectedFiles) => {
         const fileArray = Array.from(selectedFiles);
@@ -43,18 +45,13 @@ const UploadBill = ({ onclose, onSuccess }) => {
         try {
             setSaving(true);
             const formData = new FormData();
-            // Append required fields (replace with actual values or props)
             formData.append("tender_id", tenderId);
-            formData.append("created_by_user", "user_id_here");
-
-
-            if (files.length === 1) {
-                // Single file upload
-                formData.append("file", files[0]);
-                await axios.post(`${API}/clientbilling/estimate/upload-csv`, formData, {
-                    headers: { "Content-Type": "multipart/form-data" },
-                });
-            }
+            formData.append("bill_id", bill_id);
+            formData.append("created_by_user", user._id || "");
+            formData.append("file", files[0]);
+            await axios.post(`${API}/clientbilling/estimate/upload-csv`, formData, {
+                headers: { "Content-Type": "multipart/form-data" },
+            });
             if (onSuccess) onSuccess();
             if (onclose) onclose();
             toast.success("Files uploaded successfully");
@@ -74,8 +71,8 @@ const downloadSampleFile = () => {
     document.body.removeChild(link);
   };
 
-    return (
-        <div className="font-roboto-flex fixed inset-0 grid justify-center items-center backdrop-blur-xs backdrop-grayscale-50  drop-shadow-lg z-20">
+    return createPortal(
+        <div className="font-roboto-flex fixed inset-0 grid justify-center items-center backdrop-blur-xs backdrop-grayscale-50  drop-shadow-lg z-50">
             <div className="relative bg-white rounded-lg shadow-2xl max-w-3xl w-full md:w-[600px] p-6 animate-fadeIn">
                 {/* Close Button */}
                 <button
@@ -175,7 +172,8 @@ const downloadSampleFile = () => {
                     </div>
                 </form>
             </div>
-        </div>
+        </div>,
+        document.body
     );
 };
 

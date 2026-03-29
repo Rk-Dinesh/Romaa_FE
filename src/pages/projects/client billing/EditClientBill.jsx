@@ -1,10 +1,17 @@
 import { useEffect, useRef, useState } from "react";
-import { useForm, useFieldArray } from "react-hook-form";
+import { createPortal } from "react-dom";
+import { useForm, useFieldArray, useWatch } from "react-hook-form";
 import axios from "axios";
 import { API } from "../../../constant";
 import { toast } from "react-toastify";
-import { TbX, TbPlus, TbTrash, TbDeviceFloppy, TbFileTypeCsv, TbUpload } from "react-icons/tb";
+import { TbX, TbPlus, TbTrash, TbDeviceFloppy, TbUpload } from "react-icons/tb";
 import { Loader2 } from "lucide-react";
+
+const DEDUCTION_PRESETS = [
+  "TDS @ 2%",
+  "Labour Cess @ 1%",
+  "Mobilization Advance Recovery",
+];
 
 /* ─── Field helpers ──────────────────────────────────────────── */
 function Label({ children, required }) {
@@ -27,6 +34,51 @@ function Field({ label, required, error, children }) {
 
 const inputCls = (err) =>
   `w-full px-3 py-2 text-sm rounded-xl border ${err ? "border-red-400 bg-red-50 dark:bg-red-900/10" : "border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800"} text-gray-800 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/40 focus:border-blue-400 transition`;
+
+/* ─── Deduction row with preset dropdown ─────────────────────── */
+function DeductionRow({ index, control, register, onRemove }) {
+  const selected = useWatch({ control, name: `deductions.${index}.description` });
+  const isOther = selected === "__other__";
+
+  return (
+    <div className="flex flex-col gap-1.5">
+      <div className="flex items-center gap-2">
+        <select
+          {...register(`deductions.${index}.description`)}
+          className={`${inputCls(false)} flex-1`}
+        >
+          <option value="">— Select deduction —</option>
+          {DEDUCTION_PRESETS.map((p) => (
+            <option key={p} value={p}>{p}</option>
+          ))}
+          <option value="__other__">Other (custom)</option>
+        </select>
+        <input
+          type="number"
+          step="0.01"
+          min="0"
+          {...register(`deductions.${index}.amount`)}
+          placeholder="Amount"
+          className={`${inputCls(false)} w-32`}
+        />
+        <button
+          type="button"
+          onClick={onRemove}
+          className="p-2 rounded-xl text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition shrink-0"
+        >
+          <TbTrash size={14} />
+        </button>
+      </div>
+      {isOther && (
+        <input
+          {...register(`deductions.${index}.customDescription`)}
+          placeholder="Enter custom description"
+          className={`${inputCls(false)} ml-0`}
+        />
+      )}
+    </div>
+  );
+}
 
 /* ─── Main Component ─────────────────────────────────────────── */
 function EditClientBill({ billId, billData, onClose, onSuccess }) {
@@ -70,7 +122,11 @@ function EditClientBill({ billId, billData, onClose, onSuccess }) {
       sgst_pct:      billData.sgst_pct      ?? 9,
       igst_pct:      billData.igst_pct      ?? 0,
       retention_pct: billData.retention_pct ?? 5,
-      deductions:    billData.deductions    ?? [],
+      deductions: (billData.deductions ?? []).map((d) =>
+        DEDUCTION_PRESETS.includes(d.description)
+          ? { description: d.description, amount: d.amount }
+          : { description: "__other__", customDescription: d.description, amount: d.amount }
+      ),
     });
   }, [billData, reset]);
 
@@ -92,8 +148,11 @@ function EditClientBill({ billId, billData, onClose, onSuccess }) {
       fd.append("retention_pct", values.retention_pct);
 
       const cleanDed = values.deductions
-        .filter((d) => d.description && d.amount)
-        .map((d) => ({ description: d.description, amount: Number(d.amount) }));
+        .map((d) => ({
+          description: d.description === "__other__" ? (d.customDescription ?? "") : d.description,
+          amount: Number(d.amount),
+        }))
+        .filter((d) => d.description && d.amount);
       if (cleanDed.length) fd.append("deductions", JSON.stringify(cleanDed));
 
       await axios.patch(
@@ -111,7 +170,7 @@ function EditClientBill({ billId, billData, onClose, onSuccess }) {
     }
   };
 
-  return (
+  return createPortal(
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
       <div className="w-full max-w-2xl max-h-[90vh] flex flex-col bg-white dark:bg-gray-900 rounded-2xl shadow-2xl border border-gray-200 dark:border-gray-700 overflow-hidden">
 
@@ -133,9 +192,9 @@ function EditClientBill({ billId, billData, onClose, onSuccess }) {
         <form onSubmit={handleSubmit(onSubmit)} className="flex-1 overflow-y-auto">
           <div className="px-5 py-5 space-y-5">
 
-            {/* CSV Upload */}
+            {/* File Upload */}
             <div>
-              <Label required>CSV File</Label>
+              <Label required>CSV / XLSX File</Label>
               <div
                 onClick={() => fileRef.current?.click()}
                 className={`flex items-center gap-3 px-4 py-3 rounded-xl border-2 border-dashed cursor-pointer transition-colors ${
@@ -144,11 +203,7 @@ function EditClientBill({ billId, billData, onClose, onSuccess }) {
                     : "border-gray-200 dark:border-gray-600 hover:border-blue-400 hover:bg-blue-50/40 dark:hover:bg-blue-900/10"
                 }`}
               >
-                {csvFile ? (
-                  <TbFileTypeCsv size={22} className="text-emerald-600 shrink-0" />
-                ) : (
-                  <TbUpload size={22} className="text-gray-400 shrink-0" />
-                )}
+                <TbUpload size={22} className={csvFile ? "text-emerald-600 shrink-0" : "text-gray-400 shrink-0"} />
                 <div className="min-w-0">
                   {csvFile ? (
                     <>
@@ -157,7 +212,7 @@ function EditClientBill({ billId, billData, onClose, onSuccess }) {
                     </>
                   ) : (
                     <>
-                      <p className="text-sm font-medium text-gray-600 dark:text-gray-300">Click to select CSV</p>
+                      <p className="text-sm font-medium text-gray-600 dark:text-gray-300">Click to select CSV / XLSX</p>
                       <p className="text-xs text-gray-400">Columns: Code, Description, Unit, Quantity, Mbook</p>
                     </>
                   )}
@@ -175,7 +230,7 @@ function EditClientBill({ billId, billData, onClose, onSuccess }) {
               <input
                 ref={fileRef}
                 type="file"
-                accept=".csv"
+                accept=".csv,.xlsx"
                 className="hidden"
                 onChange={(e) => setCsvFile(e.target.files?.[0] ?? null)}
               />
@@ -245,28 +300,13 @@ function EditClientBill({ billId, billData, onClose, onSuccess }) {
                 <p className="text-xs text-gray-400 italic text-center py-2">No deductions — click Add to include one</p>
               )}
               {dedFields.map((field, i) => (
-                <div key={field.id} className="flex items-center gap-2">
-                  <input
-                    {...register(`deductions.${i}.description`)}
-                    placeholder="Description (e.g. TDS @ 2%)"
-                    className={`${inputCls(false)} flex-1`}
-                  />
-                  <input
-                    type="number"
-                    step="0.01"
-                    min="0"
-                    {...register(`deductions.${i}.amount`)}
-                    placeholder="Amount"
-                    className={`${inputCls(false)} w-32`}
-                  />
-                  <button
-                    type="button"
-                    onClick={() => removeDed(i)}
-                    className="p-2 rounded-xl text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition shrink-0"
-                  >
-                    <TbTrash size={14} />
-                  </button>
-                </div>
+                <DeductionRow
+                  key={field.id}
+                  index={i}
+                  control={control}
+                  register={register}
+                  onRemove={() => removeDed(i)}
+                />
               ))}
             </div>
 
@@ -292,7 +332,8 @@ function EditClientBill({ billId, billData, onClose, onSuccess }) {
           </div>
         </form>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }
 

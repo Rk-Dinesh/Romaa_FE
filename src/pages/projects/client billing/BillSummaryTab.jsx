@@ -103,7 +103,7 @@ function BillSummaryTab({ tenderId, billId }) {
   const sgst         = data.sgst_amt          ?? 0;
   const igst         = data.igst_amt          ?? 0;
   const netAmount    = data.net_amount        ?? 0;
-  const items        = data.items             ?? [];
+  const items        = (data.items ?? []).filter((it) => Number(it.current_qty) > 0);
 
   return (
     <div className="space-y-5">
@@ -130,146 +130,112 @@ function BillSummaryTab({ tenderId, billId }) {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 xl:grid-cols-3 gap-5">
+      {/* ── Three cards row ── */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
 
-        {/* ── Items Table ── */}
-        <div className="xl:col-span-2 rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 overflow-hidden">
-          <div className="px-4 py-3 border-b border-gray-100 dark:border-gray-700">
-            <p className="text-sm font-semibold text-gray-800 dark:text-white">Work Items</p>
-            <p className="text-xs text-gray-400">{items.length} items</p>
+        {/* Bill Summary */}
+        <div className="rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 overflow-hidden">
+          <div className="px-4 py-3 border-b border-gray-100 dark:border-gray-700 bg-gradient-to-r from-violet-50 dark:from-violet-900/20 to-transparent">
+            <p className="text-sm font-semibold text-gray-800 dark:text-white">Bill Summary</p>
           </div>
-          <div className="overflow-auto max-h-[520px] scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-600">
-            <table className="min-w-full border-collapse text-xs">
-              <thead className="sticky top-0 z-10">
-                <tr>
-                  <Th rowSpan={2}>#</Th>
-                  <Th rowSpan={2}>Code</Th>
-                  <Th rowSpan={2} className="min-w-[200px]">Description</Th>
-                  <Th center rowSpan={2}>Unit</Th>
-                  <Th right rowSpan={2}>Rate</Th>
-                  <Th center colSpan={2}>Agreement</Th>
-                  <Th center colSpan={2}>Prev Bill</Th>
-                  <Th center colSpan={2}>Upto Date</Th>
-                  <Th center colSpan={2}>This Bill</Th>
-                  <Th center colSpan={3}>Excess</Th>
-                  <Th center colSpan={3}>Balance</Th>
-                </tr>
-                <tr>
-                  <Th right>Qty</Th><Th right>Amount</Th>
-                  <Th right>Qty</Th><Th right>Amount</Th>
-                  <Th right>Qty</Th><Th right>Amount</Th>
-                  <Th right>Qty</Th><Th right>Amount</Th>
-                  <Th right>Qty</Th><Th right>Amount</Th><Th right>%</Th>
-                  <Th right>Qty</Th><Th right>Amount</Th><Th right>%</Th>
-                </tr>
-              </thead>
-              <tbody>
-                {items.map((it, idx) => (
-                  <tr key={it.item_code} className="hover:bg-blue-50/30 dark:hover:bg-blue-900/10 transition-colors">
-                    <Td center>{idx + 1}</Td>
-                    <Td bold>{it.item_code}</Td>
-                    <Td className="max-w-[220px] whitespace-normal leading-snug">{it.item_name}</Td>
-                    <Td center>{it.unit}</Td>
-                    <Td right>{fmt(it.rate)}</Td>
-                    <Td right>{fmt(it.agreement_qty, 3)}</Td>
-                    <Td right>{fmt(it.agreement_amount)}</Td>
-                    <Td right className="text-gray-400">{fmt(it.prev_bill_qty, 3)}</Td>
-                    <Td right className="text-gray-400">{fmt(it.prev_bill_amount)}</Td>
-                    <Td right bold>{fmt(it.upto_date_qty, 3)}</Td>
-                    <Td right bold>{fmt(it.upto_date_amount)}</Td>
-                    <Td right className="text-blue-700 dark:text-blue-400 font-semibold">{fmt(it.current_qty, 3)}</Td>
-                    <Td right className="text-blue-700 dark:text-blue-400 font-semibold">{fmt(it.current_amount)}</Td>
-                    <Td right className={it.excess_qty > 0 ? "text-amber-600" : "text-gray-400"}>{fmt(it.excess_qty, 3)}</Td>
-                    <Td right className={it.excess_amount > 0 ? "text-amber-600" : "text-gray-400"}>{fmt(it.excess_amount)}</Td>
-                    <Td right className={it.excess_percentage > 0 ? "text-amber-600" : "text-gray-400"}>{fmt(it.excess_percentage, 2)}%</Td>
-                    <Td right className={it.balance_qty > 0 ? "text-orange-500" : "text-gray-400"}>{fmt(it.balance_qty, 3)}</Td>
-                    <Td right className={it.balance_amount > 0 ? "text-orange-500" : "text-gray-400"}>{fmt(it.balance_amount)}</Td>
-                    <Td right className={it.balance_percentage > 0 ? "text-orange-500" : "text-gray-400"}>{fmt(it.balance_percentage, 2)}%</Td>
-                  </tr>
-                ))}
-              </tbody>
-              <tfoot>
-                <tr className="bg-gray-50 dark:bg-gray-800">
-                  <Td colSpan={5} bold>Total</Td>
-                  <Td right bold>{fmt(items.reduce((s, i) => s + i.agreement_qty, 0), 3)}</Td>
-                  <Td right bold>{fmt(items.reduce((s, i) => s + i.agreement_amount, 0))}</Td>
-                  <Td right bold>{fmt(items.reduce((s, i) => s + i.prev_bill_qty, 0), 3)}</Td>
-                  <Td right bold>{fmt(items.reduce((s, i) => s + i.prev_bill_amount, 0))}</Td>
-                  <Td right bold>{fmt(items.reduce((s, i) => s + i.upto_date_qty, 0), 3)}</Td>
-                  <Td right bold>{fmt(items.reduce((s, i) => s + i.upto_date_amount, 0))}</Td>
-                  <Td right bold className="text-blue-700 dark:text-blue-400">{fmt(items.reduce((s, i) => s + i.current_qty, 0), 3)}</Td>
-                  <Td right bold className="text-blue-700 dark:text-blue-400">{fmt(items.reduce((s, i) => s + i.current_amount, 0))}</Td>
-                  <Td colSpan={6} />
-                </tr>
-              </tfoot>
-            </table>
+          <div className="px-4 py-3 space-y-0.5">
+            <SummaryRow label="Gross Amount (Upto Date)" value={fmt(grossAmount)} />
+            <SummaryRow label={`Retention (${data.retention_pct ?? 0}%)`} sub="(-)" value={fmt(retentionAmt)} negative indent />
+            {(data.deductions ?? []).map((d, i) => (
+              <SummaryRow key={i} label={d.description} sub="(-)" value={fmt(d.amount)} negative indent />
+            ))}
+            <SummaryRow label="Sub-total after Deductions" value={fmt(grossAmount - retentionAmt - totalDed)} />
+            {cgst > 0 && <SummaryRow label={`CGST (${data.cgst_pct ?? 0}%)`} sub="(+)" value={fmt(cgst)} positive indent />}
+            {sgst > 0 && <SummaryRow label={`SGST (${data.sgst_pct ?? 0}%)`} sub="(+)" value={fmt(sgst)} positive indent />}
+            {igst > 0 && <SummaryRow label={`IGST (${data.igst_pct ?? 0}%)`} sub="(+)" value={fmt(igst)} positive indent />}
+            <SummaryRow label="Net Payable Amount" value={fmt(netAmount)} total />
           </div>
         </div>
 
-        {/* ── Right Panel ── */}
-        <div className="space-y-4">
-
-          {/* Bill Summary */}
-          <div className="rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 overflow-hidden">
-            <div className="px-4 py-3 border-b border-gray-100 dark:border-gray-700 bg-gradient-to-r from-violet-50 dark:from-violet-900/20 to-transparent">
-              <p className="text-sm font-semibold text-gray-800 dark:text-white">Bill Summary</p>
-            </div>
-            <div className="px-4 py-3 space-y-0.5">
-              <SummaryRow label="Gross Amount (Upto Date)" value={fmt(grossAmount)} />
-              <SummaryRow label={`Retention (${data.retention_pct ?? 0}%)`} sub="(-)" value={fmt(retentionAmt)} negative indent />
-              {(data.deductions ?? []).map((d, i) => (
-                <SummaryRow key={i} label={d.description} sub="(-)" value={fmt(d.amount)} negative indent />
-              ))}
-              <SummaryRow label="Sub-total after Deductions" value={fmt(grossAmount - retentionAmt - totalDed)} />
-              {cgst > 0 && <SummaryRow label={`CGST (${data.cgst_pct ?? 0}%)`} sub="(+)" value={fmt(cgst)} positive indent />}
-              {sgst > 0 && <SummaryRow label={`SGST (${data.sgst_pct ?? 0}%)`} sub="(+)" value={fmt(sgst)} positive indent />}
-              {igst > 0 && <SummaryRow label={`IGST (${data.igst_pct ?? 0}%)`} sub="(+)" value={fmt(igst)} positive indent />}
-              <SummaryRow label="Net Payable Amount" value={fmt(netAmount)} total />
-            </div>
+        {/* Payment Status */}
+        <div className="rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 overflow-hidden">
+          <div className="px-4 py-3 border-b border-gray-100 dark:border-gray-700">
+            <p className="text-sm font-semibold text-gray-800 dark:text-white">Payment Status</p>
           </div>
-
-          {/* Payment Status */}
-          <div className="rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 overflow-hidden">
-            <div className="px-4 py-3 border-b border-gray-100 dark:border-gray-700">
-              <p className="text-sm font-semibold text-gray-800 dark:text-white">Payment Status</p>
-            </div>
-            <div className="px-4 py-3 space-y-0.5">
-              <SummaryRow label="Net Amount"       value={fmt(netAmount)} />
-              <SummaryRow label="Amount Received"  sub="(-)" value={fmt(data.amount_received ?? 0)} positive />
-              <SummaryRow label="Balance Due"       value={fmt(data.balance_due ?? 0)} total negative={data.balance_due > 0} />
-            </div>
-            {netAmount > 0 && (
-              <div className="px-4 pb-4">
-                <div className="flex justify-between text-xs mb-1.5">
-                  <span className="text-gray-400">Payment collected</span>
-                  <span className="font-bold text-gray-600 dark:text-gray-300">
-                    {Math.round(((data.amount_received ?? 0) / netAmount) * 100)}%
-                  </span>
-                </div>
-                <div className="w-full h-2 bg-gray-100 dark:bg-gray-700 rounded-full overflow-hidden">
-                  <div
-                    className="h-full bg-emerald-500 rounded-full transition-all duration-500"
-                    style={{ width: `${Math.min(Math.round(((data.amount_received ?? 0) / netAmount) * 100), 100)}%` }}
-                  />
-                </div>
+          <div className="px-4 py-3 space-y-0.5">
+            <SummaryRow label="Net Amount"      value={fmt(netAmount)} />
+            <SummaryRow label="Amount Received" sub="(-)" value={fmt(data.amount_received ?? 0)} positive />
+            <SummaryRow label="Balance Due"      value={fmt(data.balance_due ?? 0)} total negative={data.balance_due > 0} />
+          </div>
+          {netAmount > 0 && (
+            <div className="px-4 pb-4">
+              <div className="flex justify-between text-xs mb-1.5">
+                <span className="text-gray-400">Payment collected</span>
+                <span className="font-bold text-gray-600 dark:text-gray-300">
+                  {Math.round(((data.amount_received ?? 0) / netAmount) * 100)}%
+                </span>
               </div>
-            )}
-          </div>
-
-          {/* Tax Details */}
-          <div className="rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 overflow-hidden">
-            <div className="px-4 py-3 border-b border-gray-100 dark:border-gray-700">
-              <p className="text-sm font-semibold text-gray-800 dark:text-white">Tax Details</p>
-              <p className="text-xs text-gray-400">{data.tax_mode === "instate" ? "In-State (CGST + SGST)" : "Inter-State (IGST)"}</p>
+              <div className="w-full h-2 bg-gray-100 dark:bg-gray-700 rounded-full overflow-hidden">
+                <div
+                  className="h-full bg-emerald-500 rounded-full transition-all duration-500"
+                  style={{ width: `${Math.min(Math.round(((data.amount_received ?? 0) / netAmount) * 100), 100)}%` }}
+                />
+              </div>
             </div>
-            <div className="px-4 py-3 space-y-0.5">
-              <SummaryRow label={`CGST @ ${data.cgst_pct ?? 0}%`} value={fmt(cgst)} />
-              <SummaryRow label={`SGST @ ${data.sgst_pct ?? 0}%`} value={fmt(sgst)} />
-              <SummaryRow label={`IGST @ ${data.igst_pct ?? 0}%`} value={fmt(igst)} />
-              <SummaryRow label="Total Tax" value={fmt(data.total_tax ?? 0)} total />
-            </div>
-          </div>
+          )}
+        </div>
 
+        {/* Tax Details */}
+        <div className="rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 overflow-hidden">
+          <div className="px-4 py-3 border-b border-gray-100 dark:border-gray-700">
+            <p className="text-sm font-semibold text-gray-800 dark:text-white">Tax Details</p>
+            <p className="text-xs text-gray-400">{data.tax_mode === "instate" ? "In-State (CGST + SGST)" : "Inter-State (IGST)"}</p>
+          </div>
+          <div className="px-4 py-3 space-y-0.5">
+            <SummaryRow label={`CGST @ ${data.cgst_pct ?? 0}%`} value={fmt(cgst)} />
+            <SummaryRow label={`SGST @ ${data.sgst_pct ?? 0}%`} value={fmt(sgst)} />
+            <SummaryRow label={`IGST @ ${data.igst_pct ?? 0}%`} value={fmt(igst)} />
+            <SummaryRow label="Total Tax" value={fmt(data.total_tax ?? 0)} total />
+          </div>
+        </div>
+
+      </div>
+
+      {/* ── Work Items — full width ── */}
+      <div className="rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 overflow-hidden">
+        <div className="px-4 py-3 border-b border-gray-100 dark:border-gray-700">
+          <p className="text-sm font-semibold text-gray-800 dark:text-white">Work Items</p>
+          <p className="text-xs text-gray-400">This bill · {items.length} items</p>
+        </div>
+        <div className="overflow-auto max-h-[520px] scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-600">
+          <table className="min-w-full border-collapse text-xs">
+            <thead className="sticky top-0 z-10">
+              <tr>
+                <Th>#</Th>
+                <Th>Code</Th>
+                <Th className="min-w-[200px]">Description</Th>
+                <Th center>Unit</Th>
+                <Th right>Rate</Th>
+                <Th right>Qty</Th>
+                <Th right>Amount</Th>
+              </tr>
+            </thead>
+            <tbody>
+              {items.map((it, idx) => (
+                <tr key={it.item_code} className="hover:bg-blue-50/30 dark:hover:bg-blue-900/10 transition-colors">
+                  <Td center>{idx + 1}</Td>
+                  <Td bold>{it.item_code}</Td>
+                  <Td className="max-w-[220px] whitespace-normal leading-snug">{it.item_name}</Td>
+                  <Td center>{it.unit}</Td>
+                  <Td right>{fmt(it.rate)}</Td>
+                  <Td right className="text-blue-700 dark:text-blue-400 font-semibold">{fmt(it.current_qty, 3)}</Td>
+                  <Td right className="text-blue-700 dark:text-blue-400 font-semibold">{fmt(it.current_amount)}</Td>
+                </tr>
+              ))}
+            </tbody>
+            <tfoot>
+              <tr className="bg-gray-50 dark:bg-gray-800">
+                <Td colSpan={5} bold>Total</Td>
+                <Td right bold className="text-blue-700 dark:text-blue-400">{fmt(items.reduce((s, i) => s + i.current_qty, 0), 3)}</Td>
+                <Td right bold className="text-blue-700 dark:text-blue-400">{fmt(items.reduce((s, i) => s + i.current_amount, 0))}</Td>
+              </tr>
+            </tfoot>
+          </table>
         </div>
       </div>
     </div>

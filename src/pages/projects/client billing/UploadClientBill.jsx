@@ -107,7 +107,7 @@ const UploadClientBill = ({ onclose, onSuccess }) => {
       if (onSuccess) onSuccess();
       if (onclose) onclose();
     } catch (error) {
-      const msg = error?.response?.data?.message || "Upload failed";
+      const msg = error?.response?.data?.error || error?.response?.data?.message || "Upload failed";
       toast.error(msg);
     } finally {
       setSaving(false);
