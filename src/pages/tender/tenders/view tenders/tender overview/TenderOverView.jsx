@@ -1,4 +1,6 @@
 import React, { useEffect, useState } from "react";
+// eslint-disable-next-line no-unused-vars
+import { motion } from "framer-motion";
 import { Pencil } from "lucide-react";
 import AddFollowUp from "./AddFollowUp";
 import { MdCancel } from "react-icons/md";
@@ -9,6 +11,23 @@ import { API } from "../../../../../constant";
 import TenderProcessStepper from "./TenderProcessStepper";
 import PreliminaryProcessStepper from "./PreliminaryProcessStepper";
 import Loader from "../../../../../components/Loader";
+import { 
+  User, 
+  MapPin, 
+  Phone, 
+  Mail, 
+  CreditCard, 
+  Calendar, 
+  FileText, 
+  Briefcase, 
+  Activity, 
+  CheckCircle2, 
+  Clock, 
+  ArrowRight,
+  ClipboardList,
+  Target,
+  Upload
+} from "lucide-react";
 
 const tenderProcessDataTemplate = [
   { label: "Site Investigation", key: "site_investigation" },
@@ -70,6 +89,7 @@ const TenderOverView = () => {
       const res = await axios.get(`${API}/tender/getoverview/${tender_id}`);
       const data = res.data.data;
 
+
       setCustomerDetails([
         { label: "Customer ID", value: data.customerDetails?.client_id },
         { label: "Customer Name", value: data.customerDetails?.client_name },
@@ -88,6 +108,7 @@ const TenderOverView = () => {
 
       setTenderDetailsState([
 
+        { label: "Project Name", value: data.tenderDetails?.tender_project_name },
         { label: "Tender Name", value: data.tenderDetails?.tender_name },
         { label: "Tender ID", value: data.tenderDetails?.tender_id },
         {
@@ -186,15 +207,35 @@ const TenderOverView = () => {
       setLoading(false);
     };
     loadAll();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tender_id]);
 
-  const handleCancel = () => {
-    setTenderDetailsState(tenderDetails);
-    setIsEditingTender(false);
-  };
-
-  const handleSave = () => {
-    setIsEditingTender(false);
+  const handleSave = async () => {
+    try {
+      setLoading(true);
+      // Construct update object from tenderDetailsState array
+      const updateData = {};
+      tenderDetailsState.forEach(item => {
+        if (item.label === "Tender Name") updateData.tender_name = item.value;
+        if (item.label === "Tender ID") updateData.tender_id = item.value;
+        if (item.label === "Tender Published Date") updateData.tender_published_date = item.value;
+        if (item.label === "Tender Process Type") updateData.tender_type = item.value;
+        if (item.label === "Contact Person") updateData.contact_person = item.value;
+        if (item.label === "Contact Number") updateData.contact_phone = item.value;
+        if (item.label === "Email ID") updateData.contact_email = item.value;
+        if (item.label === "Tender Value") updateData.tender_value = item.value.replace(/[^0-9.-]+/g,"");
+        if (item.label === "Agreement Value") updateData.agreement_value = item.value.replace(/[^0-9.-]+/g,"");
+      });
+      
+      await axios.put(`${API}/tender/updateoverview/${tender_id}`, updateData);
+      setIsEditingTender(false);
+      fetchTenderOverview();
+    } catch (err) {
+      console.error("Error saving tender overview:", err);
+      setIsEditingTender(false);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleTenderChange = (idx, value) => {
@@ -211,230 +252,300 @@ const TenderOverView = () => {
     fetchPreliminaryData();
   };
 
-  if (loading) return <Loader fullScreen={false} />;
+  const calculateProgress = () => {
+    const totalSteps = tenderProcessDataTemplate.length + preliminarySiteWorkTemplate.length;
+    const completedSteps = 
+      tenderProcessState.filter(s => s.completed).length + 
+      tenderPreliminary.filter(s => s.completed).length;
+    return Math.round((completedSteps / totalSteps) * 100);
+  };
+
+  if (loading) return <Loader />;
+
+  const progress = calculateProgress();
+  const projectName = tenderDetailsState.find(i => i.label === "Project Name")?.value || "Project Overview";
+  const tenderId = tenderDetailsState.find(i => i.label === "Tender ID")?.value || "-";
 
   return (
-    <>
-      <div className="font-roboto-flex grid grid-cols-12 h-full gap-3  overflow-y-auto no-scrollbar py-2">
-
-        <div className="col-span-6 dark:bg-layout-dark bg-white rounded-lg shadow p-4">
-          {" "}
-          <div className="flex justify-between items-center px-2 py-2">
-            <p className="font-semibold text-lg">Tender Details</p>
-            {!isEditingTender ? (
-              <button
-                className="bg-gray-400 text-gray-600 rounded-full px-1.5 py-1.5"
-                onClick={() => setIsEditingTender(true)}
-              >
-                <Pencil size={14} />
-              </button>
-            ) : (
-              <button
-                className="px-4 py-1.5 rounded dark:bg-overall_bg-dark dark:text-white text-gray-700"
-                onClick={handleCancel}
-              >
-                <MdCancel />
-              </button>
-            )}
-          </div>
-          <div className="grid grid-cols-12 gap-2  text-xs font-semibold px-2 py-2 ">
-
-            {tenderDetailsState.map((item, idx) => {
-              const isTenderName = item.label === "Tender Name";
-
-              if (isTenderName) {
-                return (
-                  <React.Fragment key={idx}>
-                    {/* Label – first line */}
-                    <p className="col-span-12 font-semibold">{item.label}</p>
-
-                    {/* Value – second line, editable when isEditingTender */}
-                    <div className="col-span-12 opacity-70">
-                      {isEditingTender ? (
-                        <textarea
-                          value={item.value}
-                          onChange={(e) => handleTenderChange(idx, e.target.value)}
-                          className="w-full bg-transparent focus:outline-none text-left resize-none"
-                          rows={2} // adjust as needed
-                        />
-                      ) : (
-                        <p className="whitespace-pre-line">
-                          {item.value}
-                        </p>
-                      )}
-                    </div>
-                  </React.Fragment>
-                );
-              }
-
-              // default layout for other fields
-              return (
-                <React.Fragment key={idx}>
-                  <p className="col-span-6">{item.label}</p>
-                  <div className="col-span-6 text-end opacity-50 font-light">
-                    {isEditingTender ? (
-                      <input
-                        type="text"
-                        value={item.value}
-                        onChange={(e) => handleTenderChange(idx, e.target.value)}
-                        className="w-full bg-transparent focus:outline-none text-right"
-                      />
-                    ) : (
-                      item.value
-                    )}
-                  </div>
-                </React.Fragment>
-              );
-            })}
-
-          </div>
-          {isEditingTender && (
-            <div className="flex justify-end gap-2 mt-2">
-              <button
-                className="px-4 py-1.5 rounded bg-darkest-blue text-white"
-                onClick={handleSave}
-              >
-                <IoMdSave />
-              </button>
+    <div className="flex flex-col gap-5 p-5 max-w-[1550px] mx-auto min-h-screen bg-slate-50/50 dark:bg-transparent no-scrollbar overflow-y-auto pb-10">
+      {/* Hero Header Section */}
+      <div className="relative overflow-hidden bg-white dark:bg-slate-900 rounded-[1.5rem] p-6 border border-slate-200 dark:border-slate-800 shadow-sm transition-all duration-300">
+        <div className="absolute top-0 right-0 p-12 opacity-5 scale-150 rotate-12 pointer-events-none">
+          <Activity size={180} />
+        </div>
+        
+        <div className="relative z-10 flex flex-col md:flex-row md:items-end justify-between gap-6">
+          <div className="space-y-3 flex-1">
+            <div className="flex items-center gap-2">
+              <span className="px-3 py-1 rounded-full bg-blue-500/10 text-blue-600 dark:text-blue-400 text-[10px] font-bold uppercase tracking-wider">
+                Active Project
+              </span>
+              <span className="px-3 py-1 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-500 text-[10px] font-bold uppercase tracking-wider">
+                ID: {tenderId}
+              </span>
             </div>
-          )}
-        </div>
-        <div className="col-span-6 dark:bg-layout-dark bg-white rounded-lg shadow p-4">
-          <div className="flex justify-between items-center px-2 py-2">
-            <p className="font-semibold text-lg">Customer Details</p>
-          </div>
-          <div className="grid grid-cols-12 gap-2  text-xs font-semibold px-2 py-2 ">
-            {customerDetails.map((item, index) => (
-              <React.Fragment key={index}>
-                <p className="col-span-6">{item.label}</p>
-                <p className="col-span-6 text-end  opacity-50 font-light">
-                  {item.value}
-                </p>
-              </React.Fragment>
-            ))}
-          </div>
-        </div>
-        <div className="col-span-6 dark:bg-layout-dark bg-white rounded-lg shadow p-4 ">
-          <TenderProcessStepper onUploadSuccess={handleUploadSuccess} />
-        </div>
-        <div className="col-span-6 dark:bg-layout-dark bg-white rounded-lg shadow p-4 ">
-          <PreliminaryProcessStepper onUploadSuccess={handleUploadSuccessPreliminary} />
-        </div>
-
-        <div className="col-span-6 dark:bg-layout-dark bg-white rounded-lg shadow p-4 space-y-4">
-          <p className="font-semibold text-lg mb-4">Tender Process Overview</p>
-
-          {tenderProcessState.filter((step) => step.completed).length === 0 ? (
-            <p className="text-center text-gray-500">
-              No tender process data available.
-            </p>
-          ) : (
-            <div className="p-6 rounded-lg border border-slate-300 bg-slate-50 dark:border-slate-700 dark:bg-slate-800 shadow-sm">
-              {tenderProcessState
-                .filter((step) => step.completed)
-                .map((step, idx) => (
-                  <div key={step.key} className="mb-4 pb-4 border-b border-slate-200 dark:border-slate-700">
-                    <div className="flex justify-between items-center mb-2">
-                      <h4 className="font-medium text-slate-800 dark:text-slate-200">
-                        {idx + 1}. {step.label}
-                      </h4>
-                      <span className="text-xs font-semibold px-2 py-1 rounded bg-slate-600 text-white">
-                        Completed
-                      </span>
-                    </div>
-                    {step.notes && (
-                      <p className="text-sm mb-1 whitespace-pre-wrap">
-                        <strong>Notes:</strong> {step.notes}
-                      </p>
-                    )}
-                    <div className="flex gap-6 items-center mb-2">
-                      <p className="text-sm text-slate-700 dark:text-slate-300 mb-1">
-                        <strong>Date:</strong>{" "}
-                        {step.date ? new Date(step.date).toLocaleDateString() : "-"}
-                      </p>
-                      <p className="text-sm text-slate-700 dark:text-slate-300 mb-1">
-                        <strong>Time:</strong> {step.time || "-"}
-                      </p>
-                    </div>
-
-                    {step.file_name && step.file_url ? (
-                      <p className="text-sm mb-1 truncate">
-                        <strong>File:</strong>{" "}
-                        <a
-                          href={step.file_url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="dark:text-white text-black hover:underline truncate"
-                          title={step.file_name}
-                        >
-                          {step.file_name}
-                        </a>
-                      </p>
-                    ) : (
-                      ""
-                    )}
-
-                  </div>
-                ))}
+            <h1 className="text-4xl font-black text-slate-900 dark:text-white leading-tight italic decoration-blue-500/30">
+              {projectName}
+            </h1>
+            <div className="flex flex-wrap items-center gap-6 text-slate-500 dark:text-slate-400 text-sm italic">
+              <span className="flex items-center gap-1.5 font-bold tracking-tight uppercase text-[11px]">
+                <MapPin size={16} className="text-blue-500" />
+                {tenderDetailsState.find(i => i.label === "Project Location")?.value || "Location TBD"}
+              </span>
+              <span className="flex items-center gap-1.5 font-bold tracking-tight uppercase text-[11px]">
+                <Calendar size={16} className="text-blue-500" />
+                Published: {tenderDetailsState.find(i => i.label === "Tender Published Date")?.value || "N/A"}
+              </span>
             </div>
-
-          )}
-        </div>
-
-        <div className="col-span-6 dark:bg-layout-dark bg-white rounded-lg shadow p-4 space-y-4">
-          <p className="font-semibold text-lg mb-4">Preliminary Process Overview</p>
-
-          {tenderPreliminary.filter((step) => step.completed).length === 0 ? (
-            <p className="text-center text-gray-500">
-              No tender process data available.
-            </p>
-          ) : (
-            <div className="p-6 rounded-lg border border-slate-300 bg-slate-50 dark:border-slate-700 dark:bg-slate-800 shadow-sm">
-              {tenderPreliminary
-                .filter((step) => step.completed)
-                .map((step, idx) => (
-                  <div key={step.key} className="mb-4 pb-4 border-b border-slate-200 dark:border-slate-700">
-                    <div className="flex justify-between items-center mb-2">
-                      <h4 className="font-medium text-slate-800 dark:text-slate-200">
-                        {idx + 1}. {step.label}
-                      </h4>
-                      <span className="text-xs font-semibold px-2 py-1 rounded bg-slate-600 text-white">
-                        Completed
-                      </span>
-                    </div>
-                    <div className="flex gap-6 items-center mb-2">
-                      <p className="text-sm text-slate-700 dark:text-slate-300 mb-1">
-                        <strong>Date:</strong>{" "}
-                        {step.date ? new Date(step.date).toLocaleDateString() : "-"}
-                      </p>
-                      <p className="text-sm text-slate-700 dark:text-slate-300 mb-1">
-                        <strong>Time:</strong> {step.time || "-"}
-                      </p>
-                    </div>
-                    {step.file_name && step.file_url ? (
-                      <p className="text-sm">
-                        <strong>File:</strong>{" "}
-                        <a
-                          href={step.file_url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-slate-600 hover:underline dark:text-slate-400"
-                        >
-                          {step.file_name}
-                        </a>
-                      </p>
-                    ) : (
-                      ""
-                    )}
-                  </div>
-                ))}
+          </div>
+          
+          <div className="flex flex-col items-end gap-3 min-w-[280px] bg-slate-50 dark:bg-slate-800/50 p-6 rounded-2xl border border-slate-100 dark:border-slate-800 shadow-inner">
+            <div className="flex items-center justify-between w-full mb-1">
+              <span className="text-xs font-black text-slate-400 uppercase tracking-widest italic">Progress Overview</span>
+              <span className="text-2xl font-black text-blue-600 italic leading-none">{progress}%</span>
             </div>
-
-          )}
+            <div className="w-full h-3 bg-white dark:bg-slate-900 rounded-full overflow-hidden shadow-inner flex">
+              <motion.div 
+                initial={{ width: 0 }}
+                animate={{ width: `${progress}%` }}
+                transition={{ duration: 1.2, ease: "easeOut" }}
+                className="h-full bg-gradient-to-r from-blue-600 to-indigo-500 shadow-lg shadow-blue-500/20"
+              />
+            </div>
+          </div>
         </div>
-
-
       </div>
+
+    <div className="grid grid-cols-12 gap-5 items-start">
+        {/* Row 1: High Level Metadata (Parallel Columns) */}
+        <div className="col-span-12 lg:col-span-6 h-full">
+          <div className="bg-white dark:bg-slate-900 rounded-[1.5rem] p-6 border border-slate-200 dark:border-slate-800 shadow-sm relative group h-full">
+            <div className="flex justify-between items-center mb-5">
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-xl bg-blue-500/10 text-blue-500 shadow-sm">
+                  <FileText size={18} />
+                </div>
+                <h3 className="font-bold text-lg text-slate-800 dark:text-slate-100 italic tracking-tight leading-none">Financial Meta</h3>
+              </div>
+              <div className="flex items-center gap-2">
+                {isEditingTender ? (
+                  <>
+                    <button
+                      onClick={handleSave}
+                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-[11px] font-bold uppercase tracking-wider transition-colors shadow-sm"
+                    >
+                      <IoMdSave size={14} /> Save
+                    </button>
+                    <button
+                      onClick={() => { setIsEditingTender(false); fetchTenderOverview(); }}
+                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-200 dark:bg-slate-700 hover:bg-slate-300 dark:hover:bg-slate-600 text-slate-600 dark:text-slate-300 text-[11px] font-bold uppercase tracking-wider transition-colors"
+                    >
+                      <MdCancel size={14} /> Cancel
+                    </button>
+                  </>
+                ) : (
+                  <button
+                    onClick={() => setIsEditingTender(true)}
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-500 dark:text-slate-400 text-[11px] font-bold uppercase tracking-wider transition-colors"
+                  >
+                    <Pencil size={14} /> Edit
+                  </button>
+                )}
+              </div>
+            </div>
+            
+            <div className="grid grid-cols-1 gap-1.5">
+              {tenderDetailsState.map((item, idx) => (
+                  <div key={idx} className="flex items-baseline justify-between py-2 border-b border-slate-50 dark:border-slate-800/50 hover:bg-slate-50/50 dark:hover:bg-slate-800/20 px-2 rounded transition-colors group">
+                     <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest shrink-0 mr-8">{item.label}</p>
+                     
+                     {isEditingTender ? (
+                       <input 
+                         type="text"
+                         value={item.value || ""}
+                         onChange={(e) => handleTenderChange(idx, e.target.value)}
+                         className="text-[12px] font-bold text-blue-600 dark:text-blue-400 bg-white dark:bg-slate-800 border-b border-blue-500/30 outline-none px-2 py-0.5 rounded-md w-full max-w-[240px] text-end italic transition-all focus:bg-white dark:focus:bg-slate-900 focus:shadow-sm"
+                       />
+                     ) : (
+                       <p className={`text-[13px] font-bold text-slate-700 dark:text-slate-200 leading-tight text-end ${item.label === "Email ID" ? "break-all" : ""}`}>
+                          {item.value || "-"}
+                       </p>
+                     )}
+                  </div>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        <div className="col-span-12 lg:col-span-6 h-full">
+          <div className="bg-white dark:bg-slate-900 rounded-[1.5rem] p-6 border border-slate-200 dark:border-slate-800 shadow-sm h-full">
+            <div className="flex items-center gap-3 mb-5">
+              <div className="p-2 rounded-xl bg-emerald-500/10 text-emerald-500 shadow-sm">
+                <User size={18} />
+              </div>
+              <h3 className="font-bold text-lg text-slate-800 dark:text-slate-100 italic tracking-tight leading-none">Client Information</h3>
+            </div>
+            
+            <div className="grid grid-cols-1 gap-1.5">
+              {customerDetails.map((item, idx) => (
+                  <div key={idx} className="flex items-baseline justify-between py-2 border-b border-slate-50 dark:border-slate-800/50 hover:bg-emerald-50/30 dark:hover:bg-emerald-500/5 px-2 rounded transition-colors">
+                      <p className="text-[10px] font-black text-emerald-600/60 uppercase tracking-widest shrink-0 mr-8">{item.label}</p>
+                      <p className={`text-[13px] font-bold text-slate-700 dark:text-slate-200 leading-tight text-end ${item.label === "Email ID" ? "break-all" : ""}`}>
+                         {item.value || "-"}
+                      </p>
+                  </div>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* Phase 1 Overlay Card: ACTION + HISTORY */}
+        <div className="col-span-12">
+          <div className="bg-white dark:bg-slate-900 rounded-[1.5rem] border border-slate-200 dark:border-slate-800 shadow-lg overflow-hidden flex flex-col">
+            <div className="bg-slate-50 dark:bg-slate-800/50 px-8 py-5 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
+              <div className="flex items-center gap-4">
+                <div className="w-10 h-10 rounded-2xl bg-blue-600 text-white flex items-center justify-center shadow-lg shadow-blue-500/20">
+                  <span className="font-black text-lg italic leading-none">P1</span>
+                </div>
+                <div>
+                   <h2 className="text-xl font-black text-slate-900 dark:text-white uppercase tracking-tight italic leading-none">Tender Lifecycle</h2>
+                   <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-1">Workflow Action & Track</p>
+                </div>
+              </div>
+              <Activity size={20} className="text-blue-500 opacity-30 animate-pulse" />
+            </div>
+            
+            <div className="grid grid-cols-12">
+              {/* Stepper Part */}
+              <div className="col-span-12 lg:col-span-7 p-8 lg:border-r border-slate-100 dark:border-slate-800">
+                <div className="mb-4 text-[9px] font-black text-slate-400 uppercase tracking-[0.2em] italic underline decoration-blue-500/30 underline-offset-4">Workflow Action</div>
+                <TenderProcessStepper onUploadSuccess={handleUploadSuccess} />
+              </div>
+              
+              {/* History Part */}
+              <div className="col-span-12 lg:col-span-5 bg-slate-50/30 dark:bg-slate-800/10 p-8">
+                <div className="mb-6 text-[9px] font-black text-slate-400 uppercase tracking-[0.2em] italic underline decoration-blue-500/30 underline-offset-4">Lifecycle Log Feed</div>
+                
+                <div className="relative space-y-8 pl-4 before:absolute before:left-[11px] before:top-2 before:bottom-2 before:w-[2px] before:bg-slate-200 dark:before:bg-slate-800">
+                  {tenderProcessState.filter(s => s.completed).length === 0 ? (
+                    <div className="flex flex-col items-center justify-center py-20 text-slate-400 opacity-50 space-y-3 italic text-center">
+                       <Clock size={48} strokeWidth={1} />
+                       <p className="text-sm font-black uppercase tracking-widest">Waiting for Activity</p>
+                    </div>
+                  ) : (
+                    tenderProcessState.filter(s => s.completed).map((step) => (
+                      <motion.div 
+                        key={step.key} 
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        className="relative pl-10"
+                      >
+                        <div className="absolute left-[-23px] top-1 w-[22px] h-[22px] rounded-full bg-white dark:bg-slate-900 border-2 border-blue-500 z-10 flex items-center justify-center shadow-md">
+                          <CheckCircle2 size={12} className="text-blue-500" />
+                        </div>
+                        
+                        <div className="group space-y-3 bg-white dark:bg-slate-900/50 p-5 rounded-3xl border border-transparent shadow-sm hover:border-blue-500/20 hover:shadow-xl transition-all">
+                          <div className="flex items-start justify-between gap-4">
+                            <h4 className="font-black text-slate-800 dark:text-slate-100 text-sm italic group-hover:text-blue-600 transition-colors tracking-tight">
+                              {step.label}
+                            </h4>
+                            <span className="text-[9px] font-black px-2.5 py-1 rounded-full bg-blue-50 dark:bg-blue-900/30 text-blue-600 uppercase italic tracking-tighter shadow-inner leading-none">
+                              {step.date ? new Date(step.date).toLocaleDateString("en-GB", { day: '2-digit', month: 'short' }) : "-"}
+                            </span>
+                          </div>
+                          {step.notes && (
+                            <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/40 text-[11px] font-bold italic text-slate-500 dark:text-slate-400 leading-relaxed border-l-4 border-blue-500/30">
+                              {step.notes}
+                            </div>
+                          )}
+                          {step.file_name && (
+                            <a href={step.file_url} target="_blank" className="flex items-center gap-2 text-[9px] font-black uppercase text-blue-600 hover:text-blue-700 tracking-[0.1em] pl-1 italic">
+                              <Upload size={12} /> <span className="underline decoration-blue-200">View Document Attachment</span>
+                            </a>
+                          )}
+                        </div>
+                      </motion.div>
+                    ))
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Phase 2: Action + History Grouped Below Lifecycle */}
+        <div className="col-span-12">
+          <div className="bg-white dark:bg-slate-900 rounded-[1.5rem] border border-slate-200 dark:border-slate-800 shadow-lg overflow-hidden flex flex-col">
+            <div className="bg-emerald-50/50 dark:bg-emerald-900/10 px-8 py-5 border-b border-emerald-100 dark:border-emerald-900 flex items-center justify-between">
+              <div className="flex items-center gap-4">
+                 <div className="w-10 h-10 rounded-2xl bg-emerald-600 text-white flex items-center justify-center shadow-lg shadow-emerald-500/20">
+                  <span className="font-black text-lg italic leading-none">P2</span>
+                </div>
+                <div>
+                   <h2 className="text-xl font-black text-slate-900 dark:text-white uppercase tracking-tight italic leading-none">Preliminary Site Work</h2>
+                   <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-1">Project Site Ground Feed</p>
+                </div>
+              </div>
+              <ClipboardList size={20} className="text-emerald-500 opacity-30 animate-pulse" />
+            </div>
+
+            <div className="grid grid-cols-12">
+               {/* Stepper Part */}
+               <div className="col-span-12 lg:col-span-7 p-8 lg:border-r border-slate-100 dark:border-slate-800">
+                <div className="mb-4 text-[9px] font-black text-slate-400 uppercase tracking-[0.2em] italic underline decoration-emerald-500/30 underline-offset-4">Site Operations Workflow</div>
+                <PreliminaryProcessStepper onUploadSuccess={handleUploadSuccessPreliminary} />
+              </div>
+
+               {/* History Part */}
+               <div className="col-span-12 lg:col-span-5 bg-emerald-50/20 dark:bg-emerald-800/10 p-8">
+                <div className="mb-6 text-[9px] font-black text-slate-400 uppercase tracking-[0.2em] italic underline decoration-emerald-500/30 underline-offset-4">Operations Log feed</div>
+                
+                <div className="relative space-y-8 pl-4 before:absolute before:left-[11px] before:top-2 before:bottom-2 before:w-[2px] before:bg-slate-200 dark:before:bg-slate-800">
+                  {tenderPreliminary.filter(s => s.completed).length === 0 ? (
+                    <div className="flex flex-col items-center justify-center py-20 text-slate-400 opacity-50 space-y-3 italic text-center">
+                       <Target size={48} strokeWidth={1} />
+                       <p className="text-sm font-black uppercase tracking-widest">Site Work Pending</p>
+                    </div>
+                  ) : (
+                    tenderPreliminary.filter(s => s.completed).map((step) => (
+                      <motion.div 
+                        key={step.key} 
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        className="relative pl-10"
+                      >
+                        <div className="absolute left-[-23px] top-1 w-[22px] h-[22px] rounded-full bg-white dark:bg-slate-900 border-2 border-emerald-500 z-10 flex items-center justify-center shadow-md">
+                          <CheckCircle2 size={12} className="text-emerald-500" />
+                        </div>
+                        
+                        <div className="group space-y-3 bg-white dark:bg-slate-900/50 p-5 rounded-3xl border border-transparent shadow-sm hover:border-emerald-500/20 hover:shadow-xl transition-all">
+                          <div className="flex items-start justify-between gap-4">
+                            <h4 className="font-black text-slate-800 dark:text-slate-100 text-sm italic group-hover:text-emerald-600 transition-colors tracking-tight leading-tight">
+                              {step.label}
+                            </h4>
+                            <CheckCircle2 size={14} className="text-emerald-500 shrink-0 mt-0.5 shadow-sm" />
+                          </div>
+                          {step.notes && (
+                            <div className="p-4 rounded-2xl bg-emerald-50/30 dark:bg-emerald-900/10 text-[11px] font-bold italic text-slate-500 dark:text-slate-400 border-l-4 border-emerald-500/30 leading-relaxed transition-colors">
+                              {step.notes}
+                            </div>
+                          )}
+                           {step.file_name && (
+                            <a href={step.file_url} target="_blank" className="flex items-center gap-2 text-[9px] font-black uppercase text-emerald-600 hover:text-emerald-700 tracking-[0.1em] pl-1 italic">
+                              <Upload size={12} /> <span className="underline decoration-emerald-200">View Site Attachment</span>
+                            </a>
+                          )}
+                        </div>
+                      </motion.div>
+                    ))
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
       {addFollowup && (
         <AddFollowUp
           onclose={() => setAddFollowup(false)}
@@ -443,7 +554,7 @@ const TenderOverView = () => {
           }}
         />
       )}
-    </>
+    </div>
   );
 };
 

@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import { useDLPByDate } from "./hooks/useDailyLabourReport";
 import { useProject } from "../../../context/ProjectContext";
+import Loader from "../../../components/Loader";
 
 // ── Constants ──────────────────────────────────────────────────────────────────
 
@@ -73,12 +74,7 @@ const ViewDailyReportSite = () => {
   );
 
   if (isLoading)
-    return (
-      <div className="p-10 flex justify-center items-center gap-2 text-sm text-gray-400">
-        <span className="animate-spin h-4 w-4 border-2 border-blue-500 border-t-transparent rounded-full" />
-        Loading report...
-      </div>
-    );
+    return <Loader />;
 
   if (!records.length)
     return (

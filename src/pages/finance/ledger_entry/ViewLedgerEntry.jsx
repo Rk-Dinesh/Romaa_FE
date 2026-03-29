@@ -7,6 +7,7 @@ import {
   FileText, Printer,
 } from "lucide-react";
 import { useSupplierLedger, useSupplierBalance, useSupplierStatement } from "./hooks/useLedger";
+import Loader from "../../../components/Loader";
 
 /* ── Helpers ────────────────────────────────────────────────────────────── */
 const fmtMoney = (n) =>
@@ -440,10 +441,7 @@ const ViewLedgerEntry = () => {
 
         {/* ── THE LEDGER TABLE ── */}
         {isLoading ? (
-          <div className="flex flex-col items-center justify-center py-24 gap-3 text-gray-400">
-            <span className="animate-spin h-9 w-9 border-[3px] border-slate-500 border-t-transparent rounded-full" />
-            <p className="text-sm font-medium">Loading ledger entries…</p>
-          </div>
+          <Loader />
         ) : (
           <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden shadow-sm">
 

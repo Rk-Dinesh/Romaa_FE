@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { yupResolver } from "@hookform/resolvers/yup";
 import * as yup from "yup";
@@ -31,6 +31,7 @@ const schema = yup.object().shape({
         "Paint Supplier",
         "Tiles Supplier",
         "Wood Supplier",
+        "Machinery Supplier",
       ],
       "Select a valid Vendor Type"
     )
@@ -77,6 +78,23 @@ const VENDOR_TYPES = [
 
 const EditVendorSupplier = ({ onclose, onUpdated, item }) => {
   const [loading, setLoading] = useState(false);
+    const modalRef = useRef(null);
+
+  useEffect(() => {
+    const el = modalRef.current;
+    if (!el) return;
+    const FOCUSABLE = 'input:not([disabled]), button:not([disabled]), textarea:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])';
+    const trap = (e) => {
+      if (e.key !== "Tab") return;
+      const nodes = Array.from(el.querySelectorAll(FOCUSABLE));
+      if (!nodes.length) return;
+      const first = nodes[0], last = nodes[nodes.length - 1];
+      if (e.shiftKey) { if (document.activeElement === first) { e.preventDefault(); last.focus(); } }
+      else { if (document.activeElement === last) { e.preventDefault(); first.focus(); } }
+    };
+    document.addEventListener("keydown", trap);
+    return () => document.removeEventListener("keydown", trap);
+  }, []);
 
   const {
     register,
@@ -157,7 +175,7 @@ const EditVendorSupplier = ({ onclose, onUpdated, item }) => {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4 font-layout-font">
-      <div className="bg-white dark:bg-gray-900 w-full max-w-4xl h-[90vh] rounded-2xl shadow-2xl flex flex-col overflow-hidden border border-gray-200 dark:border-gray-800">
+<div ref={modalRef} className="bg-white dark:bg-gray-900 w-full max-w-4xl h-[90vh] rounded-2xl shadow-2xl flex flex-col overflow-hidden border border-gray-200 dark:border-gray-800">
 
         {/* Header */}
         <div className="px-8 py-5 border-b border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-900 flex justify-between items-center sticky top-0 z-10">

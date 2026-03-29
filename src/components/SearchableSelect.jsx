@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { FiChevronDown, FiSearch } from "react-icons/fi";
 
 /**
- * SearchableSelect — unified dropdown with search.
+ * SearchableSelect — unified dropdown with search + full keyboard nav.
  *
  * Usage A (direct state):
  *   <SearchableSelect value={val} onChange={setVal} options={[{value,label}]} />
@@ -14,6 +14,7 @@ import { FiChevronDown, FiSearch } from "react-icons/fi";
  *   <SearchableSelect label="Gender *" name="gender" watch={watch} setValue={setValue}
  *     options={["Male","Female","Other"]} error={errors.gender} />
  *
+ * Keyboard: Arrow Up/Down to navigate, Enter to select, Escape to close, Tab to close + advance.
  * options: array of strings OR array of {value, label} objects
  */
 const SearchableSelect = ({
@@ -29,6 +30,8 @@ const SearchableSelect = ({
   placeholder,
   disabled,
   hasError,
+  // When true, the trigger shows the raw value (e.g. an ID) instead of the label after selection
+  showValueSelected,
   // Wrapper
   label,
   error,
@@ -36,8 +39,10 @@ const SearchableSelect = ({
   const [isOpen, setIsOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [dropdownStyle, setDropdownStyle] = useState({});
+  const [highlightedIndex, setHighlightedIndex] = useState(-1);
   const wrapperRef = useRef(null);
   const triggerRef = useRef(null);
+  const listRef = useRef(null);
 
   // Normalize options to {value, label}
   const normalizedOptions = options.map((opt) =>
@@ -58,10 +63,18 @@ const SearchableSelect = ({
     else if (setValue && name) setValue(name, val);
   };
 
-  const selectedLabel =
-    normalizedOptions.find((opt) => opt.value === currentValue)?.label || "";
+  const selectedLabel = showValueSelected
+    ? currentValue || ""
+    : normalizedOptions.find((opt) => opt.value === currentValue)?.label || "";
 
   const showError = hasError || !!error;
+
+  const filtered = normalizedOptions.filter((opt) =>
+    opt.label.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  // Reset highlight when search changes
+  useEffect(() => { setHighlightedIndex(-1); }, [searchTerm]);
 
   // Calculate fixed dropdown position from trigger element
   const updateDropdownPosition = () => {
@@ -78,7 +91,27 @@ const SearchableSelect = ({
   const openDropdown = () => {
     if (disabled) return;
     updateDropdownPosition();
-    setIsOpen((o) => !o);
+    setIsOpen(true);
+    setHighlightedIndex(-1);
+  };
+
+  const closeDropdown = () => {
+    setIsOpen(false);
+    setSearchTerm("");
+    setHighlightedIndex(-1);
+  };
+
+  const selectOption = (val) => {
+    handleChange(val);
+    closeDropdown();
+    triggerRef.current?.focus();
+  };
+
+  const scrollToHighlighted = (index) => {
+    if (listRef.current) {
+      const item = listRef.current.children[index];
+      if (item) item.scrollIntoView({ block: "nearest" });
+    }
   };
 
   // Keep dropdown anchored to trigger when page scrolls or resizes
@@ -96,23 +129,67 @@ const SearchableSelect = ({
   useEffect(() => {
     const handleClickOutside = (e) => {
       if (wrapperRef.current && !wrapperRef.current.contains(e.target)) {
-        setIsOpen(false);
-        setSearchTerm("");
+        closeDropdown();
       }
     };
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  const filtered = normalizedOptions.filter((opt) =>
-    opt.label.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  // Keyboard handler for the trigger div (closed state)
+  const handleTriggerKeyDown = (e) => {
+    if (disabled) return;
+    if (e.key === "Enter" || e.key === " " || e.key === "ArrowDown") {
+      e.preventDefault();
+      updateDropdownPosition();
+      setIsOpen(true);
+      setHighlightedIndex(0);
+    } else if (e.key === "ArrowUp") {
+      e.preventDefault();
+      updateDropdownPosition();
+      setIsOpen(true);
+      setHighlightedIndex(filtered.length - 1);
+    } else if (e.key === "Escape") {
+      closeDropdown();
+    }
+  };
+
+  // Keyboard handler for the search input (open state)
+  const handleSearchKeyDown = (e) => {
+    if (e.key === "ArrowDown") {
+      e.preventDefault();
+      const next = highlightedIndex < filtered.length - 1 ? highlightedIndex + 1 : 0;
+      setHighlightedIndex(next);
+      scrollToHighlighted(next);
+    } else if (e.key === "ArrowUp") {
+      e.preventDefault();
+      const prev = highlightedIndex > 0 ? highlightedIndex - 1 : filtered.length - 1;
+      setHighlightedIndex(prev);
+      scrollToHighlighted(prev);
+    } else if (e.key === "Enter") {
+      e.preventDefault();
+      if (highlightedIndex >= 0 && filtered[highlightedIndex]) {
+        selectOption(filtered[highlightedIndex].value);
+      }
+    } else if (e.key === "Escape") {
+      closeDropdown();
+      triggerRef.current?.focus();
+    } else if (e.key === "Tab") {
+      // Close dropdown and let Tab advance focus naturally
+      closeDropdown();
+    }
+  };
 
   const trigger = (
     <div
       ref={triggerRef}
-      onClick={openDropdown}
-      className={`w-full border rounded-lg px-3 py-2 text-sm bg-white dark:bg-gray-900 dark:text-white flex justify-between items-center transition-all ${
+      onClick={() => (isOpen ? closeDropdown() : openDropdown())}
+      onKeyDown={handleTriggerKeyDown}
+      tabIndex={disabled ? -1 : 0}
+      role="combobox"
+      aria-expanded={isOpen}
+      aria-haspopup="listbox"
+      className={`w-full border rounded-lg px-3 py-2 text-sm bg-white dark:bg-gray-900 dark:text-white flex justify-between items-center transition-all outline-none ${
         disabled
           ? "opacity-50 cursor-not-allowed bg-gray-100 dark:bg-gray-800"
           : "cursor-pointer"
@@ -121,7 +198,7 @@ const SearchableSelect = ({
           ? "border-red-400"
           : isOpen
             ? "border-blue-500 ring-1 ring-blue-500"
-            : "border-gray-300 dark:border-gray-600 hover:border-gray-400"
+            : "border-gray-300 dark:border-gray-600 hover:border-gray-400 focus-visible:border-blue-500 focus-visible:ring-1 focus-visible:ring-blue-500"
       }`}
     >
       <span className={!selectedLabel ? "text-gray-400" : "text-gray-800 dark:text-white"}>
@@ -147,26 +224,30 @@ const SearchableSelect = ({
           type="text"
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
+          onKeyDown={handleSearchKeyDown}
           placeholder="Search..."
           className="w-full text-sm bg-transparent outline-none text-gray-700 dark:text-gray-200"
         />
       </div>
-      <div className="overflow-y-auto flex-1">
+      <div ref={listRef} className="overflow-y-auto flex-1" role="listbox">
         {filtered.length > 0 ? (
-          filtered.map((opt) => (
+          filtered.map((opt, idx) => (
             <div
               key={opt.value}
+              role="option"
+              aria-selected={currentValue === opt.value}
               onMouseDown={(e) => {
                 // Use mousedown so it fires before the clickOutside blur
                 e.preventDefault();
-                handleChange(opt.value);
-                setIsOpen(false);
-                setSearchTerm("");
+                selectOption(opt.value);
               }}
-              className={`px-3 py-2 text-sm cursor-pointer hover:bg-blue-50 dark:hover:bg-blue-900/30 ${
-                currentValue === opt.value
-                  ? "bg-blue-50 dark:bg-blue-900/30 font-medium text-blue-600 dark:text-blue-400"
-                  : "text-gray-700 dark:text-gray-200"
+              onMouseEnter={() => setHighlightedIndex(idx)}
+              className={`px-3 py-2 text-sm cursor-pointer ${
+                idx === highlightedIndex
+                  ? "bg-blue-600 text-white"
+                  : currentValue === opt.value
+                    ? "bg-blue-50 dark:bg-blue-900/30 font-medium text-blue-600 dark:text-blue-400"
+                    : "text-gray-700 dark:text-gray-200 hover:bg-blue-50 dark:hover:bg-blue-900/30"
               }`}
             >
               {opt.label}

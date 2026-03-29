@@ -13,9 +13,9 @@ const BillAbstractTable = ({ tenderId, billId }) => {
       try {
         setLoading(true);
         const res = await axios.get(
-          `${API}/clientbilling/api/details/${tenderId}/${billId}`
+          `${API}/clientbilling/api/details?tender_id=${tenderId}&bill_id=${billId}`
         );
-        if (res.data.success) {
+        if (res.data.status || res.data.success) {
           setBillData(res.data.data);
         }
       } catch (err) {
@@ -224,27 +224,43 @@ const BillAbstractTable = ({ tenderId, billId }) => {
             ))}
           </tbody>
 
-          {/* --- Footer (Grand Total) - Same pattern as ComparativeTable --- */}
+          {/* --- Footer — 13 columns: 4 fixed + 2 upto-date + 3 prev-bill + 3 current + 1 agreement --- */}
           <tfoot className="bg-slate-100 dark:bg-gray-900 font-bold border-t-2 border-slate-300 z-30 relative">
             <tr>
-              <td 
-                colSpan="4" 
+              {/* Fixed cols label (4) */}
+              <td
+                colSpan="4"
                 className="px-4 py-3 text-right uppercase text-slate-700 dark:text-slate-300 border-r-2 border-gray-300 shadow-[4px_0_5px_-2px_rgba(0,0,0,0.1)] sticky left-0 bg-slate-100 dark:bg-gray-900 z-20"
-                style={{left: 0, width: POS.rate + WIDTHS.rate}}
+                style={{ left: 0, width: POS.rate + WIDTHS.rate }}
               >
                 Total
               </td>
-              <td colSpan="2" className="px-2 py-3 text-right text-blue-700 font-semibold">
+              {/* Total Upto Date: Qty (5) + Value (6) */}
+              <td className="px-2 py-3 text-right text-blue-700">
+                {formatQty(billData.items.reduce((s, i) => s + (i.upto_date_qty ?? 0), 0))}
+              </td>
+              <td className="px-2 py-3 text-right text-blue-700 font-semibold">
                 {formatCurrency(billData.total_upto_date_amount)}
               </td>
-              <td colSpan="3" className="px-2 py-3 text-right text-gray-500">
+              {/* Prev Bill: M.Bk/Pg (7) + Qty (8) + Amount (9) */}
+              <td className="px-2 py-3" />
+              <td className="px-2 py-3 text-right text-gray-500">
+                {formatQty(billData.items.reduce((s, i) => s + (i.prev_bill_qty ?? 0), 0))}
+              </td>
+              <td className="px-2 py-3 text-right text-gray-500">
                 {formatCurrency(billData.total_prev_bill_amount)}
               </td>
-              <td colSpan="3" className="px-2 py-3 text-right text-indigo-700 text-base font-bold">
+              {/* Since Last (Current): Qty (10) + Unit (11) + Amount (12) */}
+              <td className="px-2 py-3 text-right text-indigo-700 font-bold">
+                {formatQty(billData.items.reduce((s, i) => s + (i.current_qty ?? 0), 0))}
+              </td>
+              <td className="px-2 py-3" />
+              <td className="px-2 py-3 text-right text-indigo-700 text-base font-bold">
                 {formatCurrency(billData.grand_total)}
               </td>
+              {/* Agreement Qty (13) — computed from items, field not in root response */}
               <td className="px-2 py-3 text-right text-green-700 font-semibold">
-                {formatCurrency(billData.total_agreement_amount || 0)}
+                {formatQty(billData.items.reduce((s, i) => s + (i.agreement_qty ?? 0), 0))}
               </td>
             </tr>
           </tfoot>

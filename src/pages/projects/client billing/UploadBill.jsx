@@ -45,14 +45,13 @@ const UploadBill = ({ onclose, onSuccess }) => {
             const formData = new FormData();
             // Append required fields (replace with actual values or props)
             formData.append("tender_id", tenderId);
-            formData.append("abstract_name", "Abstract Estimate");
             formData.append("created_by_user", "user_id_here");
 
 
             if (files.length === 1) {
                 // Single file upload
                 formData.append("file", files[0]);
-                await axios.post(`${API}/billing/upload-csv`, formData, {
+                await axios.post(`${API}/clientbilling/estimate/upload-csv`, formData, {
                     headers: { "Content-Type": "multipart/form-data" },
                 });
             }

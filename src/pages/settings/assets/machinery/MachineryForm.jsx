@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect, useState, useRef } from "react";
 import { useForm, Controller } from "react-hook-form";
 import { yupResolver } from "@hookform/resolvers/yup";
 import * as Yup from "yup";
@@ -55,6 +55,9 @@ const schema = Yup.object().shape({
     roadTaxExpiry: Yup.date().nullable().typeError("Invalid Date"),
   }),
 
+  // Vendor
+  vendorName: Yup.string().required("Vendor Name is required"),
+
   // Financials
   purchaseCost: Yup.number().typeError("Must be a number").required("Required"),
   purchaseDate: Yup.date().required("Purchase Date is required"),
@@ -77,11 +80,72 @@ const Machinery = ({ onclose }) => {
       fuelType: "Diesel",
       assetCategory: "Heavy Earthmover",
       assetType: "OWN ASSET",
+      vendorName: "Infraa",
     },
   });
 
+  const modalRef = useRef(null);
+
+  useEffect(() => {
+    const el = modalRef.current;
+    if (!el) return;
+    const FOCUSABLE = 'input:not([disabled]), button:not([disabled]), textarea:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])';
+    const trap = (e) => {
+      if (e.key !== "Tab") return;
+      const nodes = Array.from(el.querySelectorAll(FOCUSABLE));
+      if (!nodes.length) return;
+      const first = nodes[0], last = nodes[nodes.length - 1];
+      if (e.shiftKey) { if (document.activeElement === first) { e.preventDefault(); last.focus(); } }
+      else { if (document.activeElement === last) { e.preventDefault(); first.focus(); } }
+    };
+    document.addEventListener("keydown", trap);
+    return () => document.removeEventListener("keydown", trap);
+  }, []);
+
   // Watch GPS toggle to show/hide fields
   const isGpsInstalled = watch("gps.isInstalled");
+  const assetType = watch("assetType");
+  const isOwnAsset = assetType === "OWN ASSET";
+
+  // Tenders fetched for Project ID dropdown
+  const [tenders, setTenders] = useState([]);
+
+  useEffect(() => {
+    axios
+      .get(`${API}/tender/gettenders`, { params: { page: 1, limit: 1000 } })
+      .then((res) => {
+        setTenders((res.data?.data || []).filter((t) => t.tender_status === "APPROVED"));
+      })
+      .catch(() => {});
+  }, []);
+
+  // Machinery suppliers fetched from vendor API
+  const [machineryVendors, setMachineryVendors] = useState([]);
+
+  useEffect(() => {
+    axios
+      .get(`${API}/vendor/getvendors`)
+      .then((res) => {
+        const vendors = res.data?.vendors || res.data?.data || res.data || [];
+        const filtered = vendors.filter((v) => v.type === "Machinery Supplier");
+        setMachineryVendors(filtered);
+      })
+      .catch(() => {});
+  }, []);
+
+  const selectedVendorName = watch("vendorName");
+  const selectedVendor = machineryVendors.find(
+    (v) => v.company_name === selectedVendorName
+  );
+
+  // Auto-set vendorName based on asset type
+  useEffect(() => {
+    if (isOwnAsset) {
+      setValue("vendorName", "Infraa", { shouldValidate: true });
+    } else {
+      setValue("vendorName", "", { shouldValidate: false });
+    }
+  }, [isOwnAsset, setValue]);
 
   const inputClass =
     "w-full border border-gray-300 dark:border-gray-600 rounded px-3 py-2 mt-1 text-sm bg-gray-50 dark:bg-gray-800 dark:text-white focus:outline-none focus:border-blue-500";
@@ -97,6 +161,8 @@ const Machinery = ({ onclose }) => {
       // Prepare Payload (Ensure types match Schema)
       const payload = {
         ...formData,
+        // Vendor reference
+        vendorId: isOwnAsset ? null : (selectedVendor?.vendor_id || null),
         // Convert Number fields explicitly if needed
         manufacturingYear: Number(formData.manufacturingYear),
         fuelTankCapacity: Number(formData.fuelTankCapacity),
@@ -139,7 +205,7 @@ const Machinery = ({ onclose }) => {
 
   return (
     <div className="font-roboto-flex fixed inset-0 flex justify-center items-center backdrop-blur-sm bg-black/30 z-50 overflow-y-auto py-10">
-      <div className="dark:bg-gray-900 bg-white rounded-xl shadow-2xl w-[900px] max-h-[90vh] overflow-y-auto scrollbar-thin scrollbar-thumb-gray-400">
+      <div ref={modalRef} className="dark:bg-gray-900 bg-white rounded-xl shadow-2xl w-[900px] max-h-[90vh] overflow-y-auto scrollbar-thin scrollbar-thumb-gray-400">
         {/* Header */}
         <div className="sticky top-0 bg-white dark:bg-gray-900 z-10 px-6 py-4 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
           <h2 className="text-lg font-bold text-gray-800 dark:text-white">
@@ -208,11 +274,46 @@ const Machinery = ({ onclose }) => {
           </div>
 
           <div>
-            <label className={labelClass}>Project ID *</label>
-            <input
-              {...register("projectId")}
-              placeholder="Project Code"
-              className={inputClass}
+            <label className={labelClass}>Vendor Name *</label>
+            {isOwnAsset ? (
+              <input
+                value="Infraa"
+                readOnly
+                className={`${inputClass} bg-gray-100 dark:bg-gray-700 cursor-not-allowed text-gray-500 dark:text-gray-400`}
+              />
+            ) : (
+              <SearchableSelect
+                name="vendorName"
+                watch={watch}
+                setValue={(name, val) => setValue(name, val, { shouldValidate: true })}
+                options={machineryVendors.map((v) => ({
+                  value: v.company_name,
+                  label: v.company_name,
+                }))}
+                hasError={!!errors.vendorName}
+                placeholder={
+                  machineryVendors.length === 0
+                    ? "No machinery suppliers found"
+                    : "Select vendor..."
+                }
+              />
+            )}
+            <p className={errorClass}>{errors.vendorName?.message}</p>
+          </div>
+
+          <div>
+            <label className={labelClass}>Project *</label>
+            <SearchableSelect
+              name="projectId"
+              watch={watch}
+              setValue={(name, val) => setValue(name, val, { shouldValidate: true })}
+              options={tenders.map((t) => ({
+                value: t.tender_id,
+                label: `${t.tender_name} (${t.tender_id})`,
+              }))}
+              showValueSelected
+              hasError={!!errors.projectId}
+              placeholder={tenders.length === 0 ? "No projects found" : "Select project..."}
             />
             <p className={errorClass}>{errors.projectId?.message}</p>
           </div>

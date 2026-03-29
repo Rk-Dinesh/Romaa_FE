@@ -6,7 +6,7 @@ import {
 import { TbPlus } from "react-icons/tb";
 import { useBTList, useApproveBT, useDeleteBT } from "./hooks/useBankTransfer";
 import CreateBankTransfer from "./CreateBankTransfer";
-
+import Loader from "../../../components/Loader";
 const fmt = (n) =>
   Number(n || 0).toLocaleString("en-IN", { minimumFractionDigits: 2 });
 
@@ -182,10 +182,7 @@ const InternalBankTransfer = () => {
 
         {/* ── Table ── */}
         {isLoading ? (
-          <div className="flex flex-col items-center justify-center py-24 gap-3 text-gray-400">
-            <span className="animate-spin h-9 w-9 border-[3px] border-slate-500 border-t-transparent rounded-full" />
-            <p className="text-sm font-medium">Loading transfers…</p>
-          </div>
+         <Loader />
         ) : filtered.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-24 gap-3 text-gray-400">
             <ArrowRightLeft size={44} className="opacity-20" />

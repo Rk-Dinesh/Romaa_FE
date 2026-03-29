@@ -10,10 +10,11 @@ import {
   FiX,
   FiGrid,
   FiCheckSquare,
-  FiLoader
+
 } from "react-icons/fi";
 import { Menus } from "../../../helperConfigData/helperData";
 import { useRoleDetails, useUpdateRole } from "./hooks/useRoles";
+import Loader from "../../../components/Loader";
 
 
 // --- Constants ---
@@ -176,14 +177,7 @@ const EditRoles = () => {
     return { totalPerms, modulesWithAccess };
   }, [permissions]);
 
-  if (fetching) {
-      return (
-          <div className="h-screen flex flex-col items-center justify-center bg-slate-50 dark:bg-overall_bg-dark text-gray-500">
-              <FiLoader className="animate-spin text-3xl mb-3 text-darkest-blue" />
-              <p>Loading Role Configuration...</p>
-          </div>
-      );
-  }
+    if (fetching) return <Loader />;
 
   return (
     <div className="flex flex-col h-screen overflow-hidden bg-slate-50 dark:bg-overall_bg-dark font-layout-font">

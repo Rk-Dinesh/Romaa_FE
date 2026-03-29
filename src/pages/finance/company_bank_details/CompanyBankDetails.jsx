@@ -16,6 +16,7 @@ import {
   useUpdateCashAccount,
   useDeleteCashAccount,
 } from "./hooks/useCashAccounts";
+import Loader from "../../../components/Loader";
 
 /* ── Constants ───────────────────────────────────────────────────────────── */
 const ACCOUNT_TYPES = ["Savings", "Current", "OD", "CC", "Fixed Deposit"];
@@ -761,10 +762,7 @@ const CompanyBankDetails = () => {
 
             {/* Content */}
             {bankLoading ? (
-              <div className="flex flex-col items-center justify-center py-20 gap-3 text-gray-400">
-                <span className="block w-8 h-8 border-[3px] border-gray-200 dark:border-gray-700 border-t-indigo-500 rounded-full animate-spin" />
-                <p className="text-xs font-medium">Loading bank accounts…</p>
-              </div>
+              <Loader />
             ) : filteredBanks.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-20 gap-4">
                 <div className="w-16 h-16 rounded-2xl bg-gray-100 dark:bg-gray-800 flex items-center justify-center">
@@ -818,10 +816,7 @@ const CompanyBankDetails = () => {
 
             {/* Content */}
             {cashLoading ? (
-              <div className="flex flex-col items-center justify-center py-20 gap-3 text-gray-400">
-                <span className="block w-8 h-8 border-[3px] border-gray-200 dark:border-gray-700 border-t-teal-500 rounded-full animate-spin" />
-                <p className="text-xs font-medium">Loading cash accounts…</p>
-              </div>
+              <Loader />
             ) : filteredCash.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-20 gap-4">
                 <div className="w-16 h-16 rounded-2xl bg-gray-100 dark:bg-gray-800 flex items-center justify-center">

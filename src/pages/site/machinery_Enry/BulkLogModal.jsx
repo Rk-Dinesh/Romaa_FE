@@ -4,11 +4,13 @@ import { toast } from "react-toastify";
 import axios from "axios";
 import { API } from "../../../constant";
 
-// --- 1. Custom Searchable Select (Unchanged) ---
+// --- 1. Custom Searchable Select ---
 const SearchableSelect = ({ options, value, onChange, placeholder, labelKey = "label", valueKey = "value" }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [search, setSearch] = useState("");
+  const [highlightedIndex, setHighlightedIndex] = useState(-1);
   const wrapperRef = useRef(null);
+  const listRef = useRef(null);
 
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -18,10 +20,57 @@ const SearchableSelect = ({ options, value, onChange, placeholder, labelKey = "l
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
+  // Reset highlight when filtered list changes
+  useEffect(() => { setHighlightedIndex(-1); }, [search]);
+
   const filteredOptions = options.filter((opt) =>
     opt[labelKey].toLowerCase().includes(search.toLowerCase())
   );
   const selectedOption = options.find((opt) => opt[valueKey] === value);
+
+  const selectOption = (opt) => {
+    onChange(opt[valueKey]);
+    setSearch("");
+    setIsOpen(false);
+    setHighlightedIndex(-1);
+  };
+
+  const handleKeyDown = (e) => {
+    if (!isOpen) {
+      if (e.key === "ArrowDown" || e.key === "Enter") { setIsOpen(true); setHighlightedIndex(0); e.preventDefault(); }
+      return;
+    }
+    if (e.key === "ArrowDown") {
+      e.preventDefault();
+      const next = highlightedIndex < filteredOptions.length - 1 ? highlightedIndex + 1 : 0;
+      setHighlightedIndex(next);
+      scrollToItem(next);
+    } else if (e.key === "ArrowUp") {
+      e.preventDefault();
+      const prev = highlightedIndex > 0 ? highlightedIndex - 1 : filteredOptions.length - 1;
+      setHighlightedIndex(prev);
+      scrollToItem(prev);
+    } else if (e.key === "Enter") {
+      e.preventDefault();
+      if (highlightedIndex >= 0 && filteredOptions[highlightedIndex]) {
+        selectOption(filteredOptions[highlightedIndex]);
+      }
+    } else if (e.key === "Escape") {
+      setIsOpen(false);
+      setHighlightedIndex(-1);
+    } else if (e.key === "Tab") {
+      // Close dropdown and let Tab move focus to next field naturally
+      setIsOpen(false);
+      setHighlightedIndex(-1);
+    }
+  };
+
+  const scrollToItem = (index) => {
+    if (listRef.current) {
+      const item = listRef.current.children[index];
+      if (item) item.scrollIntoView({ block: "nearest" });
+    }
+  };
 
   return (
     <div className="relative w-full" ref={wrapperRef}>
@@ -36,17 +85,23 @@ const SearchableSelect = ({ options, value, onChange, placeholder, labelKey = "l
           value={isOpen ? search : (selectedOption ? selectedOption[labelKey] : "")}
           onChange={(e) => { setSearch(e.target.value); setIsOpen(true); }}
           onFocus={() => { setSearch(""); setIsOpen(true); }}
+          onKeyDown={handleKeyDown}
         />
-        <TbChevronDown className={`text-gray-400 transition-transform ${isOpen ? "rotate-180" : ""}`} />
+        <TbChevronDown className={`text-gray-400 transition-transform flex-shrink-0 ${isOpen ? "rotate-180" : ""}`} />
       </div>
       {isOpen && (
-        <div className="absolute z-50 w-full mt-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-md shadow-xl max-h-60 overflow-y-auto">
+        <div ref={listRef} className="absolute z-50 w-full mt-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-md shadow-xl max-h-60 overflow-y-auto">
           {filteredOptions.length > 0 ? (
-            filteredOptions.map((opt) => (
+            filteredOptions.map((opt, idx) => (
               <div
                 key={opt[valueKey]}
-                className="px-3 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-blue-50 dark:hover:bg-blue-900/30 cursor-pointer border-b last:border-0 border-gray-100 dark:border-gray-700"
-                onClick={() => { onChange(opt[valueKey]); setSearch(""); setIsOpen(false); }}
+                className={`px-3 py-2 text-sm cursor-pointer border-b last:border-0 border-gray-100 dark:border-gray-700 transition-colors ${
+                  idx === highlightedIndex
+                    ? "bg-blue-600 text-white dark:bg-blue-600 dark:text-white"
+                    : "text-gray-700 dark:text-gray-200 hover:bg-blue-50 dark:hover:bg-blue-900/30"
+                }`}
+                onMouseEnter={() => setHighlightedIndex(idx)}
+                onClick={() => selectOption(opt)}
               >
                 {opt[labelKey]}
               </div>
@@ -60,8 +115,32 @@ const SearchableSelect = ({ options, value, onChange, placeholder, labelKey = "l
   );
 };
 
-// --- 2. Main Component ---
+// --- 2. Focus Trap Hook ---
+const useFocusTrap = (ref) => {
+  useEffect(() => {
+    const FOCUSABLE = 'input:not([disabled]), button:not([disabled]), textarea:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])';
+    const handleKeyDown = (e) => {
+      if (e.key !== "Tab" || !ref.current) return;
+      const focusable = Array.from(ref.current.querySelectorAll(FOCUSABLE));
+      if (!focusable.length) return;
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      if (e.shiftKey) {
+        if (document.activeElement === first) { e.preventDefault(); last.focus(); }
+      } else {
+        if (document.activeElement === last) { e.preventDefault(); first.focus(); }
+      }
+    };
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
+  }, [ref]);
+};
+
+// --- 3. Main Component ---
 const BulkLogModal = ({ onClose, onSuccess }) => {
+  const modalRef = useRef(null);
+  useFocusTrap(modalRef);
+
   const [commonData, setCommonData] = useState({
     logDate: new Date().toISOString().split("T")[0],
     projectId: localStorage.getItem("tenderId") || "",
@@ -79,6 +158,8 @@ const BulkLogModal = ({ onClose, onSuccess }) => {
     id: Date.now(),
     assetId: "", 
     item_id: "", // Stores 'ABS001'
+    vendorId: "", // Stores 'Machinery' collection vendorId
+    vendorName: "", // Stores 'Machinery' collection vendorName
     rent: "",
     startReading: "", endReading: "", netUsage: 0,
     fuelOpening: "", fuelIssued: "", fuelClosing: "", fuelConsumed: 0,
@@ -92,12 +173,15 @@ const BulkLogModal = ({ onClose, onSuccess }) => {
       if (!commonData.projectId) return toast.error("Project ID not found.");
       try {
         const [assetRes, boqRes] = await Promise.all([
-          axios.get(`${API}/machineryasset/getbyprojectselect/${commonData.projectId}`),
+          axios.get(`${API}/machineryasset/getall/assets`),
           axios.get(`${API}/bid/getitemslite/${commonData.projectId}`)
         ]);
 
-        // 1. Handle Assets
-        if (assetRes.data.status) setAssets(assetRes.data.data || []);
+        // 1. Handle Assets — filter by current project, need full doc for vendorId/vendorName
+        if (assetRes.data.status) {
+          const allAssets = assetRes.data.data || [];
+          setAssets(allAssets.filter(a => a.projectId === commonData.projectId));
+        }
 
         // 2. Handle BOQ Items & Bid ID
         if (boqRes.data.status && boqRes.data.data) {
@@ -130,6 +214,27 @@ const BulkLogModal = ({ onClose, onSuccess }) => {
     setRows((prev) => prev.map((r) => r.id === id ? calculateRowValues({ ...r, [field]: value }) : r));
   };
 
+  const today = new Date().toISOString().split("T")[0];
+
+  const handleBoqChange = (id, itemId) => {
+    const selectedBoq = boqItems.find(b => b.item_id === itemId);
+    setRows((prev) => prev.map((r) => r.id === id ? calculateRowValues({
+      ...r,
+      item_id: itemId,
+      unit: selectedBoq?.unit || r.unit,
+    }) : r));
+  };
+
+  const handleAssetChange = (id, assetMongoId) => {
+    const selectedAsset = assets.find(a => a._id === assetMongoId);
+    setRows((prev) => prev.map((r) => r.id === id ? calculateRowValues({
+      ...r,
+      assetId: assetMongoId,
+      vendorId: selectedAsset?.vendorId || "",
+      vendorName: selectedAsset?.vendorName || "",
+    }) : r));
+  };
+
   const handleSubmit = async () => {
     if (!commonData.projectId) return toast.error("Project ID is missing");
     if (!bidId) return toast.error("Bid Reference (BOQ) not found for this project.");
@@ -148,6 +253,8 @@ const BulkLogModal = ({ onClose, onSuccess }) => {
         bid_id: bidId,      // Maps to 'Bids' collection _id
         item_id: r.item_id, // Maps to specific item code like 'ABS001'
         // --------------------------
+        vendorId: r.vendorId || "", // Maps to 'Machinery' collection vendorId
+        vendorName: r.vendorName || "", // Maps to 'Machinery' collection vendorName
 
         rent: parseFloat(r.rent) || 0,
         startReading: parseFloat(r.startReading), 
@@ -167,8 +274,10 @@ const BulkLogModal = ({ onClose, onSuccess }) => {
         
         remarks: r.remarks || ""
       }));
-      
+         console.log(payload);
       const res = await axios.post(`${API}/machinerylogs/bulk`, { logs: payload });
+   
+      
       if (res.data.status) { toast.success("Saved!"); onSuccess(); onClose(); }
     } catch (err) { 
         console.error(err);
@@ -179,7 +288,7 @@ const BulkLogModal = ({ onClose, onSuccess }) => {
 
   return (
     <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 font-sans">
-      <div className="bg-white dark:bg-gray-900 w-full max-w-5xl h-[95vh] rounded-xl shadow-2xl flex flex-col border border-gray-200 dark:border-gray-800">
+      <div ref={modalRef} className="bg-white dark:bg-gray-900 w-full max-w-5xl h-[95vh] rounded-xl shadow-2xl flex flex-col border border-gray-200 dark:border-gray-800">
         
         {/* --- Header --- */}
         <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-900 flex justify-between items-center">
@@ -190,7 +299,7 @@ const BulkLogModal = ({ onClose, onSuccess }) => {
             <p className="text-xs text-gray-500 mt-1">Project: <span className="font-bold text-gray-700 dark:text-gray-300">{commonData.projectId}</span></p>
           </div>
           <div className="flex gap-3">
-            <input type="date" className="p-2 text-sm border rounded dark:bg-gray-800 dark:text-white dark:border-gray-700" value={commonData.logDate} onChange={(e) => setCommonData({...commonData, logDate: e.target.value})} />
+            <input type="date" max={today} className="p-2 text-sm border rounded dark:bg-gray-800 dark:text-white dark:border-gray-700" value={commonData.logDate} onChange={(e) => { if (e.target.value <= today) setCommonData({...commonData, logDate: e.target.value}); }} />
             <button onClick={onClose} className="p-2 hover:bg-gray-200 rounded-full dark:hover:bg-gray-800 text-gray-500"><TbX size={22}/></button>
           </div>
         </div>
@@ -214,20 +323,20 @@ const BulkLogModal = ({ onClose, onSuccess }) => {
                 <div className="grid grid-cols-12 gap-4">
                   <div className="col-span-12 md:col-span-4">
                     <label className="text-xs font-bold text-gray-500 uppercase mb-1 block">Machine / Asset</label>
-                    <SearchableSelect 
-                      placeholder="Search Asset..." 
+                    <SearchableSelect
+                      placeholder="Search Asset..."
                       options={assets.map(a => ({ label: a.assetName, value: a._id }))}
-                      value={row.assetId} 
-                      onChange={(val) => handleInputChange(row.id, "assetId", val)} 
+                      value={row.assetId}
+                      onChange={(val) => handleAssetChange(row.id, val)}
                     />
                   </div>
                   <div className="col-span-12 md:col-span-6">
                     <label className="text-xs font-bold text-gray-500 uppercase mb-1 block">BOQ Item Reference</label>
-                    <SearchableSelect 
-                      placeholder="Search Work Item..." 
+                    <SearchableSelect
+                      placeholder="Search Work Item..."
                       options={boqItems.map(b => ({ label: `${b.item_id} - ${b.item_name}`, value: b.item_id }))}
-                      value={row.item_id} 
-                      onChange={(val) => handleInputChange(row.id, "item_id", val)} 
+                      value={row.item_id}
+                      onChange={(val) => handleBoqChange(row.id, val)}
                     />
                   </div>
                   <div className="col-span-12 md:col-span-2">
@@ -281,11 +390,12 @@ const BulkLogModal = ({ onClose, onSuccess }) => {
                       <InputBox label="Breadth (B)" value={row.breadth} onChange={(v) => handleInputChange(row.id, "breadth", v)} />
                       <InputBox label="Depth (D)" value={row.depth} onChange={(v) => handleInputChange(row.id, "depth", v)} />
                       <InputBox label="Quantity" value={row.quantity} onChange={(v) => handleInputChange(row.id, "quantity", v)} />
-                      {/* Unit Input */}
+                      {/* Unit — auto-filled from BOQ item */}
                       <div>
-                        <label className="text-[10px] text-gray-400 uppercase block mb-1">Unit</label>
-                        <input type="text" className="w-full bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded px-2 py-1.5 text-sm outline-none focus:border-emerald-500" 
-                          value={row.unit} onChange={(e) => handleInputChange(row.id, "unit", e.target.value)} />
+                        <label className="text-[10px] text-gray-400 uppercase block mb-1 font-semibold">Unit</label>
+                        <div className="w-full bg-gray-100 dark:bg-gray-700 rounded px-2 py-1.5 text-sm font-bold text-center border border-gray-200 dark:border-gray-600 text-emerald-700 dark:text-emerald-300 min-h-[30px]">
+                          {row.unit || "—"}
+                        </div>
                       </div>
                     </div>
                   </div>

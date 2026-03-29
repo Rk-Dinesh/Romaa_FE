@@ -1,6 +1,7 @@
 import React from "react";
 import { useParams } from "react-router-dom";
 import { useTenderPenalties } from "./hooks/usePenalities";
+import Loader from "../../../components/Loader";
 
 
 const PenaltyCardGrid = () => {
@@ -15,7 +16,7 @@ const PenaltyCardGrid = () => {
   } = useTenderPenalties(tender_id);
 
   if (isLoading) {
-    return <p className="p-4 text-white">Loading penalties...</p>;
+    return <Loader/>;
   }
 
   if (isError) {

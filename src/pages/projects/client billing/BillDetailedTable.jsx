@@ -9,9 +9,6 @@ import UploadDetail from "./UploadDetail";
 const BillDetailedTable = ({
   tenderId,
   billId,
-  abstractName,
-  billSequence,
-  status,
 }) => {
   const [loading, setLoading] = useState(true);
   const [detailedData, setDetailedData] = useState(null);
@@ -22,7 +19,7 @@ const BillDetailedTable = ({
     try {
       setLoading(true);
       const res = await axios.get(
-        `${API}/billing/details/${tenderId}/${billId}/${abstractName}/${billSequence}`,
+        `${API}/clientbilling/estimate/details?tender_id=${tenderId}&bill_id=${billId}`,
       );
 
       if (res.data.status) {
@@ -36,7 +33,7 @@ const BillDetailedTable = ({
     } finally {
       setLoading(false);
     }
-  }, [tenderId, billId, abstractName, billSequence]);
+  }, [tenderId, billId]);
 
   useEffect(() => {
     if (tenderId && billId) {
@@ -119,7 +116,7 @@ const BillDetailedTable = ({
   return (
     <>
       <>
-        {abstractName === "Abstract Estimate" && status !== "Approved" && (
+       
           <div className="flex justify-end mb-4">
             <Button
               onClick={() => setUploadDetail(true)}
@@ -127,7 +124,7 @@ const BillDetailedTable = ({
               button_icon={<TbFileExport size={20} />}
             />
           </div>
-        )}
+       
       </>
 
       <div className="border border-gray-400 shadow-sm bg-white overflow-hidden font-sans text-sm">
@@ -213,8 +210,6 @@ const BillDetailedTable = ({
           onSuccess={fetchData}
           onclose={handleClose}
           bill_id={billId}
-          bill_sequence={billSequence}
-          abstractName={abstractName}
         />
       )}
     </>

@@ -3,6 +3,7 @@ import { useLocation, useNavigate } from "react-router-dom";
 import { ChevronLeft, ChevronDown, ChevronRight, RefreshCw, FileText, Search, AlertCircle, SlidersHorizontal, X, Link2, Truck, CheckCircle, Trash2 } from "lucide-react";
 import { useBillsByTender, useApprovePurchaseBill, useDeletePurchaseBill } from "./hooks/usePurchaseBill";
 import SearchableSelect from "../../../components/SearchableSelect";
+import Loader from "../../../components/Loader";
 
 /* ── helpers ── */
 const fmt = (n) => Number(n || 0).toLocaleString("en-IN", { minimumFractionDigits: 2 });
@@ -267,10 +268,7 @@ const ViewPurchaseBill = () => {
       {/* ══ Table ════════════════════════════════════════════════════════════ */}
       <div className="flex-1 overflow-auto">
         {isLoading ? (
-          <div className="flex flex-col items-center justify-center h-full gap-3 text-gray-400">
-            <span className="animate-spin h-7 w-7 border-2 border-blue-500 border-t-transparent rounded-full" />
-            <span className="text-xs">Loading bills…</span>
-          </div>
+          <Loader />
         ) : paginated.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-full gap-2 text-gray-400">
             <FileText size={36} className="opacity-20" />

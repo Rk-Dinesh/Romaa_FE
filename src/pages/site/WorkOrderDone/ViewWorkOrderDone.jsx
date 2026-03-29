@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import { useWorkDoneByDate } from "./hooks/useWorkOrderDone";
 import { useProject } from "../../../context/ProjectContext";
+import Loader from "../../../components/Loader";
 
 const formatDate = (v) =>
   v
@@ -54,10 +55,7 @@ const ViewWorkOrderDone = () => {
 
   if (isLoading)
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center gap-3 text-gray-400 bg-gray-50 dark:bg-[#0b0f19]">
-        <span className="animate-spin h-9 w-9 border-[3px] border-blue-500 border-t-transparent rounded-full" />
-        <p className="text-sm font-medium">Loading report…</p>
-      </div>
+      <Loader/>
     );
 
   if (!records.length)

@@ -9,7 +9,7 @@ const vendorFields = [
   { label: "Vendor Type", key: "type" },
   { label: "Mobile Number", key: "contact_phone" },
   { label: "Email", key: "contact_email" },
-  { label: "Credit Days", key: "creditdays" }, // If exists in data
+  { label: "Credit Days", key: "credit_day" }, // If exists in data
   { label: "Business Type", key: "businesstype" }, // If exists in data
   { label: "Industry Category", key: "industry_category" }, // If exists in data
   { label: "PAN Number", key: "pan_no" },

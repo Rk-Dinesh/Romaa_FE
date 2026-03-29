@@ -10,6 +10,7 @@ import { API } from "../../../../constant";
 import { toast } from "react-toastify";
 // Import your EditMachinery component (adjust path as necessary)
 import EditMachinery from "./EditMachinery"; 
+import Loader from "../../../../components/Loader";
 
 const AssetDetails = () => {
   const navigate = useNavigate();
@@ -118,11 +119,7 @@ const AssetDetails = () => {
     </div>
   );
 
-  if (loading) return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-[#0b1120]">
-      <div className="animate-pulse text-blue-600 font-medium">Loading Asset Details...</div>
-    </div>
-  );
+  if (loading) return <Loader />;
 
   if (!data) return <div className="p-10 text-center">Asset not found</div>;
 

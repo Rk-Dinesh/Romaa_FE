@@ -169,7 +169,7 @@ const LayOut = () => {
         )}
 
         {/* --- MAIN CONTENT AREA --- */}
-        <div className="w-full p-4 overflow-auto no-scrollbar">
+        <div id="romaa-page-content" className="w-full p-4 overflow-auto no-scrollbar">
           <Suspense fallback={<Loader fullScreen={false} />}>
             <Outlet />
           </Suspense>

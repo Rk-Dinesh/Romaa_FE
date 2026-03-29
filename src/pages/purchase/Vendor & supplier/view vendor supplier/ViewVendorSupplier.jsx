@@ -17,6 +17,7 @@ const ViewVendorSupplier = () => {
   const { vendorId } = useParams();
   const [vendor, setVendor] = useState(location.state?.item || null);
   const [loading, setLoading] = useState(!location.state?.item);
+  const [_openModal, setOpenModal] = useState(null);
 
   useEffect(() => {
     if (!vendor) {
@@ -105,7 +106,8 @@ const ViewVendorSupplier = () => {
     return button;
   });
 
-  if (loading) return <Loader fullScreen={false} />;
+
+  if (loading) return <Loader />;
 
   return (
     <>

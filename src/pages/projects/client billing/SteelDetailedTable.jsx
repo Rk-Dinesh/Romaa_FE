@@ -15,7 +15,7 @@ const SteelDetailedTable = ({ tenderId, billId, abstractName, billSequence, stat
         try {
             setLoading(true);
             const res = await axios.get(
-                `${API}/steelestimate/details/${tenderId}/${billId}/${abstractName}/${billSequence}`
+                `${API}/steelestimate/details?tender_id=${tenderId}&bill_id=${billId}`
             );
 
             if (res.data.status) {
@@ -30,7 +30,7 @@ const SteelDetailedTable = ({ tenderId, billId, abstractName, billSequence, stat
         } finally {
             setLoading(false);
         }
-    }, [tenderId, billId, abstractName, billSequence]);
+    }, [tenderId, billId]);
 
     useEffect(() => {
         if (tenderId && billId) {

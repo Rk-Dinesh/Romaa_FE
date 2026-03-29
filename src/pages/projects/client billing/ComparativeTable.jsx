@@ -13,9 +13,9 @@ const ComparativeTable = ({ tenderId, billId }) => {
       try {
         setLoading(true);
         const res = await axios.get(
-          `${API}/clientbilling/api/details/${tenderId}/${billId}`
+          `${API}/clientbilling/api/details?tender_id=${tenderId}&bill_id=${billId}`
         );
-        if (res.data.success) {
+        if (res.data.status || res.data.success) {
           setBillData(res.data.data);
         }
       } catch (err) {
@@ -195,17 +195,30 @@ const ComparativeTable = ({ tenderId, billId }) => {
           {/* --- Footer (Grand Total) --- */}
           <tfoot className="bg-slate-100 dark:bg-gray-900 font-bold border-t-2 border-slate-300 z-30 relative">
             <tr>
-              <td 
-                colSpan="4" 
+              {/* Fixed cols: S.No + Description + Unit + Rate = 4 */}
+              <td
+                colSpan="4"
                 className="px-4 py-3 text-right uppercase text-slate-700 dark:text-slate-300 border-r-2 border-gray-300 shadow-[4px_0_5px_-2px_rgba(0,0,0,0.1)] sticky left-0 bg-slate-100 dark:bg-gray-900 z-20"
-                style={{left: 0, width: POS.rate + WIDTHS.rate}}
+                style={{ left: 0, width: POS.rate + WIDTHS.rate }}
               >
                 Total
               </td>
-              <td colSpan="2" className="px-2 py-3 text-right"></td>
-              <td colSpan="2" className="px-2 py-3 text-right text-gray-600"></td>
-              <td colSpan="2" className="px-2 py-3 text-right text-blue-700 text-base">{formatCurrency(billData.grand_total)}</td>
-              <td colSpan="6" className="px-2 py-3 text-right"></td>
+              {/* Agreement: Qty + Amount (cols 5-6) */}
+              <td className="px-2 py-3 text-right text-gray-600">
+                {formatQty(billData.items.reduce((s, i) => s + (i.agreement_qty ?? 0), 0))}
+              </td>
+              <td className="px-2 py-3 text-right text-gray-600">
+                {formatCurrency(billData.items.reduce((s, i) => s + (i.agreement_amount ?? 0), 0))}
+              </td>
+              {/* As Per Execution: Qty + Amount (cols 7-8) */}
+              <td className="px-2 py-3 text-right text-blue-700">
+                {formatQty(billData.items.reduce((s, i) => s + (i.upto_date_qty ?? 0), 0))}
+              </td>
+              <td className="px-2 py-3 text-right text-blue-700 text-base">
+                {formatCurrency(billData.total_upto_date_amount)}
+              </td>
+              {/* Excess (3) + Balance (3) = 6 cols — empty */}
+              <td colSpan="6" className="px-2 py-3" />
             </tr>
           </tfoot>
         </table>

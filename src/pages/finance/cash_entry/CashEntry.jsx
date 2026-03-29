@@ -8,6 +8,7 @@ import { TbPlus } from "react-icons/tb";
 import { usePVList, useRVList, useApprovePV, useApproveRV, useDeletePV, useDeleteRV, useBankAccounts } from "./hooks/useVouchers";
 import { toast } from "react-toastify";
 import CreateVoucher from "./CreateVoucher";
+import Loader from "../../../components/Loader";
 
 const fmt = (n) =>
   Number(n || 0).toLocaleString("en-IN", { minimumFractionDigits: 2 });
@@ -235,10 +236,7 @@ const CashEntry = () => {
 
         {/* ── Table ── */}
         {isLoading ? (
-          <div className="flex flex-col items-center justify-center py-24 gap-3 text-gray-400">
-            <span className="animate-spin h-9 w-9 border-[3px] border-slate-500 border-t-transparent rounded-full" />
-            <p className="text-sm font-medium">Loading vouchers…</p>
-          </div>
+         <Loader />
         ) : filtered.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-24 gap-3 text-gray-400">
             <FileText size={44} className="opacity-20" />

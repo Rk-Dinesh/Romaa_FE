@@ -1,5 +1,6 @@
 import { Pencil, Trash2, Database, Landmark } from "lucide-react";
-import { TypeBadge, BalancePill, FlagChip, Spinner, EmptyState, fmt } from "./shared";
+import { TypeBadge, BalancePill, FlagChip, EmptyState, fmt } from "./shared";
+import Loader from "../../../../components/Loader";
 
 const TH = ({ children }) => (
   <th className="px-4 py-3.5 text-left text-[10px] font-bold uppercase tracking-widest text-gray-400 dark:text-gray-500 whitespace-nowrap">
@@ -8,7 +9,7 @@ const TH = ({ children }) => (
 );
 
 const AccountsTable = ({ accounts, filtered, isLoading, onEdit, onDelete, onSeed, isSeedPending }) => {
-  if (isLoading) return <Spinner label="Loading accounts…" />;
+   if (isLoading) return <Loader />;
 
   if (filtered.length === 0) {
     if (accounts.length === 0) {

@@ -1,10 +1,19 @@
 import { useState } from "react";
 import { ChevronRight, ChevronDown, Pencil, Trash2, GitBranch } from "lucide-react";
-import { TYPE_META } from "./constants";
-import { Spinner, EmptyState } from "./shared";
+import { EmptyState } from "./shared";
+import Loader from "../../../../components/Loader";
+
+/* ── Type → colour map (matches the legend) ──────────────────────────────── */
+const TYPE_META = {
+  Asset:     { dot: "bg-sky-500" },
+  Liability: { dot: "bg-rose-500" },
+  Equity:    { dot: "bg-violet-500" },
+  Income:    { dot: "bg-emerald-500" },
+  Expense:   { dot: "bg-amber-500" },
+};
 
 /* ── Single tree node ────────────────────────────────────────────────────── */
-const TreeNode = ({ node, depth, onEdit, onDelete, isLast }) => {
+const TreeNode = ({ node, depth, onEdit, onDelete }) => {
   const [open, setOpen] = useState(depth < 2);
   const hasChildren = node.children?.length > 0;
   const meta = TYPE_META[node.account_type] || {};
@@ -125,7 +134,7 @@ const TreeNode = ({ node, depth, onEdit, onDelete, isLast }) => {
 
 /* ── Tree View Container ─────────────────────────────────────────────────── */
 const AccountTreeView = ({ treeData, isLoading, onEdit, onDelete }) => {
-  if (isLoading) return <Spinner label="Building account tree…" />;
+  if (isLoading) return <Loader />;
 
   if (!treeData || treeData.length === 0) {
     return (

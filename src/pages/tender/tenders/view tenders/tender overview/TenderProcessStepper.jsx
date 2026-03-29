@@ -2,13 +2,24 @@ import React, { useState, useEffect } from "react";
 import axios from "axios";
 import { API } from "../../../../../constant";
 import { useParams } from "react-router-dom";
-
 import { useForm } from "react-hook-form";
 import { yupResolver } from "@hookform/resolvers/yup";
 import * as yup from "yup";
+// eslint-disable-next-line no-unused-vars
+import { motion, AnimatePresence } from "framer-motion";
+import {
+  Check,
+  ChevronRight,
+  Upload,
+  Clock,
+  Calendar,
+  FileText,
+  AlertCircle,
+  Settings,
+} from "lucide-react";
 
 const tenderProcessDataTemplate = [
-  { label: "Site Inspection", key: "site_investigation" },
+  { label: "Site Investigation", key: "site_investigation" },
   { label: "Pre bid Meeting", key: "pre_bid_meeting" },
   { label: "Bid Submit", key: "bid_submission" },
   { label: "Technical Bid Opening", key: "technical_bid_opening" },
@@ -18,27 +29,42 @@ const tenderProcessDataTemplate = [
   { label: "Agreement", key: "agreement" },
 ];
 
-// Default schema for regular steps
 const getStepSchema = () =>
   yup.object().shape({
     notes: yup.string().required("Notes are required"),
-    date: yup.string().required("Date is required"),
+    date: yup
+      .string()
+      .required("Date is required")
+      .test("not-future", "Future dates not allowed", (v) => 
+        !v || new Date(v).setHours(0,0,0,0) <= new Date().setHours(0,0,0,0)
+      ),
     time: yup.string().required("Time is required"),
   });
 
-// Schema for Work Order step
 const getWorkOrderSchema = () =>
   yup.object().shape({
     workOrder_id: yup.string().required("Work Order ID is required"),
-    workOrder_issued_date: yup.string().required("Work Order Issued Date is required"),
+    workOrder_issued_date: yup
+      .string()
+      .required("Work Order Issued Date is required")
+      .test("not-future", "Future dates not allowed", (v) => 
+        !v || new Date(v).setHours(0,0,0,0) <= new Date().setHours(0,0,0,0)
+      ),
   });
 
-// Schema for Agreement step
 const getAgreementSchema = () =>
   yup.object().shape({
     agreement_id: yup.string().required("Agreement ID is required"),
-    agreement_value: yup.number().required("Agreement Value is required"),
-    agreement_issued_date: yup.string().required("Agreement Issued Date is required"),
+    agreement_value: yup
+      .number()
+      .typeError("Must be a number")
+      .required("Agreement Value is required"),
+    agreement_issued_date: yup
+      .string()
+      .required("Agreement Issued Date is required")
+      .test("not-future", "Future dates not allowed", (v) => 
+        !v || new Date(v).setHours(0,0,0,0) <= new Date().setHours(0,0,0,0)
+      ),
   });
 
 const TenderProcessStepper = ({ onUploadSuccess }) => {
@@ -48,7 +74,6 @@ const TenderProcessStepper = ({ onUploadSuccess }) => {
   const [processData, setProcessData] = useState([]);
   const [file, setFile] = useState(null);
 
-  // Dynamic schema based on current step
   const getSchema = () => {
     const step = processData[currentStep];
     if (step?.key === "work_order") return getWorkOrderSchema();
@@ -75,17 +100,18 @@ const TenderProcessStepper = ({ onUploadSuccess }) => {
 
         const initialData = tenderProcessDataTemplate.map((step) => {
           const savedStep = savedData.find((d) => d.key === step.key);
+          const formattedDate = savedStep?.date ? savedStep.date.split("T")[0] : "";
           return {
             ...step,
             notes: savedStep?.notes || "",
-            date: savedStep?.date || "",
+            date: formattedDate,
             time: savedStep?.time || "",
             completed: savedStep?.completed === true,
           };
         });
 
         const firstUncompletedIndex = initialData.findIndex(
-          (step) => step.completed !== true
+          (step) => !step.completed,
         );
         const startStep =
           firstUncompletedIndex === -1
@@ -96,231 +122,163 @@ const TenderProcessStepper = ({ onUploadSuccess }) => {
         setCurrentStep(startStep);
 
         reset({
-          notes: initialData[startStep].notes,
-          date: initialData[startStep].date,
-          time: initialData[startStep].time,
+          notes: initialData[startStep]?.notes || "",
+          date: initialData[startStep]?.date || "",
+          time: initialData[startStep]?.time || "",
         });
-        setFile(null);
       } catch (err) {
-        console.error("Error fetching tender process data:", err);
-        const freshData = tenderProcessDataTemplate.map((step) => ({
-          ...step,
-          notes: "",
-          date: "",
-          time: "",
-          completed: false,
-        }));
-        setProcessData(freshData);
-        setCurrentStep(0);
-        reset({
-          notes: "",
-          date: "",
-          time: "",
-        });
-        setFile(null);
+        console.error("Error fetching progress:", err);
       } finally {
         setLoading(false);
       }
     };
-
     if (tender_id) fetchSavedProgress();
   }, [tender_id, reset]);
 
+  const [tenderPublishedDate, _setTenderPublishedDate] = useState(null);
+
+
+
   useEffect(() => {
-    if (processData.length === 0) return;
-    const step = processData[currentStep];
-    reset({
-      notes: step.notes,
-      date: step.date,
-      time: step.time,
-    });
-    setFile(null);
+    if (processData.length > 0) {
+      const step = processData[currentStep];
+      reset({
+        notes: step.notes || "",
+        date: step.date || "",
+        time: step.time || "",
+        workOrder_id: step.workOrder_id || "",
+        workOrder_issued_date: step.workOrder_issued_date || "",
+        agreement_id: step.agreement_id || "",
+        agreement_value: step.agreement_value || "",
+        agreement_issued_date: step.agreement_issued_date || "",
+      });
+      setFile(null);
+    }
   }, [currentStep, processData, reset]);
 
- const onNext = async (data) => {
-  const step = processData[currentStep];
-  setLoading(true);
-  try {
-    const defaultDate = new Date().toISOString().split("T")[0];
-    const defaultTime = new Date().toTimeString().slice(0, 5);
+  const onNext = async (data) => {
+    const step = processData[currentStep];
+    setLoading(true);
+    try {
+      const defaultDate = new Date().toISOString().split("T")[0];
+      const defaultTime = new Date().toTimeString().slice(0, 5);
 
-    let payload = {
-      tender_id,
-      step_key: step.key,
-      notes: data.notes || "passed",
-      date: data.date || defaultDate,
-      time: data.time || defaultTime,
-    };
-
-    if (step.key === "work_order") {
-      payload = {
-        ...payload,
-        workOrder_id: data.workOrder_id,
-        workOrder_issued_date: data.workOrder_issued_date,
+      let payload = {
+        tender_id,
+        step_key: step.key,
+        notes: data.notes || "Completed",
+        date: data.date || defaultDate,
+        time: data.time || defaultTime,
       };
-      // Only send file with step data API, not with update API
-      if (file) {
-        const formData = new FormData();
-        formData.append("tender_id", tender_id);
-        formData.append("step_key", step.key);
-        formData.append("notes", payload.notes);
-        formData.append("date", payload.date);
-        formData.append("time", payload.time);
-        formData.append("file", file);
+
+      const formData = new FormData();
+      formData.append("tender_id", tender_id);
+      formData.append("step_key", step.key);
+      formData.append("notes", payload.notes);
+      formData.append("date", payload.date);
+      formData.append("time", payload.time);
+      if (file) formData.append("file", file);
+
+      if (step.key === "work_order") {
         await axios.post(`${API}/tender/processaws/step`, formData);
-      } else {
-        await axios.post(`${API}/tender/process/step`, payload);
-      }
-
-     const updateFormData ={
-      workOrder_id: data.workOrder_id,
-      workOrder_issued_date: data.workOrder_issued_date,
-     }
-      await axios.put(`${API}/tender/update-workorder/${tender_id}`, updateFormData);
-    } else if (step.key === "agreement") {
-      payload = {
-        ...payload,
-        agreement_id: data.agreement_id,
-        agreement_value: data.agreement_value,
-        agreement_issued_date: data.agreement_issued_date,
-      };
-      // Only send file with step data API, not with update API
-      if (file) {
-        const formData = new FormData();
-        formData.append("tender_id", tender_id);
-        formData.append("step_key", step.key);
-        formData.append("notes", payload.notes);
-        formData.append("date", payload.date);
-        formData.append("time", payload.time);
-        formData.append("file", file);
-        await axios.post(`${API}/tender/processaws/step`, formData, {
-          headers: { "Content-Type": "multipart/form-data" },
+        await axios.put(`${API}/tender/update-workorder/${tender_id}`, {
+          workOrder_id: data.workOrder_id,
+          workOrder_issued_date: data.workOrder_issued_date,
+        });
+      } else if (step.key === "agreement") {
+        await axios.post(`${API}/tender/processaws/step`, formData);
+        await axios.put(`${API}/tender/update-agreement/${tender_id}`, {
+          agreement_id: data.agreement_id,
+          agreement_value: data.agreement_value,
+          agreement_issued_date: data.agreement_issued_date,
         });
       } else {
-        await axios.post(`${API}/tender/process/step`, payload);
+        await axios.post(`${API}/tender/processaws/step`, formData);
       }
 
-      // Send update API call without file
-      const updateFormData ={
-        agreement_id: data.agreement_id,
-        agreement_value: data.agreement_value,
-        agreement_issued_date: data.agreement_issued_date,
-      }
-      await axios.put(`${API}/tender/update-agreement/${tender_id}`, updateFormData);
-    } else {
-      // For regular steps, send file only if present
-      if (file) {
-        const formData = new FormData();
-        formData.append("tender_id", tender_id);
-        formData.append("step_key", step.key);
-        formData.append("notes", payload.notes);
-        formData.append("date", payload.date);
-        formData.append("time", payload.time);
-        formData.append("file", file);
-        await axios.post(`${API}/tender/processaws/step`, formData, {
-          headers: { "Content-Type": "multipart/form-data" },
-        });
-      } else {
-        await axios.post(`${API}/tender/process/step`, payload);
-      }
+      setProcessData((prev) =>
+        prev.map((s, i) => 
+          i === currentStep 
+            ? { ...s, ...data, completed: true } 
+            : s
+        ),
+      );
+      if (onUploadSuccess) onUploadSuccess();
+      if (currentStep < processData.length - 1) setCurrentStep(currentStep + 1);
+    } catch (err) {
+      console.error("Error saving step:", err);
+    } finally {
+      setLoading(false);
     }
-
-    setProcessData((prev) =>
-      prev.map((s, i) =>
-        i === currentStep
-          ? {
-              ...s,
-              notes: payload.notes,
-              date: payload.date,
-              time: payload.time,
-              completed: true,
-            }
-          : s
-      )
-    );
-    if (onUploadSuccess) onUploadSuccess();
-
-    if (currentStep < processData.length - 1) {
-      setCurrentStep(currentStep + 1);
-    } else {
-      alert("Tender process completed!");
-    }
-  } catch (err) {
-    console.error("Error saving step data:", err);
-    alert("Failed to save step data. Please try again.");
-  } finally {
-    setLoading(false);
-  }
-};
-
-
-  const handleFileChange = (e) => {
-    const selectedFile = e.target.files[0] || null;
-    setFile(selectedFile);
   };
 
-  if (loading) {
+  if (loading && processData.length === 0)
     return (
-      <div className="text-center text-gray-500 dark:text-gray-400 p-6">
-        Loading Tender Process...
-      </div>
+      <div className="animate-pulse h-64 bg-slate-100 dark:bg-slate-800 rounded-2xl" />
     );
-  }
 
   const step = processData[currentStep];
-  const allCompleted = processData.every((step) => step.completed);
+  const allCompleted = processData.every((s) => s.completed);
 
   return (
-    <div className="max-w-3xl mx-auto p-3 rounded-lg select-none">
-      <p className="font-semibold text-lg mb-4">Tender Process Overview</p>
-      {/* Stepper Header */}
-      <div className="flex flex-wrap justify-between mb-10 gap-4 max-w-4xl mx-auto">
-        {processData.map((s, i) => {
-          const isCurrent = i === currentStep;
-          const isCompleted = s.completed;
-          const isUpcoming = !isCurrent && !isCompleted;
+    <div className="select-none h-full flex flex-col">
+      <div className="flex items-center gap-3 mb-8">
+        <div className="p-2 rounded-xl bg-blue-500/10 text-blue-500">
+          <Settings size={20} />
+        </div>
+        <h3 className="font-bold text-lg text-slate-800 dark:text-slate-100 italic">
+          Tender Lifecycle
+        </h3>
+      </div>
+       
+      {/* Date Constraint Context */}
+      {/* <div className="mb-4 px-4 py-2 bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800 rounded-xl flex flex-col gap-1 text-[10px] font-bold uppercase tracking-wider">
+        <div className="flex items-center gap-2 text-blue-600">
+          <Calendar size={12} />
+          <span>
+            Select date between:{" "}
+            {currentStep > 0 && processData[currentStep - 1]?.date
+              ? new Date(processData[currentStep - 1].date.split("T")[0]).toLocaleDateString("en-GB")
+              : tenderPublishedDate 
+                ? new Date(tenderPublishedDate.split("T")[0]).toLocaleDateString("en-GB")
+                : "Start"}{" "}
+            ↔ Today
+          </span>
+        </div>
+      </div> */} 
 
+      <div className="flex gap-4 mb-10 pb-4 overflow-hidden relative">
+        {processData.slice(currentStep, currentStep + 4).map((s, idx) => {
+          const absoluteIndex = currentStep + idx;
+          const isCurrent = absoluteIndex === currentStep;
+          
           return (
-            <div key={s.key} className="flex-1 min-w-[80px] relative">
-              <div
-                className={`
-                  w-10 h-10 mx-auto rounded-full flex items-center justify-center font-semibold text-sm
-                  transition-colors duration-300 select-none cursor-default
-                  ${isCurrent ? "bg-blue-500 text-white dark:bg-blue-500" : ""}
-                  ${isCompleted ? "bg-slate-700 text-white dark:bg-green-700" : ""}
-                  ${isUpcoming ? "bg-gray-200 text-gray-600 dark:bg-gray-400 dark:text-gray-200" : ""}
-                `}
-                title={s.label}
-              >
-                {i + 1}
-              </div>
-              {i !== processData.length - 1 && (
+            <div
+              key={s.key}
+              className="flex flex-col items-center flex-1 transition-all duration-300"
+            >
+              <div className="relative flex items-center justify-center w-full my-3">
+                {/* Connector Line */}
+                {idx !== 0 && (
+                  <div className="absolute left-0 right-1/2 top-1/2 -translate-y-1/2 h-0.5 w-full -z-10 bg-slate-200 dark:bg-slate-700" />
+                )}
+                {idx !== 3 && absoluteIndex < processData.length - 1 && (
+                  <div className="absolute left-1/2 right-0 top-1/2 -translate-y-1/2 h-0.5 w-full -z-10 bg-slate-200 dark:bg-slate-700" />
+                )}
+                
                 <div
-                  aria-hidden="true"
-                  className={`
-                    absolute top-5 right-0 w-full h-1 bg-gray-200 dark:bg-gray-700
-                    ${isCompleted ? "bg-slate-700 dark:bg-blue-400" : ""}
-                    transition-colors duration-300
-                    left-[calc(50%+20px)]
-                    right-[-50%]
-                    -z-10
-                    hidden sm:block
-                  `}
-                  style={{
-                    width: "calc(100% - 40px)",
-                    height: "2px",
-                  }}
-                />
-              )}
-              <p
-                className={`
-                  text-center mt-2 text-xs font-semibold truncate select-none transition-colors duration-300
-                  ${isCurrent ? "text-blue-700 dark:text-blue-400" : ""}
-                  ${isCompleted ? "text-slate-700 dark:text-slate-700" : ""}
-                  ${isUpcoming ? "text-gray-500 dark:text-gray-400" : ""}
-                `}
-                title={s.label}
-              >
+                  className={`w-10 h-10 rounded-full flex items-center justify-center transition-all duration-300 shadow-sm ${
+                    isCurrent 
+                      ? "bg-blue-600 text-white ring-4 ring-blue-500/20 scale-110" 
+                      : "bg-white dark:bg-slate-800 border-2 border-slate-200 dark:border-slate-700 text-slate-400"
+                  }`}
+                >
+                  <span className="text-sm font-bold">{absoluteIndex + 1}</span>
+                </div>
+              </div>
+              <p className={`text-[10px] font-bold text-center uppercase tracking-tight transition-colors duration-200 ${
+                isCurrent ? "text-blue-600" : "text-slate-400"
+              }`}>
                 {s.label}
               </p>
             </div>
@@ -328,185 +286,264 @@ const TenderProcessStepper = ({ onUploadSuccess }) => {
         })}
       </div>
 
-      {!allCompleted ? (
-        <form onSubmit={handleSubmit(onNext)} className="space-y-6 text-gray-800 dark:text-gray-200">
-          <h3 className="font-semibold text-xl dark:text-white">{step.label}</h3>
-
-          {/* Conditional rendering for Work Order and Agreement steps */}
-          {step.key === "work_order" ? (
-            <>
-              <div>
-                <label htmlFor="workOrder_id" className="block font-medium mb-1">
-                  Work Order ID
-                </label>
-                <input
-                  id="workOrder_id"
-                  {...register("workOrder_id")}
-                  className={`w-full rounded-md border px-3 py-2 focus:outline-none dark:bg-gray-800 dark:text-white ${
-                    errors.workOrder_id ? "border-red-500" : "border-gray-300 dark:border-gray-600"
-                  }`}
-                />
-                {errors.workOrder_id && (
-                  <p className="mt-1 text-red-600 text-sm">{errors.workOrder_id.message}</p>
-                )}
-              </div>
-              <div>
-                <label htmlFor="workOrder_issued_date" className="block font-medium mb-1">
-                  Work Order Issued Date
-                </label>
-                <input
-                  id="workOrder_issued_date"
-                  type="date"
-                  {...register("workOrder_issued_date")}
-                  className={`w-full rounded-md border px-3 py-2 focus:outline-none dark:bg-gray-800 dark:text-white ${
-                    errors.workOrder_issued_date ? "border-red-500" : "border-gray-300 dark:border-gray-600"
-                  }`}
-                />
-                {errors.workOrder_issued_date && (
-                  <p className="mt-1 text-red-600 text-sm">{errors.workOrder_issued_date.message}</p>
-                )}
-              </div>
-            </>
-          ) : step.key === "agreement" ? (
-            <>
-              <div>
-                <label htmlFor="agreement_id" className="block font-medium mb-1">
-                  Agreement ID
-                </label>
-                <input
-                  id="agreement_id"
-                  {...register("agreement_id")}
-                  className={`w-full rounded-md border px-3 py-2 focus:outline-none dark:bg-gray-800 dark:text-white ${
-                    errors.agreement_id ? "border-red-500" : "border-gray-300 dark:border-gray-600"
-                  }`}
-                />
-                {errors.agreement_id && (
-                  <p className="mt-1 text-red-600 text-sm">{errors.agreement_id.message}</p>
-                )}
-              </div>
-              <div>
-                <label htmlFor="agreement_value" className="block font-medium mb-1">
-                  Agreement Value
-                </label>
-                <input
-                  id="agreement_value"
-                  type="number"
-                  {...register("agreement_value")}
-                  className={`w-full rounded-md border px-3 py-2 focus:outline-none dark:bg-gray-800 dark:text-white ${
-                    errors.agreement_value ? "border-red-500" : "border-gray-300 dark:border-gray-600"
-                  }`}
-                />
-                {errors.agreement_value && (
-                  <p className="mt-1 text-red-600 text-sm">{errors.agreement_value.message}</p>
-                )}
-              </div>
-              <div>
-                <label htmlFor="agreement_issued_date" className="block font-medium mb-1">
-                  Agreement Issued Date
-                </label>
-                <input
-                  id="agreement_issued_date"
-                  type="date"
-                  {...register("agreement_issued_date")}
-                  className={`w-full rounded-md border px-3 py-2 focus:outline-none dark:bg-gray-800 dark:text-white ${
-                    errors.agreement_issued_date ? "border-red-500" : "border-gray-300 dark:border-gray-600"
-                  }`}
-                />
-                {errors.agreement_issued_date && (
-                  <p className="mt-1 text-red-600 text-sm">{errors.agreement_issued_date.message}</p>
-                )}
-              </div>
-            </>
-          ) : (
-            <>
-              <div>
-                <label htmlFor="notes" className="block font-medium mb-1">
-                  Notes
-                </label>
-                <textarea
-                  id="notes"
-                  {...register("notes")}
-                  rows={4}
-                  className={`w-full rounded-md border px-3 py-2 resize-none focus:outline-none dark:bg-gray-800 dark:text-white ${
-                    errors.notes ? "border-red-500" : "border-gray-300 dark:border-gray-600"
-                  }`}
-                  placeholder="Enter notes for this step"
-                />
-                {errors.notes && (
-                  <p className="mt-1 text-red-600 text-sm">{errors.notes.message}</p>
-                )}
-              </div>
-              <div className="grid grid-cols-2 gap-6">
-                <div>
-                  <label htmlFor="date" className="block font-medium mb-1">
-                    Date <span className="text-red-600">*</span>
-                  </label>
-                  <input
-                    id="date"
-                    type="date"
-                    {...register("date")}
-                    className={`w-full rounded-md border px-3 py-2 focus:outline-none dark:bg-gray-800 dark:text-white ${
-                      errors.date ? "border-red-500" : "border-gray-300 dark:border-gray-600"
-                    }`}
-                  />
-                  {errors.date && (
-                    <p className="mt-1 text-red-600 text-sm">{errors.date.message}</p>
-                  )}
-                </div>
-                <div>
-                  <label htmlFor="time" className="block font-medium mb-1">
-                    Time
-                  </label>
-                  <input
-                    id="time"
-                    type="time"
-                    {...register("time")}
-                    className={`w-full rounded-md border px-3 py-2 focus:outline-none dark:bg-gray-800 dark:text-white ${
-                      errors.time ? "border-red-500" : "border-gray-300 dark:border-gray-600"
-                    }`}
-                  />
-                  {errors.time && (
-                    <p className="mt-1 text-red-600 text-sm">{errors.time.message}</p>
-                  )}
-                </div>
-              </div>
-            </>
-          )}
-
-          <div>
-            <label htmlFor="file" className="block font-medium mb-1">
-              Upload File (optional)
-            </label>
-            <input
-              id="file"
-              type="file"
-              onChange={handleFileChange}
-              className="w-full text-gray-700 dark:text-gray-300"
-            />
-            {file && (
-              <p className="mt-1 text-xs dark:text-gray-400 truncate" title={file.name}>
-                {file.name}
-              </p>
-            )}
-          </div>
-
-          <div className="flex justify-end mt-8">
-            <button
-              type="submit"
-              disabled={loading || isSubmitting}
-              className="px-6 py-2 rounded-md bg-blue-600 text-white hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 transition disabled:opacity-50 disabled:cursor-not-allowed"
+      <div className="flex-1">
+        <AnimatePresence mode="wait">
+          {!allCompleted ? (
+            <motion.form
+              key={step?.key}
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: -20 }}
+              onSubmit={handleSubmit(onNext)}
+              className="space-y-6"
             >
-              {currentStep < processData.length - 1 ? "Next" : "Finish"}
-            </button>
-          </div>
-        </form>
-      ) : (
-        <p className="text-center text-green-600 dark:text-green-400 font-semibold">
-          All tender process steps are completed.
-        </p>
-      )}
+              <div className="flex items-center gap-3 mb-6 p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800">
+                <div className="w-10 h-10 rounded-xl bg-white dark:bg-slate-800 flex items-center justify-center shadow-sm border border-slate-100 dark:border-slate-700">
+                  <span className="text-lg font-bold text-blue-600">
+                    {currentStep + 1}
+                  </span>
+                </div>
+                <div>
+                  <h4 className="font-bold text-slate-800 dark:text-slate-100">
+                    {step?.label}
+                  </h4>
+                  <p className="text-xs text-slate-500">
+                    Step {currentStep + 1} of {processData.length}
+                  </p>
+                </div>
+              </div>
+
+              {step?.key === "work_order" ? (
+                <div className="grid grid-cols-2 gap-6">
+                  <FormInput
+                    label="Work Order ID"
+                    name="workOrder_id"
+                    register={register}
+                    error={errors.workOrder_id}
+                    icon={FileText}
+                  />
+                  <FormInput
+                    label="Issued Date"
+                    name="workOrder_issued_date"
+                    type="date"
+                    register={register}
+                    error={errors.workOrder_issued_date}
+                    icon={Calendar}
+                    min={currentStep > 0 ? (processData[currentStep - 1]?.date ? processData[currentStep - 1].date.split("T")[0] : undefined) : (tenderPublishedDate ? tenderPublishedDate.split("T")[0] : undefined)}
+                    max={new Date().toISOString().split("T")[0]}
+                  />
+                </div>
+              ) : step?.key === "agreement" ? (
+                <div className="space-y-6">
+                  <div className="grid grid-cols-2 gap-6">
+                    <FormInput
+                      label="Agreement ID"
+                      name="agreement_id"
+                      register={register}
+                      error={errors.agreement_id}
+                      icon={FileText}
+                    />
+                    <FormInput
+                      label="Agreement Value"
+                      name="agreement_value"
+                      type="number"
+                      register={register}
+                      error={errors.agreement_value}
+                      icon={Settings}
+                    />
+                  </div>
+                  <FormInput
+                    label="Issued Date"
+                    name="agreement_issued_date"
+                    type="date"
+                    register={register}
+                    error={errors.agreement_issued_date}
+                    icon={Calendar}
+                    min={currentStep > 0 ? (processData[currentStep - 1]?.date ? processData[currentStep - 1].date.split("T")[0] : undefined) : (tenderPublishedDate ? tenderPublishedDate.split("T")[0] : undefined)}
+                    max={new Date().toISOString().split("T")[0]}
+                  />
+                </div>
+              ) : (
+                <div className="space-y-6">
+                  <div className="grid grid-cols-2 gap-6">
+                    <FormInput
+                      label="Completion Date"
+                      name="date"
+                      type="date"
+                      register={register}
+                      error={errors.date}
+                      icon={Calendar}
+                      min={currentStep > 0 ? (processData[currentStep - 1]?.date ? processData[currentStep - 1].date.split("T")[0] : undefined) : (tenderPublishedDate ? tenderPublishedDate.split("T")[0] : undefined)}
+                      max={new Date().toISOString().split("T")[0]}
+                    />
+                    <FormInput
+                      label="Completion Time"
+                      name="time"
+                      type="time"
+                      register={register}
+                      error={errors.time}
+                      icon={Clock}
+                    />
+                  </div>
+                  <FormTextArea
+                    label="Notes / Remarks"
+                    name="notes"
+                    register={register}
+                    error={errors.notes}
+                    placeholder="Enter any specific details..."
+                  />
+                </div>
+              )}
+
+              <div className="pt-2">
+                <label className="text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-3 block">
+                  Attachments
+                </label>
+                <div className="group relative">
+                  <input
+                    type="file"
+                    onChange={(e) => setFile(e.target.files[0])}
+                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+                  />
+                  <div
+                    className={`p-4 rounded-xl border-2 border-dashed transition-all flex items-center gap-4 ${
+                      file
+                        ? "border-blue-500 bg-blue-50/50 dark:bg-blue-900/10"
+                        : "border-slate-200 dark:border-slate-700 hover:border-blue-400"
+                    }`}
+                  >
+                    <div
+                      className={`w-10 h-10 rounded-lg flex items-center justify-center ${file ? "bg-blue-500 text-white" : "bg-slate-100 dark:bg-slate-800 text-slate-400"}`}
+                    >
+                      <Upload size={18} />
+                    </div>
+                    <div className="flex-1 overflow-hidden">
+                      <p
+                        className={`text-sm font-semibold truncate ${file ? "text-blue-600" : "text-slate-600"}`}
+                      >
+                        {file ? file.name : "Click to upload files"}
+                      </p>
+                      <p className="text-[10px] text-slate-400 italic">
+                        Optional doc, pdf, jpg up to 10MB
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex justify-end pt-4">
+                <button
+                  type="submit"
+                  disabled={loading || isSubmitting}
+                  className="group relative px-8 py-3 rounded-xl bg-blue-600 text-white font-bold text-sm hover:bg-blue-700 transition-all shadow-lg shadow-blue-500/30 disabled:opacity-50 flex items-center gap-2 overflow-hidden"
+                >
+                  <span className="relative z-10">
+                    {currentStep < processData.length - 1
+                      ? "Proceed to Next"
+                      : "Complete Process"}
+                  </span>
+                  <ChevronRight
+                    size={16}
+                    className="relative z-10 group-hover:translate-x-1 transition-transform"
+                  />
+                </button>
+              </div>
+            </motion.form>
+          ) : (
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              className="flex flex-col items-center justify-center py-10 text-center"
+            >
+              <div className="w-20 h-20 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center mb-6 shadow-xl shadow-emerald-500/20">
+                <Check size={40} strokeWidth={3} />
+              </div>
+              <h4 className="text-xl font-bold text-slate-800 dark:text-slate-100 mb-2">
+                Process Completed!
+              </h4>
+              <p className="text-slate-500 text-sm max-w-xs">
+                All steps in the tender lifecycle have been successfully
+                recorded.
+              </p>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
     </div>
   );
 };
+
+const FormInput = ({
+  label,
+  name,
+  register,
+  error,
+  type = "text",
+  icon: Icon,
+  min,
+  max,
+}) => (
+  <div className="space-y-2">
+    <label className="text-[11px] font-bold text-slate-400 uppercase tracking-widest">
+      {label}
+    </label>
+    <div className="relative group">
+      {Icon && (
+        <div className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-blue-500 transition-colors">
+          <Icon size={16} />
+        </div>
+      )}
+      <input
+        type={type}
+        min={min}
+        max={max}
+        {...register(name)}
+        className={`w-full ${Icon ? "pl-10" : "px-4"} pr-4 py-2.5 rounded-xl border bg-white dark:bg-slate-800 focus:outline-none focus:ring-4 focus:ring-blue-500/10 transition-all text-sm ${
+          error
+            ? "border-red-500 bg-red-50/50"
+            : "border-slate-200 dark:border-slate-700 focus:border-blue-500"
+        }`}
+      />
+    </div>
+    {error && (
+      <motion.p
+        initial={{ opacity: 0, y: -5 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="text-[10px] text-red-500 font-bold flex items-center gap-1 leading-none"
+      >
+        <AlertCircle size={10} />
+        {error.message}
+      </motion.p>
+    )}
+  </div>
+);
+
+const FormTextArea = ({ label, name, register, error, placeholder }) => (
+  <div className="space-y-2">
+    <label className="text-[11px] font-bold text-slate-400 uppercase tracking-widest">
+      {label}
+    </label>
+    <textarea
+      {...register(name)}
+      rows={4}
+      placeholder={placeholder}
+      className={`w-full px-4 py-3 rounded-xl border bg-white dark:bg-slate-800 focus:outline-none focus:ring-4 focus:ring-blue-500/10 transition-all text-sm resize-none ${
+        error
+          ? "border-red-500 bg-red-50/50"
+          : "border-slate-200 dark:border-slate-700 focus:border-blue-500"
+      }`}
+    />
+    {error && (
+      <motion.p
+        initial={{ opacity: 0, y: -5 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="text-[10px] text-red-500 font-bold flex items-center gap-1"
+      >
+        <AlertCircle size={10} />
+        {error.message}
+      </motion.p>
+    )}
+  </div>
+);
 
 export default TenderProcessStepper;

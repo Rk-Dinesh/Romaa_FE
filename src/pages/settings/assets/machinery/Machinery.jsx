@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useMemo } from "react";
+import React, { useEffect, useState, useMemo, useRef } from "react";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
 import {
@@ -8,6 +8,7 @@ import {
 } from "lucide-react";
 import SearchableSelect from "../../../../components/SearchableSelect";
 import { API } from "../../../../constant";
+import Loader from "../../../../components/Loader";
 import { toast } from "react-toastify";
 
 
@@ -27,6 +28,34 @@ const MachineryTable = () => {
   // Forms
   const [statusForm, setStatusForm] = useState({ status: "", remarks: "" });
   const [transferForm, setTransferForm] = useState({ projectId: "", currentSite: "" });
+
+  // Focus trap for inline modal
+  const modalRef = useRef(null);
+  useEffect(() => {
+    const el = modalRef.current;
+    if (!el || !modalType) return;
+    const FOCUSABLE = 'input:not([disabled]), button:not([disabled]), textarea:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])';
+    const trap = (e) => {
+      if (e.key !== "Tab") return;
+      const nodes = Array.from(el.querySelectorAll(FOCUSABLE));
+      if (!nodes.length) return;
+      const first = nodes[0], last = nodes[nodes.length - 1];
+      if (e.shiftKey) { if (document.activeElement === first) { e.preventDefault(); last.focus(); } }
+      else { if (document.activeElement === last) { e.preventDefault(); first.focus(); } }
+    };
+    document.addEventListener("keydown", trap);
+    return () => document.removeEventListener("keydown", trap);
+  }, [modalType]);
+
+  // Tenders for Transfer dropdown
+  const [tenders, setTenders] = useState([]);
+
+  useEffect(() => {
+    axios
+      .get(`${API}/tender/gettenders`, { params: { page: 1, limit: 1000 } })
+      .then((res) => setTenders((res.data?.data || []).filter((t) => t.tender_status === "APPROVED")))
+      .catch(() => {});
+  }, []);
 
   // --- Data Fetching ---
   const fetchMachinery = async () => {
@@ -244,7 +273,7 @@ const MachineryTable = () => {
           
           <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
             {loading ? (
-              <tr><td colSpan="7" className="p-8 text-center text-slate-500">Loading Fleet Data...</td></tr>
+              <tr><td colSpan="7"><Loader /></td></tr>
             ) : filteredData.length === 0 ? (
               <tr><td colSpan="7" className="p-8 text-center text-slate-400 italic">No assets found.</td></tr>
             ) : (
@@ -361,7 +390,7 @@ const MachineryTable = () => {
       {/* --- MODAL (Shared) --- */}
       {modalType && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in">
-          <div className="bg-white dark:bg-slate-900 w-full max-w-md rounded-xl shadow-2xl border border-slate-200 dark:border-slate-800 overflow-hidden">
+          <div ref={modalRef} className="bg-white dark:bg-slate-900 w-full max-w-md rounded-xl shadow-2xl border border-slate-200 dark:border-slate-800 overflow-hidden">
             
             {/* Header */}
             <div className="px-6 py-4 border-b border-slate-200 dark:border-slate-800 flex justify-between items-center bg-slate-50 dark:bg-slate-950/50">
@@ -414,13 +443,19 @@ const MachineryTable = () => {
               {modalType === 'TRANSFER' && (
                 <>
                   <div>
-                    <label className="text-xs font-semibold text-slate-500 uppercase">New Project ID</label>
-                    <input 
-                      type="text"
-                      className="w-full mt-1 p-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none dark:text-white"
-                      value={transferForm.projectId}
-                      onChange={(e) => setTransferForm({...transferForm, projectId: e.target.value})}
-                    />
+                    <label className="text-xs font-semibold text-slate-500 uppercase">New Project</label>
+                    <div className="mt-1">
+                      <SearchableSelect
+                        value={transferForm.projectId}
+                        onChange={(val) => setTransferForm({ ...transferForm, projectId: val })}
+                        options={tenders.map((t) => ({
+                          value: t.tender_id,
+                          label: `${t.tender_name} (${t.tender_id})`,
+                        }))}
+                        showValueSelected
+                        placeholder={tenders.length === 0 ? "No projects found" : "Select project..."}
+                      />
+                    </div>
                   </div>
                   <div>
                     <label className="text-xs font-semibold text-slate-500 uppercase">New Site Location</label>

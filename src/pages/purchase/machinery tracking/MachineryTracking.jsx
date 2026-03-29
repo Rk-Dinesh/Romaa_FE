@@ -12,6 +12,7 @@ import { toast } from "react-toastify";
 import Button from "../../../components/Button";
 import Title from "../../../components/Title";
 import { API } from "../../../constant";
+import Loader from "../../../components/Loader";
 
 const MachineryTracking = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -258,11 +259,8 @@ const MachineryTracking = () => {
               <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
                 {loading ? (
                   <tr>
-                    <td
-                      colSpan="17"
-                      className="px-4 py-20 text-center text-gray-500 font-medium animate-pulse"
-                    >
-                      Fetching records...
+                    <td colSpan="17">
+                      <Loader />
                     </td>
                   </tr>
                 ) : data.length === 0 ? (

@@ -1946,12 +1946,7 @@ const Dashboard = () => {
     return Object.values(modPerms).some((sub) => sub?.read === true);
   };
 
-  if (isLoading)
-    return (
-      <div className="h-full flex items-center justify-center animate-fade-in">
-        <Loader fullScreen={false} />
-      </div>
-    );
+  if (isLoading) return <Loader />;
 
   if (isError || !data || data.message === "No role assigned") {
     return (
@@ -1982,7 +1977,7 @@ const Dashboard = () => {
   }
 
   return (
-    <div className="h-full pb-16 animate-fade-in">
+    <div className="h-full pb-16">
       {/* Header Bar */}
       <div className="flex justify-between items-center mb-4">
         <Title

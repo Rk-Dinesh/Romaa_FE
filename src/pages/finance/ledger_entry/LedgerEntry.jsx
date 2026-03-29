@@ -7,6 +7,7 @@ import {
   BarChart3, Filter,
 } from "lucide-react";
 import { useLedgerSummary } from "./hooks/useLedger";
+import Loader from "../../../components/Loader";
 
 /* ── Helpers ────────────────────────────────────────────────────────────── */
 const fmt = (n) =>
@@ -212,10 +213,7 @@ const LedgerEntry = () => {
 
         {/* ── Table ── */}
         {isLoading ? (
-          <div className="flex flex-col items-center justify-center py-24 gap-3 text-gray-400">
-            <span className="animate-spin h-9 w-9 border-[3px] border-slate-500 border-t-transparent rounded-full" />
-            <p className="text-sm font-medium">Loading ledger…</p>
-          </div>
+          <Loader />
         ) : filtered.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-24 gap-3 text-gray-400">
             <BookOpen size={44} className="opacity-20" />

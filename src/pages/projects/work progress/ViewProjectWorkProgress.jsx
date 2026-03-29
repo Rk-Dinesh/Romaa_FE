@@ -2,6 +2,7 @@ import { useMemo } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { ArrowLeft, CalendarDays, User, Hash, FileText, MapPin } from "lucide-react";
 import { useWorkDoneDetail } from "../../site/WorkDone/hooks/useWorkDone";
+import Loader from "../../../components/Loader";
 
 const formatDate = (v) =>
   v ? new Date(v).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" }) : "—";
@@ -27,10 +28,7 @@ const ViewProjectWorkProgress = () => {
 
   if (isLoading) {
     return (
-      <div className="p-10 flex justify-center items-center gap-2 text-gray-400 text-sm">
-        <span className="animate-spin h-4 w-4 border-2 border-blue-500 border-t-transparent rounded-full" />
-        Loading report…
-      </div>
+      <Loader />
     );
   }
 

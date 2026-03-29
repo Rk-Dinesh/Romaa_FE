@@ -1,6 +1,7 @@
 import { useNavigate, useLocation } from "react-router-dom";
 import { ArrowLeft, CalendarDays, Hash, ClipboardList } from "lucide-react";
 import { useWorkDoneDetail } from "./hooks/useWorkDone";
+import Loader from "../../../components/Loader";
 
 const formatDate = (v) =>
   v
@@ -46,10 +47,7 @@ const ViewWorkDone = () => {
 
   if (isLoading) {
     return (
-      <div className="p-10 flex justify-center items-center text-gray-400 text-sm gap-2">
-        <span className="animate-spin h-4 w-4 border-2 border-blue-500 border-t-transparent rounded-full" />
-        Loading report...
-      </div>
+      <Loader/>
     );
   }
 

@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { FiX, FiSearch, FiMapPin, FiCheck, FiSave, FiAlertCircle } from "react-icons/fi";
 import { useTendersForAssignment } from "./hooks/useUsers";
+import Loader from "../../../components/Loader";
 
 
 const AssignSitesModal = ({ initialSelected = [], onClose, onSave }) => {
@@ -62,7 +63,7 @@ const AssignSitesModal = ({ initialSelected = [], onClose, onSave }) => {
         {/* List Content */}
         <div className="flex-1 overflow-y-auto p-4 space-y-2 custom-scrollbar">
           {loading ? (
-            <div className="text-center py-10 text-gray-400">Loading sites...</div>
+            <Loader />
           ) : filteredTenders.length === 0 ? (
             <div className="text-center py-10 flex flex-col items-center text-gray-400">
                 <FiAlertCircle size={30} className="mb-2 opacity-50"/>
