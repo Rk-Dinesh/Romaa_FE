@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { useForm, useFieldArray, useWatch } from "react-hook-form";
 import axios from "axios";
-import { API } from "../../../constant";
+import { API } from "../../../../constant";
 import { toast } from "react-toastify";
 import { TbX, TbPlus, TbTrash, TbDeviceFloppy, TbUpload } from "react-icons/tb";
 import { Loader2 } from "lucide-react";

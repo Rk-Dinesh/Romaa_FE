@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
-import { API } from "../../../constant";
+import { API } from "../../../../constant";
 import { Loader2 } from "lucide-react";
 
 const BillAbstractTable = ({ tenderId, billId }) => {
