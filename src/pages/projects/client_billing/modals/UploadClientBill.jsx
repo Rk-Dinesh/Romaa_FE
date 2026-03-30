@@ -3,7 +3,7 @@ import { useState, useRef } from "react";
 import { IoClose } from "react-icons/io5";
 import { API } from "../../../../constant";
 import { toast } from "react-toastify";
-import { useProject } from "../../../context/ProjectContext";
+import { useProject } from "../../../../context/ProjectContext";
 import SampleClientBillExcel from "../docs/CLIENTBILL.xlsx";
 
 const emptyDeduction = () => ({ description: "", amount: "" });

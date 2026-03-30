@@ -12,7 +12,7 @@ export const useAllTendersSummary = () =>
   useQuery({
     queryKey: ["purchase-bill-summary-all"],
     queryFn:  fetchAllTendersSummary,
-    staleTime: 60 * 1000,
+    staleTime: 60 * 1000, // 1 minute
   });
 
 /* ── Bills by tender ────────────────────────────────────────────────────── */
@@ -70,7 +70,7 @@ export const useGRNForBilling = (tenderId, vendorId) =>
     queryKey: ["grn-billing", tenderId, vendorId],
     queryFn:  fetchGRNForBilling,
     enabled:  !!tenderId && !!vendorId,
-    staleTime: 1 * 60 * 1000,
+   // staleTime: 1 * 60 * 1000, // 1 minute
   });
 
 /* ── Fetch next bill ID ─────────────────────────────────────────────────── */

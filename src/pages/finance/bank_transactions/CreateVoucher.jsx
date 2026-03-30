@@ -190,7 +190,7 @@ const CreateVoucher = ({ onclose, onSuccess }) => {
     selectedTenderId, supplierType.toLowerCase()
   );
   const { data: payableBillsRaw=[], isLoading: loadingBills    } = usePayableBills(
-    isPV && selectedSupplierId
+    selectedSupplierId
       ? { supplier_id: selectedSupplierId, supplier_type: supplierType }
       : {}
   );
@@ -372,6 +372,9 @@ const CreateVoucher = ({ onclose, onSuccess }) => {
         receipt_mode: txMode,
         amount:       Number(data.amount),
         against_no:   data.against_no || undefined,
+        bill_refs: selectedBill
+          ? [{ bill_type: selectedBill.bill_type, bill_ref: selectedBill.value, bill_no: selectedBill.bill_no, settled_amt: parseFloat(settledAmt) || 0 }]
+          : [],
         ...commonPayload,
       });
     }
@@ -633,9 +636,8 @@ const CreateVoucher = ({ onclose, onSuccess }) => {
             </SectionCard>
           </div>
 
-          {/* ── PV only: Bill Being Settled (single selection) ───────────── */}
-          {isPV && (
-            <SectionCard iconEl={<FiList />} title="Bill Being Settled" accent="indigo">
+          {/* ── Bill Being Settled (single selection) ───────────── */}
+          <SectionCard iconEl={<FiList />} title="Bill Being Settled" accent="indigo">
               {!selectedSupplierId ? (
                 <p className="text-xs text-gray-400 italic">Select a supplier above to load payable bills.</p>
               ) : (
@@ -728,7 +730,6 @@ const CreateVoucher = ({ onclose, onSuccess }) => {
                 </div>
               )}
             </SectionCard>
-          )}
 
           {/* ── Voucher Entries (fixed 2 rows: Dr + Cr, auto-filled accounts) ── */}
           <SectionCard iconEl={<FiList />} title="Voucher Entries" accent="violet" overflow>
