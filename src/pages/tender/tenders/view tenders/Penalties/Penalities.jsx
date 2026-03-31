@@ -4,8 +4,9 @@ import Table from "../../../../../components/Table";
 import axios from "axios";
 import { API } from "../../../../../constant";
 import { useEffect, useState } from "react";
-import { useParams } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
+import { MdArrowBackIosNew } from "react-icons/md";
 import AddPenalty from "./AddPenalities";
 
 const penaltyColumns = [
@@ -19,8 +20,9 @@ const penaltyColumns = [
   { label: "Status", key: "status" },
 ];
 
-const Penalities = () => {
+const Penalities = ({onBack}) => {
   const { tender_id } = useParams(); 
+  const navigate = useNavigate();
   const [penalty, setPenalty] = useState([]);
   const [loading, setLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
@@ -94,6 +96,15 @@ const Penalities = () => {
         onDelete={handleDeletePenalty}
         idKey="penalty_id" 
       />
+      {/* Back Button */}
+      <div className="flex justify-end mt-4">
+        <button
+          onClick={onBack}
+          className="flex items-center gap-2 bg-darkest-blue text-white px-8 py-2 rounded-lg cursor-pointer hover:bg-opacity-90 transition-all font-medium shadow-sm"
+        >
+          <MdArrowBackIosNew size={14} /> Back
+        </button>
+      </div>
     </>
   );
 };

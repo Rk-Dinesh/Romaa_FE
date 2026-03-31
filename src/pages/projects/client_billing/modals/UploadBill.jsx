@@ -50,7 +50,7 @@ const UploadBill = ({ onclose, onSuccess, bill_id }) => {
             formData.append("created_by_user", user._id || "");
             formData.append("file", files[0]);
             await axios.post(`${API}/clientbilling/estimate/upload-csv`, formData, {
-                headers: { "Content-Type": "multipart/form-data" },
+                withCredentials: true,
             });
             if (onSuccess) onSuccess();
             if (onclose) onclose();

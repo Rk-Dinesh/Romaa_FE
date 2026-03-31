@@ -1,5 +1,6 @@
-import { useEffect, useState } from "react";
-import { useParams } from "react-router-dom"; // ✅ get tender_id from URL
+import { useEffect, useState, useCallback } from "react";
+import { useParams, useNavigate } from "react-router-dom"; // ✅ get tender_id from URL
+import { MdArrowBackIosNew } from "react-icons/md";
 import DeleteModal from "../../../../../components/DeleteModal";
 import Table from "../../../../../components/Table";
 import axios from "axios";
@@ -23,14 +24,15 @@ const customerColumns = [
 ];
 
 
-const Bid = () => {
+const Bid = ({onBack}) => {
   const { tender_id } = useParams(); // 📌 Get tender_id from URL
+  
 
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(false);
   const [bidfreezed, setbidfreezed] = useState(false)
 
-  const fetchBoqItems = async () => {
+  const fetchBoqItems = useCallback(async () => {
     if (!tender_id) return;
     setLoading(true);
     try {
@@ -38,15 +40,16 @@ const Bid = () => {
       setItems(res.data.data.items || []);
       setbidfreezed(res.data.data.freezed)
     } catch (err) {
-      //toast.error("Failed to fetch Bid items");
+      console.log(err);
+      toast.error("Failed to fetch Bid items");
     } finally {
       setLoading(false);
     }
-  };
+  }, [tender_id]);
 
   useEffect(() => {
     fetchBoqItems();
-  }, [tender_id]);
+  }, [fetchBoqItems]);
 
   const handlefreeze = async () => {
     try {
@@ -76,7 +79,15 @@ const Bid = () => {
         idKey="item_code"
         pagination={false}
       />
-
+      {/* Back Button */}
+      <div className="flex justify-end mt-4">
+        <button
+          onClick={onBack}
+          className="flex items-center gap-2 bg-darkest-blue text-white px-8 py-2 rounded-lg cursor-pointer hover:bg-opacity-90 transition-all font-medium shadow-sm"
+        >
+          <MdArrowBackIosNew size={14} /> Back
+        </button>
+      </div>
     </>
   );
 };

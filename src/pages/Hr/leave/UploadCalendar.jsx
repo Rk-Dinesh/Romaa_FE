@@ -46,7 +46,7 @@ const UploadCalendar = ({ onclose, onSuccess }) => {
         // Single file upload
         formData.append("file", files[0]);
         await axios.post(`${API}/calendar/uploadcsv`, formData, {
-          headers: { "Content-Type": "multipart/form-data" },
+          withCredentials: true,
         });
       }
       if (onSuccess) onSuccess();

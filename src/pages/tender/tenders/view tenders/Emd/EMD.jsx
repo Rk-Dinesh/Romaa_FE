@@ -4,15 +4,17 @@ import { EMDTableData } from "../../../../../components/Data";
 import DeleteModal from "../../../../../components/DeleteModal";
 import { Check, Pencil } from "lucide-react";
 import EditEMD from "./EditEMD";
-import { useParams } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
+import { MdArrowBackIosNew } from "react-icons/md";
 import axios from "axios";
 import { API } from "../../../../../constant";
 import AddEMD from "./AddEMD";
 import { LuUserRoundSearch } from "react-icons/lu";
 import { toast } from "react-toastify";
 
-const EMD = () => {
+const EMD = ({onBack}) => {
   const { tender_id } = useParams();
+  const navigate = useNavigate();
   const [emdData, setEmdData] = useState([]);
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -92,7 +94,7 @@ const EMD = () => {
     }
   };
   return (
-    <div className="h-full">
+    <div className="pb-10">
       <div className="dark:bg-layout-dark bg-white w-full flex flex-col sm:grid grid-cols-2 gap-y-2 rounded-md px-4 py-6">
         <div className="col-span-2 flex justify-center items-center mb-4 ">
           <p className="text-xl font-semibold">EMD</p>
@@ -139,6 +141,16 @@ const EMD = () => {
         onDelete={handleDeleteEmdItem}
         idKey="proposal_id"
       />
+      
+      {/* Back Button */}
+      <div className="flex justify-end mt-4">
+        <button
+          onClick={onBack}
+          className="flex items-center gap-2 bg-darkest-blue text-white px-8 py-2 rounded-lg cursor-pointer hover:bg-opacity-90 transition-all font-medium shadow-sm"
+        >
+          <MdArrowBackIosNew size={14} /> Back
+        </button>
+      </div>
     </div>
   );
 };

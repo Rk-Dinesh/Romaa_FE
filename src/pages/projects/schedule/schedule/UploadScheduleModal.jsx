@@ -124,7 +124,7 @@ const UploadScheduleModal = ({ onClose, onSuccess }) => {
       if (files.length === 1) {
         formData.append("file", files[0]);
         await axios.post(`${API}/schedulelite/upload-csv-dates`, formData, {
-          headers: { "Content-Type": "multipart/form-data" },
+          withCredentials: true,
         });
       }
 

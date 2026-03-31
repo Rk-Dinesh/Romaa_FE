@@ -3,9 +3,9 @@ import React, { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { Pencil } from "lucide-react";
 import AddFollowUp from "./AddFollowUp";
-import { MdCancel } from "react-icons/md";
+import { MdCancel, MdArrowBackIosNew } from "react-icons/md";
 import { IoMdSave } from "react-icons/io";
-import { useParams } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import axios from "axios";
 import { API } from "../../../../../constant";
 import TenderProcessStepper from "./TenderProcessStepper";
@@ -74,6 +74,7 @@ const preliminarySiteWorkTemplate = [
 
 const TenderOverView = () => {
   const { tender_id } = useParams();
+  const navigate = useNavigate();
   const [addFollowup, setAddFollowup] = useState(false);
 
   const [customerDetails, setCustomerDetails] = useState([]);
@@ -267,7 +268,7 @@ const TenderOverView = () => {
   const tenderId = tenderDetailsState.find(i => i.label === "Tender ID")?.value || "-";
 
   return (
-    <div className="flex flex-col gap-5 p-5 max-w-[1550px] mx-auto min-h-screen bg-slate-50/50 dark:bg-transparent no-scrollbar overflow-y-auto pb-10">
+    <div className="flex flex-col gap-5 max-w-[1550px] mx-auto pb-10">
       {/* Hero Header Section */}
       <div className="relative overflow-hidden bg-white dark:bg-slate-900 rounded-[1.5rem] p-6 border border-slate-200 dark:border-slate-800 shadow-sm transition-all duration-300">
         <div className="absolute top-0 right-0 p-12 opacity-5 scale-150 rotate-12 pointer-events-none">

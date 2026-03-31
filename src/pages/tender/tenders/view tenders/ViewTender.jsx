@@ -19,6 +19,7 @@ import Loader from "../../../../components/Loader";
 import TenderDetailedEstimate from "./detailed estimate/TenderDetailedEstimate";
 import GeneralSetup from "./Setup/GeneralSetup";
 import { toast } from "react-toastify";
+import { useRef } from "react";
 
 const ViewTender = () => {
   const { tender_id } = useParams();
@@ -26,6 +27,8 @@ const ViewTender = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const [isApproved, setIsApproved] = useState(false);
   const [activeTabLoading, setActiveTabLoading] = useState(true);
+  const tabContainerRef = useRef(null);
+  const activeTabRef = useRef(null);
 
   const tabs = [
     {
@@ -72,6 +75,8 @@ const ViewTender = () => {
     { id: "11", label: "SetUp", component: <GeneralSetup /> },
   ];
 
+  
+
   const defaultTab = tabs[0].id;
   const activeTab = searchParams.get("tab") || defaultTab;
   const activeTabData = tabs.find((tab) => tab.id === activeTab);
@@ -102,25 +107,57 @@ const ViewTender = () => {
     }
   };
 
+  useEffect(() => {
+    if (activeTabRef.current) {
+      activeTabRef.current.scrollIntoView({
+        behavior: "smooth",
+        block: "nearest",
+        inline: "center",
+      });
+    }
+  }, [activeTab]);
+
+  const handleBack = () => {
+    const currentIndex = tabs.findIndex((t) => t.id === activeTab);
+    if (currentIndex > 0) {
+      handleTabChange(tabs[currentIndex - 1]);
+    } else {
+      navigate("..");
+    }
+  };
+
   return (
-    <div className="font-roboto-flex flex flex-col h-full">
-      <div className="flex justify-between items-center">
-        <Title
-          title="Tender Management"
-          sub_title="Tender"
-          active_title={activeTabData?.label}
-        />
-      </div>
+    <div className="font-roboto-flex flex flex-col h-full overflow-hidden">
+      {/* Fixed Header Balance with Top Back Arrow */}
+      <div className="flex-shrink-0">
+        <div className="flex items-center gap-3 mb-2">
+          <button
+            onClick={handleBack}
+            className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-slate-800 transition-all text-darkest-blue dark:text-white border border-gray-200 dark:border-slate-700 shadow-sm"
+            title="Go Back"
+          >
+            <MdArrowBackIosNew size={18} className="translate-x-0.5" />
+          </button>
+          <Title
+            title="Tender Management"
+            sub_title="Tender"
+            active_title={activeTabData?.label}
+          />
+        </div>
 
       {/* Tabs */}
-      <div className="flex flex-wrap gap-2 py-2.5">
+      <div 
+        ref={tabContainerRef}
+        className="flex overflow-x-auto no-scrollbar gap-2 py-2 scroll-smooth"
+      >
         {tabs.map((tab) => (
           <p
             key={tab.id}
-            className={`px-4 py-2.5 rounded-lg text-sm cursor-pointer whitespace-nowrap ${
+            ref={activeTab === tab.id ? activeTabRef : null}
+            className={`px-4 py-2 rounded-lg text-sm cursor-pointer whitespace-nowrap flex-shrink-0 transition-opacity ${
               activeTab === tab.id
-                ? "bg-darkest-blue text-white"
-                : "bg-layout-dark text-white"
+                ? "bg-darkest-blue text-white shadow-sm"
+                : "bg-white dark:bg-slate-900 text-darkest-blue dark:text-slate-300 hover:opacity-80"
             }`}
             onClick={() => handleTabChange(tab)}
           >
@@ -128,22 +165,21 @@ const ViewTender = () => {
           </p>
         ))}
       </div>
+      </div>
 
-      {/* Content */}
-      <div className="h-full overflow-y-auto no-scrollbar">
-        {activeTabLoading ? (
-          <Loader />
-        ) : (
-          activeTabData?.type !== "route" && activeTabData?.component
-        )}
-
-        <div className="flex justify-end mt-2">
-          <p
-            onClick={() => navigate("..")}
-            className="flex items-center gap-2 bg-darkest-blue text-white px-8 py-2 rounded cursor-pointer"
-          >
-            <MdArrowBackIosNew /> Back
-          </p>
+      {/* Content Area with Transparent Scroll Effect */}
+      <div className="flex-1 min-h-0 overflow-y-auto no-scrollbar relative">
+        {/* Transparent Fade Overlay */}
+        <div className="sticky top-0 left-0 right-0 h-10 z-10 pointer-events-none bg-gradient-to-b from-light-blue dark:from-overall_bg-dark to-transparent" />
+        
+        <div className="-mt-6">
+          {activeTabLoading ? (
+            <Loader />
+          ) : (
+            activeTabData?.type !== "route" && 
+            activeTabData?.component && 
+            React.cloneElement(activeTabData.component, { onBack: handleBack })
+          )}
         </div>
       </div>
     </div>

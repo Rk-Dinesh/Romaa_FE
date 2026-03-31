@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
-import { useParams } from "react-router-dom"; // ✅ get tender_id from URL
+import { useParams, useNavigate } from "react-router-dom"; // ✅ get tender_id from URL
+import { MdArrowBackIosNew } from "react-icons/md";
 import DeleteModal from "../../../../../components/DeleteModal";
 import Table from "../../../../../components/Table";
 import axios from "axios";
@@ -18,8 +19,9 @@ const customerColumns = [
   { label: "Amount", key: "n_amount", formatter: (value) => new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0, minimumFractionDigits: 0 }).format(value) },
 ];
 
-const BOQ = () => {
+const BOQ = ({onBack}) => {
   const { tender_id } = useParams(); // 📌 Get tender_id from URL
+  const navigate = useNavigate();
 
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -90,12 +92,6 @@ const BOQ = () => {
         onDelete={handleDeleteBoqItem}
         idKey="item_code"
       />
-      {/* {showModal && (
-        <UploadBoq
-          onClose={() => setShowModal(false)}
-          onUploadSuccess={handleUploadSuccess}
-        />
-      )} */}
     </>
   );
 };

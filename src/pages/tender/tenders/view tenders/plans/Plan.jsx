@@ -3,14 +3,16 @@ import axios from "axios";
 import { TbFileInvoice } from "react-icons/tb";
 import AddPlan from "./AddPlan";
 import { API } from "../../../../../constant";
-import { useParams } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import Loader from "../../../../../components/Loader";
+import { MdArrowBackIosNew } from "react-icons/md";
 
-const Plan = () => {
+const Plan = ({onBack}) => {
   const [showModal, setShowModal] = useState(false);
   const [documents, setDocuments] = useState([]);
   const [loading, setLoading] = useState(true);
   const {tender_id} = useParams(); 
+  const navigate = useNavigate();
 
   const handleUploadSuccess = () => {
     setShowModal(false);
@@ -46,7 +48,7 @@ const fetchDocuments = async () => {
 
   return (
     <>
-      <div className="h-11/12 overflow-auto">
+      <div className="pb-10">
         <div className="cursor-pointer flex justify-end pr-4 mb-6">
           <p
             onClick={() => setShowModal(true)}
@@ -84,6 +86,16 @@ const fetchDocuments = async () => {
             ))
           )}
         </div>
+      </div>
+
+       {/* Back Button */}
+       <div className="flex justify-end mt-4 px-4">
+        <button
+          onClick={onBack}
+          className="flex items-center gap-2 bg-darkest-blue text-white px-8 py-2 rounded-lg cursor-pointer hover:bg-opacity-90 transition-all font-medium shadow-sm"
+        >
+          <MdArrowBackIosNew size={14} /> Back
+        </button>
       </div>
 
       {/* Upload Modal */}

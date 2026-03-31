@@ -62,9 +62,9 @@ const LayOut = () => {
   };
 
   return (
-    <div className="font-roboto-flex w-full fixed h-screen">
+    <div className="font-roboto-flex w-full h-screen flex flex-col overflow-hidden">
       <Headers />
-      <div className="flex dark:bg-overall_bg-dark bg-light-blue dark:text-white h-11/12">
+      <div className="flex-1 h-0 flex dark:bg-overall_bg-dark bg-light-blue dark:text-white">
 
         {/* --- MAIN SIDEBAR --- */}
         <div className="flex-shrink-0 flex flex-col dark:bg-overall_bg-dark bg-light-blue overflow-y-auto overflow-x-hidden no-scrollbar px-6">
@@ -169,7 +169,7 @@ const LayOut = () => {
         )}
 
         {/* --- MAIN CONTENT AREA --- */}
-        <div id="romaa-page-content" className="w-full p-4 overflow-auto no-scrollbar">
+        <div id="romaa-page-content" className="flex-1 h-full p-4 overflow-hidden flex flex-col no-scrollbar">
           <Suspense fallback={<Loader fullScreen={false} />}>
             <Outlet />
           </Suspense>

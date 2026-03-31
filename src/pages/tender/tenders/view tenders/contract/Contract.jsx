@@ -2,8 +2,9 @@ import Table from "../../../../../components/Table";
 import axios from "axios";
 import { API } from "../../../../../constant";
 import { useCallback, useEffect, useState } from "react";
-import { useParams } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
+import { MdArrowBackIosNew } from "react-icons/md";
 
 const customerColumns = [
   { label: "Contractor_id", key: "contractor_id" },

@@ -50,7 +50,7 @@ const UploadWBS = ({ onclose, onSuccess }) => {
         // Single file upload
         formData.append("file", files[0]);
         await axios.post(`${API}/schedulelite/upload-csv`, formData, {
-          headers: { "Content-Type": "multipart/form-data" },
+          withCredentials: true,
         });
       }
       if (onSuccess) onSuccess();

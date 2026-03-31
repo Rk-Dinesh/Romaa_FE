@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
-import { useParams } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
+import { MdArrowBackIosNew } from "react-icons/md";
 import { useForm } from "react-hook-form";
 import { yupResolver } from "@hookform/resolvers/yup";
 import * as yup from "yup";
@@ -19,8 +20,9 @@ const schema = yup.object().shape({
   tender_project_type: yup.string().required("Project Type is required"),
 });
 
-const GeneralSetup = () => {
+const GeneralSetup = ({onBack}) => {
   const { tender_id } = useParams();
+  const navigate = useNavigate();
   const [editMode, setEditMode] = useState(false);
   const [loading, setLoading] = useState(false);
 
@@ -79,7 +81,7 @@ const GeneralSetup = () => {
   };
 
   return (
-    <div className="h-full">
+    <div className="pb-10">
       <div className="sm:my-2 flex sm:items-center flex-col sm:flex-row items-start sm:justify-between space-y-1.5 my-4">
         <Title
           title="Tender Management"
@@ -186,6 +188,7 @@ const GeneralSetup = () => {
           </div>
         )}
       </form>
+
     </div>
   );
 };

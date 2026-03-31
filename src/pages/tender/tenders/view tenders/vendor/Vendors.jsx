@@ -6,8 +6,9 @@ import AddPermittedVendor from "./vendorPermitted";
 import axios from "axios";
 import { API } from "../../../../../constant";
 import { useEffect, useState } from "react";
-import { useParams } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
+import { MdArrowBackIosNew } from "react-icons/md";
 
 const customerColumns = [
   { label: "Vendor ID", key: "vendor_id" },
@@ -17,8 +18,9 @@ const customerColumns = [
   { label: "Status", key: "permitted_status" },
 ];
 
-const Vendor = () => {
+const Vendor = ({onBack}) => {
   const { tender_id } = useParams();
+  const navigate = useNavigate();
   const [permittedVendor, setPermittedVendor] = useState([]);
   const [loading, setLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
