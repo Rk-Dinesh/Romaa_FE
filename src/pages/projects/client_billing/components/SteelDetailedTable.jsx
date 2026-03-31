@@ -3,7 +3,7 @@ import axios from "axios";
 import { Loader2 } from "lucide-react";
 import { API } from "../../../../constant";
 import { TbFileExport } from "react-icons/tb";
-import Button from "../../../components/Button";
+import Button from "../../../../components/Button";
 import UploadDetail from "../modals/UploadDetail";
 
 const SteelDetailedTable = ({ tenderId, billId, status }) => {

@@ -3,7 +3,7 @@ import { api } from "../../../../services/api";
 import { toast } from "react-toastify";
 
 const fetchAllClients = async () => {
-  const { data } = await api.get("/client/getallclients");
+  const { data } = await api.get("/client/getallclientsdetails");
   return data.data || []; // Ensure it always returns an array
 };
 

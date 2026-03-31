@@ -12,15 +12,16 @@ import { InputField } from "../../../../../components/InputField";
 import ButtonBg from "../../../../../components/Button";
 import { API } from "../../../../../constant";
 
-
 const schema = yup.object().shape({
-  tender_bussiness_type: yup.string().required("Business Type is required"),
-  tender_project_division: yup.string().required("Project Division is required"),
+  tender_business_type: yup.string().required("Business Type is required"),
+  tender_project_division: yup
+    .string()
+    .required("Project Division is required"),
   tender_project_name: yup.string().required("Project Name is required"),
   tender_project_type: yup.string().required("Project Type is required"),
 });
 
-const GeneralSetup = ({onBack}) => {
+const GeneralSetup = ({ onBack }) => {
   const { tender_id } = useParams();
   const navigate = useNavigate();
   const [editMode, setEditMode] = useState(false);
@@ -35,7 +36,7 @@ const GeneralSetup = ({onBack}) => {
   } = useForm({
     resolver: yupResolver(schema),
     defaultValues: {
-      tender_bussiness_type: "",
+      tender_business_type: "",
       tender_project_division: "",
       tender_project_name: "",
       tender_project_type: "",
@@ -49,7 +50,9 @@ const GeneralSetup = ({onBack}) => {
     const fetchGeneralSetup = async () => {
       setLoading(true);
       try {
-        const res = await axios.get(`${API}/tender/getgenerlsetup/${tender_id}`);
+        const res = await axios.get(
+          `${API}/tender/getgenerlsetup/${tender_id}`,
+        );
 
         if (res.data?.status && res.data?.data) {
           reset(res.data.data);
@@ -106,7 +109,7 @@ const GeneralSetup = ({onBack}) => {
             <>
               <InputField
                 label="Business Type"
-                name="tender_bussiness_type"
+                name="tender_business_type"
                 register={register}
                 errors={errors}
                 placeholder="Enter Business Type"
@@ -142,7 +145,7 @@ const GeneralSetup = ({onBack}) => {
                 Business Type
               </p>
               <p className="text-sm dark:text-gray-400 text-gray-600">
-                {watchedData.tender_bussiness_type}
+                {watchedData.tender_business_type}
               </p>
 
               <p className="text-sm font-bold dark:text-white text-gray-800">
@@ -188,7 +191,6 @@ const GeneralSetup = ({onBack}) => {
           </div>
         )}
       </form>
-
     </div>
   );
 };

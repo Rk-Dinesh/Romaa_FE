@@ -5,76 +5,27 @@ import { Pencil } from "lucide-react";
 import AddFollowUp from "./AddFollowUp";
 import { MdCancel, MdArrowBackIosNew } from "react-icons/md";
 import { IoMdSave } from "react-icons/io";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams } from "react-router-dom";
 import axios from "axios";
 import { API } from "../../../../../constant";
-import TenderProcessStepper from "./TenderProcessStepper";
-import PreliminaryProcessStepper from "./PreliminaryProcessStepper";
+import { TenderProcessProvider, TenderProcessEntry, TenderProcessLog } from "./TenderProcessStepper";
+import { useTenderProcess } from "./TenderProcessContext";
+import { PreliminaryProcessProvider, PreliminaryProcessEntry, PreliminaryProcessLog } from "./PreliminaryProcessStepper";
+import { usePreliminaryProcess } from "./PreliminaryProcessContext";
+import { preliminarySiteWorkTemplate, tenderProcessDataTemplate } from "./StepperConstants";
 import Loader from "../../../../../components/Loader";
 import { 
   User, 
   MapPin, 
-  Phone, 
-  Mail, 
-  CreditCard, 
   Calendar, 
   FileText, 
-  Briefcase, 
-  Activity, 
-  CheckCircle2, 
-  Clock, 
-  ArrowRight,
-  ClipboardList,
-  Target,
-  Upload
+  Activity,
 } from "lucide-react";
 
-const tenderProcessDataTemplate = [
-  { label: "Site Investigation", key: "site_investigation" },
-  { label: "Pre bid Meeting", key: "pre_bid_meeting" },
-  { label: "Bid Submit", key: "bid_submission" },
-  { label: "Technical Bid Opening", key: "technical_bid_opening" },
-  { label: "Commercial Bid Opening", key: "commercial_bid_opening" },
-  { label: "Negotiations", key: "negotiation" },
-  { label: "Work Order", key: "work_order" },
-  { label: "Agreement", key: "agreement" },
-];
-
-const preliminarySiteWorkTemplate = [
-  { label: "Site Visit & Reconnaissance", key: "site_visit_reconnaissance" },
-  {
-    label: "Site Approach & Accessibility",
-    key: "site_approach_accessibility",
-  },
-  { label: "Site Hurdles Identification", key: "site_hurdles_identification" },
-  {
-    label: "Labour Shed Location and Feasibility",
-    key: "labour_shed_location_feasibility",
-  },
-  { label: "Temporary EB Connection", key: "temporary_eb_connection" },
-  {
-    label: "Water Source Identification & Connection",
-    key: "water_source_identification_connection",
-  },
-  {
-    label: "Office, Labour and Materials Shed Setup",
-    key: "office_labour_materials_shed_setup",
-  },
-  {
-    label: "Yard for Steel and Bulk Materials",
-    key: "yard_steel_bulk_materials",
-  },
-  { label: "Office Setup & Facilities", key: "office_setup_facilities" },
-  {
-    label: "Sub Contractors Identification",
-    key: "sub_contractors_identification",
-  },
-  { label: "Vendor Identification", key: "vendor_identification" },
-];
+// Templates moved to StepperConstants.js
 
 const TenderOverView = () => {
   const { tender_id } = useParams();
-  const navigate = useNavigate();
   const [addFollowup, setAddFollowup] = useState(false);
 
   const [customerDetails, setCustomerDetails] = useState([]);
@@ -97,7 +48,7 @@ const TenderOverView = () => {
         { label: "PAN no", value: data.customerDetails?.pan_no },
         { label: "CIN no", value: data.customerDetails?.cin_no },
         { label: "GSTIN", value: data.customerDetails?.gstin },
-        //  { label: "VAT no", value: "Infrastructure" },
+        {label: "Contact Person", value: data.customerDetails?.contact_person},
         { label: "Phone Number", value: data.customerDetails?.contact_phone },
         { label: "Email ID", value: data.customerDetails?.contact_email },
         {
@@ -105,6 +56,7 @@ const TenderOverView = () => {
           value: `${data.customerDetails?.address?.city || ""}, ${data.customerDetails?.address?.state || ""
             }`,
         },
+        {label: "Contact Person", value: data.customerDetails?.contact_persons?.map((person) => person.name + " - " + person.phone).join(", ")},
       ]);
 
       setTenderDetailsState([
@@ -261,6 +213,70 @@ const TenderOverView = () => {
     return Math.round((completedSteps / totalSteps) * 100);
   };
 
+  // ── Dynamic Combined Layout ─────────────────────────────────────────────────
+  const CombinedStepperLayout = () => {
+    const { allCompleted: p1Done } = useTenderProcess();
+    const { allCompleted: p2Done } = usePreliminaryProcess();
+
+    const label = (color, text) => (
+      <p className={`text-[10px] font-black ${color} uppercase tracking-widest pl-1`}>{text}</p>
+    );
+
+    const p1Entry = (
+      <div className="flex flex-col gap-2">
+        {label("text-blue-500", "P1 · Tender Lifecycle")}
+        <TenderProcessEntry />
+      </div>
+    );
+    const p1Log = (
+      <div className="flex flex-col gap-2">
+        {label("text-blue-500", "P1 · Tender Lifecycle · Log")}
+        <TenderProcessLog />
+      </div>
+    );
+    const p2Entry = (
+      <div className="flex flex-col gap-2">
+        {label("text-emerald-500", "P2 · Preliminary Site Work")}
+        <PreliminaryProcessEntry />
+      </div>
+    );
+    const p2Log = (
+      <div className="flex flex-col gap-2">
+        {label("text-emerald-500", "P2 · Preliminary Site Work · Log")}
+        <PreliminaryProcessLog />
+      </div>
+    );
+
+    // Both active: [P1 Entry | P2 Entry] / [P1 Log | P2 Log]
+    if (!p1Done && !p2Done) return (
+      <div className="flex flex-col gap-5">
+        <div className="grid lg:grid-cols-2 gap-5 items-start">{p1Entry}{p2Entry}</div>
+        <div className="grid lg:grid-cols-2 gap-5 items-start">{p1Log}{p2Log}</div>
+      </div>
+    );
+
+    // P1 done — P2 active: [P2 Entry | P2 Log] / [P1 Log full-width]
+    if (p1Done && !p2Done) return (
+      <div className="flex flex-col gap-5">
+        <div className="grid lg:grid-cols-2 gap-5 items-start">{p2Entry}{p2Log}</div>
+        {p1Log}
+      </div>
+    );
+
+    // P2 done — P1 active: [P1 Entry | P1 Log] / [P2 Log full-width]
+    if (!p1Done && p2Done) return (
+      <div className="flex flex-col gap-5">
+        <div className="grid lg:grid-cols-2 gap-5 items-start">{p1Entry}{p1Log}</div>
+        {p2Log}
+      </div>
+    );
+
+    // Both done: [P1 Log | P2 Log]
+    return (
+      <div className="grid lg:grid-cols-2 gap-5 items-start">{p1Log}{p2Log}</div>
+    );
+  };
+
   if (loading) return <Loader />;
 
   const progress = calculateProgress();
@@ -400,151 +416,15 @@ const TenderOverView = () => {
           </div>
         </div>
 
-        {/* Phase 1 Overlay Card: ACTION + HISTORY */}
+        {/* P1 & P2 — Dynamic auto-aligning cards */}
         <div className="col-span-12">
-          <div className="bg-white dark:bg-slate-900 rounded-[1.5rem] border border-slate-200 dark:border-slate-800 shadow-lg overflow-hidden flex flex-col">
-            <div className="bg-slate-50 dark:bg-slate-800/50 px-8 py-5 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
-              <div className="flex items-center gap-4">
-                <div className="w-10 h-10 rounded-2xl bg-blue-600 text-white flex items-center justify-center shadow-lg shadow-blue-500/20">
-                  <span className="font-black text-lg italic leading-none">P1</span>
-                </div>
-                <div>
-                   <h2 className="text-xl font-black text-slate-900 dark:text-white uppercase tracking-tight italic leading-none">Tender Lifecycle</h2>
-                   <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-1">Workflow Action & Track</p>
-                </div>
-              </div>
-              <Activity size={20} className="text-blue-500 opacity-30 animate-pulse" />
-            </div>
-            
-            <div className="grid grid-cols-12">
-              {/* Stepper Part */}
-              <div className="col-span-12 lg:col-span-7 p-8 lg:border-r border-slate-100 dark:border-slate-800">
-                <div className="mb-4 text-[9px] font-black text-slate-400 uppercase tracking-[0.2em] italic underline decoration-blue-500/30 underline-offset-4">Workflow Action</div>
-                <TenderProcessStepper onUploadSuccess={handleUploadSuccess} />
-              </div>
-              
-              {/* History Part */}
-              <div className="col-span-12 lg:col-span-5 bg-slate-50/30 dark:bg-slate-800/10 p-8">
-                <div className="mb-6 text-[9px] font-black text-slate-400 uppercase tracking-[0.2em] italic underline decoration-blue-500/30 underline-offset-4">Lifecycle Log Feed</div>
-                
-                <div className="relative space-y-8 pl-4 before:absolute before:left-[11px] before:top-2 before:bottom-2 before:w-[2px] before:bg-slate-200 dark:before:bg-slate-800">
-                  {tenderProcessState.filter(s => s.completed).length === 0 ? (
-                    <div className="flex flex-col items-center justify-center py-20 text-slate-400 opacity-50 space-y-3 italic text-center">
-                       <Clock size={48} strokeWidth={1} />
-                       <p className="text-sm font-black uppercase tracking-widest">Waiting for Activity</p>
-                    </div>
-                  ) : (
-                    tenderProcessState.filter(s => s.completed).map((step) => (
-                      <motion.div 
-                        key={step.key} 
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        className="relative pl-10"
-                      >
-                        <div className="absolute left-[-23px] top-1 w-[22px] h-[22px] rounded-full bg-white dark:bg-slate-900 border-2 border-blue-500 z-10 flex items-center justify-center shadow-md">
-                          <CheckCircle2 size={12} className="text-blue-500" />
-                        </div>
-                        
-                        <div className="group space-y-3 bg-white dark:bg-slate-900/50 p-5 rounded-3xl border border-transparent shadow-sm hover:border-blue-500/20 hover:shadow-xl transition-all">
-                          <div className="flex items-start justify-between gap-4">
-                            <h4 className="font-black text-slate-800 dark:text-slate-100 text-sm italic group-hover:text-blue-600 transition-colors tracking-tight">
-                              {step.label}
-                            </h4>
-                            <span className="text-[9px] font-black px-2.5 py-1 rounded-full bg-blue-50 dark:bg-blue-900/30 text-blue-600 uppercase italic tracking-tighter shadow-inner leading-none">
-                              {step.date ? new Date(step.date).toLocaleDateString("en-GB", { day: '2-digit', month: 'short' }) : "-"}
-                            </span>
-                          </div>
-                          {step.notes && (
-                            <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/40 text-[11px] font-bold italic text-slate-500 dark:text-slate-400 leading-relaxed border-l-4 border-blue-500/30">
-                              {step.notes}
-                            </div>
-                          )}
-                          {step.file_name && (
-                            <a href={step.file_url} target="_blank" className="flex items-center gap-2 text-[9px] font-black uppercase text-blue-600 hover:text-blue-700 tracking-[0.1em] pl-1 italic">
-                              <Upload size={12} /> <span className="underline decoration-blue-200">View Document Attachment</span>
-                            </a>
-                          )}
-                        </div>
-                      </motion.div>
-                    ))
-                  )}
-                </div>
-              </div>
-            </div>
-          </div>
+          <TenderProcessProvider onUploadSuccess={handleUploadSuccess}>
+            <PreliminaryProcessProvider onUploadSuccess={handleUploadSuccessPreliminary}>
+              <CombinedStepperLayout />
+            </PreliminaryProcessProvider>
+          </TenderProcessProvider>
         </div>
 
-        {/* Phase 2: Action + History Grouped Below Lifecycle */}
-        <div className="col-span-12">
-          <div className="bg-white dark:bg-slate-900 rounded-[1.5rem] border border-slate-200 dark:border-slate-800 shadow-lg overflow-hidden flex flex-col">
-            <div className="bg-emerald-50/50 dark:bg-emerald-900/10 px-8 py-5 border-b border-emerald-100 dark:border-emerald-900 flex items-center justify-between">
-              <div className="flex items-center gap-4">
-                 <div className="w-10 h-10 rounded-2xl bg-emerald-600 text-white flex items-center justify-center shadow-lg shadow-emerald-500/20">
-                  <span className="font-black text-lg italic leading-none">P2</span>
-                </div>
-                <div>
-                   <h2 className="text-xl font-black text-slate-900 dark:text-white uppercase tracking-tight italic leading-none">Preliminary Site Work</h2>
-                   <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-1">Project Site Ground Feed</p>
-                </div>
-              </div>
-              <ClipboardList size={20} className="text-emerald-500 opacity-30 animate-pulse" />
-            </div>
-
-            <div className="grid grid-cols-12">
-               {/* Stepper Part */}
-               <div className="col-span-12 lg:col-span-7 p-8 lg:border-r border-slate-100 dark:border-slate-800">
-                <div className="mb-4 text-[9px] font-black text-slate-400 uppercase tracking-[0.2em] italic underline decoration-emerald-500/30 underline-offset-4">Site Operations Workflow</div>
-                <PreliminaryProcessStepper onUploadSuccess={handleUploadSuccessPreliminary} />
-              </div>
-
-               {/* History Part */}
-               <div className="col-span-12 lg:col-span-5 bg-emerald-50/20 dark:bg-emerald-800/10 p-8">
-                <div className="mb-6 text-[9px] font-black text-slate-400 uppercase tracking-[0.2em] italic underline decoration-emerald-500/30 underline-offset-4">Operations Log feed</div>
-                
-                <div className="relative space-y-8 pl-4 before:absolute before:left-[11px] before:top-2 before:bottom-2 before:w-[2px] before:bg-slate-200 dark:before:bg-slate-800">
-                  {tenderPreliminary.filter(s => s.completed).length === 0 ? (
-                    <div className="flex flex-col items-center justify-center py-20 text-slate-400 opacity-50 space-y-3 italic text-center">
-                       <Target size={48} strokeWidth={1} />
-                       <p className="text-sm font-black uppercase tracking-widest">Site Work Pending</p>
-                    </div>
-                  ) : (
-                    tenderPreliminary.filter(s => s.completed).map((step) => (
-                      <motion.div 
-                        key={step.key} 
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        className="relative pl-10"
-                      >
-                        <div className="absolute left-[-23px] top-1 w-[22px] h-[22px] rounded-full bg-white dark:bg-slate-900 border-2 border-emerald-500 z-10 flex items-center justify-center shadow-md">
-                          <CheckCircle2 size={12} className="text-emerald-500" />
-                        </div>
-                        
-                        <div className="group space-y-3 bg-white dark:bg-slate-900/50 p-5 rounded-3xl border border-transparent shadow-sm hover:border-emerald-500/20 hover:shadow-xl transition-all">
-                          <div className="flex items-start justify-between gap-4">
-                            <h4 className="font-black text-slate-800 dark:text-slate-100 text-sm italic group-hover:text-emerald-600 transition-colors tracking-tight leading-tight">
-                              {step.label}
-                            </h4>
-                            <CheckCircle2 size={14} className="text-emerald-500 shrink-0 mt-0.5 shadow-sm" />
-                          </div>
-                          {step.notes && (
-                            <div className="p-4 rounded-2xl bg-emerald-50/30 dark:bg-emerald-900/10 text-[11px] font-bold italic text-slate-500 dark:text-slate-400 border-l-4 border-emerald-500/30 leading-relaxed transition-colors">
-                              {step.notes}
-                            </div>
-                          )}
-                           {step.file_name && (
-                            <a href={step.file_url} target="_blank" className="flex items-center gap-2 text-[9px] font-black uppercase text-emerald-600 hover:text-emerald-700 tracking-[0.1em] pl-1 italic">
-                              <Upload size={12} /> <span className="underline decoration-emerald-200">View Site Attachment</span>
-                            </a>
-                          )}
-                        </div>
-                      </motion.div>
-                    ))
-                  )}
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
       </div>
 
       {addFollowup && (

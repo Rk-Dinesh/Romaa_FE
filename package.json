@@ -15,7 +15,6 @@
     "@hookform/resolvers": "^5.0.1",
     "@mui/material": "^7.3.4",
     "@mui/x-date-pickers": "^8.14.0",
-    "@tailwindcss/vite": "^4.1.5",
     "@tanstack/react-query": "^5.90.21",
     "@tanstack/react-query-devtools": "^5.91.3",
     "@tanstack/react-table": "^8.21.3",
@@ -33,18 +32,22 @@
     "react-select": "^5.10.1",
     "react-toastify": "^11.0.5",
     "recharts": "^2.15.3",
-    "tailwindcss": "^4.1.5",
     "yup": "^1.6.1"
   },
   "devDependencies": {
+    "@csstools/postcss-oklab-function": "^5.0.2",
+    "tailwindcss": "^4.2.2",
     "@eslint/js": "^9.25.0",
+    "@tailwindcss/postcss": "^4.2.2",
     "@types/react": "^19.1.2",
     "@types/react-dom": "^19.1.2",
+    "@vitejs/plugin-legacy": "^6.1.1",
     "@vitejs/plugin-react": "^4.4.1",
     "eslint": "^9.25.0",
     "eslint-plugin-react-hooks": "^5.2.0",
     "eslint-plugin-react-refresh": "^0.4.19",
     "globals": "^16.0.0",
+    "terser": "^5.46.1",
     "vite": "^6.3.5"
   }
 }

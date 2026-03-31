@@ -45,9 +45,8 @@ const schema = yup.object().shape({
   emd: yup.object({
     emd_amount: yup
       .number()
-      .typeError("Must be a number")
-      .required("EMD is required"),
-    emd_validity: yup.date().required("Expiry Date is required"),
+      .typeError("Must be a number"),
+    emd_validity: yup.date(),
   }),
   tender_description: yup.string().max(500).required("Description is required"),
   site_location: yup.object({
@@ -184,7 +183,8 @@ const EditTender = ({ item, onclose, onUpdated }) => {
               <InputFieldTender
                 label="Estimated Value (₹)"
                 name="tender_value"
-                type="number"
+                type="text"
+                onInput={(e) => e.target.value = e.target.value.replace(/[^0-9]/g, '')}
                 register={register}
                 errors={errors}
               />
@@ -304,7 +304,8 @@ const EditTender = ({ item, onclose, onUpdated }) => {
               <InputFieldTender
                 label="EMD Amount (₹)"
                 name="emd.emd_amount"
-                type="number"
+                type="text"
+                onInput={(e) => e.target.value = e.target.value.replace(/[^0-9]/g, '')}
                 register={register}
                 errors={errors}
               />

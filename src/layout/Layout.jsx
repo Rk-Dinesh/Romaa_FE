@@ -67,7 +67,7 @@ const LayOut = () => {
       <div className="flex-1 h-0 flex dark:bg-overall_bg-dark bg-light-blue dark:text-white">
 
         {/* --- MAIN SIDEBAR --- */}
-        <div className="flex-shrink-0 flex flex-col dark:bg-overall_bg-dark bg-light-blue overflow-y-auto overflow-x-hidden no-scrollbar px-6">
+        <div className="flex-shrink-0 flex flex-col dark:bg-overall_bg-dark bg-light-blue overflow-y-auto overflow-x-hidden no-scrollbar px-4">
 
           {/* Panel button */}
           <button
@@ -133,7 +133,7 @@ const LayOut = () => {
         {activeNestedMenu && (
           <div
             className={`flex-shrink-0 transition-all duration-300 ease-in-out ${
-              subSidebarOpen ? "w-56 mx-2 opacity-100" : "w-0 mx-0 opacity-0 overflow-hidden"
+              subSidebarOpen ? "w-56 mx-0 opacity-100" : "w-0 mx-0 opacity-0 overflow-hidden"
             }`}
           >
             <div className="text-sm my-4 rounded-lg dark:bg-layout-dark bg-white overflow-auto no-scrollbar py-6 h-full min-w-[224px]">
@@ -169,7 +169,7 @@ const LayOut = () => {
         )}
 
         {/* --- MAIN CONTENT AREA --- */}
-        <div id="romaa-page-content" className="flex-1 h-full p-4 overflow-hidden flex flex-col no-scrollbar">
+        <div id="romaa-page-content" className="flex-1 h-full px-2 py-4 overflow-hidden flex flex-col no-scrollbar">
           <Suspense fallback={<Loader fullScreen={false} />}>
             <Outlet />
           </Suspense>

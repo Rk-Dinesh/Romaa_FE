@@ -148,6 +148,7 @@ const Login = () => {
                       onChange={(e) => setPassword(e.target.value)}
                       className="w-full h-13 bg-white dark:bg-layout-dark border-2 border-gray-300 dark:border-gray-800 rounded-xl px-5 pr-14 text-[14px] font-medium focus:outline-none focus:ring-8 focus:ring-darkest-blue/5 dark:focus:ring-blue-500/5 focus:border-darkest-blue dark:focus:border-blue-500 transition-all duration-300 text-black dark:text-white placeholder:text-gray-300 dark:placeholder:text-gray-700"
                       placeholder="Gateway Password"
+                      autoComplete="current-password"
                       required
                     />
                     <button

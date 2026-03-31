@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useCallback } from "react";
 import { useForm } from "react-hook-form";
 import { yupResolver } from "@hookform/resolvers/yup";
 import * as yup from "yup";
@@ -15,27 +15,27 @@ const schema = yup.object().shape({
   tender_type: yup.string().required("Tender Type is required"),
   client_id: yup.string().required("Client ID is required"),
   client_name: yup.string().required("Client Name is required"),
-  tender_contact_person: yup.string().required("Contact Person is required"),
-  tender_contact_phone: yup.string().matches(/^[0-9]{10}$/, "10 digits required").required("Phone is required"),
-  tender_contact_email: yup.string().email("Invalid email").required("Email is required"),
+  tender_contact_person: yup.string(),
+  tender_contact_phone: yup.string(),
+  tender_contact_email: yup.string().email("Invalid email"),
   tender_location: yup.object({
-    city: yup.string().required("City is required"),
-    state: yup.string().required("State is required"),
-    country: yup.string().required("Country is required"),
-    pincode: yup.string().matches(/^[0-9]{6}$/, "6 digits required").required("Pincode is required"),
+    city: yup.string(),
+    state: yup.string(),
+    country: yup.string(),
+    pincode: yup.string(),
   }),
   tender_duration: yup.string().required("Duration is required"),
   consider_completion_duration: yup.string().required("Completion Duration is required"),
   tender_value: yup.number().typeError("Must be a number").positive().required("Cost is required"),
   tender_end_date: yup.date().required("Due Date is required"),
   emd: yup.object({
-    emd_amount: yup.number().typeError("Must be a number").required("EMD is required"),
-    emd_validity: yup.date().required("Expiry Date is required"),
+    emd_amount: yup.number(),
+    emd_validity: yup.date(),
   }),
   tender_description: yup.string().max(500).required("Description is required"),
   site_location: yup.object({
-    latitude: yup.number().typeError("Num required").required("Lat required"),
-    longitude: yup.number().typeError("Num required").required("Lng required"),
+    latitude: yup.number().typeError("Num required"),
+    longitude: yup.number().typeError("Num required"),
   }),
 });
 
@@ -70,19 +70,26 @@ const AddTender = ({ onclose, onSuccess }) => {
   const selectedClientId = watch("client_id");
   const selectedClientName = watch("client_name");
 
+  const fillClientFields = useCallback((found) => {
+    if (!found) return;
+    setValue("client_name", found.client_name, { shouldValidate: true });
+    setValue("client_id", found.client_id, { shouldValidate: true });
+    setValue("tender_contact_person", found.contact_person, { shouldValidate: true });
+    setValue("tender_contact_phone", found.contact_phone, { shouldValidate: true });
+    setValue("tender_contact_email", found.contact_email, { shouldValidate: true });
+  }, [setValue]);
+
   useEffect(() => {
     if (selectedClientId) {
-      const found = clients.find((c) => c.client_id === selectedClientId);
-      if (found) setValue("client_name", found.client_name, { shouldValidate: true });
+      fillClientFields(clients.find((c) => c.client_id === selectedClientId));
     }
-  }, [selectedClientId, setValue, clients]);
+  }, [selectedClientId, clients, fillClientFields]);
 
   useEffect(() => {
     if (selectedClientName) {
-      const found = clients.find((c) => c.client_name === selectedClientName);
-      if (found) setValue("client_id", found.client_id, { shouldValidate: true });
+      fillClientFields(clients.find((c) => c.client_name === selectedClientName));
     }
-  }, [selectedClientName, setValue, clients]);
+  }, [selectedClientName, clients, fillClientFields]);
 
   const onSubmit = (data) => {
     addTender(data); // Trigger the mutation
@@ -103,36 +110,8 @@ const AddTender = ({ onclose, onSuccess }) => {
         {/* Body */}
         <div className="flex-1 overflow-y-auto px-8 py-6 custom-scrollbar">
           <form id="tenderForm" onSubmit={handleSubmit(onSubmit)} className="grid grid-cols-2 gap-x-8 gap-y-4">
-            
-            <SectionHeader title="Project Details" />
-            <div className="col-span-2">
-              <InputFieldTender label="Tender Name" name="tender_name" placeholder="Enter tender name" register={register} errors={errors} />
-            </div>
-            
-            <div className="col-span-1">
-              <InputFieldTender
-                label="Tender Type"
-                type="select"
-                name="tender_type"
-                register={register}
-                errors={errors}
-                watch={watch}
-                setValue={setValue}
-                options={[
-                  { value: "item rate contarct", label: "Item Rate" },
-                  { value: "percentage", label: "Percentage" },
-                  { value: "lumpsum", label: "Lumpsum" },
-                ]}
-              />
-            </div>
-            <div className="col-span-1">
-              <InputFieldTender label="Estimated Value (₹)" name="tender_value" type="number" register={register} errors={errors} />
-            </div>
-            <div className="col-span-2">
-               <InputFieldTender label="Description" type="textarea" name="tender_description" placeholder="Scope of work..." register={register} errors={errors} />
-            </div>
 
-            <SectionHeader title="Client Information" />
+             <SectionHeader title="Client Information" />
             <div className="col-span-1">
               <InputFieldTender
                 label="Client ID"
@@ -166,13 +145,50 @@ const AddTender = ({ onclose, onSuccess }) => {
             <div className="col-span-2">
               <InputFieldTender label="Email Address" name="tender_contact_email" type="email" register={register} errors={errors} />
             </div>
+            
+            <SectionHeader title="Project Details" />
+            <div className="col-span-2">
+              <InputFieldTender label="Tender Name" name="tender_name" placeholder="Enter tender name" register={register} errors={errors} />
+            </div>
+            
+            <div className="col-span-1">
+              <InputFieldTender
+                label="Tender Type"
+                type="select"
+                name="tender_type"
+                register={register}
+                errors={errors}
+                watch={watch}
+                setValue={setValue}
+                options={[
+                  { value: "item rate contarct", label: "Item Rate" },
+                  { value: "percentage", label: "Percentage" },
+                  { value: "lumpsum", label: "Lumpsum" },
+                ]}
+              />
+            </div>
+            <div className="col-span-1">
+              <InputFieldTender 
+                label="Estimated Value (₹)" 
+                name="tender_value" 
+                type="text" 
+                onInput={(e) => e.target.value = e.target.value.replace(/[^0-9]/g, '')}
+                register={register} 
+                errors={errors} 
+              />
+            </div>
+            <div className="col-span-2">
+               <InputFieldTender label="Description" type="textarea" name="tender_description" placeholder="Scope of work..." register={register} errors={errors} />
+            </div>
+
+           
 
             <SectionHeader title="Schedule & EMD" />
             <div className="col-span-1">
-               <InputFieldTender label="Published Date" name="tender_start_date" type="date" register={register} errors={errors} />
+               <InputFieldTender label="Published Date" name="tender_start_date" type="date" register={register} />
             </div>
             <div className="col-span-1">
-               <InputFieldTender label="Bid Submission Due" name="tender_end_date" type="date" register={register} errors={errors} />
+               <InputFieldTender label="Bid Submission Due" name="tender_end_date" type="date" register={register} />
             </div>
             <div className="col-span-1">
                <InputFieldTender label="Duration" name="tender_duration" placeholder="e.g. 12 Months" register={register} errors={errors} />
@@ -181,10 +197,16 @@ const AddTender = ({ onclose, onSuccess }) => {
                <InputFieldTender label="Completion Target" name="consider_completion_duration" placeholder="e.g. 10 Months" register={register} errors={errors} />
             </div>
             <div className="col-span-1">
-               <InputFieldTender label="EMD Amount (₹)" name="emd.emd_amount" type="number" register={register} errors={errors} />
+               <InputFieldTender 
+                label="EMD Amount (₹)" 
+                name="emd.emd_amount" 
+                type="text" 
+                onInput={(e) => e.target.value = e.target.value.replace(/[^0-9]/g, '')}
+                register={register}  
+              />
             </div>
             <div className="col-span-1">
-               <InputFieldTender label="EMD Validity" name="emd.emd_validity" type="date" register={register} errors={errors} />
+               <InputFieldTender label="EMD Validity" name="emd.emd_validity" type="date" register={register}  />
             </div>
 
             <SectionHeader title="Site Location" />
@@ -201,10 +223,10 @@ const AddTender = ({ onclose, onSuccess }) => {
                <InputFieldTender label="Country" name="tender_location.country" register={register} errors={errors} />
             </div>
             <div className="col-span-1">
-               <InputFieldTender label="Latitude" name="site_location.latitude" step="0.000001" type="number" register={register} errors={errors} />
+               <InputFieldTender label="Latitude" name="site_location.latitude" step="0.000001" type="number" register={register} />
             </div>
             <div className="col-span-1">
-               <InputFieldTender label="Longitude" name="site_location.longitude" step="0.000001" type="number" register={register} errors={errors} />
+               <InputFieldTender label="Longitude" name="site_location.longitude" step="0.000001" type="number" register={register} />
             </div>
 
           </form>
