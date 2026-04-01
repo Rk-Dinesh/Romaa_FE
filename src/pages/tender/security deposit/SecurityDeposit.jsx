@@ -12,9 +12,9 @@ const Columns = [
   { label: "Project Name", key: "tender_name" },
   {
     label: "Security Deposit",
-    key: "emd.approved_emd_details[0].security_deposit_amount",
+    key: "emd.approved_emd_details.security_deposit_amount",
     render: (item) =>
-      item.emd?.approved_emd_details?.[0]?.security_deposit_amount ?? "-",
+      item.emd?.approved_emd_details?.security_deposit_amount ?? "-",
     formatter: (value) =>
       new Intl.NumberFormat("en-IN", {
         style: "currency",
@@ -25,20 +25,19 @@ const Columns = [
   },
   {
     label: "Expiry Date",
-    key: "emd.security_deposit_validity",
+    key: "emd.approved_emd_details.security_deposit_validity",
     render: (item) =>
-      item.emd?.approved_emd_details?.[0]?.security_deposit_validity
+      item.emd?.approved_emd_details?.security_deposit_validity
         ? new Date(
-            item.emd.approved_emd_details?.[0]?.security_deposit_validity
+            item.emd.approved_emd_details.security_deposit_validity
           ).toLocaleDateString("en-GB")
         : "-",
   },
   {
     label: "Amount Collected",
-    key: "emd.approved_emd_details[0].security_deposit_amount_collected",
+    key: "emd.approved_emd_details.security_deposit_amount_collected",
     render: (item) =>
-      item.emd?.approved_emd_details?.[0]?.security_deposit_amount_collected ??
-      "-",
+      item.emd?.approved_emd_details?.security_deposit_amount_collected ?? "-",
     formatter: (value) =>
       new Intl.NumberFormat("en-IN", {
         style: "currency",
@@ -49,10 +48,9 @@ const Columns = [
   },
   {
     label: "Balance",
-    key: "emd.approved_emd_details[0].security_deposit_pendingAmount",
+    key: "emd.approved_emd_details.security_deposit_pendingAmount",
     render: (item) =>
-      item.emd?.approved_emd_details?.[0]?.security_deposit_pendingAmount ??
-      "-",
+      item.emd?.approved_emd_details?.security_deposit_pendingAmount ?? "-",
     formatter: (value) =>
       new Intl.NumberFormat("en-IN", {
         style: "currency",

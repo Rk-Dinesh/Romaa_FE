@@ -11,10 +11,15 @@ const Columns = [
   { label: "Tender ID", key: "tender_id" },
   { label: "Project Name", key: "tender_name", className: "text-left" },
   {
-    label: "EMD",
-    key: "emd.approved_emd_details[0].emd_approved_amount",
+    label: "Company",
+    key: "emd.approved_emd_details.emd_proposed_company",
+    render: (item) => item.emd?.approved_emd_details?.emd_proposed_company ?? "-",
+  },
+  {
+    label: "EMD Amount",
+    key: "emd.approved_emd_details.emd_approved_amount",
     render: (item) =>
-      item.emd?.approved_emd_details?.[0]?.emd_approved_amount ?? "-",
+      item.emd?.approved_emd_details?.emd_approved_amount ?? "-",
     formatter: (value) =>
       new Intl.NumberFormat("en-IN", {
         style: "currency",
@@ -33,9 +38,9 @@ const Columns = [
   },
   {
     label: "Amount Collected",
-    key: "emd.approved_emd_details[0].emd_deposit_amount_collected",
+    key: "emd.approved_emd_details.emd_deposit_amount_collected",
     render: (item) =>
-      item.emd?.approved_emd_details?.[0]?.emd_deposit_amount_collected ?? "-",
+      item.emd?.approved_emd_details?.emd_deposit_amount_collected ?? "-",
     formatter: (value) =>
       new Intl.NumberFormat("en-IN", {
         style: "currency",
@@ -46,9 +51,9 @@ const Columns = [
   },
   {
     label: "Balance",
-    key: "emd.approved_emd_details[0].emd_deposit_pendingAmount",
+    key: "emd.approved_emd_details.emd_deposit_pendingAmount",
     render: (item) =>
-      item.emd?.approved_emd_details?.[0]?.emd_deposit_pendingAmount ?? "-",
+      item.emd?.approved_emd_details?.emd_deposit_pendingAmount ?? "-",
     formatter: (value) =>
       new Intl.NumberFormat("en-IN", {
         style: "currency",

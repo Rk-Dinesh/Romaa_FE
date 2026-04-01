@@ -210,7 +210,7 @@ const Table = ({
       <div className={`flex-1 overflow-hidden relative ${contentMarginTop}`}>
         <div className="h-full overflow-auto scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-600 ">
           <table className="min-w-full border-separate border-spacing-y-0.5">
-            <thead className="bg-gray-50/95 dark:bg-gray-800/90 sticky top-0 z-10 backdrop-blur-sm shadow-sm ">
+            <thead className="bg-gray-50/95 dark:bg-gray-800/90 sticky top-0 backdrop-blur-sm shadow-sm ">
               <tr>
                 <th
                   scope="col"
