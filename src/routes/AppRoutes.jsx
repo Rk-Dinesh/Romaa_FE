@@ -23,6 +23,7 @@ const EmployeeDashboard = lazy(() => import("../pages/dashboard/employee dashboa
 
 // Tender
 const Customer = lazy(() => import("../pages/tender/clients/Clients"));
+const ViewCustomer = lazy(() => import("../pages/tender/clients/ViewClients"));
 const Tender = lazy(() => import("../pages/tender/tenders/Tender"));
 const ViewTender = lazy(() => import("../pages/tender/tenders/view tenders/ViewTender"));
 const TenderDetailedEstimate = lazy(() => import("../pages/tender/tenders/view tenders/detailed estimate/TenderDetailedEstimate"));
@@ -219,6 +220,7 @@ const AppRoutes = () => {
               </Route>
               <Route path="/tender">
                 <Route path="customers" element={<Customer />} />
+                <Route path="customers/viewcustomer/:id" element={<ViewCustomer/>} />
                 <Route path="tenders">
                   <Route index element={<Tender />} />
                   <Route path="viewtender/:tender_id" element={<ViewTender />} />

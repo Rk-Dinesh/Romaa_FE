@@ -25,7 +25,6 @@ const ViewTender = () => {
   const { tender_id } = useParams();
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
-  const [isApproved, setIsApproved] = useState(false);
   const [activeTabLoading, setActiveTabLoading] = useState(true);
   const tabContainerRef = useRef(null);
   const activeTabRef = useRef(null);
@@ -81,20 +80,20 @@ const ViewTender = () => {
   const activeTab = searchParams.get("tab") || defaultTab;
   const activeTabData = tabs.find((tab) => tab.id === activeTab);
 
-  const checkApprovalStatus = async () => {
-    try {
-      const res = await axios.get(`${API}/tender/approval-status/${tender_id}`);
-      if (res.data.success) {
-        setIsApproved(res.data.approved);
-      }
-    } catch (error) {
-      toast.error("Error checking approval status");
-    } finally {
-      setActiveTabLoading(false);
-    }
-  };
-
   useEffect(() => {
+    const checkApprovalStatus = async () => {
+      try {
+        const res = await axios.get(`${API}/tender/approval-status/${tender_id}`);
+        if (res.data.success) {
+          // Response handled if needed
+        }
+      } catch {
+        toast.error("Error checking approval status");
+      } finally {
+        setActiveTabLoading(false);
+      }
+    };
+
     setActiveTabLoading(true);
     checkApprovalStatus();
   }, [tender_id]);
@@ -129,7 +128,7 @@ const ViewTender = () => {
   return (
     <div className="font-roboto-flex flex flex-col h-full overflow-hidden">
       {/* Fixed Header Balance with Top Back Arrow */}
-      <div className="flex-shrink-0">
+      <div className="shrink-0">
         <div className="flex items-center gap-3 mb-2">
           <button
             onClick={handleBack}
@@ -154,7 +153,7 @@ const ViewTender = () => {
           <p
             key={tab.id}
             ref={activeTab === tab.id ? activeTabRef : null}
-            className={`px-4 py-2 rounded-lg text-sm cursor-pointer whitespace-nowrap flex-shrink-0 transition-opacity ${
+            className={`px-4 py-2 rounded-lg text-sm cursor-pointer whitespace-nowrap shrink-0 transition-opacity ${
               activeTab === tab.id
                 ? "bg-darkest-blue text-white shadow-sm"
                 : "bg-white dark:bg-slate-900 text-darkest-blue dark:text-slate-300 hover:opacity-80"
@@ -170,7 +169,7 @@ const ViewTender = () => {
       {/* Content Area with Transparent Scroll Effect */}
       <div className="flex-1 min-h-0 overflow-y-auto no-scrollbar relative">
         {/* Transparent Fade Overlay */}
-        <div className="sticky top-0 left-0 right-0 h-10 z-10 pointer-events-none bg-gradient-to-b from-light-blue dark:from-overall_bg-dark to-transparent" />
+        <div className="sticky top-0 left-0 right-0 h-10 z-10 pointer-events-none bg-linear-gradient-to-b from-light-blue dark:from-overall_bg-dark to-transparent" />
         
         <div className="-mt-6">
           {activeTabLoading ? (

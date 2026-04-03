@@ -2,7 +2,7 @@ import axios from 'axios';
 // const API = "http://localhost:8000"
 //const API = "https://romaa-be.onrender.com"
 // const API = "https://api.bib-india.com"
- const API = "https://api.maarrsmart.com"
+const API = "https://api.maarrsmart.com"
 
 export const api = axios.create({
   baseURL: API,

@@ -97,7 +97,7 @@ const Profile = () => {
     <div className="flex flex-col h-full w-full font-layout-font bg-gray-50/50">
       
       {/* --- HEADER SECTION (Fixed Height / Non-growing) --- */}
-      <div className="flex-none bg-white border-b border-gray-200 shadow-sm z-20">
+      <div className="flex-none bg-white border-b border-gray-200 shadow-sm ">
         
         {/* Top Bar */}
         <div className="flex justify-between items-center py-3 px-6">

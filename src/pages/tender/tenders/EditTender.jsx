@@ -15,7 +15,7 @@ const schema = yup.object().shape({
   client_id: yup.string().required("Client ID is required"),
   client_name: yup.string().required("Client Name is required"),
   tender_contact_person: yup.string(),
-  tender_contact_phone: yup.string(),
+  tender_contact_phone: yup.string().matches(/^[0-9\s-]+$/, "Only numbers, spaces, and hyphens are allowed"),
   tender_contact_email: yup.string().email("Invalid email"),
   tender_location: yup.object({
     city: yup.string(),
@@ -89,7 +89,7 @@ const EditTender = ({ item, onclose, onUpdated }) => {
       setValue("tender_contact_person", found.contact_person, {
         shouldValidate: true,
       });
-      setValue("tender_contact_phone", found.contact_phone, {
+      setValue("tender_contact_phone", found.contact_phone ?? "", {
         shouldValidate: true,
       });
       setValue("tender_contact_email", found.contact_email, {
@@ -234,7 +234,7 @@ const EditTender = ({ item, onclose, onUpdated }) => {
               <InputFieldTender
                 label="Phone Number"
                 name="tender_contact_phone"
-                type="number"
+                type="text"
                 register={register}
                 errors={errors}
               />

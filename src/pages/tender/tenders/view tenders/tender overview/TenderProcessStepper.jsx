@@ -25,6 +25,7 @@ import {
   getWorkOrderSchema, 
   getAgreementSchema 
 } from "./StepperConstants";
+import { toast } from "react-toastify";
 
 // ── Provider Component ─────────────────────────────────────────────────────────
 export const TenderProcessProvider = ({ onUploadSuccess, children }) => {
@@ -114,6 +115,7 @@ export const TenderProcessProvider = ({ onUploadSuccess, children }) => {
           workOrder_id: data.workOrder_id,
           workOrder_issued_date: data.workOrder_issued_date,
         });
+        toast.success("Work Order Assigned successfully!");
       } else if (step.key === "agreement") {
         await axios.post(`${API}/tender/processaws/step`, formData);
         await axios.put(`${API}/tender/update-agreement/${tender_id}`, {
@@ -121,6 +123,7 @@ export const TenderProcessProvider = ({ onUploadSuccess, children }) => {
           agreement_value: data.agreement_value,
           agreement_issued_date: data.agreement_issued_date,
         });
+        toast.success("Agreement Assigned successfully!");
       } else {
         await axios.post(`${API}/tender/processaws/step`, formData);
       }

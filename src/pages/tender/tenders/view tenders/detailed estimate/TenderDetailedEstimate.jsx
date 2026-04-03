@@ -92,7 +92,7 @@ const TenderDetailedEstimate = () => {
   return (
     <div className="flex flex-col h-full overflow-hidden">
       {/* Fixed Header Balance with Top Back Arrow */}
-      <div className="flex-shrink-0">
+      <div className="shrink-0">
         <div className="flex items-center gap-3 mb-2">
           <button
             onClick={handleBack}

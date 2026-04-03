@@ -91,7 +91,7 @@ const Table = ({
     }
 
     return () => clearTimeout(timer);
-  }, [loading, 2000]);
+  }, [loading]);
 
   useEffect(() => {
     setCurrentPage(1);
@@ -286,8 +286,7 @@ const Table = ({
                 sortedItems.map((item, index) => (
                   <tr
                     key={index}
-                    onClick={() => onRowClick && onRowClick(item)}
-                    className="hover:bg-blue-50/40 dark:hover:bg-blue-900/10 transition-colors duration-100 cursor-pointer group"
+                    className="hover:bg-blue-50/40 dark:hover:bg-blue-900/10 transition-colors duration-100 group"
                   >
                     <td className="px-4 py-3.5 whitespace-nowrap text-sm font-medium text-gray-500 dark:text-gray-400 text-left">
                       {startIndex + index + 1}
@@ -360,6 +359,7 @@ const Table = ({
                           {(ViewModal || routepoint) && (
                             <button
                               onClick={() => {
+                                if (onRowClick) onRowClick(item);
                                 if (routepoint) {
                                   // Persist the selected item in localStorage if idKey is present
                                   if (idKey) {

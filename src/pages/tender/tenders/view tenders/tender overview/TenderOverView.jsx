@@ -286,12 +286,12 @@ const TenderOverView = () => {
   return (
     <div className="flex flex-col gap-5 max-w-[1550px] mx-auto pb-10">
       {/* Hero Header Section */}
-      <div className="relative overflow-hidden bg-white dark:bg-slate-900 rounded-[1.5rem] p-6 border border-slate-200 dark:border-slate-800 shadow-sm transition-all duration-300">
+      <div className="relative overflow-hidden bg-white dark:bg-slate-900 rounded-3xl p-6 border border-slate-200 dark:border-slate-800 shadow-sm transition-all duration-300">
         <div className="absolute top-0 right-0 p-12 opacity-5 scale-150 rotate-12 pointer-events-none">
           <Activity size={180} />
         </div>
         
-        <div className="relative z-10 flex flex-col md:flex-row md:items-end justify-between gap-6">
+        <div className="relative  flex flex-col md:flex-row md:items-end justify-between gap-6">
           <div className="space-y-3 flex-1">
             <div className="flex items-center gap-2">
               <span className="px-3 py-1 rounded-full bg-blue-500/10 text-blue-600 dark:text-blue-400 text-[10px] font-bold uppercase tracking-wider">
@@ -336,7 +336,7 @@ const TenderOverView = () => {
     <div className="grid grid-cols-12 gap-5 items-start">
         {/* Row 1: High Level Metadata (Parallel Columns) */}
         <div className="col-span-12 lg:col-span-6 h-full">
-          <div className="bg-white dark:bg-slate-900 rounded-[1.5rem] p-6 border border-slate-200 dark:border-slate-800 shadow-sm relative group h-full">
+          <div className="bg-white dark:bg-slate-900 rounded-3xl p-6 border border-slate-200 dark:border-slate-800 shadow-sm relative group h-full">
             <div className="flex justify-between items-center mb-5">
               <div className="flex items-center gap-3">
                 <div className="p-2 rounded-xl bg-blue-500/10 text-blue-500 shadow-sm">
@@ -395,7 +395,7 @@ const TenderOverView = () => {
         </div>
 
         <div className="col-span-12 lg:col-span-6 h-full">
-          <div className="bg-white dark:bg-slate-900 rounded-[1.5rem] p-6 border border-slate-200 dark:border-slate-800 shadow-sm h-full">
+          <div className="bg-white dark:bg-slate-900 rounded-3xl p-6 border border-slate-200 dark:border-slate-800 shadow-sm h-full">
             <div className="flex items-center gap-3 mb-5">
               <div className="p-2 rounded-xl bg-emerald-500/10 text-emerald-500 shadow-sm">
                 <User size={18} />

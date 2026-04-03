@@ -27,18 +27,16 @@ const Clients = () => {
   // 1. Local State
   const [currentPage, setCurrentPage] = useState(1);
   const [searchTerm, setSearchTerm] = useState("");
-  const [filterParams, setFilterParams] = useState({ fromdate: "", todate: "" });
+  const [filterParams, setFilterParams] = useState({
+    fromdate: "",
+    todate: "",
+  });
 
   // 2. Debounce Search
   const debouncedSearch = useDebounce(searchTerm, 500);
 
   // 3. Fetch Data (Cached & Optimized)
-  const { 
-    data, 
-    isLoading, 
-    isFetching, 
-    refetch 
-  } = useClients({
+  const { data, isLoading, isFetching, refetch } = useClients({
     page: currentPage,
     limit: 10,
     search: debouncedSearch,
@@ -51,13 +49,11 @@ const Clients = () => {
       title="Tender Management"
       subtitle="Client"
       pagetitle="Clients Management"
-      
       // Data Props
       loading={isLoading}
       isRefreshing={isFetching}
       endpoint={data?.data || []}
       totalPages={data?.totalPages || 0}
-      
       // Controls
       currentPage={currentPage}
       setCurrentPage={setCurrentPage}
@@ -65,19 +61,18 @@ const Clients = () => {
       setSearch={setSearchTerm}
       filterParams={filterParams}
       setFilterParams={setFilterParams}
-      
       // Modals & Actions
       columns={ClientColumns}
       AddModal={AddClients}
       EditModal={EditClients}
-      ViewModal={ViewClients}
+      routepoint={`/tender/customers/viewcustomer`}
       FilterModal={Filters}
       addButtonLabel="Add Client"
       addButtonIcon={<LuUserRoundSearch size={24} />}
-      
       // Refresh Trigger
       onUpdated={refetch}
       onSuccess={refetch}
+      idKey="client_id"
     />
   );
 };

@@ -72,7 +72,7 @@ const AddTender = ({ onclose, onSuccess }) => {
     setValue("client_name", found.client_name, { shouldValidate: true });
     setValue("client_id", found.client_id, { shouldValidate: true });
     setValue("tender_contact_person", found.contact_person, { shouldValidate: true });
-    setValue("tender_contact_phone", found.contact_phone, { shouldValidate: true });
+    setValue("tender_contact_phone", found.contact_phone?.replace(/[^0-9]/g, "") ?? "", { shouldValidate: true });
     setValue("tender_contact_email", found.contact_email, { shouldValidate: true });
   }, [setValue]);
 

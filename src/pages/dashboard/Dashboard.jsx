@@ -234,7 +234,7 @@ const WelcomeHeader = ({ user, data }) => {
         <div className="absolute -right-20 -top-20 w-80 h-80 rounded-full bg-white/20 blur-3xl" />
         <div className="absolute -left-10 -bottom-10 w-60 h-60 rounded-full bg-blue-400/20 blur-3xl" />
       </div>
-      <div className="relative z-10 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3">
+      <div className="relative flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3">
         <div>
           <p className="text-blue-200/80 text-xs font-medium tracking-wide uppercase">
             {formattedDate}

@@ -1,9 +1,9 @@
-
 import axios from "axios";
 import Table from "../../../../../../components/Table";
 import { API } from "../../../../../../constant";
 import { useParams } from "react-router-dom";
 import { useEffect, useState } from "react";
+import { toast } from "react-toastify";
 
 const Columns = [
   { label: "Abstract ", key: "heading" },
@@ -27,11 +27,12 @@ const GeneralAbstract = () => {
   const getGeneralAbstractdata = async () => {
     try {
       const res = await axios.get(
-        `${API}/detailedestimate/getgeneralabstract?tender_id=${tender_id}`
+        `${API}/detailedestimate/getgeneralabstract?tender_id=${tender_id}`,
       );
       setGeneralAbstractdata(res.data.data);
     } catch (error) {
       console.log(error);
+      toast.info("Failed to fetch General Abstract");
     } finally {
       setLoading(false);
     }
