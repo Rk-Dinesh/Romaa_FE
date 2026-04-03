@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useCallback } from "react";
 import { useForm } from "react-hook-form";
 import { yupResolver } from "@hookform/resolvers/yup";
 import * as yup from "yup";
@@ -7,51 +7,34 @@ import { InputFieldTender } from "../../../components/InputFieldTender";
 import { useEditTender } from "./hooks/useTenders";
 import { useAllClients } from "../clients/hooks/useClients";
 
-// --- VALIDATION SCHEMA (Unchanged) ---
+// --- VALIDATION SCHEMA ---
 const schema = yup.object().shape({
   tender_name: yup.string().required("Tender Name is required"),
   tender_start_date: yup.date().required("Published Date is required"),
   tender_type: yup.string().required("Tender Type is required"),
   client_id: yup.string().required("Client ID is required"),
   client_name: yup.string().required("Client Name is required"),
-  tender_contact_person: yup.string().required("Contact Person is required"),
-  tender_contact_phone: yup
-    .string()
-    .matches(/^[0-9]{10}$/, "10 digits required")
-    .required("Phone is required"),
-  tender_contact_email: yup
-    .string()
-    .email("Invalid email")
-    .required("Email is required"),
+  tender_contact_person: yup.string(),
+  tender_contact_phone: yup.string(),
+  tender_contact_email: yup.string().email("Invalid email"),
   tender_location: yup.object({
-    city: yup.string().required("City is required"),
-    state: yup.string().required("State is required"),
-    country: yup.string().required("Country is required"),
-    pincode: yup
-      .string()
-      .matches(/^[0-9]{6}$/, "6 digits required")
-      .required("Pincode is required"),
+    city: yup.string(),
+    state: yup.string(),
+    country: yup.string(),
+    pincode: yup.string(),
   }),
   tender_duration: yup.string().required("Duration is required"),
-  consider_completion_duration: yup
-    .string()
-    .required("Completion Duration is required"),
-  tender_value: yup
-    .number()
-    .typeError("Must be a number")
-    .positive()
-    .required("Cost is required"),
+  consider_completion_duration: yup.string().required("Completion Duration is required"),
+  tender_value: yup.number().typeError("Must be a number").positive().required("Cost is required"),
   tender_end_date: yup.date().required("Due Date is required"),
   emd: yup.object({
-    emd_amount: yup
-      .number()
-      .typeError("Must be a number"),
+    emd_amount: yup.number(),
     emd_validity: yup.date(),
   }),
   tender_description: yup.string().max(500).required("Description is required"),
   site_location: yup.object({
-    latitude: yup.number().typeError("Num required").required("Lat required"),
-    longitude: yup.number().typeError("Num required").required("Lng required"),
+    latitude: yup.number().typeError("Num required"),
+    longitude: yup.number().typeError("Num required"),
   }),
 });
 
@@ -98,28 +81,23 @@ const EditTender = ({ item, onclose, onUpdated }) => {
     },
   });
 
-  const handleIdChange = (e) => {
-    const newId = e.target.value;
-    // Let RHF know the value changed
-    setValue("client_id", newId, { shouldValidate: true });
-
-    // Find and update the Name
-    const client = clients.find((c) => String(c.client_id) === String(newId));
-    if (client) {
-      setValue("client_name", client.client_name, { shouldValidate: true });
-    }
-  };
-
-  // 2. Create a handler for Client Name change
-  const handleNameChange = (e) => {
-    const newName = e.target.value;
-    setValue("client_name", newName, { shouldValidate: true });
-
-    const client = clients.find((c) => c.client_name === newName);
-    if (client) {
-      setValue("client_id", client.client_id, { shouldValidate: true });
-    }
-  };
+  const fillClientFields = useCallback(
+    (found) => {
+      if (!found) return;
+      setValue("client_id", found.client_id, { shouldValidate: true });
+      setValue("client_name", found.client_name, { shouldValidate: true });
+      setValue("tender_contact_person", found.contact_person, {
+        shouldValidate: true,
+      });
+      setValue("tender_contact_phone", found.contact_phone, {
+        shouldValidate: true,
+      });
+      setValue("tender_contact_email", found.contact_email, {
+        shouldValidate: true,
+      });
+    },
+    [setValue],
+  );
   const onSubmit = (data) => {
     updateTender({ id: item.tender_id, data });
   };
@@ -184,7 +162,9 @@ const EditTender = ({ item, onclose, onUpdated }) => {
                 label="Estimated Value (₹)"
                 name="tender_value"
                 type="text"
-                onInput={(e) => e.target.value = e.target.value.replace(/[^0-9]/g, '')}
+                onInput={(e) =>
+                  (e.target.value = e.target.value.replace(/[^0-9]/g, ""))
+                }
                 register={register}
                 errors={errors}
               />
@@ -214,8 +194,11 @@ const EditTender = ({ item, onclose, onUpdated }) => {
                   value: c.client_id,
                   label: c.client_id,
                 }))}
-                // Add this override:
-                onChange={handleIdChange}
+                onChange={(e) =>
+                  fillClientFields(
+                    clients.find((c) => c.client_id === e.target.value),
+                  )
+                }
               />
             </div>
 
@@ -232,8 +215,11 @@ const EditTender = ({ item, onclose, onUpdated }) => {
                   value: c.client_name,
                   label: c.client_name,
                 }))}
-                // Add this override:
-                onChange={handleNameChange}
+                onChange={(e) =>
+                  fillClientFields(
+                    clients.find((c) => c.client_name === e.target.value),
+                  )
+                }
               />
             </div>
             <div className="col-span-1">
@@ -305,7 +291,9 @@ const EditTender = ({ item, onclose, onUpdated }) => {
                 label="EMD Amount (₹)"
                 name="emd.emd_amount"
                 type="text"
-                onInput={(e) => e.target.value = e.target.value.replace(/[^0-9]/g, '')}
+                onInput={(e) =>
+                  (e.target.value = e.target.value.replace(/[^0-9]/g, ""))
+                }
                 register={register}
                 errors={errors}
               />

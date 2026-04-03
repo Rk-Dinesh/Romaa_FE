@@ -1,4 +1,4 @@
-import React, { useEffect, useCallback } from "react";
+import React, { useCallback } from "react";
 import { useForm } from "react-hook-form";
 import { yupResolver } from "@hookform/resolvers/yup";
 import * as yup from "yup";
@@ -67,9 +67,6 @@ const AddTender = ({ onclose, onSuccess }) => {
   });
 
   // 3. Auto-fill Logic (Using cached clients)
-  const selectedClientId = watch("client_id");
-  const selectedClientName = watch("client_name");
-
   const fillClientFields = useCallback((found) => {
     if (!found) return;
     setValue("client_name", found.client_name, { shouldValidate: true });
@@ -78,18 +75,6 @@ const AddTender = ({ onclose, onSuccess }) => {
     setValue("tender_contact_phone", found.contact_phone, { shouldValidate: true });
     setValue("tender_contact_email", found.contact_email, { shouldValidate: true });
   }, [setValue]);
-
-  useEffect(() => {
-    if (selectedClientId) {
-      fillClientFields(clients.find((c) => c.client_id === selectedClientId));
-    }
-  }, [selectedClientId, clients, fillClientFields]);
-
-  useEffect(() => {
-    if (selectedClientName) {
-      fillClientFields(clients.find((c) => c.client_name === selectedClientName));
-    }
-  }, [selectedClientName, clients, fillClientFields]);
 
   const onSubmit = (data) => {
     addTender(data); // Trigger the mutation
@@ -122,6 +107,7 @@ const AddTender = ({ onclose, onSuccess }) => {
                 watch={watch}
                 setValue={setValue}
                 options={clients.map(c => ({ value: c.client_id, label: c.client_id }))}
+                onChange={(e) => fillClientFields(clients.find(c => c.client_id === e.target.value))}
               />
             </div>
             <div className="col-span-1">
@@ -134,6 +120,7 @@ const AddTender = ({ onclose, onSuccess }) => {
                 watch={watch}
                 setValue={setValue}
                 options={clients.map(c => ({ value: c.client_name, label: c.client_name }))}
+                onChange={(e) => fillClientFields(clients.find(c => c.client_name === e.target.value))}
               />
             </div>
             <div className="col-span-1">
