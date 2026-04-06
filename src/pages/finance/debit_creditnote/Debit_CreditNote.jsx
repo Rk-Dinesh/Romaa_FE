@@ -2,7 +2,7 @@ import { useState, useMemo } from "react";
 import {
   ArrowDownLeft, ArrowUpRight, RefreshCw,
   Search, Building2, CalendarDays, FileText,
-  Hash, BookOpen,
+  Hash, BookOpen, Check, Trash2
 } from "lucide-react";
 import { TbPlus } from "react-icons/tb";
 import {
@@ -11,6 +11,8 @@ import {
   useDeleteCN, useDeleteDN,
 } from "./hooks/useDebitCreditNote";
 import CreateDebitCreditNote from "./CreateDebitCreditNote";
+import ConfirmModal from "../../../components/ConfirmModal";
+import DeleteModal from "../../../components/DeleteModal";
 
 const fmt = (n) =>
   Number(n || 0).toLocaleString("en-IN", { minimumFractionDigits: 2 });
@@ -56,6 +58,7 @@ const Debit_CreditNote = () => {
   const [tab, setTab]           = useState("CN"); // "CN" | "DN"
   const [showForm, setShowForm] = useState(false);
   const [search, setSearch]     = useState("");
+  const [actionModal, setActionModal] = useState({ isOpen: false, type: "", id: null, displayStr: "", extra: null });
 
   const isCN = tab === "CN";
 
@@ -97,7 +100,7 @@ const Debit_CreditNote = () => {
   const dateKey = isCN ? "cn_date" : "dn_date";
 
   return (
-    <div className="font-roboto-flex min-h-screen bg-gray-50 dark:bg-[#0b0f19] pb-24">
+    <div className="font-roboto-flex h-full overflow-y-auto bg-gray-50 dark:bg-[#0b0f19] pb-24">
 
       {/* ── Header ── */}
       <div className="bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 sticky top-0 z-20 shadow-sm">
@@ -242,7 +245,7 @@ const Debit_CreditNote = () => {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-100 dark:divide-gray-700/50">
-                  {filtered.map((v, i) => (
+                  {filtered.slice().reverse().map((v, i) => (
                     <tr
                       key={v._id || v[noKey]}
                       className={`hover:bg-gray-50/60 dark:hover:bg-gray-800/40 transition-colors ${
@@ -316,26 +319,26 @@ const Debit_CreditNote = () => {
                             <button
                               onClick={(e) => {
                                 e.stopPropagation();
-                                isCN ? approveCN(v._id) : approveDN(v._id);
+                                setActionModal({ isOpen: true, type: "approve", id: v._id, displayStr: v[noKey], extra: isCN });
                               }}
                               disabled={approvingCN || approvingDN}
-                              className="px-3 py-1 text-[10px] font-bold rounded-lg bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 dark:bg-emerald-900/20 dark:hover:bg-emerald-900/40 dark:text-emerald-400 dark:border-emerald-800 transition-colors disabled:opacity-50 whitespace-nowrap"
+                              title="Approve"
+                              className="p-1.5 rounded-lg bg-emerald-50 hover:bg-emerald-100 text-emerald-600 border border-emerald-200 dark:bg-emerald-900/20 dark:hover:bg-emerald-900/40 dark:text-emerald-400 dark:border-emerald-800 transition-colors disabled:opacity-50"
                             >
-                              Approve
+                              <Check size={14} strokeWidth={2.5} />
                             </button>
                           )}
                           {(v.status === "draft" || v.status === "pending") && (
                             <button
                               onClick={(e) => {
                                 e.stopPropagation();
-                                if (window.confirm(`Delete ${v[noKey]}?`)) {
-                                  isCN ? deleteCN(v._id) : deleteDN(v._id);
-                                }
+                                setActionModal({ isOpen: true, type: "delete", id: v._id, displayStr: v[noKey], extra: isCN });
                               }}
                               disabled={deletingCN || deletingDN}
-                              className="px-3 py-1 text-[10px] font-bold rounded-lg bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 dark:bg-red-900/20 dark:hover:bg-red-900/40 dark:text-red-400 dark:border-red-800 transition-colors disabled:opacity-50 whitespace-nowrap"
+                              title="Delete"
+                              className="p-1.5 rounded-lg bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 dark:bg-red-900/20 dark:hover:bg-red-900/40 dark:text-red-400 dark:border-red-800 transition-colors disabled:opacity-50"
                             >
-                              Delete
+                              <Trash2 size={14} strokeWidth={2} />
                             </button>
                           )}
                         </div>
@@ -366,6 +369,23 @@ const Debit_CreditNote = () => {
         <CreateDebitCreditNote
           onclose={() => setShowForm(false)}
           onSuccess={() => { refetchCN(); refetchDN(); }}
+        />
+      )}
+
+      {/* ── Action Modals ── */}
+      {actionModal.isOpen && actionModal.type === "delete" && (
+        <DeleteModal
+          deletetitle={`Note ${actionModal.displayStr || ""}`}
+          onclose={() => setActionModal({ isOpen: false, type: "", id: null, displayStr: "", extra: null })}
+          onDelete={() => actionModal.extra ? deleteCN(actionModal.id) : deleteDN(actionModal.id)}
+        />
+      )}
+      {actionModal.isOpen && actionModal.type === "approve" && (
+        <ConfirmModal
+          title={`Approve ${actionModal.extra ? "Credit Note" : "Debit Note"}`}
+          message={`Are you sure you want to approve ${actionModal.displayStr || ""}? This action may be irreversible.`}
+          onConfirm={() => actionModal.extra ? approveCN(actionModal.id) : approveDN(actionModal.id)}
+          onClose={() => setActionModal({ isOpen: false, type: "", id: null, displayStr: "", extra: null })}
         />
       )}
     </div>

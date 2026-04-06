@@ -235,7 +235,7 @@ const ClientBilling = () => {
   const overallPct    = totalNet > 0 ? Math.round((totalReceived / totalNet) * 100) : 0;
 
   return (
-    <div className="flex flex-col h-[85vh] w-full font-roboto-flex overflow-hidden relative">
+    <div className="flex flex-col h-full w-full font-roboto-flex overflow-hidden relative">
       <div className="py-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 shrink-0">
         <div>
           <p className="text-xs text-gray-400 uppercase tracking-widest mb-0.5">Finance</p>

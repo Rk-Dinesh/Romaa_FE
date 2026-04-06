@@ -2,13 +2,15 @@ import { useState, useMemo } from "react";
 import {
   ArrowUpRight, ArrowDownLeft, RefreshCw,
   Search, Building2, CalendarDays, CreditCard,
-  FileText, Hash, X,
+  FileText, Hash, X, Check, Trash2
 } from "lucide-react";
 import { TbPlus } from "react-icons/tb";
 import { usePVList, useRVList, useApprovePV, useApproveRV, useDeletePV, useDeleteRV, useBankAccounts } from "./hooks/useVouchers";
 import { toast } from "react-toastify";
 import CreateVoucher from "./CreateVoucher";
 import Loader from "../../../components/Loader";
+import ConfirmModal from "../../../components/ConfirmModal";
+import DeleteModal from "../../../components/DeleteModal";
 
 const fmt = (n) =>
   Number(n || 0).toLocaleString("en-IN", { minimumFractionDigits: 2 });
@@ -61,6 +63,7 @@ const BankTransactions = () => {
   /* ── Approve-with-bank modal state ── */
   const [approveModal, setApproveModal] = useState(null); // { voucher, type: "PV"|"RV" }
   const [approveBank, setApproveBank]   = useState("");
+  const [actionModal, setActionModal] = useState({ isOpen: false, type: "", id: null, displayStr: "", extra: null });
 
   const isPV = tab === "PV";
 
@@ -74,10 +77,8 @@ const BankTransactions = () => {
 
   const handleApproveClick = (voucher) => {
     if (voucher.bank_account_code) {
-      // Already has bank_account_code — approve directly
-      isPV
-        ? approvePV({ id: voucher._id, bank_account_code: voucher.bank_account_code })
-        : approveRV({ id: voucher._id, bank_account_code: voucher.bank_account_code });
+      // Already has bank_account_code — ask for confirmation first
+      setActionModal({ isOpen: true, type: "approve", id: voucher._id, displayStr: voucher.pv_no || voucher.rv_no, extra: isPV });
     } else {
       // Missing bank_account_code — show modal to pick one
       setApproveBank("");
@@ -127,7 +128,7 @@ const BankTransactions = () => {
   const modeKey = isPV ? "payment_mode" : "receipt_mode";
 
   return (
-    <div className="font-roboto-flex min-h-screen bg-gray-50 dark:bg-[#0b0f19] pb-24">
+    <div className="font-roboto-flex h-full overflow-y-auto bg-gray-50 dark:bg-[#0b0f19] pb-24">
 
       {/* ── Header ── */}
       <div className="bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 sticky top-0 z-20 shadow-sm">
@@ -269,7 +270,7 @@ const BankTransactions = () => {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-100 dark:divide-gray-700/50">
-                  {filtered.map((v, i) => (
+                  {filtered.slice().reverse().map((v, i) => (
                     <tr
                       key={v._id || v[noKey]}
                       className={`hover:bg-gray-50/60 dark:hover:bg-gray-800/40 transition-colors ${
@@ -346,23 +347,23 @@ const BankTransactions = () => {
                                 handleApproveClick(v);
                               }}
                               disabled={approvingPV || approvingRV}
-                              className="px-3 py-1 text-[10px] font-bold rounded-lg bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 dark:bg-emerald-900/20 dark:hover:bg-emerald-900/40 dark:text-emerald-400 dark:border-emerald-800 transition-colors disabled:opacity-50 whitespace-nowrap"
+                              title="Approve"
+                              className="p-1.5 rounded-lg bg-emerald-50 hover:bg-emerald-100 text-emerald-600 border border-emerald-200 dark:bg-emerald-900/20 dark:hover:bg-emerald-900/40 dark:text-emerald-400 dark:border-emerald-800 transition-colors disabled:opacity-50"
                             >
-                              Approve
+                              <Check size={14} strokeWidth={2.5} />
                             </button>
                           )}
                           {(v.status === "draft" || v.status === "pending") && (
                             <button
                               onClick={(e) => {
                                 e.stopPropagation();
-                                if (window.confirm(`Delete ${v.pv_no || v.rv_no}?`)) {
-                                  isPV ? deletePV(v._id) : deleteRV(v._id);
-                                }
+                                setActionModal({ isOpen: true, type: "delete", id: v._id, displayStr: v.pv_no || v.rv_no, extra: isPV });
                               }}
                               disabled={deletingPV || deletingRV}
-                              className="px-3 py-1 text-[10px] font-bold rounded-lg bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 dark:bg-red-900/20 dark:hover:bg-red-900/40 dark:text-red-400 dark:border-red-800 transition-colors disabled:opacity-50 whitespace-nowrap"
+                              title="Delete"
+                              className="p-1.5 rounded-lg bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 dark:bg-red-900/20 dark:hover:bg-red-900/40 dark:text-red-400 dark:border-red-800 transition-colors disabled:opacity-50"
                             >
-                              Delete
+                              <Trash2 size={14} strokeWidth={2} />
                             </button>
                           )}
                         </div>
@@ -479,6 +480,26 @@ const BankTransactions = () => {
             </div>
           </div>
         </div>
+      )}
+
+      {/* ── Action Modals ── */}
+      {actionModal.isOpen && actionModal.type === "delete" && (
+        <DeleteModal
+          deletetitle={`Voucher ${actionModal.displayStr || ""}`}
+          onclose={() => setActionModal({ isOpen: false, type: "", id: null, displayStr: "", extra: null })}
+          onDelete={() => actionModal.extra ? deletePV(actionModal.id) : deleteRV(actionModal.id)}
+        />
+      )}
+      {actionModal.isOpen && actionModal.type === "approve" && (
+        <ConfirmModal
+          title={`Approve ${actionModal.extra ? "Payment" : "Receipt"}`}
+          message={`Are you sure you want to approve Voucher ${actionModal.displayStr || ""}?`}
+          onConfirm={() => actionModal.extra 
+            ? approvePV({ id: actionModal.id }) 
+            : approveRV({ id: actionModal.id })
+          }
+          onClose={() => setActionModal({ isOpen: false, type: "", id: null, displayStr: "", extra: null })}
+        />
       )}
     </div>
   );

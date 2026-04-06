@@ -61,7 +61,7 @@ const Banks = () => {
   }, [accounts, search]);
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-[#0b0f19]">
+    <div className="h-full overflow-y-auto bg-gray-50 dark:bg-[#0b0f19]">
 
       {/* ════════════════════ HEADER ════════════════════ */}
       <div className="sticky top-0 z-20 bg-white/80 dark:bg-gray-950/80 backdrop-blur-md border-b border-gray-100 dark:border-gray-800">

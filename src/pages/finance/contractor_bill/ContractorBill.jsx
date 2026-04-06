@@ -95,7 +95,7 @@ const ContractorBill = () => {
   };
 
   return (
-    <div className="flex flex-col h-[85vh] w-full font-roboto-flex overflow-hidden relative">
+    <div className="flex flex-col h-full w-full font-roboto-flex overflow-hidden relative">
 
       {/* ── Page Header ── */}
       <div className="py-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 shrink-0">

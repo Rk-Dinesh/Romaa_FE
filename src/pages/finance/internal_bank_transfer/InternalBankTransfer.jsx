@@ -1,12 +1,14 @@
 import { useState, useMemo } from "react";
 import {
   ArrowRightLeft, RefreshCw, Search, Building2, CalendarDays,
-  Banknote, FileText, CheckCircle,
+  Banknote, FileText, CheckCircle, Check, Trash2
 } from "lucide-react";
 import { TbPlus } from "react-icons/tb";
 import { useBTList, useApproveBT, useDeleteBT } from "./hooks/useBankTransfer";
 import CreateBankTransfer from "./CreateBankTransfer";
 import Loader from "../../../components/Loader";
+import ConfirmModal from "../../../components/ConfirmModal";
+import DeleteModal from "../../../components/DeleteModal";
 const fmt = (n) =>
   Number(n || 0).toLocaleString("en-IN", { minimumFractionDigits: 2 });
 
@@ -76,6 +78,7 @@ const SummaryCard = ({ icon, label, value, sub, color }) => {
 const InternalBankTransfer = () => {
   const [showForm, setShowForm] = useState(false);
   const [search, setSearch]     = useState("");
+  const [actionModal, setActionModal] = useState({ isOpen: false, type: "", id: null, displayStr: "" });
 
   const { data: list = [], isLoading, isFetching, refetch } = useBTList();
   const { mutate: approveBT, isPending: approving }         = useApproveBT();
@@ -103,7 +106,7 @@ const InternalBankTransfer = () => {
     .reduce((s, t) => s + (t.amount || 0), 0);
 
   return (
-    <div className="font-roboto-flex min-h-screen bg-gray-50 dark:bg-[#0b0f19] pb-24">
+    <div className="font-roboto-flex h-full overflow-y-auto bg-gray-50 dark:bg-[#0b0f19] pb-24">
 
       {/* ── Header ── */}
       <div className="bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 sticky top-0 z-20 shadow-sm">
@@ -219,7 +222,7 @@ const InternalBankTransfer = () => {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-100 dark:divide-gray-700/50">
-                  {filtered.map((t, i) => (
+                  {filtered.slice().reverse().map((t, i) => (
                     <tr
                       key={t._id || t.transfer_no}
                       className="hover:bg-blue-50/30 dark:hover:bg-blue-900/10 transition-colors"
@@ -301,26 +304,26 @@ const InternalBankTransfer = () => {
                             <button
                               onClick={(e) => {
                                 e.stopPropagation();
-                                approveBT(t._id);
+                                setActionModal({ isOpen: true, type: "approve", id: t._id, displayStr: t.transfer_no });
                               }}
                               disabled={approving}
-                              className="px-3 py-1 text-[10px] font-bold rounded-lg bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 dark:bg-emerald-900/20 dark:hover:bg-emerald-900/40 dark:text-emerald-400 dark:border-emerald-800 transition-colors disabled:opacity-50 whitespace-nowrap"
+                              title="Approve"
+                              className="p-1.5 rounded-lg bg-emerald-50 hover:bg-emerald-100 text-emerald-600 border border-emerald-200 dark:bg-emerald-900/20 dark:hover:bg-emerald-900/40 dark:text-emerald-400 dark:border-emerald-800 transition-colors disabled:opacity-50"
                             >
-                              Approve
+                              <Check size={14} strokeWidth={2.5} />
                             </button>
                           )}
                           {(t.status === "draft" || t.status === "pending") && (
                             <button
                               onClick={(e) => {
                                 e.stopPropagation();
-                                if (window.confirm(`Delete ${t.transfer_no}?`)) {
-                                  deleteBT(t._id);
-                                }
+                                setActionModal({ isOpen: true, type: "delete", id: t._id, displayStr: t.transfer_no });
                               }}
                               disabled={deleting}
-                              className="px-3 py-1 text-[10px] font-bold rounded-lg bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 dark:bg-red-900/20 dark:hover:bg-red-900/40 dark:text-red-400 dark:border-red-800 transition-colors disabled:opacity-50 whitespace-nowrap"
+                              title="Delete"
+                              className="p-1.5 rounded-lg bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 dark:bg-red-900/20 dark:hover:bg-red-900/40 dark:text-red-400 dark:border-red-800 transition-colors disabled:opacity-50"
                             >
-                              Delete
+                              <Trash2 size={14} strokeWidth={2} />
                             </button>
                           )}
                         </div>
@@ -354,6 +357,23 @@ const InternalBankTransfer = () => {
         <CreateBankTransfer
           onClose={() => setShowForm(false)}
           onSuccess={refetch}
+        />
+      )}
+
+      {/* ── Action Modals ── */}
+      {actionModal.isOpen && actionModal.type === "delete" && (
+        <DeleteModal
+          deletetitle={`Transfer ${actionModal.displayStr || ""}`}
+          onclose={() => setActionModal({ isOpen: false, type: "", id: null, displayStr: "" })}
+          onDelete={() => deleteBT(actionModal.id)}
+        />
+      )}
+      {actionModal.isOpen && actionModal.type === "approve" && (
+        <ConfirmModal
+          title="Approve Bank Transfer"
+          message={`Are you sure you want to approve Transfer ${actionModal.displayStr || ""}? This action may be irreversible.`}
+          onConfirm={() => approveBT(actionModal.id)}
+          onClose={() => setActionModal({ isOpen: false, type: "", id: null, displayStr: "" })}
         />
       )}
     </div>

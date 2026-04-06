@@ -3,6 +3,7 @@ import {
   FileText, RefreshCw, Search, CalendarDays,
   ChevronLeft, ChevronRight, RotateCcw, CheckCircle2,
   Layers, ArrowRightLeft, BookOpen, AlertTriangle,
+  Check, Trash2
 } from "lucide-react";
 import { TbPlus } from "react-icons/tb";
 import { FiFilter } from "react-icons/fi";
@@ -11,6 +12,8 @@ import {
 } from "./hooks/useJournalEntry";
 import CreateJournalEntry from "./CreateJournalEntry";
 import ViewJournalEntry   from "./ViewJournalEntry";
+import ConfirmModal from "../../../components/ConfirmModal";
+import DeleteModal from "../../../components/DeleteModal";
 
 /* ── Constants ───────────────────────────────────────────────────────────── */
 const JE_TYPES = [
@@ -139,6 +142,7 @@ const JournalEntry = () => {
   const [showCreate,  setShowCreate]  = useState(false);
   const [viewJE,      setViewJE]      = useState(null);
   const [reversingJE, setReversingJE] = useState(null);
+  const [actionModal, setActionModal] = useState({ isOpen: false, type: "", id: null, displayStr: "" });
 
   /* ── Filters ── */
   const [search,    setSearch]    = useState("");
@@ -203,7 +207,7 @@ const JournalEntry = () => {
   const isFiltered = filterType !== "All" || filterStatus !== "all" || fromDate || toDate;
 
   return (
-    <div className="font-roboto-flex min-h-screen bg-gray-50 dark:bg-[#0b0f19] pb-24">
+    <div className="font-roboto-flex h-full overflow-y-auto bg-gray-50 dark:bg-[#0b0f19] pb-24">
 
       {/* ── Header ── */}
       <div className="bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 sticky top-0 z-20 shadow-sm">
@@ -407,7 +411,7 @@ const JournalEntry = () => {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-100 dark:divide-gray-700/50">
-                  {filtered.map((je, i) => (
+                  {filtered.slice().reverse().map((je, i) => (
                     <tr
                       key={je._id}
                       onClick={() => setViewJE(je)}
@@ -508,11 +512,12 @@ const JournalEntry = () => {
                         <div className="flex items-center gap-1.5 justify-end">
                           {je.status === "pending" && (
                             <button
-                              onClick={() => approveJE(je._id)}
+                              onClick={(e) => { e.stopPropagation(); setActionModal({ isOpen: true, type: "approve", id: je._id, displayStr: je.je_no }); }}
                               disabled={approvingId}
-                              className="px-2.5 py-1 text-[10px] font-bold rounded-lg bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 dark:bg-emerald-900/20 dark:hover:bg-emerald-900/40 dark:text-emerald-400 dark:border-emerald-800 transition-colors disabled:opacity-50 whitespace-nowrap"
+                              title="Approve"
+                              className="p-1.5 rounded-lg bg-emerald-50 hover:bg-emerald-100 text-emerald-600 border border-emerald-200 dark:bg-emerald-900/20 dark:hover:bg-emerald-900/40 dark:text-emerald-400 dark:border-emerald-800 transition-colors disabled:opacity-50"
                             >
-                              Approve
+                              <Check size={14} strokeWidth={2.5} />
                             </button>
                           )}
                           {je.status === "approved" && !je.is_reversal && (
@@ -525,15 +530,15 @@ const JournalEntry = () => {
                           )}
                           {(je.status === "draft" || je.status === "pending") && (
                             <button
-                              onClick={() => {
-                                if (window.confirm(`Delete ${je.je_no}? This cannot be undone.`)) {
-                                  deleteJE(je._id);
-                                }
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setActionModal({ isOpen: true, type: "delete", id: je._id, displayStr: je.je_no });
                               }}
                               disabled={deletingId}
-                              className="px-2.5 py-1 text-[10px] font-bold rounded-lg bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 dark:bg-red-900/20 dark:hover:bg-red-900/40 dark:text-red-400 dark:border-red-800 transition-colors disabled:opacity-50 whitespace-nowrap"
+                              title="Delete"
+                              className="p-1.5 rounded-lg bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 dark:bg-red-900/20 dark:hover:bg-red-900/40 dark:text-red-400 dark:border-red-800 transition-colors disabled:opacity-50"
                             >
-                              Delete
+                              <Trash2 size={14} strokeWidth={2} />
                             </button>
                           )}
                         </div>
@@ -620,6 +625,23 @@ const JournalEntry = () => {
           onClose={() => setReversingJE(null)}
           onReverse={reverseJE}
           isReversing={isReversing}
+        />
+      )}
+
+      {/* ── Action Modals ── */}
+      {actionModal.isOpen && actionModal.type === "delete" && (
+        <DeleteModal
+          deletetitle={`Journal Entry ${actionModal.displayStr || ""}`}
+          onclose={() => setActionModal({ isOpen: false, type: "", id: null, displayStr: "" })}
+          onDelete={() => deleteJE(actionModal.id)}
+        />
+      )}
+      {actionModal.isOpen && actionModal.type === "approve" && (
+        <ConfirmModal
+          title="Approve Journal Entry"
+          message={`Are you sure you want to approve Journal Entry ${actionModal.displayStr || ""}? This action may be irreversible.`}
+          onConfirm={() => approveJE(actionModal.id)}
+          onClose={() => setActionModal({ isOpen: false, type: "", id: null, displayStr: "" })}
         />
       )}
     </div>

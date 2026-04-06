@@ -1,337 +1,205 @@
 import { useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
-import {
-  BookOpen, Search, RefreshCw, TrendingUp,
-  AlertCircle, Building2, Users,
-  ChevronRight, ArrowUpRight, ArrowDownLeft,
-  BarChart3, Filter,
-} from "lucide-react";
+import { FileText, Filter, ArrowRight, BookOpen, AlertCircle, RefreshCw } from "lucide-react";
 import { useLedgerSummary } from "./hooks/useLedger";
-import Loader from "../../../components/Loader";
+import { useTenderIds } from "../debit_creditnote/hooks/useDebitCreditNote";
+import SearchableSelect from "../../../components/SearchableSelect";
+import Title from "../../../components/Title";
 
-/* ── Helpers ────────────────────────────────────────────────────────────── */
-const fmt = (n) =>
-  Number(n || 0).toLocaleString("en-IN", { minimumFractionDigits: 2 });
+const FY_RANGES = [
+  { label: "FY 2024-25", from: "2024-04-01", to: "2025-03-31" },
+  { label: "FY 2025-26", from: "2025-04-01", to: "2026-03-31" },
+  { label: "FY 2026-27", from: "2026-04-01", to: "2027-03-31" },
+];
 
-const fmtDate = (v) =>
-  v ? new Date(v).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" }) : "—";
-
-/* ── Balance chip ────────────────────────────────────────────────────────── */
-const BalanceChip = ({ balance }) => {
-  if (balance === 0)
-    return (
-      <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2.5 py-1 rounded-full bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400 border border-gray-200 dark:border-gray-700">
-        NIL
-      </span>
-    );
-  if (balance > 0)
-    return (
-      <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2.5 py-1 rounded-full bg-red-50 text-red-700 dark:bg-red-900/20 dark:text-red-400 border border-red-100 dark:border-red-800">
-        <ArrowUpRight size={10} />
-        ₹{fmt(balance)} Cr
-      </span>
-    );
-  return (
-    <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2.5 py-1 rounded-full bg-blue-50 text-blue-700 dark:bg-blue-900/20 dark:text-blue-400 border border-blue-100 dark:border-blue-800">
-      <ArrowDownLeft size={10} />
-      ₹{fmt(Math.abs(balance))} Dr
-    </span>
-  );
-};
-
-/* ── Summary card ────────────────────────────────────────────────────────── */
-const SummaryCard = ({ icon, label, value, sub, color }) => {
-  const c = {
-    red:     { wrap: "bg-red-50 dark:bg-red-900/20",     icon: "text-red-600 dark:text-red-400",     val: "text-red-700 dark:text-red-300",     border: "border-red-100 dark:border-red-800/50" },
-    blue:    { wrap: "bg-blue-50 dark:bg-blue-900/20",   icon: "text-blue-600 dark:text-blue-400",   val: "text-blue-700 dark:text-blue-300",   border: "border-blue-100 dark:border-blue-800/50" },
-    amber:   { wrap: "bg-amber-50 dark:bg-amber-900/20", icon: "text-amber-600 dark:text-amber-400", val: "text-amber-700 dark:text-amber-300", border: "border-amber-100 dark:border-amber-800/50" },
-    slate:   { wrap: "bg-slate-100 dark:bg-slate-800",   icon: "text-slate-600 dark:text-slate-400", val: "text-slate-700 dark:text-slate-300", border: "border-slate-200 dark:border-slate-700" },
-  }[color] || {};
-  return (
-    <div className={`bg-white dark:bg-gray-800 rounded-xl border ${c.border} p-4 flex items-center gap-4 shadow-sm`}>
-      <div className={`p-3 rounded-xl ${c.wrap} shrink-0`}>
-        <span className={c.icon}>{icon}</span>
-      </div>
-      <div>
-        <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">{label}</p>
-        <p className={`text-lg font-extrabold mt-0.5 tabular-nums ${c.val}`}>{value}</p>
-        <p className="text-[10px] text-gray-400 mt-0.5">{sub}</p>
-      </div>
-    </div>
-  );
-};
-
-/* ═══════════════════════════════════════════════════════════════════════════ */
 const LedgerEntry = () => {
   const navigate = useNavigate();
+  
+  /* ── Form States ── */
+  const [supplierType, setSupplierType]             = useState("Vendor");
+  const [selectedSupplierId, setSelectedSupplierId] = useState("");
+  const [selectedTenderId, setSelectedTenderId]     = useState("");
+  const [fromDate, setFromDate]                     = useState("");
+  const [toDate, setToDate]                         = useState("");
 
-  const [supplierType, setSupplierType]       = useState(""); // "" | "Vendor" | "Contractor"
-  const [onlyOutstanding, setOnlyOutstanding] = useState(false);
-  const [search, setSearch]                   = useState("");
+  /* ── API Data ── */
+  const { data: summaries = [], isLoading: summariesLoading, isFetching: loadingSummary } = useLedgerSummary({ supplier_type: supplierType });
+  const { data: tenders = [], isLoading: tendersLoading } = useTenderIds();
 
-  const queryParams = useMemo(() => {
-    const p = {};
-    if (supplierType)    p.supplier_type     = supplierType;
-    if (onlyOutstanding) p.only_outstanding  = "true";
-    return p;
-  }, [supplierType, onlyOutstanding]);
+  /* ── Dropdown Mapping ── */
+  const supplierOptions = useMemo(() => 
+    summaries.map(s => ({ value: s.supplier_id, label: `${s.supplier_name} (${s.supplier_id})` })),
+  [summaries]);
 
-  const { data: summary = [], isLoading, isFetching, refetch } = useLedgerSummary(queryParams);
+  const tenderOptions = useMemo(() => 
+    tenders.map(t => ({ value: t.tender_id, label: t.tender_name || t.tender_id })),
+  [tenders]);
 
-  /* ── Filtered list ── */
-  const filtered = useMemo(() => {
-    if (!search) return summary;
-    const q = search.toLowerCase();
-    return summary.filter(
-      s =>
-        (s.supplier_name || "").toLowerCase().includes(q) ||
-        (s.supplier_id   || "").toLowerCase().includes(q),
-    );
-  }, [summary, search]);
+  const handleGenerate = () => {
+    if (!selectedSupplierId) return;
+    const params = new URLSearchParams();
+    if (fromDate) params.append("from", fromDate);
+    if (toDate) params.append("to", toDate);
+    if (selectedTenderId) params.append("tender_id", selectedTenderId);
+    params.append("type", supplierType);
+    
+    navigate(`/finance/ledgerentry/viewledgerentry/${selectedSupplierId}?${params.toString()}`);
+  };
 
-  /* ── Totals ── */
-  const totalOutstanding = useMemo(
-    () => summary.filter(s => s.balance > 0).reduce((a, s) => a + s.balance, 0),
-    [summary],
-  );
-  const vendorCount      = summary.filter(s => s.supplier_type === "Vendor").length;
-  const contractorCount  = summary.filter(s => s.supplier_type === "Contractor").length;
-  const zeroBalanceCount = summary.filter(s => s.balance === 0).length;
+  const applyFY = (range) => {
+    setFromDate(range.from);
+    setToDate(range.to);
+  };
 
   return (
-    <div className="font-roboto-flex min-h-screen bg-gray-50 dark:bg-[#0b0f19] pb-24">
-
-      {/* ── Header ── */}
-      <div className="bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 sticky top-0 z-20 shadow-sm">
-        <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between gap-4 flex-wrap">
-          <div className="flex items-center gap-3">
-            <div className="p-2 rounded-lg bg-slate-100 dark:bg-slate-800">
-              <BookOpen size={17} className="text-slate-700 dark:text-slate-300" />
-            </div>
-            <div>
-              <h1 className="text-base font-bold text-gray-900 dark:text-white leading-none">
-                Ledger
-              </h1>
-              <p className="text-xs text-gray-400 mt-1 leading-none">
-                Finance · Supplier Outstanding Register
-              </p>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-2">
-            {/* Only Outstanding toggle */}
-            <button
-              onClick={() => setOnlyOutstanding(v => !v)}
-              className={`flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-semibold border transition-all ${
-                onlyOutstanding
-                  ? "bg-red-600 border-red-600 text-white shadow-sm"
-                  : "bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:border-gray-400"
-              }`}
-            >
-              <AlertCircle size={13} />
-              Outstanding Only
-            </button>
-
-            <button
-              onClick={() => refetch()}
-              disabled={isFetching}
-              className="p-2 rounded-lg border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800 text-gray-500 transition-colors disabled:opacity-50"
-            >
-              <RefreshCw size={15} className={isFetching ? "animate-spin" : ""} />
-            </button>
-          </div>
-        </div>
+    <div className="h-full overflow-y-auto bg-slate-50 dark:bg-[#0b0f19] flex flex-col font-sans">
+      <div className="p-4 md:p-6 pb-2">
+        <Title title="Finance" sub_title="Ledger" page_title="Report Configuration" />
       </div>
 
-      <div className="max-w-7xl mx-auto px-6 pt-5">
-
-        {/* ── Summary Cards ── */}
-        <div className="grid grid-cols-4 gap-4 mb-5">
-          <SummaryCard
-            icon={<BarChart3 size={20} />}
-            color="red"
-            label="Total Outstanding"
-            value={`₹${fmt(totalOutstanding)}`}
-            sub="payable to suppliers"
-          />
-          <SummaryCard
-            icon={<TrendingUp size={20} />}
-            color="slate"
-            label="Total Suppliers"
-            value={summary.length}
-            sub="in ledger"
-          />
-          <SummaryCard
-            icon={<Building2 size={20} />}
-            color="blue"
-            label="Vendors"
-            value={vendorCount}
-            sub="with ledger entries"
-          />
-          <SummaryCard
-            icon={<Users size={20} />}
-            color="amber"
-            label="Contractors"
-            value={contractorCount}
-            sub={`${zeroBalanceCount} fully settled`}
-          />
-        </div>
-
-        {/* ── Filter bar ── */}
-        <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 px-5 py-3.5 mb-4 flex items-center gap-3 flex-wrap relative z-10">
-          <Filter size={14} className="text-gray-400 shrink-0" />
-
-          {/* Search */}
-          <div className="relative flex-1 min-w-[200px]">
-            <Search size={14} className="absolute left-3 top-2.5 text-gray-400" />
-            <input
-              type="text"
-              placeholder="Search supplier name or ID…"
-              value={search}
-              onChange={e => setSearch(e.target.value)}
-              className="w-full pl-9 border border-gray-200 dark:border-gray-700 rounded-lg px-3 py-2 text-sm bg-gray-50 dark:bg-gray-800 dark:text-white focus:outline-none focus:ring-1 focus:ring-slate-500 focus:border-slate-500"
-            />
+      <div className="flex-1 p-4 md:p-6 max-w-5xl mx-auto w-full">
+        
+        {/* ── Main Config Panel ── */}
+        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm rounded-xl overflow-hidden mt-4">
+          
+          <div className="px-6 py-4 border-b-2 border-slate-800 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50 flex items-center justify-between">
+             <div className="flex items-center gap-3">
+               <div className="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center text-white shrink-0">
+                 <BookOpen size={16} />
+               </div>
+               <div>
+                  <h2 className="text-sm font-black text-slate-800 dark:text-slate-100 uppercase tracking-widest leading-tight">Ledger Statement Generation</h2>
+                  <p className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Configure Account and Parameters</p>
+               </div>
+             </div>
           </div>
 
-          {/* Supplier type pills */}
-          <div className="flex bg-gray-100 dark:bg-gray-800 rounded-lg p-1 gap-1">
-            {[["", "All"], ["Vendor", "Vendors"], ["Contractor", "Contractors"]].map(([val, label]) => (
-              <button
-                key={val}
-                onClick={() => setSupplierType(val)}
-                className={`px-3 py-1.5 rounded-md text-xs font-semibold transition-all ${
-                  supplierType === val
-                    ? "bg-white dark:bg-gray-700 text-gray-800 dark:text-white shadow-sm"
-                    : "text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"
-                }`}
-              >
-                {label}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {/* ── Table ── */}
-        {isLoading ? (
-          <Loader />
-        ) : filtered.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-24 gap-3 text-gray-400">
-            <BookOpen size={44} className="opacity-20" />
-            <p className="text-sm font-semibold">
-              {summary.length === 0 ? "No ledger entries yet." : "No suppliers match current filters."}
-            </p>
-          </div>
-        ) : (
-          <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden shadow-sm">
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead className="bg-gray-50 dark:bg-gray-800/60 border-b border-gray-200 dark:border-gray-700">
-                  <tr>
-                    {["#", "Supplier", "Type", "Last Transaction", "Total Credit (Cr)", "Total Debit (Dr)", "Net Balance", ""].map(h => (
-                      <th
-                        key={h}
-                        className="px-4 py-3 text-[10px] font-extrabold uppercase tracking-wider text-gray-500 dark:text-gray-400 text-left whitespace-nowrap"
-                      >
-                        {h}
-                      </th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-100 dark:divide-gray-700/50">
-                  {filtered.map((s, i) => (
-                    <tr
-                      key={s.supplier_id}
-                      onClick={() =>
-                        navigate(`/finance/ledgerentry/viewledgerentry/${s.supplier_id}`, {
-                          state: { supplier: s },
-                        })
-                      }
-                      className="hover:bg-slate-50/60 dark:hover:bg-slate-800/30 transition-colors cursor-pointer group"
+          <div className="p-6 md:p-8 space-y-8">
+            
+            {/* Row 1: Account Type & Supplier */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+              <div>
+                <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest mb-3 flex items-center gap-2">
+                  1. Select Account Type
+                </label>
+                <div className="grid grid-cols-3 gap-2 bg-slate-100 dark:bg-slate-800 p-1.5 rounded-lg">
+                  {["Vendor", "Contractor", "Client"].map(t => (
+                    <button
+                      key={t}
+                      onClick={() => { setSupplierType(t); setSelectedSupplierId(""); }}
+                      className={`py-2.5 px-3 rounded-md text-xs font-bold transition-all ${
+                        supplierType === t
+                          ? "bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-sm ring-1 ring-slate-200 dark:ring-slate-600"
+                          : "text-slate-500 hover:text-slate-700 dark:hover:text-slate-300"
+                      }`}
                     >
-                      <td className="px-4 py-3.5 text-xs text-gray-400">{i + 1}</td>
-
-                      <td className="px-4 py-3.5">
-                        <div className="flex items-center gap-2">
-                          <div className={`w-8 h-8 rounded-lg flex items-center justify-center text-xs font-bold shrink-0 ${
-                            s.supplier_type === "Vendor"
-                              ? "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400"
-                              : "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400"
-                          }`}>
-                            {(s.supplier_name || s.supplier_id || "?")[0].toUpperCase()}
-                          </div>
-                          <div>
-                            <p className="font-semibold text-gray-800 dark:text-gray-100 leading-tight">
-                              {s.supplier_name || "—"}
-                            </p>
-                            <code className="text-[10px] text-gray-400 font-mono">{s.supplier_id}</code>
-                          </div>
-                        </div>
-                      </td>
-
-                      <td className="px-4 py-3.5">
-                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
-                          s.supplier_type === "Vendor"
-                            ? "bg-blue-50 text-blue-700 dark:bg-blue-900/20 dark:text-blue-400"
-                            : "bg-amber-50 text-amber-700 dark:bg-amber-900/20 dark:text-amber-400"
-                        }`}>
-                          {s.supplier_type || "—"}
-                        </span>
-                      </td>
-
-                      <td className="px-4 py-3.5 text-xs text-gray-500 dark:text-gray-400 whitespace-nowrap">
-                        {fmtDate(s.last_txn_date)}
-                      </td>
-
-                      {/* Credit column — liability (what you owe) */}
-                      <td className="px-4 py-3.5 tabular-nums text-right">
-                        <span className="font-semibold text-red-600 dark:text-red-400">
-                          ₹{fmt(s.total_credit)}
-                        </span>
-                      </td>
-
-                      {/* Debit column — what has been cleared */}
-                      <td className="px-4 py-3.5 tabular-nums text-right">
-                        <span className="font-semibold text-emerald-600 dark:text-emerald-400">
-                          ₹{fmt(s.total_debit)}
-                        </span>
-                      </td>
-
-                      {/* Balance */}
-                      <td className="px-4 py-3.5 text-right">
-                        <BalanceChip balance={s.balance} />
-                      </td>
-
-                      <td className="px-4 py-3.5">
-                        <ChevronRight size={15} className="text-gray-300 group-hover:text-slate-500 transition-colors" />
-                      </td>
-                    </tr>
+                      {t}
+                    </button>
                   ))}
-                </tbody>
-              </table>
+                </div>
+              </div>
+
+              <div>
+                <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest mb-3 flex items-center gap-2">
+                  2. Choose {supplierType} Account 
+                  {loadingSummary && <RefreshCw size={12} className="animate-spin text-blue-500" />}
+                </label>
+                <SearchableSelect
+                  placeholder={`Search ${supplierType} directory...`}
+                  options={supplierOptions}
+                  value={selectedSupplierId}
+                  onChange={setSelectedSupplierId}
+                  disabled={summariesLoading}
+                />
+              </div>
             </div>
 
-            {/* Footer */}
-            <div className="px-5 py-3 border-t border-gray-100 dark:border-gray-800 flex items-center justify-between text-xs text-gray-400 bg-gray-50/40 dark:bg-gray-800/20">
-              <span>
-                Showing <strong className="text-gray-600 dark:text-gray-300">{filtered.length}</strong> of{" "}
-                <strong className="text-gray-600 dark:text-gray-300">{summary.length}</strong> suppliers
-                <span className="ml-2 text-gray-300">· Click a row to open full ledger</span>
-              </span>
-              <span className="font-semibold text-red-600 dark:text-red-400 tabular-nums">
-                Total Outstanding: ₹{fmt(totalOutstanding)}
-              </span>
+            <hr className="border-slate-100 dark:border-slate-800" />
+
+            {/* Row 2: Tender/Project Filtering */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+              <div className="md:col-span-1">
+                <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest mb-3 block">
+                  3. Project / Tender Filter (Optional)
+                </label>
+                <SearchableSelect
+                  placeholder="Leave blank for all projects..."
+                  options={tenderOptions}
+                  value={selectedTenderId}
+                  onChange={setSelectedTenderId}
+                  disabled={tendersLoading}
+                />
+                <div className="mt-3 flex items-start gap-2 bg-slate-50 dark:bg-slate-800/50 p-2.5 rounded-lg border border-slate-200 dark:border-slate-700">
+                   <AlertCircle size={14} className="shrink-0 mt-0.5 text-blue-500" />
+                   <p className="text-[10px] font-bold text-slate-500 dark:text-slate-400 leading-snug">
+                     If selected, the ledger will only include transactions posted against this specific project.
+                   </p>
+                </div>
+              </div>
+
+              {/* Row 3: Period */}
+              <div className="md:col-span-1">
+                <div className="flex items-center justify-between mb-3">
+                  <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest">4. Reporting Period</label>
+                  <div className="flex gap-1.5 flex-wrap justify-end">
+                    {FY_RANGES.map(fy => (
+                      <button
+                        key={fy.label}
+                        onClick={() => applyFY(fy)}
+                        className={`px-2 py-1 rounded text-[9px] font-black transition-all border ${
+                          fromDate === fy.from && toDate === fy.to
+                            ? "bg-slate-800 border-slate-800 text-white"
+                            : "bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-500 hover:border-slate-400"
+                        }`}
+                      >
+                        {fy.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="relative">
+                    <span className="absolute -top-2 left-2 bg-white dark:bg-slate-900 px-1 text-[8px] font-black text-slate-400 uppercase tracking-wider z-10">From</span>
+                    <input 
+                      type="date" 
+                      value={fromDate} 
+                      onChange={e => setFromDate(e.target.value)}
+                      className="w-full bg-transparent border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2.5 text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-colors text-slate-800 dark:text-slate-100"
+                    />
+                  </div>
+                  <div className="relative">
+                    <span className="absolute -top-2 left-2 bg-white dark:bg-slate-900 px-1 text-[8px] font-black text-slate-400 uppercase tracking-wider z-10">To</span>
+                    <input 
+                      type="date" 
+                      value={toDate} 
+                      onChange={e => setToDate(e.target.value)}
+                      className="w-full bg-transparent border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2.5 text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-colors text-slate-800 dark:text-slate-100"
+                    />
+                  </div>
+                </div>
+                <p className="text-[9px] font-bold text-slate-400 opacity-80 mt-2 tabular-nums italic">
+                  * Transactions prior to the "From" date roll into the Opening Balance.
+                </p>
+              </div>
             </div>
+
           </div>
-        )}
 
-        {/* ── Accounting note ── */}
-        <div className="mt-4 flex items-start gap-2 text-[11px] text-gray-400 dark:text-gray-500">
-          <AlertCircle size={13} className="shrink-0 mt-0.5" />
-          <span>
-            <strong className="text-red-500">Cr balance</strong> = you owe the supplier (outstanding payable).{" "}
-            <strong className="text-blue-500">Dr balance</strong> = supplier owes you (overpayment / excess credit note).{" "}
-            Entries are auto-posted when vouchers are approved — this register is read-only.
-          </span>
+          <div className="px-6 py-4 bg-slate-50 dark:bg-slate-800/50 border-t border-slate-200 dark:border-slate-800 flex justify-end">
+            <button
+              onClick={handleGenerate}
+              disabled={!selectedSupplierId}
+              className={`px-8 py-2.5 rounded-lg flex items-center justify-center gap-2 text-xs font-black uppercase tracking-widest transition-all ${
+                selectedSupplierId
+                  ? "bg-blue-600 text-white hover:bg-blue-700 shadow-md shadow-blue-500/20"
+                  : "bg-slate-200 dark:bg-slate-800 text-slate-400 cursor-not-allowed border border-transparent"
+              }`}
+            >
+              <Filter size={14} />
+              Generate Statement
+            </button>
+          </div>
         </div>
       </div>
     </div>

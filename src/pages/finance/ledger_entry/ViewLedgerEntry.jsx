@@ -1,708 +1,328 @@
-import { useState, useMemo } from "react";
-import { useParams, useLocation, useNavigate } from "react-router-dom";
-import {
-  ArrowLeft, BookOpen, Calendar, RefreshCw,
-  ChevronDown, ChevronUp, AlertCircle,
-  Building2, TrendingUp, TrendingDown,
-  FileText, Printer,
+import {  useMemo } from "react";
+import { useParams, useNavigate, useSearchParams } from "react-router-dom";
+import { 
+  ArrowLeft, Printer, RefreshCw, Filter, FileText, CheckCircle2
 } from "lucide-react";
-import { useSupplierLedger, useSupplierBalance, useSupplierStatement } from "./hooks/useLedger";
+import { 
+  useSupplierLedger, 
+  useSupplierBalance,
+  useSupplierStatement 
+} from "./hooks/useLedger";
 import Loader from "../../../components/Loader";
 
-/* ── Helpers ────────────────────────────────────────────────────────────── */
-const fmtMoney = (n) =>
-  Number(n || 0).toLocaleString("en-IN", { minimumFractionDigits: 2 });
+/* ── Financial Formatting ────────────────────────────────────────────────── */
+const fmt = (n) => 
+  Number(n || 0).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
 const fmtDate = (v) =>
-  v
-    ? new Date(v).toLocaleDateString("en-GB", {
-        day: "2-digit", month: "short", year: "numeric",
-      })
-    : "—";
+  v ? new Date(v).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" }) : "—";
 
-const FY_RANGES = [
-  { label: "FY 2024-25", from: "2024-04-01", to: "2025-03-31" },
-  { label: "FY 2025-26", from: "2025-04-01", to: "2026-03-31" },
-  { label: "FY 2026-27", from: "2026-04-01", to: "2027-03-31" },
-];
-
-/* ── Voucher type meta ───────────────────────────────────────────────────── */
+/* ── Voucher Meta ───────────────────────────────────────────────────────── */
 const VCH_META = {
-  PurchaseBill: { label: "Purchase Bill", color: "bg-blue-50 text-blue-700 dark:bg-blue-900/20 dark:text-blue-400",   dot: "bg-blue-500"   },
-  WeeklyBill:   { label: "Weekly Bill",   color: "bg-indigo-50 text-indigo-700 dark:bg-indigo-900/20 dark:text-indigo-400", dot: "bg-indigo-500" },
-  CreditNote:   { label: "Credit Note",   color: "bg-teal-50 text-teal-700 dark:bg-teal-900/20 dark:text-teal-400",   dot: "bg-teal-500"   },
-  DebitNote:    { label: "Debit Note",    color: "bg-violet-50 text-violet-700 dark:bg-violet-900/20 dark:text-violet-400", dot: "bg-violet-500" },
-  Payment:      { label: "Payment",       color: "bg-emerald-50 text-emerald-700 dark:bg-emerald-900/20 dark:text-emerald-400", dot: "bg-emerald-500" },
-  Receipt:      { label: "Receipt",       color: "bg-sky-50 text-sky-700 dark:bg-sky-900/20 dark:text-sky-400",       dot: "bg-sky-500"    },
-  Journal:      { label: "Journal",       color: "bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300", dot: "bg-slate-500"  },
-};
-const VCH_TYPES = Object.keys(VCH_META);
-
-/* ── VCH badge ───────────────────────────────────────────────────────────── */
-const VchBadge = ({ type }) => {
-  const m = VCH_META[type] || VCH_META.Journal;
-  return (
-    <span className={`inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full ${m.color}`}>
-      <span className={`w-1.5 h-1.5 rounded-full ${m.dot}`} />
-      {m.label}
-    </span>
-  );
+  PurchaseBill: { label: "Purchase",    code: "PUR", color: "text-blue-700 bg-blue-50 dark:bg-blue-900/30 dark:text-blue-300" },
+  WeeklyBill:   { label: "Weekly Bill", code: "W-B", color: "text-indigo-700 bg-indigo-50 dark:bg-indigo-900/30 dark:text-indigo-300" },
+  ClientBill:   { label: "Client RA",   code: "R-A", color: "text-amber-700 bg-amber-50 dark:bg-amber-900/30 dark:text-amber-300" },
+  CreditNote:   { label: "Credit Note", code: "C/N", color: "text-teal-700 bg-teal-50 dark:bg-teal-900/30 dark:text-teal-300" },
+  DebitNote:    { label: "Debit Note",  code: "D/N", color: "text-violet-700 bg-violet-50 dark:bg-violet-900/30 dark:text-violet-300" },
+  Payment:      { label: "Payment",     code: "PMT", color: "text-emerald-700 bg-emerald-50 dark:bg-emerald-900/30 dark:text-emerald-300" },
+  Receipt:      { label: "Receipt",     code: "RCT", color: "text-slate-700 bg-slate-100 dark:bg-slate-800 dark:text-slate-300" },
+  Journal:      { label: "Journal",     code: "J/V", color: "text-slate-500 bg-slate-50 dark:bg-slate-800/50 dark:text-slate-400" },
 };
 
-/* ── Balance display with Dr/Cr indicator ────────────────────────────────── */
+/* ── Component Fragments ────────────────────────────────────────────────── */
 const BalanceDisplay = ({ balance }) => {
-  if (balance === 0)
-    return <span className="tabular-nums font-semibold text-gray-400 text-xs">NIL</span>;
-  if (balance > 0)
-    return (
-      <span className="tabular-nums font-bold text-red-600 dark:text-red-400 text-xs">
-        {fmtMoney(balance)}{" "}
-        <span className="text-[9px] font-extrabold uppercase tracking-wider">Cr</span>
+  if (balance === 0) return <span className="tabular-nums font-semibold text-slate-400">NIL</span>;
+  const isPos = balance > 0;
+  return (
+    <span className={`tabular-nums font-bold ${isPos ? "text-red-600 dark:text-red-400" : "text-blue-600 dark:text-blue-400"}`}>
+      {fmt(Math.abs(balance))}
+      <span className="ml-1 text-[9px] font-extrabold uppercase opacity-80">
+        {isPos ? "Cr" : "Dr"}
       </span>
-    );
-  return (
-    <span className="tabular-nums font-bold text-blue-600 dark:text-blue-400 text-xs">
-      {fmtMoney(Math.abs(balance))}{" "}
-      <span className="text-[9px] font-extrabold uppercase tracking-wider">Dr</span>
     </span>
-  );
-};
-
-/* ── Statement breakdown card ────────────────────────────────────────────── */
-const StatementBreakdown = ({ statement, isOpen, onToggle }) => {
-  if (!statement) return null;
-
-  const rows = [
-    { label: "Purchase Bills",  key: "PurchaseBill", sign: +1, colorCr: "text-red-600 dark:text-red-400"     },
-    { label: "Weekly Bills",    key: "WeeklyBill",   sign: +1, colorCr: "text-red-600 dark:text-red-400"     },
-    { label: "Credit Notes",    key: "CreditNote",   sign: -1, colorDr: "text-emerald-600 dark:text-emerald-400" },
-    { label: "Debit Notes",     key: "DebitNote",    sign: -1, colorDr: "text-emerald-600 dark:text-emerald-400" },
-    { label: "Payments Made",   key: "Payment",      sign: -1, colorDr: "text-emerald-600 dark:text-emerald-400" },
-    { label: "Receipts",        key: "Receipt",      sign: -1, colorDr: "text-emerald-600 dark:text-emerald-400" },
-    { label: "Journal Entries", key: "Journal",      sign:  0 },
-  ];
-
-  const getBreakdown = (vchType) =>
-    statement.breakdown?.find(b => b.vch_type === vchType) || null;
-
-  return (
-    <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 overflow-hidden mb-4">
-      <button
-        onClick={onToggle}
-        className="w-full px-5 py-3 flex items-center justify-between bg-gray-50/70 dark:bg-gray-800/40 border-b border-gray-100 dark:border-gray-800 hover:bg-gray-100 dark:hover:bg-gray-800/60 transition-colors"
-      >
-        <div className="flex items-center gap-2.5">
-          <span className="w-6 h-6 bg-slate-700 rounded-md flex items-center justify-center">
-            <TrendingUp size={13} className="text-white" />
-          </span>
-          <span className="text-xs font-bold text-gray-600 dark:text-gray-300 uppercase tracking-widest">
-            Account Statement — Breakdown by Voucher Type
-          </span>
-        </div>
-        {isOpen ? <ChevronUp size={16} className="text-gray-400" /> : <ChevronDown size={16} className="text-gray-400" />}
-      </button>
-
-      {isOpen && (
-        <div className="p-5">
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-gray-100 dark:border-gray-700">
-                  <th className="text-left py-2 px-3 text-[10px] font-bold uppercase tracking-wider text-gray-400">Document Type</th>
-                  <th className="text-center py-2 px-3 text-[10px] font-bold uppercase tracking-wider text-gray-400">Count</th>
-                  <th className="text-right py-2 px-3 text-[10px] font-bold uppercase tracking-wider text-red-400">Credit (Cr)</th>
-                  <th className="text-right py-2 px-3 text-[10px] font-bold uppercase tracking-wider text-emerald-500">Debit (Dr)</th>
-                  <th className="text-right py-2 px-3 text-[10px] font-bold uppercase tracking-wider text-gray-400">Net Effect</th>
-                  <th className="text-right py-2 px-3 text-[10px] font-bold uppercase tracking-wider text-gray-400">Last Entry</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-50 dark:divide-gray-800">
-                {rows.map(({ key }) => {
-                  const b = getBreakdown(key);
-                  if (!b) return null;
-                  const netPositive = b.net > 0;
-                  return (
-                    <tr key={key} className="hover:bg-gray-50/60 dark:hover:bg-gray-800/30">
-                      <td className="py-2.5 px-3">
-                        <VchBadge type={key} />
-                      </td>
-                      <td className="py-2.5 px-3 text-center text-xs text-gray-500 tabular-nums">{b.count}</td>
-                      <td className="py-2.5 px-3 text-right tabular-nums text-sm">
-                        {b.total_credit > 0
-                          ? <span className="font-semibold text-red-600 dark:text-red-400">₹{fmtMoney(b.total_credit)}</span>
-                          : <span className="text-gray-300 dark:text-gray-600">—</span>
-                        }
-                      </td>
-                      <td className="py-2.5 px-3 text-right tabular-nums text-sm">
-                        {b.total_debit > 0
-                          ? <span className="font-semibold text-emerald-600 dark:text-emerald-400">₹{fmtMoney(b.total_debit)}</span>
-                          : <span className="text-gray-300 dark:text-gray-600">—</span>
-                        }
-                      </td>
-                      <td className="py-2.5 px-3 text-right tabular-nums text-sm">
-                        <span className={`font-bold ${netPositive ? "text-red-600 dark:text-red-400" : "text-emerald-600 dark:text-emerald-400"}`}>
-                          {netPositive ? "+" : ""}₹{fmtMoney(Math.abs(b.net))}
-                          <span className="text-[9px] ml-1 font-extrabold uppercase">{netPositive ? "Cr" : "Dr"}</span>
-                        </span>
-                      </td>
-                      <td className="py-2.5 px-3 text-right text-xs text-gray-400">{fmtDate(b.last_date)}</td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-              <tfoot className="border-t-2 border-gray-200 dark:border-gray-700">
-                <tr>
-                  <td colSpan={4} className="py-3 px-3 text-right text-xs font-bold text-gray-500 uppercase tracking-wider">
-                    Net Outstanding Balance
-                  </td>
-                  <td className="py-3 px-3 text-right">
-                    <BalanceDisplay balance={statement.balance} />
-                  </td>
-                  <td />
-                </tr>
-              </tfoot>
-            </table>
-          </div>
-        </div>
-      )}
-    </div>
   );
 };
 
 /* ═══════════════════════════════════════════════════════════════════════════ */
 const ViewLedgerEntry = () => {
   const { supplierId } = useParams();
-  const location       = useLocation();
-  const navigate       = useNavigate();
+  const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
 
-  /* Restore supplier info from navigation state if available */
-  const navSupplier = location.state?.supplier || null;
+  /* ── URL Filters ── */
+  const fromDate = searchParams.get("from") || "";
+  const toDate   = searchParams.get("to") || "";
+  const supplierType = searchParams.get("type") || "Vendor";
+  const tenderId = searchParams.get("tender_id") || "";
 
-  /* ── Filters ── */
-  const [fromDate, setFromDate]         = useState("");
-  const [toDate, setToDate]             = useState("");
-  const [vchTypeFilter, setVchTypeFilter] = useState("");
-  const [showStatement, setShowStatement] = useState(true);
+  /* ── API Hooks ── */
+  const { 
+    data: entries = [], 
+    isLoading: entriesLoading, 
+    isFetching, 
+    refetch: refetchLedger 
+  } = useSupplierLedger(supplierId, { 
+    from_date: fromDate, 
+    to_date: toDate, 
+    supplier_type: supplierType,
+    tender_id: tenderId
+  });
 
-  const ledgerParams = useMemo(() => {
-    const p = {};
-    if (fromDate)      p.from_date = fromDate;
-    if (toDate)        p.to_date   = toDate;
-    if (vchTypeFilter) p.vch_type  = vchTypeFilter;
-    if (navSupplier?.supplier_type) p.supplier_type = navSupplier.supplier_type;
-    return p;
-  }, [fromDate, toDate, vchTypeFilter, navSupplier?.supplier_type]);
+  const { data: balance, isLoading: balanceLoading } = useSupplierBalance(supplierId, { supplier_type: supplierType, tender_id: tenderId });
+  const { data: statement, isLoading: statementLoading } = useSupplierStatement(supplierId, { supplier_type: supplierType, tender_id: tenderId });
 
-  const { data: balance,   isLoading: balanceLoading, refetch: refetchBalance } = useSupplierBalance(supplierId, navSupplier?.supplier_type ? { supplier_type: navSupplier.supplier_type } : {});
-  const { data: entries = [], isLoading: entriesLoading, isFetching, refetch: refetchEntries } = useSupplierLedger(supplierId, ledgerParams);
-  const { data: statement, isLoading: statementLoading }  = useSupplierStatement(supplierId, navSupplier?.supplier_type ? { supplier_type: navSupplier.supplier_type } : {});
-
-  const isLoading = balanceLoading || entriesLoading;
-
-  /* ── Supplier info (prefer live balance data) ── */
-  const supplier = balance || navSupplier || {};
-
-  /* ── Computed totals from visible entries ── */
-  const periodTotals = useMemo(() => {
-    const txnEntries = entries.filter(e => !e.is_opening_balance);
-    return {
-      totalDr: txnEntries.reduce((s, e) => s + (e.debit_amt  || 0), 0),
-      totalCr: txnEntries.reduce((s, e) => s + (e.credit_amt || 0), 0),
-    };
-  }, [entries]);
-
-  const closingBalance = entries.length > 0 ? entries[entries.length - 1]?.balance ?? 0 : (balance?.balance ?? 0);
-
-  const handleRefresh = () => { refetchBalance(); refetchEntries(); };
-
-  const applyFY = (fy) => {
-    setFromDate(fy.from);
-    setToDate(fy.to);
-  };
-
-  const clearPeriod = () => { setFromDate(""); setToDate(""); };
+  /* ── Derived Metrics ── */
+  const openingBalance = useMemo(() => entries.find(e => e.is_opening_balance)?.balance || 0, [entries]);
+  const closingBalance = useMemo(() => entries.length > 0 ? entries[entries.length - 1].balance : 0, [entries]);
+  const periodTxns = useMemo(() => entries.filter(e => !e.is_opening_balance), [entries]);
+  
+  const totals = useMemo(() => ({
+    debit: periodTxns.reduce((s, e) => s + (e.debit_amt || 0), 0),
+    credit: periodTxns.reduce((s, e) => s + (e.credit_amt || 0), 0),
+  }), [periodTxns]);
 
   return (
-    <div className="font-roboto-flex min-h-screen bg-gray-50 dark:bg-[#0b0f19] pb-24">
-
-      {/* ── Header ── */}
-      <div className="bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 sticky top-0 z-20 shadow-sm">
-        <div className="max-w-7xl mx-auto px-6 py-3.5 flex items-center gap-4">
-          <button
-            onClick={() => navigate("/finance/ledgerentry")}
-            className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-500 transition-colors"
-          >
-            <ArrowLeft size={17} />
-          </button>
-
-          <div className="w-px h-6 bg-gray-200 dark:bg-gray-700" />
-
-          <div className="flex items-center gap-3 flex-1">
-            <div className={`w-9 h-9 rounded-xl flex items-center justify-center text-sm font-bold shrink-0 ${
-              supplier.supplier_type === "Vendor"
-                ? "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400"
-                : "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400"
-            }`}>
-              {(supplier.supplier_name || supplierId || "?")[0].toUpperCase()}
-            </div>
-            <div>
-              <h1 className="text-sm font-bold text-gray-900 dark:text-white leading-none">
-                {supplier.supplier_name || supplierId}
-              </h1>
-              <p className="text-[11px] text-gray-400 mt-0.5 flex items-center gap-1.5 leading-none">
-                <code className="font-mono">{supplierId}</code>
-                {supplier.supplier_type && (
-                  <>
-                    <span className="text-gray-300 dark:text-gray-600">·</span>
-                    <span>{supplier.supplier_type}</span>
-                  </>
-                )}
-                <span className="text-gray-300 dark:text-gray-600">·</span>
-                <BookOpen size={10} />
-                Ledger Account
-              </p>
-            </div>
+    <div 
+      className="h-full overflow-y-auto bg-slate-100 dark:bg-[#080b12] pb-12 font-sans print:h-auto print:overflow-visible print:bg-white print:text-black print:pb-0"
+      style={{ WebkitPrintColorAdjust: "exact", printColorAdjust: "exact" }}
+    >
+      
+      {/* ── Top App Bar ── */}
+      <div className="bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 sticky top-0 z-30 shadow-sm print:hidden">
+        <div className="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+             <button
+                onClick={() => navigate(-1)}
+                className="p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-500 transition-colors border border-slate-200 dark:border-slate-700"
+              >
+                <ArrowLeft size={16} />
+              </button>
+              <div>
+                <h1 className="text-sm font-bold text-slate-800 dark:text-slate-100 uppercase tracking-wide">Ledger Report</h1>
+                <p className="text-[10px] uppercase font-bold text-slate-400 tracking-widest">{supplierType} Account</p>
+              </div>
           </div>
-
-          {/* Current balance badge */}
-          {!balanceLoading && balance && (
-            <div className={`flex items-center gap-2 px-4 py-2 rounded-xl border text-sm ${
-              balance.balance > 0
-                ? "bg-red-50 border-red-100 dark:bg-red-900/10 dark:border-red-900/30"
-                : balance.balance < 0
-                  ? "bg-blue-50 border-blue-100 dark:bg-blue-900/10 dark:border-blue-900/30"
-                  : "bg-gray-50 border-gray-200 dark:bg-gray-800 dark:border-gray-700"
-            }`}>
-              <span className="text-[10px] font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">
-                Current Balance
-              </span>
-              <BalanceDisplay balance={balance.balance} />
-            </div>
-          )}
-
-          <button
-            onClick={handleRefresh}
-            disabled={isFetching}
-            className="p-2 rounded-lg border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800 text-gray-500 transition-colors disabled:opacity-50"
-          >
-            <RefreshCw size={15} className={isFetching ? "animate-spin" : ""} />
-          </button>
-
-          <button className="p-2 rounded-lg border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800 text-gray-500 transition-colors">
-            <Printer size={15} />
-          </button>
+          <div className="flex items-center gap-2">
+             <button 
+               onClick={() => refetchLedger()}
+               className="p-1.5 rounded-lg border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors text-slate-500"
+               title="Refresh Ledger"
+             >
+               <RefreshCw size={14} className={isFetching ? "animate-spin" : ""} />
+             </button>
+             <button 
+                onClick={() => window.print()}
+                className="p-1.5 px-3 rounded-lg bg-blue-600 hover:bg-blue-700 text-white transition-colors flex items-center gap-2 shadow-sm"
+             >
+               <Printer size={14} />
+               <span className="text-[11px] font-bold uppercase tracking-wider">Print</span>
+             </button>
+          </div>
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-6 pt-5">
-
-        {/* ── Supplier Info Cards ── */}
-        <div className="grid grid-cols-4 gap-4 mb-5">
-          {[
-            {
-              label: "Total Billed",
-              value: `₹${fmtMoney(balance?.total_credit || 0)}`,
-              sub:   "purchase + weekly bills",
-              icon:  <TrendingUp size={18} />,
-              cls:   "text-red-600 dark:text-red-400",
-              bg:    "bg-red-50 dark:bg-red-900/20",
-            },
-            {
-              label: "Total Cleared",
-              value: `₹${fmtMoney(balance?.total_debit || 0)}`,
-              sub:   "CN + DN + payments",
-              icon:  <TrendingDown size={18} />,
-              cls:   "text-emerald-600 dark:text-emerald-400",
-              bg:    "bg-emerald-50 dark:bg-emerald-900/20",
-            },
-            {
-              label: "Net Outstanding",
-              value: balance?.balance > 0 ? `₹${fmtMoney(balance.balance)}` : balance?.balance < 0 ? `₹${fmtMoney(Math.abs(balance?.balance || 0))}` : "NIL",
-              sub:   balance?.balance > 0 ? "Cr — you owe supplier" : balance?.balance < 0 ? "Dr — supplier owes you" : "fully settled",
-              icon:  <BookOpen size={18} />,
-              cls:   balance?.balance > 0 ? "text-red-600 dark:text-red-400" : "text-blue-600 dark:text-blue-400",
-              bg:    balance?.balance > 0 ? "bg-red-50 dark:bg-red-900/20" : "bg-blue-50 dark:bg-blue-900/20",
-            },
-            {
-              label: "Transactions",
-              value: entries.filter(e => !e.is_opening_balance).length,
-              sub:   fromDate ? `${fmtDate(fromDate)} – ${fmtDate(toDate)}` : "all time",
-              icon:  <FileText size={18} />,
-              cls:   "text-slate-600 dark:text-slate-400",
-              bg:    "bg-slate-100 dark:bg-slate-800",
-            },
-          ].map(c => (
-            <div key={c.label} className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4 flex items-center gap-3 shadow-sm">
-              <div className={`p-2.5 rounded-xl ${c.bg} shrink-0`}>
-                <span className={c.cls}>{c.icon}</span>
-              </div>
-              <div>
-                <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider">{c.label}</p>
-                <p className={`text-base font-extrabold mt-0.5 tabular-nums ${c.cls}`}>{c.value}</p>
-                <p className="text-[10px] text-gray-400 mt-0.5">{c.sub}</p>
-              </div>
-            </div>
-          ))}
-        </div>
-
-        {/* ── Statement Breakdown ── */}
-        {!statementLoading && (
-          <StatementBreakdown
-            statement={statement}
-            isOpen={showStatement}
-            onToggle={() => setShowStatement(v => !v)}
-          />
-        )}
-
-        {/* ── Period & Filter controls ── */}
-        <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 px-5 py-4 mb-4 space-y-3 relative z-10">
-          {/* FY quick picks */}
-          <div className="flex items-center gap-3 flex-wrap">
-            <div className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-widest text-gray-400">
-              <Calendar size={12} />
-              Period
-            </div>
-            <div className="flex gap-1.5 flex-wrap">
-              {FY_RANGES.map(fy => (
-                <button
-                  key={fy.label}
-                  onClick={() => applyFY(fy)}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-semibold border transition-all ${
-                    fromDate === fy.from && toDate === fy.to
-                      ? "bg-slate-800 dark:bg-slate-600 border-slate-800 dark:border-slate-600 text-white shadow-sm"
-                      : "bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:border-gray-400"
-                  }`}
-                >
-                  {fy.label}
-                </button>
-              ))}
-              {(fromDate || toDate) && (
-                <button
-                  onClick={clearPeriod}
-                  className="px-3 py-1.5 rounded-lg text-xs font-semibold border border-dashed border-gray-300 dark:border-gray-600 text-gray-400 hover:text-red-500 hover:border-red-300 transition-all"
-                >
-                  Clear
-                </button>
-              )}
-            </div>
-
-            {/* Custom date range */}
-            <div className="flex items-center gap-2 ml-auto">
-              <input
-                type="date"
-                value={fromDate}
-                onChange={e => setFromDate(e.target.value)}
-                className="border border-gray-200 dark:border-gray-700 rounded-lg px-3 py-1.5 text-xs bg-white dark:bg-gray-800 dark:text-white focus:outline-none focus:ring-1 focus:ring-slate-500"
-              />
-              <span className="text-xs text-gray-400">to</span>
-              <input
-                type="date"
-                value={toDate}
-                onChange={e => setToDate(e.target.value)}
-                className="border border-gray-200 dark:border-gray-700 rounded-lg px-3 py-1.5 text-xs bg-white dark:bg-gray-800 dark:text-white focus:outline-none focus:ring-1 focus:ring-slate-500"
-              />
-            </div>
-          </div>
-
-          {/* Voucher type filter */}
-          <div className="flex items-center gap-2 flex-wrap">
-            <span className="text-[10px] font-bold uppercase tracking-widest text-gray-400">Voucher Type</span>
-            <div className="flex flex-wrap gap-1.5">
-              <button
-                onClick={() => setVchTypeFilter("")}
-                className={`px-3 py-1 rounded-full text-[10px] font-bold transition-all border ${
-                  vchTypeFilter === ""
-                    ? "bg-slate-800 dark:bg-slate-600 border-slate-800 text-white"
-                    : "bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-500 hover:border-gray-400"
-                }`}
-              >
-                All
-              </button>
-              {VCH_TYPES.map(t => {
-                const m = VCH_META[t];
-                return (
-                  <button
-                    key={t}
-                    onClick={() => setVchTypeFilter(t === vchTypeFilter ? "" : t)}
-                    className={`flex items-center gap-1 px-3 py-1 rounded-full text-[10px] font-bold transition-all border ${
-                      vchTypeFilter === t
-                        ? `${m.color} border-current shadow-sm`
-                        : "bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-500 hover:border-gray-400"
-                    }`}
-                  >
-                    <span className={`w-1.5 h-1.5 rounded-full ${m.dot}`} />
-                    {m.label}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-        </div>
-
-        {/* ── THE LEDGER TABLE ── */}
-        {isLoading ? (
-          <Loader />
+      <div className="max-w-6xl mx-auto px-4 py-8 print:max-w-none print:w-full print:px-0 print:py-0">
+        {(entriesLoading || balanceLoading || statementLoading) ? (
+          <div className="py-32 flex justify-center"><Loader /></div>
         ) : (
-          <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden shadow-sm">
-
-            {/* Ledger header bar */}
-            <div className="px-5 py-3 border-b border-gray-100 dark:border-gray-800 bg-gray-50/70 dark:bg-gray-800/40 flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <BookOpen size={15} className="text-slate-600 dark:text-slate-400" />
-                <span className="text-xs font-bold text-gray-600 dark:text-gray-300 uppercase tracking-widest">
-                  Ledger Account
-                </span>
-                {(fromDate || toDate) && (
-                  <span className="text-[10px] text-gray-400 font-medium ml-2">
-                    {fromDate ? `From ${fmtDate(fromDate)}` : ""}
-                    {fromDate && toDate ? " to " : ""}
-                    {toDate ? fmtDate(toDate) : ""}
-                  </span>
-                )}
-              </div>
-              <span className="text-[10px] text-gray-400">
-                {entries.filter(e => !e.is_opening_balance).length} transaction{entries.filter(e => !e.is_opening_balance).length !== 1 ? "s" : ""}
-              </span>
-            </div>
-
-            {/* Supplier name header (classic ledger style) */}
-            <div className="px-6 py-3 border-b border-dashed border-gray-200 dark:border-gray-700 bg-slate-800 dark:bg-slate-900 text-white flex items-center justify-between">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xl shadow-slate-200/40 dark:shadow-none print:shadow-none print:border-none">
+            
+            {/* ── Letterhead Header ── */}
+            <div className="p-6 md:p-8 border-b-4 border-slate-800 dark:border-slate-700 flex flex-col md:flex-row justify-between items-start md:items-end gap-6 print:p-0 print:pb-4 print:border-b-2 print:mb-4">
               <div>
-                <p className="text-[10px] font-semibold uppercase tracking-widest text-slate-400">Account Name</p>
-                <p className="text-sm font-bold mt-0.5">{supplier.supplier_name || supplierId}</p>
+                <h2 className="text-2xl font-black text-slate-900 dark:text-white uppercase tracking-tight mb-1">
+                  {balance?.supplier_name || supplierId}
+                </h2>
+                <div className="flex items-center gap-3">
+                  <p className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest">Acct ID: <span className="font-mono text-blue-600 dark:text-blue-400">{supplierId}</span></p>
+                  <span className="w-1 h-1 rounded-full bg-slate-300 dark:bg-slate-700"></span>
+                  <p className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest">Type: {supplierType}</p>
+                  {tenderId && (
+                    <>
+                      <span className="w-1 h-1 rounded-full bg-slate-300 dark:bg-slate-700"></span>
+                      <p className="text-[10px] font-bold uppercase tracking-widest bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 px-2 py-0.5 rounded border border-blue-200 dark:border-blue-800">
+                        Project: {tenderId}
+                      </p>
+                    </>
+                  )}
+                </div>
               </div>
-              <div className="text-right">
-                <p className="text-[10px] font-semibold uppercase tracking-widest text-slate-400">Account ID</p>
-                <code className="text-sm font-bold mt-0.5 font-mono">{supplierId}</code>
+              <div className="text-left md:text-right bg-slate-50 dark:bg-slate-800/50 p-4 rounded-xl border border-slate-100 dark:border-slate-800">
+                <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-1">Statement Period</p>
+                <p className="text-sm font-bold text-slate-800 dark:text-slate-100 uppercase">
+                  {fromDate ? fmtDate(fromDate) : "Opening"} <span className="text-slate-300 dark:text-slate-600 mx-1">—</span> {toDate ? fmtDate(toDate) : "Current"}
+                </p>
               </div>
             </div>
 
-            {entries.length === 0 ? (
-              <div className="py-16 text-center text-gray-400">
-                <BookOpen size={40} className="mx-auto mb-3 opacity-20" />
-                <p className="text-sm font-semibold">No entries for the selected period.</p>
-                {(fromDate || toDate || vchTypeFilter) && (
-                  <button
-                    onClick={() => { clearPeriod(); setVchTypeFilter(""); }}
-                    className="mt-2 text-xs text-slate-600 dark:text-slate-400 underline underline-offset-2"
-                  >
-                    Clear filters
-                  </button>
-                )}
-              </div>
-            ) : (
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm border-collapse">
-                  {/* Classic double-entry ledger columns */}
-                  <thead>
-                    <tr className="border-b-2 border-gray-200 dark:border-gray-700">
-                      <th className="px-4 py-3 text-left text-[10px] font-extrabold uppercase tracking-wider text-gray-500 dark:text-gray-400 w-28">
-                        Date
-                      </th>
-                      <th className="px-4 py-3 text-left text-[10px] font-extrabold uppercase tracking-wider text-gray-500 dark:text-gray-400">
-                        Particulars
-                      </th>
-                      <th className="px-4 py-3 text-left text-[10px] font-extrabold uppercase tracking-wider text-gray-500 dark:text-gray-400 w-32">
-                        Vch Type
-                      </th>
-                      <th className="px-4 py-3 text-left text-[10px] font-extrabold uppercase tracking-wider text-gray-500 dark:text-gray-400 w-36">
-                        Vch No.
-                      </th>
-                      <th className="px-4 py-3 text-right text-[10px] font-extrabold uppercase tracking-wider text-emerald-600 dark:text-emerald-400 w-36">
-                        Debit (Dr)
-                      </th>
-                      <th className="px-4 py-3 text-right text-[10px] font-extrabold uppercase tracking-wider text-red-500 dark:text-red-400 w-36">
-                        Credit (Cr)
-                      </th>
-                      <th className="px-4 py-3 text-right text-[10px] font-extrabold uppercase tracking-wider text-gray-500 dark:text-gray-400 w-40">
-                        Balance
-                      </th>
-                    </tr>
-                  </thead>
+            {/* ── Compact Summary Ribbon ── */}
+            <div className="grid grid-cols-2 md:grid-cols-4 divide-x divide-y md:divide-y-0 divide-slate-100 dark:divide-slate-800 border-b border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/50">
+              {[
+                { label: "Opening Balance B/F", val: openingBalance, isBal: true, cls: "text-slate-700 dark:text-slate-300" },
+                { label: "Total Debit (Dr)", val: totals.debit, isBal: false, cls: "text-emerald-600 dark:text-emerald-400" },
+                { label: "Total Credit (Cr)", val: totals.credit, isBal: false, cls: "text-red-600 dark:text-red-400" },
+                { label: "Closing Balance C/F", val: closingBalance, isBal: true, cls: "text-slate-900 dark:text-white" },
+              ].map((m, i) => (
+                <div key={i} className="p-4 md:p-5 flex flex-col justify-center">
+                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1.5">{m.label}</p>
+                  {m.isBal ? (
+                     <div className="text-lg"><BalanceDisplay balance={m.val} /></div>
+                  ) : (
+                    <p className={`text-lg font-black tabular-nums ${m.cls}`}>
+                      ₹{fmt(m.val)}
+                    </p>
+                  )}
+                </div>
+              ))}
+            </div>
 
-                  <tbody>
-                    {entries.map((entry, i) => {
-                      const isOB    = entry.is_opening_balance;
-                      const isCr = entry.credit_amt > 0;
-
-                      /* Opening Balance B/F row */
-                      if (isOB) {
-                        return (
-                          <tr key={`ob-${i}`} className="bg-amber-50/60 dark:bg-amber-900/10 border-b border-amber-100 dark:border-amber-900/30">
-                            <td className="px-4 py-3 text-xs text-amber-700 dark:text-amber-400 font-semibold whitespace-nowrap">
-                              {fmtDate(entry.vch_date)}
-                            </td>
-                            <td className="px-4 py-3" colSpan={3}>
-                              <span className="italic text-xs font-bold text-amber-700 dark:text-amber-400 flex items-center gap-1.5">
-                                <span className="text-[9px] font-extrabold uppercase tracking-wider bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400 px-1.5 py-0.5 rounded">B/F</span>
-                                Opening Balance — brought forward from prior period
-                              </span>
-                            </td>
-                            <td className="px-4 py-3 text-right tabular-nums text-xs">
-                              {entry.debit_amt > 0
-                                ? <span className="font-bold text-emerald-600 dark:text-emerald-400">₹{fmtMoney(entry.debit_amt)}</span>
-                                : <span className="text-gray-300 dark:text-gray-600">—</span>
-                              }
-                            </td>
-                            <td className="px-4 py-3 text-right tabular-nums text-xs">
-                              {entry.credit_amt > 0
-                                ? <span className="font-bold text-red-600 dark:text-red-400">₹{fmtMoney(entry.credit_amt)}</span>
-                                : <span className="text-gray-300 dark:text-gray-600">—</span>
-                              }
-                            </td>
-                            <td className="px-4 py-3 text-right">
-                              <BalanceDisplay balance={entry.balance} />
-                            </td>
-                          </tr>
-                        );
-                      }
-
-                      /* Regular transaction row */
-                      return (
-                        <tr
-                          key={entry._id || i}
-                          className={`border-b border-gray-50 dark:border-gray-800/60 transition-colors ${
-                            isCr
-                              ? "hover:bg-red-50/20 dark:hover:bg-red-900/5"
-                              : "hover:bg-emerald-50/20 dark:hover:bg-emerald-900/5"
-                          }`}
-                        >
-                          {/* Date */}
-                          <td className="px-4 py-3.5 text-xs text-gray-500 dark:text-gray-400 whitespace-nowrap">
-                            {fmtDate(entry.vch_date)}
-                          </td>
-
-                          {/* Particulars */}
-                          <td className="px-4 py-3.5">
-                            <div>
-                              <p className="font-medium text-gray-800 dark:text-gray-100 text-sm leading-tight">
-                                {entry.particulars || "—"}
-                              </p>
-                              {entry.tender_id && (
-                                <p className="text-[10px] text-gray-400 mt-0.5 flex items-center gap-1">
-                                  <Building2 size={9} />
-                                  <code className="font-mono">{entry.tender_id}</code>
-                                  {entry.tender_name && (
-                                    <span className="truncate max-w-[160px]">— {entry.tender_name}</span>
-                                  )}
-                                </p>
-                              )}
-                            </div>
-                          </td>
-
-                          {/* Vch Type */}
-                          <td className="px-4 py-3.5">
-                            <VchBadge type={entry.vch_type} />
-                          </td>
-
-                          {/* Vch No. */}
-                          <td className="px-4 py-3.5">
-                            {entry.vch_no ? (
-                              <code className="font-mono text-xs bg-gray-100 dark:bg-gray-800 px-2 py-0.5 rounded text-gray-600 dark:text-gray-300">
-                                {entry.vch_no}
-                              </code>
-                            ) : (
-                              <span className="text-gray-300 dark:text-gray-600 text-xs">—</span>
-                            )}
-                          </td>
-
-                          {/* Debit column — clearances (green) */}
-                          <td className="px-4 py-3.5 text-right tabular-nums">
-                            {entry.debit_amt > 0 ? (
-                              <span className="font-bold text-emerald-600 dark:text-emerald-400 text-sm">
-                                ₹{fmtMoney(entry.debit_amt)}
-                              </span>
-                            ) : (
-                              <span className="text-gray-200 dark:text-gray-700 text-xs select-none">—</span>
-                            )}
-                          </td>
-
-                          {/* Credit column — liabilities (red) */}
-                          <td className="px-4 py-3.5 text-right tabular-nums">
-                            {entry.credit_amt > 0 ? (
-                              <span className="font-bold text-red-600 dark:text-red-400 text-sm">
-                                ₹{fmtMoney(entry.credit_amt)}
-                              </span>
-                            ) : (
-                              <span className="text-gray-200 dark:text-gray-700 text-xs select-none">—</span>
-                            )}
-                          </td>
-
-                          {/* Running Balance */}
-                          <td className="px-4 py-3.5 text-right">
-                            <BalanceDisplay balance={entry.balance} />
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-
-                  {/* Period totals + closing balance */}
-                  <tfoot>
-                    <tr className="border-t-2 border-gray-200 dark:border-gray-700 bg-gray-50/70 dark:bg-gray-800/40">
-                      <td colSpan={4} className="px-4 py-3 text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                        {fromDate ? "Period Totals" : "Grand Totals"}
-                      </td>
-                      <td className="px-4 py-3 text-right tabular-nums">
-                        <span className="font-extrabold text-emerald-600 dark:text-emerald-400">
-                          ₹{fmtMoney(periodTotals.totalDr)}
-                        </span>
-                      </td>
-                      <td className="px-4 py-3 text-right tabular-nums">
-                        <span className="font-extrabold text-red-600 dark:text-red-400">
-                          ₹{fmtMoney(periodTotals.totalCr)}
-                        </span>
-                      </td>
-                      <td className="px-4 py-3 text-right">
-                        <BalanceDisplay balance={closingBalance} />
+            {/* ── Ledger Data Table ── */}
+            <div className="overflow-x-auto w-full">
+              <table className="w-full text-left border-collapse border-b border-slate-200 dark:border-slate-800 whitespace-nowrap">
+                <thead>
+                  <tr className="bg-slate-100 dark:bg-slate-800 border-y border-slate-300 dark:border-slate-700">
+                    <th className="py-2.5 px-4 text-[10px] font-black uppercase tracking-widest text-slate-500 w-28">Date</th>
+                    <th className="py-2.5 px-4 text-[10px] font-black uppercase tracking-widest text-slate-500">Particulars</th>
+                    <th className="py-2.5 px-4 text-[10px] font-black uppercase tracking-widest text-slate-500 w-32">Vch Type</th>
+                    <th className="py-2.5 px-4 text-[10px] font-black uppercase tracking-widest text-slate-500 w-32">Vch No.</th>
+                    <th className="py-2.5 px-4 text-right text-[10px] font-black uppercase tracking-widest text-emerald-600 w-36">Debit (Dr)</th>
+                    <th className="py-2.5 px-4 text-right text-[10px] font-black uppercase tracking-widest text-red-600 w-36">Credit (Cr)</th>
+                    <th className="py-2.5 px-4 text-right text-[10px] font-black uppercase tracking-widest text-slate-500 w-40">Running Bal</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100 dark:divide-slate-800/60 text-xs text-slate-800 dark:text-slate-200">
+                  {entries.length === 0 ? (
+                    <tr>
+                      <td colSpan={7} className="py-12 text-center text-slate-400 font-medium">
+                        No transactions found for the selected period.
                       </td>
                     </tr>
+                  ) : entries.map((entry, idx) => {
+                    const isOB = entry.is_opening_balance;
+                    const meta = VCH_META[entry.vch_type] || VCH_META.Journal;
+                    
+                    return (
+                      <tr 
+                        key={entry._id || idx} 
+                        className={isOB ? "bg-amber-50/50 dark:bg-amber-900/10 font-bold" : "hover:bg-slate-50 dark:hover:bg-slate-800/40"}
+                      >
+                        {/* Date */}
+                        <td className={`py-3 px-4 font-semibold tabular-nums align-top ${isOB ? "text-amber-700 dark:text-amber-500" : "text-slate-600 dark:text-slate-400"}`}>
+                          {fmtDate(entry.vch_date)}
+                        </td>
+                        
+                        {/* Particulars */}
+                        <td className="py-3 px-4 whitespace-normal min-w-[250px] leading-snug">
+                          <p className={`${isOB ? "text-amber-700 dark:text-amber-500 italic" : ""}`}>
+                            {entry.particulars}
+                          </p>
+                          {entry.tender_id && (
+                            <p className="text-[9px] font-bold text-slate-400 uppercase mt-0.5 tracking-wider">
+                              PROJ: {entry.tender_id}
+                            </p>
+                          )}
+                        </td>
 
-                    {/* Closing Balance C/F row */}
-                    <tr className="bg-slate-800 dark:bg-slate-900 text-white">
-                      <td className="px-4 py-2.5 text-[10px] font-bold uppercase tracking-wider text-slate-300">
-                        {fromDate ? fmtDate(toDate || new Date().toISOString()) : "Closing"}
+                        {/* Vch Type */}
+                        <td className="py-3 px-4 align-top">
+                          {!isOB && (
+                            <span className={`px-2 py-0.5 rounded text-[9px] font-bold uppercase tracking-widest ${meta.color}`}>
+                              {meta.code || meta.label}
+                            </span>
+                          )}
+                        </td>
+
+                        {/* Vch No */}
+                        <td className="py-3 px-4 text-slate-500 font-mono text-[11px] align-top">
+                          {entry.vch_no || (isOB ? "" : "—")}
+                        </td>
+
+                        {/* Debit */}
+                        <td className="py-3 px-4 text-right tabular-nums align-top">
+                          {entry.debit_amt > 0 ? (
+                            <span className="font-bold text-emerald-600 dark:text-emerald-400">₹{fmt(entry.debit_amt)}</span>
+                          ) : ""}
+                        </td>
+
+                        {/* Credit */}
+                        <td className="py-3 px-4 text-right tabular-nums align-top">
+                          {entry.credit_amt > 0 ? (
+                            <span className="font-bold text-red-600 dark:text-red-400">₹{fmt(entry.credit_amt)}</span>
+                          ) : ""}
+                        </td>
+
+                        {/* Balance */}
+                        <td className="py-3 px-4 text-right align-top">
+                          <BalanceDisplay balance={entry.balance} />
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+                {/* ── Table Footer Totals ── */}
+                {entries.length > 0 && (
+                  <tfoot className="border-t-2 border-slate-300 dark:border-slate-700 text-xs">
+                    <tr className="bg-slate-50 dark:bg-slate-800/50 font-black">
+                      <td colSpan={4} className="py-3 px-4 text-right text-[10px] uppercase tracking-[0.2em] text-slate-500">
+                        Period Totals
                       </td>
-                      <td colSpan={5} className="px-4 py-2.5">
-                        <span className="text-xs font-bold text-slate-300 italic flex items-center gap-1.5">
-                          <span className="text-[9px] font-extrabold uppercase tracking-wider bg-slate-600 px-1.5 py-0.5 rounded">C/F</span>
-                          Closing Balance — carried forward
-                        </span>
+                      <td className="py-3 px-4 text-right text-emerald-600 dark:text-emerald-400 tabular-nums">
+                        ₹{fmt(totals.debit)}
                       </td>
-                      <td className="px-4 py-2.5 text-right">
-                        <BalanceDisplay balance={closingBalance} />
+                      <td className="py-3 px-4 text-right text-red-600 dark:text-red-400 tabular-nums">
+                        ₹{fmt(totals.credit)}
+                      </td>
+                      <td className="py-3 px-4 bg-slate-100 dark:bg-slate-800 border-l border-slate-200 dark:border-slate-700 text-right">
+                         <BalanceDisplay balance={closingBalance} />
+                      </td>
+                    </tr>
+                    <tr className="bg-slate-800 text-white">
+                      <td className="py-2.5 px-4 text-[10px] uppercase font-bold tracking-widest text-slate-400">{toDate ? fmtDate(toDate) : "Closing"}</td>
+                      <td colSpan={5} className="py-2.5 px-4 text-[11px] font-bold uppercase tracking-widest italic text-slate-300 text-right">
+                        Closing Balance C/F
+                      </td>
+                      <td className="py-2.5 px-4 text-right text-sm">
+                         <BalanceDisplay balance={closingBalance} />
                       </td>
                     </tr>
                   </tfoot>
-                </table>
+                )}
+              </table>
+            </div>
+
+            {/* ── Voucher Analysis (Compact View) ── */}
+            {statement?.breakdown && statement.breakdown.length > 0 && (
+              <div className="p-6 md:p-8 bg-slate-50 dark:bg-slate-900/50 border-t border-slate-200 dark:border-slate-800 print:break-inside-avoid print:p-4 print:mt-4 print:border print:bg-white">
+                <h3 className="text-xs font-black uppercase text-slate-800 dark:text-slate-200 tracking-widest mb-4 flex items-center gap-2">
+                  <FileText size={14} className="text-slate-400" />
+                  Voucher Analysis Summary
+                </h3>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                  {statement.breakdown.map(b => {
+                    const meta = VCH_META[b.vch_type] || VCH_META.Journal;
+                    return (
+                      <div key={b.vch_type} className="bg-white dark:bg-slate-900 p-4 border border-slate-200 dark:border-slate-800 rounded-xl">
+                        <div className="flex items-center justify-between mb-2">
+                          <p className="text-[10px] font-black uppercase tracking-widest text-slate-500">{meta.label}</p>
+                          <span className="text-[10px] font-bold text-slate-400 bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded">{b.count}</span>
+                        </div>
+                        <BalanceDisplay balance={b.net} />
+                      </div>
+                    );
+                  })}
+                </div>
               </div>
             )}
+
+            {/* ── Footer ── */}
+            <div className="p-6 text-center border-t border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 print:hidden">
+               <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400 max-w-xl mx-auto leading-relaxed">
+                 This is a system-generated financial ledger. All Cr entries denote liabilities owed by the company, and Dr entries denote payments made or receivable dues.
+               </p>
+            </div>
+            
           </div>
         )}
-
-        {/* ── Accounting legend ── */}
-        <div className="mt-4 bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 px-5 py-4">
-          <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400 mb-3">Accounting Reference</p>
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-            {[
-              { type: "PurchaseBill", effect: "Cr — increases your payable (you owe more)" },
-              { type: "CreditNote",   effect: "Dr — reduces your payable (material return, discount)" },
-              { type: "DebitNote",    effect: "Dr — reduces your payable (penalty, price diff)" },
-              { type: "Payment",      effect: "Dr — clears outstanding payable (money sent)" },
-            ].map(({ type, effect }) => (
-              <div key={type} className="flex flex-col gap-1.5 p-3 bg-gray-50 dark:bg-gray-800/60 rounded-lg">
-                <VchBadge type={type} />
-                <p className="text-[10px] text-gray-500 dark:text-gray-400 leading-relaxed">{effect}</p>
-              </div>
-            ))}
-          </div>
-          <p className="text-[10px] text-gray-400 mt-3 flex items-center gap-1.5">
-            <AlertCircle size={11} className="shrink-0" />
-            This register is read-only. Entries are automatically posted when vouchers (Purchase Bill, Payment Voucher, Credit/Debit Note) are approved.
-            <strong className="text-red-500 ml-1">Cr balance</strong> = you owe the supplier.
-            <strong className="text-blue-500 ml-1">Dr balance</strong> = supplier owes you.
-          </p>
-        </div>
       </div>
     </div>
   );

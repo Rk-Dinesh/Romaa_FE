@@ -9,7 +9,7 @@ const DeleteModal = ({
   item,
 }) => {
   return (
-    <div className=" font-roboto-flex fixed inset-0 flex justify-center  items-center backdrop-grayscale-50  drop-shadow-lg  backdrop-blur-xs">
+    <div className=" font-roboto-flex fixed inset-0 flex justify-center  items-center backdrop-grayscale-50  drop-shadow-lg  backdrop-blur-xs z-60">
       <div className="dark:bg-layout-dark bg-white rounded-md ">
           <button
             onClick={onclose}
