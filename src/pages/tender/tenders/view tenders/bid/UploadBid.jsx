@@ -9,6 +9,7 @@ import SampleBidExcel from "./NewBid.xlsx";
 
 const UploadBid = ({ onclose, onSuccess }) => {
   const [files, setFiles] = useState([]);
+  const [gst, setGst] = useState("");
   const [saving, setSaving] = useState(false);
   const inputRef = useRef(null);
   const { tender_id } = useParams();
@@ -45,6 +46,7 @@ const UploadBid = ({ onclose, onSuccess }) => {
       const formData = new FormData();
       // Append required fields (replace with actual values or props)
       formData.append("tender_id", tender_id);
+      formData.append("gst", gst);
       formData.append("created_by_user", "user_id_here");
 
       if (files.length === 1) {
@@ -74,8 +76,8 @@ const downloadSampleFile = () => {
   };
 
   return (
-    <div className="font-roboto-flex fixed inset-0 grid justify-center items-center backdrop-blur-xs backdrop-grayscale-50  drop-shadow-lg z-20">
-      <div className="relative bg-white rounded-lg shadow-2xl max-w-3xl w-full md:w-[600px] p-6 animate-fadeIn">
+    <div className="font-roboto-flex fixed inset-0 grid justify-center items-center backdrop-blur-sm backdrop-grayscale-50 drop-shadow-lg z-100">
+      <div className="relative bg-white dark:bg-slate-900 rounded-3xl shadow-2xl max-w-3xl w-full md:w-[600px] p-8 animate-fadeIn border border-gray-100 dark:border-slate-800">
         {/* Close Button */}
         <button
           onClick={onclose}
@@ -95,6 +97,20 @@ const downloadSampleFile = () => {
           onDragOver={(e) => e.preventDefault()}
           className="flex flex-col"
         >
+          {/* GST Input */}
+          <div className="mb-6">
+            <label className="block text-xs font-black text-gray-400 uppercase tracking-widest mb-2">
+              GST Percentage (%)
+            </label>
+            <input
+              type="number"
+              value={gst}
+              onChange={(e) => setGst(e.target.value)}
+              placeholder="Enter GST rate (e.g. 18)"
+              className="w-full px-4 py-3 bg-gray-50 dark:bg-slate-800/50 border border-gray-100 dark:border-slate-700 rounded-xl outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 transition-all font-bold text-gray-800 dark:text-white"
+            />
+          </div>
+
           {/* Drag & Drop Area */}
           <div
             onClick={() => inputRef.current.click()}

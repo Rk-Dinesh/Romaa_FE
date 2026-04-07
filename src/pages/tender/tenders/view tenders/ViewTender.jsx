@@ -128,42 +128,37 @@ const ViewTender = () => {
   return (
     <div className="font-roboto-flex flex flex-col h-full overflow-hidden">
       {/* Fixed Header Balance with Top Back Arrow */}
-      <div className="shrink-0">
-        <div className="flex items-center gap-3 mb-2">
-          <button
-            onClick={handleBack}
-            className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-slate-800 transition-all text-darkest-blue dark:text-white border border-gray-200 dark:border-slate-700 shadow-sm"
-            title="Go Back"
-          >
-            <MdArrowBackIosNew size={18} className="translate-x-0.5" />
-          </button>
-          <Title
-            title="Tender Management"
-            sub_title="Tender"
-            active_title={activeTabData?.label}
-          />
-        </div>
+      {/* Tabs Row with Integrated Back Button */}
+      <div className="shrink-0 flex items-center gap-3 py-2">
+        {/* Unified Back Button */}
+        <button
+          onClick={handleBack}
+          className="shrink-0 w-10 h-10 flex items-center justify-center rounded-xl bg-white dark:bg-slate-900 text-darkest-blue dark:text-white border border-gray-100 dark:border-slate-800 shadow-sm hover:bg-darkest-blue hover:text-white dark:hover:bg-blue-600 transition-all group"
+          title="Go Back"
+        >
+          <MdArrowBackIosNew size={18} className="translate-x-0.5 group-hover:-translate-x-0.5 transition-transform" />
+        </button>
 
-      {/* Tabs */}
-      <div 
-        ref={tabContainerRef}
-        className="flex overflow-x-auto no-scrollbar gap-2 py-2 scroll-smooth"
-      >
-        {tabs.map((tab) => (
-          <p
-            key={tab.id}
-            ref={activeTab === tab.id ? activeTabRef : null}
-            className={`px-4 py-2 rounded-lg text-sm cursor-pointer whitespace-nowrap shrink-0 transition-opacity ${
-              activeTab === tab.id
-                ? "bg-darkest-blue text-white shadow-sm"
-                : "bg-white dark:bg-slate-900 text-darkest-blue dark:text-slate-300 hover:opacity-80"
-            }`}
-            onClick={() => handleTabChange(tab)}
-          >
-            {tab.label}
-          </p>
-        ))}
-      </div>
+        {/* Tab Scroll Container */}
+        <div 
+          ref={tabContainerRef}
+          className="flex overflow-x-auto no-scrollbar gap-2 scroll-smooth items-center"
+        >
+          {tabs.map((tab) => (
+            <p
+              key={tab.id}
+              ref={activeTab === tab.id ? activeTabRef : null}
+              className={`px-5 py-2.5 rounded-xl text-sm font-bold cursor-pointer whitespace-nowrap shrink-0 transition-all ${
+                activeTab === tab.id
+                  ? "bg-darkest-blue text-white shadow-md scale-100"
+                  : "bg-white dark:bg-slate-900 text-darkest-blue dark:text-slate-400 hover:bg-gray-50 dark:hover:bg-slate-800 border border-transparent hover:border-gray-100 dark:hover:border-slate-700"
+              }`}
+              onClick={() => handleTabChange(tab)}
+            >
+              {tab.label}
+            </p>
+          ))}
+        </div>
       </div>
 
       {/* Content Area with Transparent Scroll Effect */}
