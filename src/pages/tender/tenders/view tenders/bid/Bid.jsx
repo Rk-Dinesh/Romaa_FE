@@ -15,6 +15,7 @@ import {
   ChevronUp,
   ArrowUpRight,
   ArrowDownRight,
+  FileCheck,
 } from "lucide-react";
 import { GiArrowFlights } from "react-icons/gi";
 import axios from "axios";
@@ -65,7 +66,8 @@ const Bid = ({ onBack }) => {
   const [isFreezing, setIsFreezing] = useState(false);
   const [showUpload, setShowUpload] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
-  const [expandedItems, setExpandedItems] = useState(new Set());
+  const [gstPercent, setGstPercent] = useState(18);
+ 
 
   const fetchBoqItems = useCallback(async () => {
     if (!tender_id) return;
@@ -74,6 +76,7 @@ const Bid = ({ onBack }) => {
       const res = await axios.get(`${API}/bid/get?tender_id=${tender_id}`);
       setItems(res.data.data.items || []);
       setbidfreezed(res.data.data.freezed);
+      if (res.data.data.gst) setGstPercent(res.data.data.gst);
     } catch (err) {
       toast.info(`${err.response?.data?.message || "Error fetching items"}`);
     } finally {
@@ -86,7 +89,7 @@ const Bid = ({ onBack }) => {
   }, [fetchBoqItems]);
 
   const totals = useMemo(() => {
-    return items.reduce(
+    const base = items.reduce(
       (acc, curr) => {
         acc.basic += Number(curr.base_amount) || 0;
         acc.quoted += Number(curr.q_amount) || 0;
@@ -95,7 +98,23 @@ const Bid = ({ onBack }) => {
       },
       { basic: 0, quoted: 0, negotiated: 0 },
     );
-  }, [items]);
+
+    const calc = (val) => {
+      const gAmount = val * (gstPercent / 100);
+      return {
+        base: val,
+        gst: gAmount,
+        total: val + gAmount,
+      };
+    };
+
+    return {
+      basic: calc(base.basic),
+      quoted: calc(base.quoted),
+      negotiated: calc(base.negotiated),
+      percent: gstPercent,
+    };
+  }, [items, gstPercent]);
 
   const filteredItems = useMemo(() => {
     if (!searchTerm) return items;
@@ -108,12 +127,7 @@ const Bid = ({ onBack }) => {
     );
   }, [items, searchTerm]);
 
-  const toggleExpand = (id) => {
-    const next = new Set(expandedItems);
-    if (next.has(id)) next.delete(id);
-    else next.add(id);
-    setExpandedItems(next);
-  };
+ 
 
   const handlefreeze = async () => {
     setIsFreezing(true);
@@ -131,8 +145,24 @@ const Bid = ({ onBack }) => {
 
   return (
     <div className="font-roboto-flex h-full flex flex-col gap-4 animate-fade-in pb-10">
-      {/* --- HEADER --- */}
-      <div className="flex flex-col md:flex-row md:items-center justify-end gap-4">
+      {/* --- HEADER & FILTERS --- */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        {/* Search */}
+        <div className="relative max-w-sm w-full">
+          <IoSearchOutline
+            className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 outline-none"
+            size={18}
+          />
+          <input
+            type="text"
+            placeholder="Filter by Name, ID or Description..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="w-full pl-11 pr-4 py-2.5 bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-xl text-sm focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 transition-all dark:text-white shadow-sm"
+          />
+        </div>
+
+        {/* Global Actions */}
         <div className="flex items-center gap-3">
           {!bidfreezed && (
             <button
@@ -175,7 +205,7 @@ const Bid = ({ onBack }) => {
         <SummaryCard
           icon={CircleDollarSign}
           label="Basic Total"
-          value={fmt(totals.basic)}
+          value={fmt(totals.basic.base)}
           sub="Owner Estimate"
           colorClass="text-blue-600"
           bgColor="bg-blue-50"
@@ -183,22 +213,70 @@ const Bid = ({ onBack }) => {
         <SummaryCard
           icon={LayoutList}
           label="Quoted Total"
-          value={fmt(totals.quoted)}
+          value={fmt(totals.quoted.base)}
           sub={
-            totals.quoted > totals.basic ? "Above Estimate" : "Below Estimate"
+            <div className="flex items-center gap-1.5">
+              <span>
+                {totals.quoted.base > totals.basic.base
+                  ? "Above Est."
+                  : "Below Est."}
+              </span>
+              {totals.basic.base > 0 && (
+                <span
+                  className={
+                    totals.quoted.base > totals.basic.base
+                      ? "text-rose-600"
+                      : "text-emerald-600 truncate"
+                  }
+                >
+                  ( {totals.quoted.base > totals.basic.base ? "+" : ""}
+                  {(
+                    ((totals.quoted.base - totals.basic.base) /
+                      totals.basic.base) *
+                    100
+                  ).toFixed(1)}
+                  % )
+                </span>
+              )}
+            </div>
           }
           colorClass={
-            totals.quoted > totals.basic ? "text-amber-600" : "text-emerald-600"
+            totals.quoted.base > totals.basic.base
+              ? "text-amber-600"
+              : "text-emerald-600"
           }
           bgColor={
-            totals.quoted > totals.basic ? "bg-amber-50" : "bg-emerald-50"
+            totals.quoted.base > totals.basic.base
+              ? "bg-amber-50"
+              : "bg-emerald-50"
           }
         />
         <SummaryCard
           icon={BarChart3}
           label="Negotiated"
-          value={fmt(totals.negotiated)}
-          sub="Final Final Award Value"
+          value={fmt(totals.negotiated.base)}
+          sub={
+            <div className="flex items-center gap-1.5">
+              <span>Final Award</span>
+              {totals.basic.base > 0 && (
+                <span
+                  className={
+                    totals.negotiated.base > totals.basic.base
+                      ? "text-rose-600"
+                      : "text-emerald-600"
+                  }
+                >
+                  ( {totals.negotiated.base > totals.basic.base ? "+" : ""}
+                  {(
+                    ((totals.negotiated.base - totals.basic.base) /
+                      totals.basic.base) *
+                    100
+                  ).toFixed(1)}
+                  % )
+                </span>
+              )}
+            </div>
+          }
           colorClass="text-indigo-600"
           bgColor="bg-indigo-50"
         />
@@ -206,23 +284,13 @@ const Bid = ({ onBack }) => {
 
       {/* --- TABLE AREA --- */}
       <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-100 dark:border-gray-800 shadow-xl overflow-hidden flex flex-col grow">
-        {/* Table Controls */}
-        <div className="px-6 py-5 border-b border-gray-50 dark:border-gray-800 flex items-center justify-between gap-4">
-          <div className="relative max-w-sm w-full">
-            <IoSearchOutline
-              className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400"
-              size={18}
-            />
-            <input
-              type="text"
-              placeholder="Filter by Name, ID or Description..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-11 pr-4 py-2.5 bg-gray-50 dark:bg-gray-800/50 border-none rounded-2xl text-sm focus:ring-2 focus:ring-blue-500/20 transition-all dark:text-white"
-            />
-          </div>
+        {/* Table Controls (Simplified) */}
+        <div className="px-6 py-4 border-b border-gray-50 dark:border-gray-800 flex items-center justify-between">
           <div className="text-[10px] font-black text-gray-400 uppercase tracking-widest hidden sm:block">
             Showing {filteredItems.length} of {items.length} records
+          </div>
+          <div className="text-[10px] font-black text-indigo-500 uppercase tracking-widest">
+            GST Applied: {totals.percent}%
           </div>
         </div>
 
@@ -339,39 +407,25 @@ const Bid = ({ onBack }) => {
                           {item.item_id}
                         </td>
                         {/* Name */}
-                        <td className="px-6 py-5 sticky left-36 z-10 bg-white dark:bg-gray-900 group-hover:bg-slate-50/50 dark:group-hover:bg-slate-800/30">
+                        <td className="px-6 py-5 sticky left-36 z-10 bg-white dark:bg-gray-900 group-hover:bg-slate-50/50 dark:group-hover:bg-slate-800/30 hover:z-60 transition-all">
                           <div className="flex items-center gap-3">
                             <div className="relative group/name max-w-[250px]">
-                              <span className="text-sm font-black text-gray-800 dark:text-gray-200 min-w-[300px] block">
+                              <span className="text-sm font-black text-gray-800 dark:text-gray-200 min-w-[300px] block truncate">
                                 {item.item_name}
                               </span>
-                              {/* Sleek Tooltip */}
+                              {/* Sleek Downward Tooltip */}
                               {item.description && (
-                                <div className="absolute left-0 bottom-full mb-2 hidden group-hover/name:block z-50 animate-scaleIn">
-                                  <div className="bg-slate-900 text-white text-[10px] font-medium px-3 py-2 rounded-xl border border-slate-700 shadow-2xl whitespace-normal min-w-[200px] max-w-[350px] leading-relaxed pointer-events-none ring-1 ring-white/10">
-                                    <span className="block font-black text-gray-400 uppercase text-[9px] mb-1 tracking-widest">
+                                <div className="absolute left-0 top-full mt-2 hidden group-hover/name:block z-100 animate-scaleIn pointer-events-none">
+                                  <div className="bg-slate-900 text-white text-[10px] font-medium px-3 py-2 rounded-xl border border-slate-700 shadow-2xl whitespace-normal min-w-[200px] max-w-[350px] leading-relaxed ring-1 ring-white/10">
+                                    <span className="block font-black text-blue-400 uppercase text-[9px] mb-1 tracking-widest">
                                       Detail Specification
                                     </span>
                                     {item.description}
-                                    <div className="absolute top-full left-4 -translate-y-1/2 border-4 border-transparent border-t-slate-900" />
+                                    <div className="absolute bottom-full left-4 -mb-1 border-4 border-transparent border-b-slate-900" />
                                   </div>
                                 </div>
                               )}
                             </div>
-                            {item.description && (
-                              <button
-                                onClick={() =>
-                                  toggleExpand(item.item_id || item._id)
-                                }
-                                className="p-1 rounded-md text-gray-300 hover:text-blue-500 hover:bg-blue-50 transition-all"
-                              >
-                                {isExpanded ? (
-                                  <ChevronUp size={14} />
-                                ) : (
-                                  <ChevronDown size={14} />
-                                )}
-                              </button>
-                            )}
                           </div>
                         </td>
                         {/* Unit */}
@@ -445,6 +499,107 @@ const Bid = ({ onBack }) => {
                   );
                 })}
               </tbody>
+
+              {/* Financial Summary Footer - Simplified Design */}
+              <tfoot className="border-t border-gray-200 dark:border-gray-700 bg-gray-50/10 dark:bg-gray-800/10">
+                <tr className="text-nowrap border-b border-gray-100 dark:border-gray-800/50">
+                  <td
+                    colSpan={4}
+                    className="px-6 py-2 text-[10px] font-bold uppercase tracking-widest text-gray-400 sticky left-0 z-20 bg-gray-50 dark:bg-gray-800 border-r border-gray-100 dark:border-gray-700"
+                  >
+                    Subtotal (Excl. Tax)
+                  </td>
+                  <td colSpan={2} className="px-6 py-2"></td>
+                  <td className="px-6 py-2 text-xs text-blue-600/70 dark:text-blue-400/70 tabular-nums text-right font-bold">
+                    {fmt(totals.basic.base)}
+                  </td>
+                  <td className="px-6 py-2 text-[9px] text-right">
+                    {totals.basic.base > 0 && totals.quoted.base > 0 && (
+                      <span
+                        className={
+                          totals.quoted.base > totals.basic.base
+                            ? "text-rose-500 font-bold"
+                            : "text-emerald-500 font-bold"
+                        }
+                      >
+                        ( {totals.quoted.base > totals.basic.base ? "+" : ""}
+                        {(
+                          ((totals.quoted.base - totals.basic.base) /
+                            totals.basic.base) *
+                          100
+                        ).toFixed(2)}
+                        % )
+                      </span>
+                    )}
+                  </td>
+                  <td className="px-6 py-2 text-xs text-amber-600/70 dark:text-amber-400/70 tabular-nums text-right font-bold">
+                    {fmt(totals.quoted.base)}
+                  </td>
+                  <td className="px-6 py-2 border-l border-gray-100 dark:border-gray-700 text-[9px] text-right">
+                    {totals.basic.base > 0 && totals.negotiated.base > 0 && (
+                      <span
+                        className={
+                          totals.negotiated.base > totals.basic.base
+                            ? "text-rose-500 font-bold"
+                            : "text-emerald-500 font-bold"
+                        }
+                      >
+                        ({" "}
+                        {totals.negotiated.base > totals.basic.base ? "+" : ""}
+                        {(
+                          ((totals.negotiated.base - totals.basic.base) /
+                            totals.basic.base) *
+                          100
+                        ).toFixed(1)}
+                        % )
+                      </span>
+                    )}
+                  </td>
+                  <td className="px-6 py-2 text-xs text-indigo-600/70 dark:text-indigo-400/70 tabular-nums text-right font-bold">
+                    {fmt(totals.negotiated.base)}
+                  </td>
+                </tr>
+                <tr className="text-nowrap border-b border-gray-100 dark:border-gray-800/50">
+                  <td
+                    colSpan={4}
+                    className="px-6 py-2 text-[10px] font-bold uppercase tracking-widest text-gray-400 sticky left-0 z-20 bg-gray-50 dark:bg-gray-800 border-r border-gray-100 dark:border-gray-700"
+                  >
+                    Tax (GST {totals.percent}%)
+                  </td>
+                  <td colSpan={2} className="px-6 py-2"></td>
+                  <td className="px-6 py-2 text-xs text-blue-500/50 dark:text-blue-400/50 tabular-nums text-right font-medium italic">
+                    {fmt(totals.basic.gst)}
+                  </td>
+                  <td className="px-6 py-2" />
+                  <td className="px-6 py-2 text-xs text-amber-500/50 dark:text-amber-400/50 tabular-nums text-right font-medium italic">
+                    {fmt(totals.quoted.gst)}
+                  </td>
+                  <td className="px-6 py-2 border-l border-gray-100 dark:border-gray-700" />
+                  <td className="px-6 py-2 text-xs text-indigo-500/50 dark:text-indigo-400/50 tabular-nums text-right font-medium italic">
+                    {fmt(totals.negotiated.gst)}
+                  </td>
+                </tr>
+                <tr className="text-nowrap bg-white dark:bg-gray-900 border-t-2 border-gray-100 dark:border-gray-800">
+                  <td
+                    colSpan={4}
+                    className="px-6 py-4 text-[11px] font-black uppercase tracking-widest text-gray-900 dark:text-white sticky left-0 z-20 bg-white dark:bg-gray-900 border-r border-gray-100 dark:border-gray-700"
+                  >
+                    Grand Total
+                  </td>
+                  <td colSpan={2} className="px-6 py-4"></td>
+                  <td className="px-6 py-4 text-sm text-blue-600 dark:text-blue-400 tabular-nums text-right font-black">
+                    {fmt(totals.basic.total)}
+                  </td>
+                  <td className="px-6 py-4" />
+                  <td className="px-6 py-4 text-sm text-amber-600 dark:text-amber-400 tabular-nums text-right font-black">
+                    {fmt(totals.quoted.total)}
+                  </td>
+                  <td className="px-6 py-4 border-l border-gray-100 dark:border-gray-700" />
+                  <td className="px-6 py-4 text-sm text-indigo-700 dark:text-indigo-400 tabular-nums text-right font-black">
+                    {fmt(totals.negotiated.total)}
+                  </td>
+                </tr>
+              </tfoot>
             </table>
           )}
         </div>
