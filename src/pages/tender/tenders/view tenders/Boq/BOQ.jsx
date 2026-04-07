@@ -247,7 +247,7 @@ const BOQ = ({ onBack }) => {
                       <td className="px-6 py-4 text-xs font-black text-blue-600 dark:text-blue-400 tabular-nums sticky left-16 z-10 bg-white dark:bg-gray-900 border-r border-gray-100 dark:border-gray-800">
                         {item.item_id || "-"}
                       </td>
-                      <td className="px-6 py-4 sticky left-[160px] z-10 bg-white dark:bg-gray-900 border-r border-gray-100 dark:border-gray-800 shadow-[2px_0_10px_rgba(0,0,0,0.02)] hover:z-[60]">
+                      <td className="px-6 py-4 sticky left-[160px] z-10 bg-white dark:bg-gray-900 border-r border-gray-100 dark:border-gray-800 shadow-[2px_0_10px_rgba(0,0,0,0.02)] hover:z-50">
                         <div className="relative group/tip flex flex-col">
                           <span className="text-xs font-black text-gray-900 dark:text-white group-hover:text-blue-600 transition-colors truncate">
                             {item.item_name}
@@ -307,7 +307,7 @@ const BOQ = ({ onBack }) => {
                 <tr className="text-nowrap bg-white dark:bg-gray-950 border-t border-gray-100 dark:border-gray-800">
                   <td className="w-16 px-6 py-4 sticky left-0 z-20 bg-white dark:bg-gray-950 border-r border-gray-100 dark:border-gray-800" />
                   <td className="w-24 px-6 py-4 sticky left-16 z-20 bg-white dark:bg-gray-950 border-r border-gray-100 dark:border-gray-800" />
-                  <td className="min-w-[100px] px-6 py-4 text-[11px] font-black uppercase tracking-widest text-gray-900 dark:text-white sticky left-[160px] z-20 bg-white dark:bg-gray-950 border-r border-gray-100 dark:border-gray-700 font-black">
+                  <td className="min-w-[100px] px-6 py-4 text-[11px] font-black uppercase tracking-widest text-gray-900 dark:text-white sticky left-[160px] z-20 bg-white dark:bg-gray-950 border-r border-gray-100 dark:border-gray-700 ">
                     Baseline Grand Total
                   </td>
                   <td colSpan={3} className="px-6 py-4 text-right" />

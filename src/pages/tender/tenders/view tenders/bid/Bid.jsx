@@ -67,7 +67,6 @@ const Bid = ({ onBack }) => {
   const [showUpload, setShowUpload] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [gstPercent, setGstPercent] = useState(18);
- 
 
   const fetchBoqItems = useCallback(async () => {
     if (!tender_id) return;
@@ -382,9 +381,6 @@ const Bid = ({ onBack }) => {
               </thead>
               <tbody className="divide-y divide-gray-50 dark:divide-gray-800/50">
                 {filteredItems.map((item, idx) => {
-                  const isExpanded = expandedItems.has(
-                    item.item_id || item._id,
-                  );
                   const isDiff =
                     (item.n_amount || 0) !== (item.base_amount || 0);
                   const variance = item.base_amount
@@ -482,19 +478,6 @@ const Bid = ({ onBack }) => {
                           </div>
                         </td>
                       </tr>
-                      {/* Expanded Description */}
-                      {isExpanded && (
-                        <tr className="bg-gray-50/30 dark:bg-gray-800/10">
-                          <td colSpan={10} className="px-24 py-4">
-                            <div className="p-4 rounded-2xl bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 shadow-sm relative overflow-hidden">
-                              <div className="absolute top-0 left-0 w-1 h-full bg-blue-500/20" />
-                              <p className="text-xs text-gray-500 dark:text-gray-400 leading-relaxed italic">
-                                {item.description}
-                              </p>
-                            </div>
-                          </td>
-                        </tr>
-                      )}
                     </React.Fragment>
                   );
                 })}
