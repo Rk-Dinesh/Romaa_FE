@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useCallback, useMemo } from "react";
+import ReactDOM from "react-dom";
 import { useParams } from "react-router-dom";
 import { MdArrowBackIosNew } from "react-icons/md";
 import {
@@ -294,7 +295,7 @@ const Bid = ({ onBack }) => {
         </div>
 
         {/* The Grid - Now with Vertical Scroll Handling */}
-        <div className="overflow-auto relative max-h-[70vh] no-scrollbar rounded-b-3xl">
+        <div className="overflow-auto relative max-h-[70vh] rounded-b-3xl">
           {loading ? (
             <div className="absolute inset-0 flex items-center justify-center bg-white/50 dark:bg-gray-900/50 backdrop-blur-sm z-50">
               <Loader />
@@ -403,7 +404,7 @@ const Bid = ({ onBack }) => {
                           {item.item_id}
                         </td>
                         {/* Name */}
-                        <td className="px-6 py-5 sticky left-36 z-10 bg-white dark:bg-gray-900 group-hover:bg-slate-50/50 dark:group-hover:bg-slate-800/30 hover:z-60 transition-all">
+                        <td className="px-6 py-5 sticky left-36 z-10 bg-white dark:bg-gray-900 group-hover:bg-slate-50/50 dark:group-hover:bg-slate-800/30 hover:z-[60] transition-all">
                           <div className="flex items-center gap-3">
                             <div className="relative group/name max-w-[250px]">
                               <span className="text-sm font-black text-gray-800 dark:text-gray-200 min-w-[300px] block truncate">
@@ -411,7 +412,7 @@ const Bid = ({ onBack }) => {
                               </span>
                               {/* Sleek Downward Tooltip */}
                               {item.description && (
-                                <div className="absolute left-0 top-full mt-2 hidden group-hover/name:block z-100 animate-scaleIn pointer-events-none">
+                                <div className="absolute left-0 top-full mt-2 hidden group-hover/name:block z-[100] animate-scaleIn pointer-events-none">
                                   <div className="bg-slate-900 text-white text-[10px] font-medium px-3 py-2 rounded-xl border border-slate-700 shadow-2xl whitespace-normal min-w-[200px] max-w-[350px] leading-relaxed ring-1 ring-white/10">
                                     <span className="block font-black text-blue-400 uppercase text-[9px] mb-1 tracking-widest">
                                       Detail Specification
@@ -606,8 +607,8 @@ const Bid = ({ onBack }) => {
       </div>
 
       {/* --- MODALS --- */}
-      {showFreezeModal && (
-        <div className="fixed inset-0 z-70 flex items-center justify-center bg-slate-900/60 backdrop-blur-md p-4 transition-all">
+      {showFreezeModal && ReactDOM.createPortal(
+        <div className="fixed inset-0 z-[70] flex items-center justify-center bg-slate-900/60 backdrop-blur-md p-4 transition-all">
           <div className="bg-white dark:bg-gray-900 w-full max-w-md rounded-3xl shadow-2xl border border-gray-200 dark:border-gray-800 flex flex-col overflow-hidden animate-scaleIn">
             <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 dark:border-gray-800 bg-gray-50/50 dark:bg-gray-800/30">
               <h3 className="text-[10px] font-black text-gray-500 dark:text-gray-400 uppercase tracking-widest">
@@ -659,7 +660,8 @@ const Bid = ({ onBack }) => {
               </button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
       {showUpload && (
