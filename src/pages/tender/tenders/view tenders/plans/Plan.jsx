@@ -117,7 +117,7 @@ const DocCard = ({ doc, isSelected, onSelect, onRequestDelete, onConfirmDelete, 
         )}
 
         {/* Hover overlay */}
-        <div className="absolute inset-0 bg-gradient-to-t from-black/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+        <div className="absolute inset-0 bg-linear-to-t from-black/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
 
         {/* NEW badge */}
         {recent && (
