@@ -1,9 +1,12 @@
-import React, { useEffect, useState, useMemo } from "react";
+import React, { useEffect, useState, useMemo, useCallback } from "react";
 import { useParams } from "react-router-dom";
 import axios from "axios";
 import { toast } from "react-toastify";
 import { API } from "../../../../../../constant";
 import { FaTruckMonster, FaGasPump } from "react-icons/fa";
+
+// Utility: rupees -> lakhs (Same as reference)
+const toLakhs = (rs) => (rs || 0) / 100000;
 
 const Machines = () => {
   const { tender_id } = useParams();
@@ -16,17 +19,14 @@ const Machines = () => {
   const [isEditing, setIsEditing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
 
-  // Utility: rupees -> lakhs (Same as reference)
-  const toLakhs = (rs) => (rs || 0) / 100000;
-
-  const fetchMachines = async () => {
+  const fetchMachines = useCallback(async () => {
     if (!tender_id) return;
     setLoading(true);
     try {
       const res = await axios.get(
         `${API}/raquantities/quantites/${tender_id}/${activeTab}`
       );
-      const { data, freeze } = res.data || {};
+      const { data, freeze } = res.data.data || {};
       setFreezed?.(!!freeze);
       setItems(Array.isArray(data) ? data : []);
 
@@ -36,13 +36,13 @@ const Machines = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [tender_id, activeTab]);
 
 
   useEffect(() => {
     fetchMachines();
     setIsEditing(false); // Reset edit mode on tab change
-  }, [tender_id, activeTab]);
+  }, [fetchMachines]);
 
   // --- CALCULATION LOGIC ---
   const updateItem = (index, field, value) => {
