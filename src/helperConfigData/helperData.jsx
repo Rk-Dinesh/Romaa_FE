@@ -17,7 +17,6 @@ import { LuFileUser } from "react-icons/lu";
 import { TbDoorExit } from "react-icons/tb";
 import { LuScrollText } from "react-icons/lu";
 import { TbContract } from "react-icons/tb";
-import { FaBars } from 'react-icons/fa';
 import {
   Quote,
 } from "lucide-react";
