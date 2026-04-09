@@ -1,4 +1,5 @@
  import {  RiDashboardLine } from "react-icons/ri";
+import { MapPin, TrendingUp } from "lucide-react";
 import { TbAssembly, TbFileDelta, TbListSearch } from "react-icons/tb";
 import { LuFileBox, LuUserRoundSearch } from "react-icons/lu";
 import { BsCart3 } from "react-icons/bs";
@@ -388,6 +389,18 @@ export const Menus = [
         icon: <TfiLayoutListThumb size={23} />,
         to: "/hr/NMRattendance",
         subModule: "nmr_attendance",
+      },
+      {
+        title: "Geofence",
+        icon: <MapPin size={23} />,
+        to: "/hr/geofence",
+        subModule: "geofence",
+      },
+      {
+        title: "Score Card",
+        icon: <TrendingUp size={23} />,
+        to: "/hr/scorecard",
+        subModule: "scorecard",
       },
     ],
   },

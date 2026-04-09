@@ -1,14 +1,20 @@
 import React, { useState } from "react";
 import Title from "../../../components/Title";
 import ButtonBg from "../../../components/Button";
-import { Pencil, User, Briefcase, MapPin, Phone, Shield } from "lucide-react";
+import { Pencil, User, Briefcase, MapPin, Shield, Settings, FolderOpen } from "lucide-react";
 import { useLocation, useNavigate } from "react-router-dom";
 import EditEmployee from "./EditEmployee";
+import ReassignRoleModal from "./ReassignRoleModal";
+import UpdateAccessModal from "./UpdateAccessModal";
+import AssignProjectsModal from "./AssignProjectsModal";
 
 const ViewEmployee = () => {
   const { state } = useLocation();
   const navigate = useNavigate();
   const [onEdit, setOnEdit] = useState(false);
+  const [roleModal, setRoleModal] = useState(false);
+  const [accessModal, setAccessModal] = useState(false);
+  const [projectsModal, setProjectsModal] = useState(false);
 
   // Safe access to employee object
   const employee = state?.item || {};
@@ -60,7 +66,25 @@ const ViewEmployee = () => {
               sub_title="Employee Details"
               page_title={employee.name || "View Employee"}
             />
-            <div className="mt-4 sm:mt-0">
+            <div className="mt-4 sm:mt-0 flex flex-wrap gap-2">
+              <button
+                onClick={() => setProjectsModal(true)}
+                className="flex items-center gap-1.5 px-3 py-2 text-xs font-semibold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 rounded-xl transition-colors"
+              >
+                <FolderOpen size={14} /> Assign Projects
+              </button>
+              <button
+                onClick={() => setAccessModal(true)}
+                className="flex items-center gap-1.5 px-3 py-2 text-xs font-semibold text-amber-700 bg-amber-50 hover:bg-amber-100 border border-amber-200 rounded-xl transition-colors"
+              >
+                <Settings size={14} /> Access Settings
+              </button>
+              <button
+                onClick={() => setRoleModal(true)}
+                className="flex items-center gap-1.5 px-3 py-2 text-xs font-semibold text-blue-700 bg-blue-50 hover:bg-blue-100 border border-blue-200 rounded-xl transition-colors"
+              >
+                <Shield size={14} /> Reassign Role
+              </button>
               <ButtonBg
                 button_name="Edit Profile"
                 button_icon={<Pencil size={16} />}
@@ -172,8 +196,17 @@ const ViewEmployee = () => {
           </div>
         </div>
       ) : (
-        // Pass the item to Edit Component
         <EditEmployee item={employee} onCancel={() => setOnEdit(false)} />
+      )}
+
+      {roleModal && (
+        <ReassignRoleModal employee={employee} onclose={() => setRoleModal(false)} />
+      )}
+      {accessModal && (
+        <UpdateAccessModal employee={employee} onclose={() => setAccessModal(false)} />
+      )}
+      {projectsModal && (
+        <AssignProjectsModal employee={employee} onclose={() => setProjectsModal(false)} />
       )}
     </>
   );

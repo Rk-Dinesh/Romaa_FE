@@ -133,6 +133,8 @@ const Attendance = lazy(() => import("../pages/Hr/attendance/Attendance"));
 const LeaveManagement = lazy(() => import("../pages/Hr/leave/LeaveManagement"));
 const PayRoll = lazy(() => import("../pages/Hr/payroll/PayRoll"));
 const ViewPayroll = lazy(() => import("../pages/Hr/payroll/ViewPayroll"));
+const Geofence = lazy(() => import("../pages/Hr/geofence/Geofence"));
+const HRScorecard = lazy(() => import("../pages/Hr/HRScorecard"));
 const ContractNmr = lazy(() => import("../pages/Hr/contract & Nmr/ContractNmr"));
 const ViewContractor = lazy(() => import("../pages/Hr/contract & Nmr/ViewContractor"));
 const EditContractor = lazy(() => import("../pages/Hr/contract & Nmr/EditContractor"));
@@ -480,6 +482,8 @@ const AppRoutes = () => {
                   <Route path="viewnmr" element={<ViewNMR />} />
                   <Route path="editnmr" element={<EditNMR />} />
                 </Route>
+                <Route path="geofence" element={<Geofence />} />
+                <Route path="scorecard" element={<HRScorecard />} />
               </Route>
 
               <Route path="/finance">
