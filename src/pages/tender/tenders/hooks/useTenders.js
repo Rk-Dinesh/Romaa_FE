@@ -4,237 +4,220 @@ import {
   useMutation,
   useQueryClient,
 } from "@tanstack/react-query";
-import { api } from "../../../../services/api";
+import { api } from "../../../../services/api"; // Adjust path to your axios instance
 import { toast } from "react-toastify";
 
-// The actual fetch function
-const fetchTenders = async ({ queryKey }) => {
-  const [_, params] = queryKey;
+// ============================================================================
+// CONSTANTS & UTILITIES
+// ============================================================================
 
-  const { data } = await api.get("/tender/gettenders", {
+export const QUERY_KEYS = {
+  TENDERS: "tenders",
+  TENDER_SUMMARY: "tender-summary",
+  EMD_LIST: "emd-list",
+  EMD_TRACKING: "emd-tracking",
+  SECURITY_DEPOSIT_LIST: "security-deposit-list",
+  SD_TRACKING: "sd-tracking",
+  PROJECT_PENALTY: "project-penalty",
+};
+
+const getErrorMessage = (error, defaultMsg) =>
+  error?.response?.data?.message || defaultMsg;
+
+const fetchEmdSdList = async (params) => {
+  const { data } = await api.get("/tender/gettendersemdsd", {
     params: {
-      page: params.page,
-      limit: params.limit,
-      search: params.search,
-      fromdate: params.fromdate,
-      todate: params.todate,
+      page: params?.page,
+      limit: params?.limit,
+      search: params?.search,
+      fromdate: params?.fromdate,
+      todate: params?.todate,
     },
   });
-
-  return data; // Expecting { data: [...], totalPages: N }
-};
-
-export const useTenders = (queryParams) => {
-  return useQuery({
-    // Unique Cache Key: If any param changes, it refetches automatically
-    queryKey: ["tenders", queryParams],
-    queryFn: fetchTenders,
-
-    // UI Optimizations
-    placeholderData: keepPreviousData, // Keeps old list visible while loading new page
-    retry: 1, // Retry failed requests once
-  });
-};
-
-const addTenderApi = async (tenderData) => {
-  const { data } = await api.post("/tender/addtender", tenderData);
   return data;
 };
 
-export const useAddTender = ({ onSuccess, onClose }) => {
+// ============================================================================
+// RATE ANALYSIS & SUMMARY MODULE
+// ============================================================================
+
+export const useTenderSummary = (tenderId) => {
+  return useQuery({
+    queryKey: [QUERY_KEYS.TENDER_SUMMARY, tenderId],
+    queryFn: async () => {
+      const { data } = await api.get(`/rateanalysis/getsummary/${tenderId}`);
+      return data.data;
+    },
+    enabled: !!tenderId,
+    staleTime: 5 * 60 * 1000,
+  });
+};
+
+export const useFinalizeEstimate = ({ onSuccess, onClose } = {}) => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: addTenderApi,
+    mutationFn: async (tenderId) => {
+      const response = await api.put(`/rateanalysis/freeze/${tenderId}`);
+      return response.data;
+    },
+    onSuccess: (data, tenderId) => {
+      // 1. Close modal instantly for a snappy UI
+      if (typeof onSuccess === 'function') onSuccess();
+      if (typeof onClose === 'function') onClose();
+
+      // 2. Show success toast
+      toast.success("Zero Cost Estimate finalized successfully ✅");
+
+      // 3. Update the cache to reflect the locked state
+      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.TENDER_SUMMARY, tenderId] });
+    },
+    onError: (error) => toast.error(getErrorMessage(error, "Failed to finalize estimate ❌")),
+  });
+};
+
+// ============================================================================
+// TENDER CRUD MODULE
+// ============================================================================
+
+export const useTenders = (queryParams) => {
+  return useQuery({
+    queryKey: [QUERY_KEYS.TENDERS, queryParams],
+    queryFn: async () => {
+      const { data } = await api.get("/tender/gettenders", { params: queryParams });
+      return data;
+    },
+    placeholderData: keepPreviousData,
+    staleTime: 60 * 1000,
+  });
+};
+
+export const useAddTender = ({ onSuccess, onClose } = {}) => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (tenderData) => {
+      const { data } = await api.post("/tender/addtender", tenderData);
+      return data;
+    },
     onSuccess: () => {
       toast.success("Tender created successfully ✅");
-      // 1. Refetch the Tender List immediately
-      queryClient.invalidateQueries(["tenders"]);
-      // 2. Call parent callbacks
-      if (onSuccess) onSuccess();
-      if (onClose) onClose();
+      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.TENDERS] });
+      if (typeof onSuccess === 'function') onSuccess();
+      if (typeof onClose === 'function') onClose();
     },
-    onError: (error) => {
-      toast.error(error.response?.data?.message || "Failed to create tender");
-    },
+    onError: (error) => toast.error(getErrorMessage(error, "Failed to create tender")),
   });
 };
 
-const updateTenderApi = async ({ id, data }) => {
-  const response = await api.put(`/tender/updatetender/${id}`, data);
-  return response.data;
-};
-
-export const useEditTender = ({ onSuccess, onClose }) => {
+export const useEditTender = ({ onSuccess, onClose } = {}) => {
   const queryClient = useQueryClient();
-
   return useMutation({
-    mutationFn: updateTenderApi,
+    mutationFn: async ({ id, data }) => {
+      const response = await api.put(`/tender/updatetender/${id}`, data);
+      return response.data;
+    },
     onSuccess: () => {
       toast.success("Tender updated successfully ✅");
-      // 1. Invalidate list to trigger auto-refresh
-      queryClient.invalidateQueries(["tenders"]);
-      // 2. Call callbacks
-      if (onSuccess) onSuccess();
-      if (onClose) onClose();
+      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.TENDERS] });
+      if (typeof onSuccess === 'function') onSuccess();
+      if (typeof onClose === 'function') onClose();
     },
-    onError: (error) => {
-      toast.error(error.response?.data?.message || "Failed to update tender");
-    },
+    onError: (error) => toast.error(getErrorMessage(error, "Failed to update tender")),
   });
 };
 
-const fetchEMDList = async ({ queryKey }) => {
-  const [_, params] = queryKey;
-  
-  const { data } = await api.get("/tender/gettendersemdsd", {
-    params: {
-      page: params.page,
-      limit: params.limit,
-      search: params.search,
-      fromdate: params.fromdate,
-      todate: params.todate,
-    },
-  });
-  
-  return data; // Expecting { data: [...], totalPages: N }
-};
+// ============================================================================
+// EMD & SECURITY DEPOSIT MODULE
+// ============================================================================
 
 export const useEMD = (queryParams) => {
   return useQuery({
-    queryKey: ["emd-list", queryParams], // Unique cache key
-    queryFn: fetchEMDList,
-    placeholderData: keepPreviousData, // Smooth pagination
-    staleTime: 60 * 1000, // 1 minute cache
+    queryKey: [QUERY_KEYS.EMD_LIST, queryParams],
+    queryFn: () => fetchEmdSdList(queryParams),
+    placeholderData: keepPreviousData,
+    staleTime: 60 * 1000,
   });
 };
 
-const updateEMDApi = async ({ tenderId, data }) => {
-  const response = await api.post(`/tender/updateemdamount/${tenderId}`, data);
-  return response.data;
-};
-
-export const useEditEMD = ({ onSuccess, onClose }) => {
+export const useEditEMD = ({ onSuccess, onClose } = {}) => {
   const queryClient = useQueryClient();
-
   return useMutation({
-    mutationFn: updateEMDApi,
+    mutationFn: async ({ tenderId, data }) => {
+      const response = await api.post(`/tender/updateemdamount/${tenderId}`, data);
+      return response.data;
+    },
     onSuccess: () => {
-      toast.success("Updated successfully ✅");
-      // 1. Refresh the EMD list automatically
-      queryClient.invalidateQueries(["emd-list"]);
-      // 2. Call callbacks
-      if (onSuccess) onSuccess();
-      if (onClose) onClose();
+      toast.success("EMD updated successfully ✅");
+      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.EMD_LIST] });
+      if (typeof onSuccess === 'function') onSuccess();
+      if (typeof onClose === 'function') onClose();
     },
-    onError: (error) => {
-      toast.error(error.response?.data?.message || "Failed to update EMD ❌");
-    },
+    onError: (error) => toast.error(getErrorMessage(error, "Failed to update EMD")),
   });
-};
-
-const fetchEMDTrackingApi = async ({ queryKey }) => {
-  const [_, tenderId] = queryKey;
-  const { data } = await api.get(`/tender/emdtracking/${tenderId}`);
-  // Return the specific array from the response
-  return data.emdTracking || []; 
 };
 
 export const useEMDTracking = (tenderId) => {
   return useQuery({
-    queryKey: ["emd-tracking", tenderId], // Unique cache key per tender
-    queryFn: fetchEMDTrackingApi,
-    enabled: !!tenderId, // Only fetch if we have a valid ID
-    staleTime: 5 * 60 * 1000, // Cache this data for 5 minutes
-  });
-};
-
-const fetchDepositList = async ({ queryKey }) => {
-  const [_, params] = queryKey;
-  
-  const { data } = await api.get("/tender/gettendersemdsd", {
-    params: {
-      page: params.page,
-      limit: params.limit,
-      search: params.search,
-      fromdate: params.fromdate,
-      todate: params.todate,
+    queryKey: [QUERY_KEYS.EMD_TRACKING, tenderId],
+    queryFn: async () => {
+      const { data } = await api.get(`/tender/emdtracking/${tenderId}`);
+      return data.emdTracking || [];
     },
+    enabled: !!tenderId,
+    staleTime: 5 * 60 * 1000,
   });
-  
-  return data;
 };
 
 export const useSecurityDeposit = (queryParams) => {
   return useQuery({
-    queryKey: ["security-deposit-list", queryParams], // Unique key for this module
-    queryFn: fetchDepositList,
-    placeholderData: keepPreviousData, // Prevents table flicker
-    staleTime: 60 * 1000, // 1 minute cache
+    queryKey: [QUERY_KEYS.SECURITY_DEPOSIT_LIST, queryParams],
+    queryFn: () => fetchEmdSdList(queryParams),
+    placeholderData: keepPreviousData,
+    staleTime: 60 * 1000,
   });
 };
 
-const updateDepositApi = async ({ tenderId, data }) => {
-  const response = await api.post(`/tender/securitydepositamount/${tenderId}`, data);
-  return response.data;
-};
-
-export const useEditSecurityDeposit = ({ onSuccess, onClose }) => {
+export const useEditSecurityDeposit = ({ onSuccess, onClose } = {}) => {
   const queryClient = useQueryClient();
-
   return useMutation({
-    mutationFn: updateDepositApi,
+    mutationFn: async ({ tenderId, data }) => {
+      const response = await api.post(`/tender/securitydepositamount/${tenderId}`, data);
+      return response.data;
+    },
     onSuccess: () => {
-      toast.success("Updated successfully ✅");
-      // 1. Refresh the Security Deposit list automatically
-      queryClient.invalidateQueries(["security-deposit-list"]);
-      // 2. Call callbacks
-      if (onSuccess) onSuccess();
-      if (onClose) onClose();
+      toast.success("Security Deposit updated successfully ✅");
+      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.SECURITY_DEPOSIT_LIST] });
+      if (typeof onSuccess === 'function') onSuccess();
+      if (typeof onClose === 'function') onClose();
     },
-    onError: (error) => {
-      toast.error(error.response?.data?.message || "Failed to update Security Deposit ❌");
-    },
+    onError: (error) => toast.error(getErrorMessage(error, "Failed to update Security Deposit")),
   });
-};
-
-const fetchSDTrackingApi = async ({ queryKey }) => {
-  const [_, tenderId] = queryKey;
-  const { data } = await api.get(`/tender/securitydeposittracking/${tenderId}`);
-  // Return the specific array from the response
-  return data.securityDepositTracking || []; 
 };
 
 export const useSecurityDepositTracking = (tenderId) => {
   return useQuery({
-    queryKey: ["sd-tracking", tenderId], // Unique cache key
-    queryFn: fetchSDTrackingApi,
-    enabled: !!tenderId, // Only fetch if ID exists
-    staleTime: 5 * 60 * 1000, // Cache for 5 minutes
+    queryKey: [QUERY_KEYS.SD_TRACKING, tenderId],
+    queryFn: async () => {
+      const { data } = await api.get(`/tender/securitydeposittracking/${tenderId}`);
+      return data.securityDepositTracking || [];
+    },
+    enabled: !!tenderId,
+    staleTime: 5 * 60 * 1000,
   });
 };
 
-const fetchPenaltyList = async ({ queryKey }) => {
-  const [_, params] = queryKey;
-  
-  const { data } = await api.get("/tender/gettendersworkorder", {
-    params: {
-      page: params.page,
-      limit: params.limit,
-      search: params.search,
-      fromdate: params.fromdate,
-      todate: params.todate,
-    },
-  });
-  
-  return data; // Expecting { data: [...], totalPages: N }
-};
+// ============================================================================
+// PENALTY MODULE
+// ============================================================================
 
 export const useProjectPenalty = (queryParams) => {
   return useQuery({
-    queryKey: ["project-penalty", queryParams], // Unique cache key
-    queryFn: fetchPenaltyList,
-    placeholderData: keepPreviousData, // Smooth pagination
-    staleTime: 60 * 1000, // 1 minute cache
+    queryKey: [QUERY_KEYS.PROJECT_PENALTY, queryParams],
+    queryFn: async () => {
+      const { data } = await api.get("/tender/gettendersworkorder", { params: queryParams });
+      return data;
+    },
+    placeholderData: keepPreviousData,
+    staleTime: 60 * 1000,
   });
 };
