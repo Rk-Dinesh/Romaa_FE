@@ -18,15 +18,13 @@ const Columns = [
   {
     label: "EMD Amount",
     key: "emd.approved_emd_details.emd_approved_amount",
-    render: (item) =>
-      item.emd?.approved_emd_details?.emd_approved_amount ?? "-",
+    render: (item) => item.emd?.approved_emd_details?.emd_approved_amount ?? "-",
     formatter: (value) =>
       new Intl.NumberFormat("en-IN", {
         style: "currency",
         currency: "INR",
         maximumFractionDigits: 0,
-        minimumFractionDigits: 0,
-      }).format(value),
+      }).format(value || 0),
   },
   {
     label: "Expiry Date",
@@ -39,28 +37,32 @@ const Columns = [
   {
     label: "Amount Collected",
     key: "emd.approved_emd_details.emd_deposit_amount_collected",
-    render: (item) =>
-      item.emd?.approved_emd_details?.emd_deposit_amount_collected ?? "-",
+    render: (item) => item.emd?.approved_emd_details?.emd_deposit_amount_collected ?? "-",
     formatter: (value) =>
       new Intl.NumberFormat("en-IN", {
         style: "currency",
         currency: "INR",
         maximumFractionDigits: 0,
-        minimumFractionDigits: 0,
-      }).format(value),
+      }).format(value || 0),
   },
+  // 🔄 UPDATED: Calculate Balance Dynamically
   {
     label: "Balance",
-    key: "emd.approved_emd_details.emd_deposit_pendingAmount",
-    render: (item) =>
-      item.emd?.approved_emd_details?.emd_deposit_pendingAmount ?? "-",
+    key: "calculated_balance", 
+    render: (item) => {
+      // 1. Extract both values, defaulting to 0 if missing
+      const totalAmount = Number(item.emd?.approved_emd_details?.emd_approved_amount) || 0;
+      const collectedAmount = Number(item.emd?.approved_emd_details?.emd_deposit_amount_collected) || 0;
+      
+      // 2. Return the real-time math
+      return totalAmount - collectedAmount;
+    },
     formatter: (value) =>
       new Intl.NumberFormat("en-IN", {
         style: "currency",
         currency: "INR",
         maximumFractionDigits: 0,
-        minimumFractionDigits: 0,
-      }).format(value),
+      }).format(value || 0),
   },
 ];
 

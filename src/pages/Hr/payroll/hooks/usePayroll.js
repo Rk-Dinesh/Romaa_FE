@@ -104,3 +104,28 @@ export const useSetPayrollTDS = ({ onSuccess, onclose }) => {
     },
   });
 };
+
+export const useExportPayrollExcel = () => {
+  return useMutation({
+    mutationFn: async ({ month, year }) => {
+      const response = await api.get("/payroll/export-excel", {
+        params: { month, year },
+        responseType: "blob",
+      });
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement("a");
+      link.href = url;
+      link.setAttribute("download", `payroll-${month}-${year}.xlsx`);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+    },
+    onSuccess: () => {
+      toast.success("Payroll exported successfully!");
+    },
+    onError: (error) => {
+      toast.error(error.response?.data?.message || "Failed to export payroll");
+    },
+  });
+};

@@ -6,7 +6,7 @@ import { FiRefreshCw as FiRefresh, FiSearch } from "react-icons/fi";
 import { TbFileExport } from "react-icons/tb";
 import Pagination from "../../../components/Pagination";
 import { useNavigate } from "react-router-dom";
-import { usePayrollList } from "./hooks/usePayroll";
+import { usePayrollList, useExportPayrollExcel } from "./hooks/usePayroll";
 import GeneratePayrollModal from "./GeneratePayrollModal";
 import SetTDSModal from "./SetTDSModal";
 import UpdatePayrollStatusModal from "./UpdatePayrollStatusModal";
@@ -41,6 +41,7 @@ const PayRoll = () => {
   const itemsPerPage = 10;
 
   const { data, isLoading, isFetching, refetch } = usePayrollList({ month, year });
+  const { mutate: exportExcel, isPending: isExporting } = useExportPayrollExcel();
 
   const allRecords = data?.data || [];
   const filtered = allRecords.filter((r) =>
@@ -62,7 +63,14 @@ const PayRoll = () => {
           <button onClick={refetch} className="p-2 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors" title="Refresh">
             <FiRefresh className={`text-lg ${isFetching ? "animate-spin" : ""}`} />
           </button>
-          <ButtonBg button_icon={<TbFileExport size={20} />} button_name="Export" bgColor="dark:bg-layout-dark bg-white" textColor="dark:text-white text-darkest-blue" />
+          <ButtonBg
+            button_icon={<TbFileExport size={20} className={isExporting ? "animate-spin" : ""} />}
+            button_name={isExporting ? "Exporting..." : "Export"}
+            bgColor="dark:bg-layout-dark bg-white"
+            textColor="dark:text-white text-darkest-blue"
+            onClick={() => exportExcel({ month, year })}
+            disabled={isExporting || allRecords.length === 0}
+          />
           <ButtonBg button_icon={<DollarSign size={18} />} button_name="Generate" onClick={() => setGenerateModal(true)} />
         </div>
       </div>

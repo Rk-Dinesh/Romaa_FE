@@ -161,7 +161,11 @@ export const useEMDTracking = (tenderId) => {
     queryKey: [QUERY_KEYS.EMD_TRACKING, tenderId],
     queryFn: async () => {
       const { data } = await api.get(`/tender/emdtracking/${tenderId}`);
-      return data.emdTracking || [];
+      return data; 
+    },
+    select: (response) => {
+      // Just extract the array, keep the raw snake_case keys for the Table
+      return response?.data || [];
     },
     enabled: !!tenderId,
     staleTime: 5 * 60 * 1000,

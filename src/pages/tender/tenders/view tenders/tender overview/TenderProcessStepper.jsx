@@ -202,6 +202,13 @@ export const TenderProcessEntry = () => {
   if (loading && processData.length === 0)
     return <div className="animate-pulse h-64 bg-slate-100 dark:bg-slate-800 rounded-2xl" />;
 
+  // ✅ Track if the system is currently "working"
+  const isProcessing = loading || isSubmitting;
+
+  // Date Logic
+  const today = new Date().toISOString().split("T")[0];
+  const minDate = currentStep > 0 ? processData[currentStep - 1]?.date?.split("T")[0] : undefined;
+
   return (
     <AnimatePresence>
       {!allCompleted && (
@@ -210,14 +217,32 @@ export const TenderProcessEntry = () => {
           animate={{ opacity: 1, x: 0 }}
           exit={{ opacity: 0, x: -16, transition: { duration: 0.25 } }}
           transition={{ duration: 0.3 }}
-          className="  bg-slate-50 dark:bg-slate-800/30 rounded-2xl border border-slate-200 dark:border-slate-700 flex flex-col overflow-hidden"
+          className="relative bg-slate-50 dark:bg-slate-800/30 rounded-2xl border border-slate-200 dark:border-slate-700 flex flex-col overflow-hidden"
         >
+          {/* ✅ 1. PROCESSING OVERLAY: Prevents user interference during save/upload */}
+          <AnimatePresence>
+            {isProcessing && (
+              <motion.div 
+                initial={{ opacity: 0 }} 
+                animate={{ opacity: 1 }} 
+                exit={{ opacity: 0 }}
+                className="absolute inset-0 z-50 bg-white/60 dark:bg-slate-900/60 backdrop-blur-[2px] flex items-center justify-center"
+              >
+                <div className="flex flex-col items-center gap-2">
+                  <div className="w-10 h-10 border-4 border-blue-600 border-t-transparent rounded-full animate-spin" />
+                  <span className="text-[10px] font-black text-blue-600 uppercase tracking-widest">Processing...</span>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+
           <div className="flex items-center justify-between px-5 py-3.5 border-b border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900">
             <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Step Entry</span>
             <span className="text-[10px] font-black text-blue-600 tabular-nums">{currentStep + 1} / {processData.length}</span>
           </div>
+
           <div className="p-5 flex flex-col gap-5">
-            {/* Step bubbles */}
+            {/* Step bubbles - Existing UI */}
             <div className="flex gap-3 overflow-hidden relative">
               {processData.slice(currentStep, currentStep + 4).map((s, idx) => {
                 const absoluteIndex = currentStep + idx;
@@ -236,6 +261,7 @@ export const TenderProcessEntry = () => {
                 );
               })}
             </div>
+
             {/* Form */}
             <AnimatePresence mode="wait">
               <motion.form key={step?.key} initial={{ opacity: 0, x: 12 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -12 }} onSubmit={handleSubmit(onNext)} className="space-y-4">
@@ -249,12 +275,11 @@ export const TenderProcessEntry = () => {
                   </div>
                 </div>
 
+                {/* Conditional Inputs with Date Logic */}
                 {step?.key === "work_order" ? (
                   <div className="grid grid-cols-2 gap-4">
                     <FormInput label="Work Order ID" name="workOrder_id" register={register} error={errors.workOrder_id} icon={FileText} />
-                    <FormInput label="Issued Date" name="workOrder_issued_date" type="date" register={register} error={errors.workOrder_issued_date} icon={Calendar}
-                      min={currentStep > 0 ? processData[currentStep - 1]?.date?.split("T")[0] : undefined}
-                      max={new Date().toISOString().split("T")[0]} />
+                    <FormInput label="Issued Date" name="workOrder_issued_date" type="date" register={register} error={errors.workOrder_issued_date} icon={Calendar} min={minDate} max={today} />
                   </div>
                 ) : step?.key === "agreement" ? (
                   <div className="space-y-4">
@@ -262,25 +287,22 @@ export const TenderProcessEntry = () => {
                       <FormInput label="Agreement ID" name="agreement_id" register={register} error={errors.agreement_id} icon={FileText} />
                       <FormInput label="Agreement Value" name="agreement_value" type="number" register={register} error={errors.agreement_value} icon={Settings} />
                     </div>
-                    <FormInput label="Issued Date" name="agreement_issued_date" type="date" register={register} error={errors.agreement_issued_date} icon={Calendar}
-                      min={currentStep > 0 ? processData[currentStep - 1]?.date?.split("T")[0] : undefined}
-                      max={new Date().toISOString().split("T")[0]} />
+                    <FormInput label="Issued Date" name="agreement_issued_date" type="date" register={register} error={errors.agreement_issued_date} icon={Calendar} min={minDate} max={today} />
                   </div>
                 ) : (
                   <div className="space-y-4">
                     <div className="grid grid-cols-2 gap-4">
-                      <FormInput label="Completion Date" name="date" type="date" register={register} error={errors.date} icon={Calendar}
-                        min={currentStep > 0 ? processData[currentStep - 1]?.date?.split("T")[0] : undefined}
-                        max={new Date().toISOString().split("T")[0]} />
+                      <FormInput label="Completion Date" name="date" type="date" register={register} error={errors.date} icon={Calendar} min={minDate} max={today} />
                       <FormInput label="Completion Time" name="time" type="time" register={register} error={errors.time} icon={Clock} />
                     </div>
                     <FormTextArea label="Notes / Remarks" name="notes" register={register} error={errors.notes} placeholder="Enter any specific details..." />
                   </div>
                 )}
 
+                {/* Attachment UI */}
                 <div className="group relative">
                   <label className="text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-2 block">Attachment</label>
-                  <input type="file" onChange={(e) => setFile(e.target.files[0])} className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10 top-6" />
+                  <input type="file" disabled={isProcessing} onChange={(e) => setFile(e.target.files[0])} className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10 top-6" />
                   <div className={`p-3.5 rounded-xl border-2 border-dashed flex items-center gap-3 transition-all ${file ? "border-blue-500 bg-blue-50/50 dark:bg-blue-900/10" : "border-slate-200 dark:border-slate-700 hover:border-blue-300"}`}>
                     <div className={`w-9 h-9 rounded-lg flex items-center justify-center shrink-0 ${file ? "bg-blue-500 text-white" : "bg-slate-100 dark:bg-slate-800 text-slate-400"}`}>
                       <Upload size={16} />
@@ -292,11 +314,21 @@ export const TenderProcessEntry = () => {
                   </div>
                 </div>
 
+                {/* ✅ 2. BUTTON LOADER: Dynamic text and spinner */}
                 <div className="flex justify-end pt-1">
-                  <button type="submit" disabled={loading || isSubmitting}
-                    className="group px-6 py-2.5 rounded-xl bg-blue-600 text-white font-bold text-sm hover:bg-blue-700 transition-all shadow shadow-blue-500/30 disabled:opacity-50 flex items-center gap-2">
-                    {currentStep < processData.length - 1 ? "Proceed to Next" : "Complete Process"}
-                    <ChevronRight size={15} className="group-hover:translate-x-0.5 transition-transform" />
+                  <button type="submit" disabled={isProcessing}
+                    className="group min-w-[160px] px-6 py-2.5 rounded-xl bg-blue-600 text-white font-bold text-sm hover:bg-blue-700 transition-all shadow shadow-blue-500/30 disabled:opacity-50 flex items-center justify-center gap-2">
+                    {isProcessing ? (
+                      <>
+                        <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                        <span>{file ? "Uploading..." : "Saving..."}</span>
+                      </>
+                    ) : (
+                      <>
+                        {currentStep < processData.length - 1 ? "Proceed to Next" : "Complete Process"}
+                        <ChevronRight size={15} className="group-hover:translate-x-0.5 transition-transform" />
+                      </>
+                    )}
                   </button>
                 </div>
               </motion.form>
