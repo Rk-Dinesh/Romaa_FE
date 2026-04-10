@@ -203,7 +203,11 @@ export const useSecurityDepositTracking = (tenderId) => {
     queryKey: [QUERY_KEYS.SD_TRACKING, tenderId],
     queryFn: async () => {
       const { data } = await api.get(`/tender/securitydeposittracking/${tenderId}`);
-      return data.securityDepositTracking || [];
+      return data || [];
+    },
+    select: (response) => {
+      // Just extract the array, keep the raw snake_case keys for the Table
+      return response?.data || [];
     },
     enabled: !!tenderId,
     staleTime: 5 * 60 * 1000,

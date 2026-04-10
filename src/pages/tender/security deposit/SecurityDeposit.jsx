@@ -46,18 +46,22 @@ const Columns = [
         minimumFractionDigits: 0,
       }).format(value),
   },
+  // ✅ Dynamically computed balance (mirrors EMD pattern)
   {
     label: "Balance",
-    key: "emd.approved_emd_details.security_deposit_pendingAmount",
-    render: (item) =>
-      item.emd?.approved_emd_details?.security_deposit_pendingAmount ?? "-",
+    key: "calculated_balance",
+    render: (item) => {
+      const total = Number(item.emd?.approved_emd_details?.security_deposit_amount) || 0;
+      const collected = Number(item.emd?.approved_emd_details?.security_deposit_amount_collected) || 0;
+      return total - collected;
+    },
     formatter: (value) =>
       new Intl.NumberFormat("en-IN", {
         style: "currency",
         currency: "INR",
         maximumFractionDigits: 0,
         minimumFractionDigits: 0,
-      }).format(value),
+      }).format(value || 0),
   },
 ];
 
