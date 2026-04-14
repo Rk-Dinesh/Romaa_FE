@@ -1,12 +1,13 @@
 import Filters from "../../../components/Filters";
 import Table from "../../../components/Table";
 import { BookUser } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { API } from "../../../constant";
 import { toast } from "react-toastify";
 import axios from "axios";
 import CreateVendorSupplier from "./CreateVendorSupplier";
 import EditVendorSupplier from "./EditVendorSupplier";
+import { useTableState } from "../../../hooks/useTableState";
 
 const VendorColumns = [
   { label: "Vendor ID", key: "vendor_id" },
@@ -30,14 +31,10 @@ const VendorSupplier = () => {
   const [vendors, setVendors] = useState([]);
   const [loading, setLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
-  const [currentPage, setCurrentPage] = useState(1);
+  const { currentPage, setCurrentPage, filterParams, setFilterParams } = useTableState("vendorSupplier");
   const [totalPages, setTotalPages] = useState(0);
-  const [filterParams, setFilterParams] = useState({
-    fromdate: "",
-    todate: "",
-  });
 
-  const fetchVendors = async () => {
+  const fetchVendors = useCallback(async () => {
     setLoading(true);
     try {
       const res = await axios.get(`${API}/vendor/getvendors`, {
@@ -57,11 +54,11 @@ const VendorSupplier = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [currentPage, searchTerm, filterParams]);
 
   useEffect(() => {
     fetchVendors();
-  }, [currentPage, searchTerm, filterParams]);
+  }, [fetchVendors]);
 
   return (
     <Table

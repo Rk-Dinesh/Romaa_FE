@@ -1,15 +1,25 @@
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient, keepPreviousData } from "@tanstack/react-query";
 import { api } from "../../../../services/api";
 import { toast } from "react-toastify";
 
 // HR: Get all pending leaves company-wide
-export const useAllPendingLeaves = (params = {}) => {
+export const useAllPendingLeaves = (queryParams = {}) => {
   return useQuery({
-    queryKey: ["hr-leaves", params],
+    queryKey: ["hr-leaves", queryParams],
     queryFn: async () => {
-      const { data } = await api.get("/leave/all-pending", { params });
+      const { data } = await api.get("/leave/all-pending", {
+        params: {
+          page: queryParams.page,
+          limit: queryParams.limit,
+          search: queryParams.search,
+          fromdate: queryParams.fromdate,
+          todate: queryParams.todate,
+          status: queryParams.status,
+        },
+      });
       return data;
     },
+    placeholderData: keepPreviousData,
     staleTime: 30 * 1000,
   });
 };

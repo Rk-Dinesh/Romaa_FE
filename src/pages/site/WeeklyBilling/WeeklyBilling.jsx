@@ -19,6 +19,8 @@ import { useWeeklyBillingList, useWeeklyBillingDetail, useUpdateBillStatus, useA
 import { useProject } from "../../../context/ProjectContext";
 import GenerateBillModal from "./GenerateBillModal";
 import Loader from "../../../components/Loader";
+import Pagination from "../../../components/Pagination";
+import { useDebounce } from "../../../hooks/useDebounce";
 
 const fmt = (n) =>
   Number(n || 0).toLocaleString("en-IN", { minimumFractionDigits: 2 });
@@ -45,11 +47,23 @@ const WeeklyBilling = () => {
   const [showModal, setShowModal]       = useState(false);
   const [selectedBill, setSelectedBill] = useState(null);
   const [search, setSearch]             = useState("");
+  const [currentPage, setCurrentPage]   = useState(1);
+  const [filterParams, setFilterParams] = useState({ fromdate: "", todate: "" });
   const [contractorFilter, setContractorFilter] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
 
-  const { data: bills = [], isLoading, isFetching, refetch } =
-    useWeeklyBillingList(tenderId);
+  const debouncedSearch = useDebounce(search, 500);
+
+  const { data: rawData, isLoading, isFetching, refetch } = useWeeklyBillingList(tenderId, {
+    page: currentPage,
+    limit: 10,
+    search: debouncedSearch,
+    fromdate: filterParams.fromdate,
+    todate: filterParams.todate,
+  });
+
+  const bills      = rawData?.data || [];
+  const totalPages = rawData?.totalPages || 1;
 
   const contractors = useMemo(
     () => [...new Set(bills.map((b) => b.contractor_name).filter(Boolean))],
@@ -57,17 +71,11 @@ const WeeklyBilling = () => {
   );
 
   const filtered = useMemo(() => {
-    let list = [...bills].reverse();
-    if (search)
-      list = list.filter(
-        (b) =>
-          b.bill_no?.toLowerCase().includes(search.toLowerCase()) ||
-          b.contractor_name?.toLowerCase().includes(search.toLowerCase()),
-      );
+    let list = [...bills];
     if (contractorFilter) list = list.filter((b) => b.contractor_name === contractorFilter);
     if (statusFilter) list = list.filter((b) => b.status === statusFilter);
     return list;
-  }, [bills, search, contractorFilter, statusFilter]);
+  }, [bills, contractorFilter, statusFilter]);
 
   const totalBilled = useMemo(
     () => bills.filter((b) => b.status !== "Cancelled").reduce((s, b) => s + (b.total_amount || 0), 0),
@@ -123,10 +131,23 @@ const WeeklyBilling = () => {
               type="text"
               placeholder="Search bill no. or contractor…"
               value={search}
-              onChange={(e) => setSearch(e.target.value)}
+              onChange={(e) => { setSearch(e.target.value); setCurrentPage(1); }}
               className="w-full pl-9 border border-gray-200 dark:border-gray-700 rounded-lg px-3 py-2 text-sm bg-gray-50 dark:bg-gray-800 dark:text-white focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
             />
           </div>
+
+          <input
+            type="date"
+            value={filterParams.fromdate}
+            onChange={(e) => { setFilterParams((p) => ({ ...p, fromdate: e.target.value })); setCurrentPage(1); }}
+            className="border border-gray-200 dark:border-gray-700 rounded-lg px-3 py-2 text-sm bg-gray-50 dark:bg-gray-800 dark:text-white focus:outline-none focus:ring-1 focus:ring-blue-500"
+          />
+          <input
+            type="date"
+            value={filterParams.todate}
+            onChange={(e) => { setFilterParams((p) => ({ ...p, todate: e.target.value })); setCurrentPage(1); }}
+            className="border border-gray-200 dark:border-gray-700 rounded-lg px-3 py-2 text-sm bg-gray-50 dark:bg-gray-800 dark:text-white focus:outline-none focus:ring-1 focus:ring-blue-500"
+          />
 
           <div className="min-w-[180px]">
             <SearchableSelect
@@ -246,16 +267,25 @@ const WeeklyBilling = () => {
 
             <div className="px-5 py-3 border-t border-gray-100 dark:border-gray-800 flex items-center justify-between text-xs text-gray-400">
               <span>
-                Showing <strong className="text-gray-600 dark:text-gray-300">{filtered.length}</strong> of{" "}
-                <strong className="text-gray-600 dark:text-gray-300">{bills.length}</strong> bills
+                Showing <strong className="text-gray-600 dark:text-gray-300">{filtered.length}</strong> bills
                 <span className="ml-2 text-gray-300">· Click a row to view details</span>
               </span>
               {filtered.length > 0 && (
                 <span className="font-semibold text-emerald-600 dark:text-emerald-400">
-                  Filtered Total: ₹{fmt(filtered.reduce((s, b) => s + (b.total_amount || 0), 0))}
+                  Page Total: ₹{fmt(filtered.reduce((s, b) => s + (b.total_amount || 0), 0))}
                 </span>
               )}
             </div>
+          </div>
+        )}
+
+        {totalPages > 1 && (
+          <div className="mt-4">
+            <Pagination
+              currentPage={currentPage}
+              setCurrentPage={setCurrentPage}
+              totalPages={totalPages}
+            />
           </div>
         )}
       </div>
@@ -265,7 +295,7 @@ const WeeklyBilling = () => {
         <GenerateBillModal
           onClose={() => setShowModal(false)}
           onSuccess={refetch}
-          existingBills={bills}
+          existingBills={rawData?.data || []}
         />
       )}
 

@@ -1,4 +1,4 @@
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient, keepPreviousData } from "@tanstack/react-query";
 import { api } from "../../../../services/api";
 import { toast } from "react-toastify";
 
@@ -116,28 +116,48 @@ export const useCreateRV = ({ onSuccess, onClose } = {}) => {
 /* ── List Payment Vouchers ──────────────────────────────────────────────── */
 const fetchPVList = async ({ queryKey }) => {
   const [, params] = queryKey;
-  const { data } = await api.get("/paymentvoucher/list/cash", { params });
-  return data?.data || [];
+  const { data } = await api.get("/paymentvoucher/list/cash", {
+    params: {
+      page: params.page,
+      limit: params.limit,
+      search: params.search,
+      fromdate: params.fromdate,
+      todate: params.todate,
+      status: params.status,
+    },
+  });
+  return { data: data?.data || [], pagination: data?.pagination || {} };
 };
 
 export const usePVList = (params = {}) =>
   useQuery({
     queryKey: ["cash-payment-vouchers", params],
     queryFn:  fetchPVList,
+    placeholderData: keepPreviousData,
     staleTime: 30 * 1000,
   });
 
 /* ── List Receipt Vouchers ──────────────────────────────────────────────── */
 const fetchRVList = async ({ queryKey }) => {
   const [, params] = queryKey;
-  const { data } = await api.get("/receiptvoucher/list/cash", { params });
-  return data?.data || [];
+  const { data } = await api.get("/receiptvoucher/list/cash", {
+    params: {
+      page: params.page,
+      limit: params.limit,
+      search: params.search,
+      fromdate: params.fromdate,
+      todate: params.todate,
+      status: params.status,
+    },
+  });
+  return { data: data?.data || [], pagination: data?.pagination || {} };
 };
 
 export const useRVList = (params = {}) =>
   useQuery({
     queryKey: ["cash-receipt-vouchers", params],
     queryFn:  fetchRVList,
+    placeholderData: keepPreviousData,
     staleTime: 30 * 1000,
   });
 

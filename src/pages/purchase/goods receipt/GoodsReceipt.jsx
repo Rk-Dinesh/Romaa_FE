@@ -1,8 +1,8 @@
-import { useEffect, useState } from "react";
-import { toast } from "react-toastify";
-import axios from "axios";
-import { API } from "../../../constant";
+import { useState } from "react";
 import Table from "../../../components/Table";
+import Filters from "../../../components/Filters";
+import { useDebounce } from "../../../hooks/useDebounce";
+import { useGRNProjects } from "./hooks/useGoodsReceipt";
 
 const Columns = [
   { label: "Project ID", key: "tender_id" },
@@ -14,37 +14,45 @@ const Columns = [
     key: "last_grn_date",
     formatter: (v) => (v ? new Date(v).toLocaleDateString("en-GB") : "—"),
   },
-  
 ];
 
 const GoodsReceipt = () => {
-  const [data, setData] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [filterParams, setFilterParams] = useState({ fromdate: "", todate: "" });
+  const debouncedSearch = useDebounce(searchTerm, 500);
 
-  useEffect(() => {
-    const fetch = async () => {
-      try {
-        const res = await axios.get(`${API}/material/grn/projects`);
-        setData(res.data?.data || []);
-      } catch {
-        toast.error("Failed to load GRN projects");
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetch();
-  }, []);
+  const { data, isLoading, isFetching, refetch } = useGRNProjects({
+    page: currentPage,
+    limit: 10,
+    search: debouncedSearch,
+    fromdate: filterParams.fromdate,
+    todate: filterParams.todate,
+  });
+
+  const rows = Array.isArray(data) ? data : (data?.data || []);
 
   return (
     <Table
       title="Purchase Management"
       subtitle="Goods Receipt"
       pagetitle="Goods Receipt Note (GRN)"
-      endpoint={data}
+      endpoint={rows}
+      totalPages={data?.totalPages || 0}
       columns={Columns}
-      loading={loading}
+      loading={isLoading}
+      isRefreshing={isFetching}
+      currentPage={currentPage}
+      setCurrentPage={setCurrentPage}
+      search={searchTerm}
+      setSearch={setSearchTerm}
+      filterParams={filterParams}
+      setFilterParams={setFilterParams}
+      FilterModal={Filters}
       ViewModal={true}
       routepoint="viewgoodreceipt"
+      onSuccess={refetch}
+      onUpdated={refetch}
     />
   );
 };

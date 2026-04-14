@@ -2,7 +2,9 @@ import { useState, useMemo } from "react";
 import {
   Landmark, RefreshCw, Plus, Database,
   LayoutList, GitBranch, Loader2, Info,
+  ChevronLeft, ChevronRight,
 } from "lucide-react";
+import { useDebounce } from "../../../hooks/useDebounce";
 import { useAccounts, useAccountTree, useSeedCOA } from "./hooks/useAccountTree";
 import SummaryCards     from "./components/SummaryCards";
 import FilterBar        from "./components/FilterBar";
@@ -35,30 +37,30 @@ const Banks = () => {
   const [showCreate, setShowCreate]     = useState(false);
   const [editAccount, setEditAccount]   = useState(null);
   const [deleteAccount, setDeleteAccount] = useState(null);
+  const [currentPage, setCurrentPage]   = useState(1);
+
+  const debouncedSearch = useDebounce(search, 500);
 
   /* ── Data ── */
   const listParams = useMemo(() => {
-    const p = {};
+    const p = {
+      page: currentPage,
+      limit: 10,
+      search: debouncedSearch,
+    };
     if (filterType)     p.account_type = filterType;
     if (filterBankCash) p.is_bank_cash = true;
     return p;
-  }, [filterType, filterBankCash]);
+  }, [currentPage, debouncedSearch, filterType, filterBankCash]);
 
-  const { data: accounts = [], isLoading, isFetching, refetch } = useAccounts(listParams);
-  const { data: treeData = [], isLoading: treeLoading }         = useAccountTree();
+  const { data: rawAccounts, isLoading, isFetching, refetch } = useAccounts(listParams);
+  const accounts = rawAccounts?.data || [];
+  const totalPages = rawAccounts?.pagination?.totalPages || 1;
+  const { data: treeData = [], isLoading: treeLoading }       = useAccountTree();
   const seedMutation = useSeedCOA();
 
-  /* ── Client-side search filter ── */
-  const filtered = useMemo(() => {
-    if (!search) return accounts;
-    const q = search.toLowerCase();
-    return accounts.filter(
-      a =>
-        a.account_code.toLowerCase().includes(q) ||
-        a.account_name.toLowerCase().includes(q) ||
-        (a.description || "").toLowerCase().includes(q),
-    );
-  }, [accounts, search]);
+  /* ── No client-side search needed — server handles it ── */
+  const filtered = useMemo(() => accounts, [accounts]);
 
   return (
     <div className="h-full overflow-y-auto bg-gray-50 dark:bg-[#0b0f19]">
@@ -142,15 +144,38 @@ const Banks = () => {
 
         {/* Content */}
         {view === "list" ? (
-          <AccountsTable
-            accounts={accounts}
-            filtered={filtered}
-            isLoading={isLoading}
-            onEdit={setEditAccount}
-            onDelete={setDeleteAccount}
-            onSeed={() => seedMutation.mutate()}
-            isSeedPending={seedMutation.isPending}
-          />
+          <>
+            <AccountsTable
+              accounts={accounts}
+              filtered={filtered}
+              isLoading={isLoading}
+              onEdit={setEditAccount}
+              onDelete={setDeleteAccount}
+              onSeed={() => seedMutation.mutate()}
+              isSeedPending={seedMutation.isPending}
+            />
+            {totalPages > 1 && (
+              <div className="flex items-center justify-between mt-4 text-xs">
+                <span className="text-gray-500">Page {currentPage} of {totalPages}</span>
+                <div className="flex gap-2">
+                  <button
+                    disabled={currentPage <= 1}
+                    onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                    className="px-3 py-1.5 rounded border border-gray-200 dark:border-gray-700 disabled:opacity-40 flex items-center gap-1"
+                  >
+                    <ChevronLeft size={13} /> Prev
+                  </button>
+                  <button
+                    disabled={currentPage >= totalPages}
+                    onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                    className="px-3 py-1.5 rounded border border-gray-200 dark:border-gray-700 disabled:opacity-40 flex items-center gap-1"
+                  >
+                    Next <ChevronRight size={13} />
+                  </button>
+                </div>
+              </div>
+            )}
+          </>
         ) : (
           <AccountTreeView
             treeData={treeData}

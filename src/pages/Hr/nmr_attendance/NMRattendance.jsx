@@ -8,7 +8,9 @@ import Pagination from "../../../components/Pagination";
 import Filters from "../../../components/Filters";
 import Loader from "../../../components/Loader";
 import { useProject } from "../../../context/ProjectContext";
+import { useSearch } from "../../../context/SearchBar";
 import { useNMRAttendanceList, useApproveNMRAttendance } from "./hooks/useNMRAttendance";
+import { useDebounce } from "../../../hooks/useDebounce";
 
 const STATUS_STYLES = {
   SUBMITTED: "bg-yellow-100 text-yellow-700 border-yellow-200",
@@ -18,27 +20,32 @@ const STATUS_STYLES = {
 const NMRAttendance = () => {
   const navigate = useNavigate();
   const { tenderId } = useProject();
+  const { searchTerm } = useSearch();
 
   const [currentPage, setCurrentPage] = useState(1);
   const [filterModal, setFilterModal] = useState(false);
-  const [filterParams, setFilterParams] = useState({ from: "", to: "", contractor_id: "" });
+  const [filterParams, setFilterParams] = useState({ fromdate: "", todate: "", contractor_id: "" });
 
+  const debouncedSearch = useDebounce(searchTerm, 500);
   const itemsPerPage = 10;
 
   const { data, isLoading, isFetching } = useNMRAttendanceList(tenderId, {
-    from: filterParams.from,
-    to: filterParams.to,
+    page: currentPage,
+    limit: itemsPerPage,
+    search: debouncedSearch,
+    fromdate: filterParams.fromdate,
+    todate: filterParams.todate,
     contractor_id: filterParams.contractor_id,
   });
 
   const approveMutation = useApproveNMRAttendance({});
 
-  const records = data?.data || [];
-  const totalPages = Math.ceil(records.length / itemsPerPage);
-  const paginatedData = records.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
+  const records    = data?.data || [];
+  const totalPages = data?.totalPages || 1;
+  const paginatedData = records;
 
   const handleFilter = ({ fromdate, todate }) => {
-    setFilterParams((prev) => ({ ...prev, from: fromdate, to: todate }));
+    setFilterParams((prev) => ({ ...prev, fromdate, todate }));
     setCurrentPage(1);
     setFilterModal(false);
   };

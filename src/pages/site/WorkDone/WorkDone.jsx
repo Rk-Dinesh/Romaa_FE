@@ -1,9 +1,11 @@
+import { useState } from "react";
 import { TbPlus } from "react-icons/tb";
 import Filters from "../../../components/Filters";
 import Table from "../../../components/Table";
 import AddWorkDone from "./AddWorkDone";
 import { useProject } from "../../../context/ProjectContext";
 import { useWorkDoneList } from "./hooks/useWorkDone";
+import { useDebounce } from "../../../hooks/useDebounce";
 
 const STATUS_COLORS = {
   Draft: "bg-gray-100 text-gray-600",
@@ -36,7 +38,21 @@ const columns = [
 
 const WorkDone = () => {
   const { tenderId } = useProject();
-  const { data, isLoading, isFetching, refetch } = useWorkDoneList(tenderId);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [filterParams, setFilterParams] = useState({ search: "", fromdate: "", todate: "" });
+  const debouncedSearch = useDebounce(filterParams.search, 500);
+
+  const queryParams = {
+    page: currentPage,
+    limit: 10,
+    search: debouncedSearch,
+    fromdate: filterParams.fromdate,
+    todate: filterParams.todate,
+  };
+
+  const { data: rawData, isLoading, isFetching, refetch } = useWorkDoneList(tenderId, queryParams);
+  const records = rawData?.data || [];
+  const totalPages = rawData?.totalPages || 1;
 
   return (
     <Table
@@ -44,7 +60,7 @@ const WorkDone = () => {
       subtitle="Work Done"
       pagetitle="Daily Progress Report"
       columns={columns}
-      endpoint={data || []}
+      endpoint={records}
       loading={isLoading}
       isRefreshing={isFetching}
       AddModal={AddWorkDone}
@@ -54,6 +70,11 @@ const WorkDone = () => {
       addButtonIcon={<TbPlus className="text-2xl text-primary" />}
       addButtonLabel="Add Work Done"
       onSuccess={refetch}
+      totalPages={totalPages}
+      currentPage={currentPage}
+      setCurrentPage={setCurrentPage}
+      filterParams={filterParams}
+      setFilterParams={setFilterParams}
     />
   );
 };

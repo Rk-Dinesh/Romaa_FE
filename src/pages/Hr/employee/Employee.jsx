@@ -5,6 +5,7 @@ import AddEmployee from "./AddEmployee";
 import { AiOutlineFileAdd } from "react-icons/ai";
 import { useDebounce } from "../../../hooks/useDebounce";
 import { useEmployees } from "./hooks/useEmployees";
+import { useTableState } from "../../../hooks/useTableState";
 
 
 const EmployeeColumns = [
@@ -17,12 +18,8 @@ const EmployeeColumns = [
 
 const Employee = () => {
   // 1. Local State for Controls
-  const [currentPage, setCurrentPage] = useState(1);
+  const { currentPage, setCurrentPage, filterParams, setFilterParams } = useTableState("employee");
   const [searchTerm, setSearchTerm] = useState("");
-  const [filterParams, setFilterParams] = useState({
-    fromdate: "",
-    todate: "",
-  });
 
   // 2. Debounce Search (Prevents spamming the API on every keystroke)
   const debouncedSearch = useDebounce(searchTerm, 500);

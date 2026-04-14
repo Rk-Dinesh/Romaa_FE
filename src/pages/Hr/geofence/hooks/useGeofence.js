@@ -3,8 +3,16 @@ import { api } from "../../../../services/api";
 import { toast } from "react-toastify";
 
 const fetchGeofences = async ({ queryKey }) => {
-  const [_, params] = queryKey;
-  const { data } = await api.get("/geofence/list", { params });
+  const [, params] = queryKey;
+  const { data } = await api.get("/geofence/list", {
+    params: {
+      page: params.page,
+      limit: params.limit,
+      search: params.search,
+      fromdate: params.fromdate,
+      todate: params.todate,
+    },
+  });
   return data;
 };
 

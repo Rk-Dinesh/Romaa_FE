@@ -3,15 +3,23 @@ import { api } from "../../../../services/api";
 import { toast } from "react-toastify";
 
 // ── List all generated bills for a tender ──────────────────────────────────────
-const fetchBillingList = async (tenderId) => {
-  const { data } = await api.get(`/weeklybilling/api/list/${tenderId}`);
-  return data?.data || [];
+const fetchBillingList = async (tenderId, params) => {
+  const { data } = await api.get(`/weeklybilling/api/list/${tenderId}`, {
+    params: {
+      page: params.page,
+      limit: params.limit,
+      search: params.search,
+      fromdate: params.fromdate,
+      todate: params.todate,
+    },
+  });
+  return data;
 };
 
-export const useWeeklyBillingList = (tenderId) =>
+export const useWeeklyBillingList = (tenderId, queryParams = {}) =>
   useQuery({
-    queryKey: ["weekly-billing-list", tenderId],
-    queryFn: () => fetchBillingList(tenderId),
+    queryKey: ["weekly-billing-list", tenderId, queryParams],
+    queryFn: () => fetchBillingList(tenderId, queryParams),
     enabled: !!tenderId,
     placeholderData: keepPreviousData,
     staleTime: 60 * 1000,

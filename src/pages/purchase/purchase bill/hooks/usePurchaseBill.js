@@ -1,32 +1,51 @@
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient, keepPreviousData } from "@tanstack/react-query";
 import { api } from "../../../../services/api";
 import { toast } from "react-toastify";
 
 /* ── All-tenders summary (finance overview table) ──────────────────────── */
-const fetchAllTendersSummary = async () => {
-  const { data } = await api.get("/purchasebill/summary-all");
-  return data?.data || [];
+const fetchAllTendersSummary = async ({ queryKey }) => {
+  const [, params] = queryKey;
+  const { data } = await api.get("/purchasebill/summary-all", {
+    params: {
+      page: params.page,
+      limit: params.limit,
+      search: params.search,
+      fromdate: params.fromdate,
+      todate: params.todate,
+    },
+  });
+  return data;
 };
 
-export const useAllTendersSummary = () =>
+export const useAllTendersSummary = (queryParams = {}) =>
   useQuery({
-    queryKey: ["purchase-bill-summary-all"],
+    queryKey: ["purchase-bill-summary-all", queryParams],
     queryFn:  fetchAllTendersSummary,
-    staleTime: 60 * 1000, // 1 minute
+    placeholderData: keepPreviousData,
+    staleTime: 60 * 1000,
   });
 
 /* ── Bills by tender ────────────────────────────────────────────────────── */
 const fetchBillsByTender = async ({ queryKey }) => {
-  const [, tenderId] = queryKey;
-  const { data } = await api.get(`/purchasebill/by-tender/${tenderId}`);
-  return data?.data || [];
+  const [, tenderId, params] = queryKey;
+  const { data } = await api.get(`/purchasebill/by-tender/${tenderId}`, {
+    params: {
+      page: params.page,
+      limit: params.limit,
+      search: params.search,
+      fromdate: params.fromdate,
+      todate: params.todate,
+    },
+  });
+  return data;
 };
 
-export const useBillsByTender = (tenderId) =>
+export const useBillsByTender = (tenderId, queryParams = {}) =>
   useQuery({
-    queryKey: ["bills-by-tender", tenderId],
+    queryKey: ["bills-by-tender", tenderId, queryParams],
     queryFn:  fetchBillsByTender,
     enabled:  !!tenderId,
+    placeholderData: keepPreviousData,
     staleTime: 30 * 1000,
   });
 

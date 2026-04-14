@@ -17,15 +17,24 @@ export const useContractorEmployees = (contractorId, tenderId) => {
   });
 };
 
-// --- DLP Summary (date-wise) ---
-export const useDLPSummary = (projectId) => {
+// --- DLP Summary (date-wise, paginated) ---
+export const useDLPSummary = (projectId, queryParams = {}) => {
   return useQuery({
-    queryKey: ["dlp-summary", projectId],
+    queryKey: ["dlp-summary", projectId, queryParams],
     queryFn: async () => {
-      const { data } = await api.get(`/dlp/api/summary/${projectId}`);
-      return data?.data || [];
+      const { data } = await api.get(`/dlp/api/summary/${projectId}`, {
+        params: {
+          page: queryParams.page,
+          limit: queryParams.limit,
+          search: queryParams.search,
+          fromdate: queryParams.fromdate,
+          todate: queryParams.todate,
+        },
+      });
+      return data;
     },
     enabled: !!projectId,
+    placeholderData: keepPreviousData,
     staleTime: 60 * 1000,
   });
 };
@@ -48,7 +57,15 @@ export const useDLPList = (projectId, queryParams = {}) => {
   return useQuery({
     queryKey: ["dlp-list", projectId, queryParams],
     queryFn: async () => {
-      const { data } = await api.get(`/dlp/api/list/${projectId}`, { params: queryParams });
+      const { data } = await api.get(`/dlp/api/list/${projectId}`, {
+        params: {
+          page: queryParams.page,
+          limit: queryParams.limit,
+          search: queryParams.search,
+          fromdate: queryParams.fromdate,
+          todate: queryParams.todate,
+        },
+      });
       return data;
     },
     enabled: !!projectId,

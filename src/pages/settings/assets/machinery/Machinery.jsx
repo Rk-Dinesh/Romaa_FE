@@ -1,35 +1,35 @@
 import React, { useEffect, useState, useMemo, useRef } from "react";
-import axios from "axios";
 import { useNavigate } from "react-router-dom";
 import {
-  Search, Filter, MoreHorizontal, MapPin, AlertTriangle,
+  Search, MoreHorizontal, MapPin, AlertTriangle,
   CheckCircle2, Calendar, Zap, Truck, Activity,
-  Eye, RefreshCw, ArrowRightLeft, X, AlertCircle
+  Eye, RefreshCw, ArrowRightLeft, X, AlertCircle,
+  ChevronLeft, ChevronRight
 } from "lucide-react";
 import SearchableSelect from "../../../../components/SearchableSelect";
-import { API } from "../../../../constant";
 import Loader from "../../../../components/Loader";
-import { toast } from "react-toastify";
+import { useDebounce } from "../../../../hooks/useDebounce";
+import {
+  useMachineryList,
+  useTendersApproved,
+  useUpdateMachineryStatus,
+  useTransferMachinery,
+} from "./hooks/useMachinery";
 
 
 const MachineryTable = () => {
   const navigate = useNavigate();
-  const [machinery, setMachinery] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [currentPage, setCurrentPage] = useState(1);
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("ALL");
-  const [activeActionId, setActiveActionId] = useState(null); // For dropdown menu
+  const [activeActionId, setActiveActionId] = useState(null);
 
-  // --- Modals State ---
-  const [modalType, setModalType] = useState(null); // 'STATUS' or 'TRANSFER'
+  const [modalType, setModalType] = useState(null);
   const [selectedAsset, setSelectedAsset] = useState(null);
-  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Forms
   const [statusForm, setStatusForm] = useState({ status: "", remarks: "" });
   const [transferForm, setTransferForm] = useState({ projectId: "", currentSite: "" });
 
-  // Focus trap for inline modal
   const modalRef = useRef(null);
   useEffect(() => {
     const el = modalRef.current;
@@ -47,35 +47,32 @@ const MachineryTable = () => {
     return () => document.removeEventListener("keydown", trap);
   }, [modalType]);
 
-  // Tenders for Transfer dropdown
-  const [tenders, setTenders] = useState([]);
+  const debouncedSearch = useDebounce(searchTerm, 500);
 
-  useEffect(() => {
-    axios
-      .get(`${API}/tender/gettenders`, { params: { page: 1, limit: 1000 } })
-      .then((res) => setTenders((res.data?.data || []).filter((t) => t.tender_status === "APPROVED")))
-      .catch(() => {});
-  }, []);
+  useEffect(() => { setCurrentPage(1); }, [debouncedSearch, statusFilter]);
 
-  // --- Data Fetching ---
-  const fetchMachinery = async () => {
-    try {
-      setLoading(true);
-      const res = await axios.get(`${API}/machineryasset/getall/assets`);
-      setMachinery(res.data.data || []);
-    } catch (err) {
-      console.error("Fetch error:", err);
-      toast.error("Failed to load assets");
-    } finally {
-      setLoading(false);
-    }
+  const { data, isLoading } = useMachineryList({
+    page: currentPage,
+    limit: 10,
+    search: debouncedSearch,
+  });
+  const { data: tenders = [] } = useTendersApproved();
+
+  const machinery = useMemo(
+    () => (Array.isArray(data) ? data : (data?.data || [])),
+    [data]
+  );
+  const totalPages = data?.totalPages || 1;
+
+  const closeModal = () => {
+    setModalType(null);
+    setSelectedAsset(null);
   };
 
-  useEffect(() => {
-    fetchMachinery();
-  }, []);
+  const { mutate: submitStatus, isPending: isSubmittingStatus } = useUpdateMachineryStatus({ onDone: closeModal });
+  const { mutate: submitTransferMutation, isPending: isSubmittingTransfer } = useTransferMachinery({ onDone: closeModal });
+  const isSubmitting = isSubmittingStatus || isSubmittingTransfer;
 
-  // --- Handlers ---
   const handleActionClick = (id) => {
     setActiveActionId(activeActionId === id ? null : id);
   };
@@ -83,8 +80,8 @@ const MachineryTable = () => {
   const openModal = (type, asset) => {
     setModalType(type);
     setSelectedAsset(asset);
-    setActiveActionId(null); // Close menu
-    
+    setActiveActionId(null);
+
     if (type === 'STATUS') {
       setStatusForm({ status: asset.currentStatus, remarks: "" });
     } else if (type === 'TRANSFER') {
@@ -92,51 +89,16 @@ const MachineryTable = () => {
     }
   };
 
-  const closeModal = () => {
-    setModalType(null);
-    setSelectedAsset(null);
-    setIsSubmitting(false);
-  };
-
-  // --- API Submit Handlers ---
-  
-  const submitStatusUpdate = async () => {
+  const submitStatusUpdate = () => {
     if (!window.confirm("Are you sure you want to update the status?")) return;
-    
-    try {
-      setIsSubmitting(true);
-      const res = await axios.put(`${API}/machineryasset/status/${selectedAsset.assetId}`, statusForm);
-      if (res.data.status) {
-        toast.success("Status updated successfully");
-        fetchMachinery(); // Refresh list
-        closeModal();
-      }
-    } catch (err) {
-      toast.error(err.response?.data?.message || "Update failed");
-    } finally {
-      setIsSubmitting(false);
-    }
+    submitStatus({ assetId: selectedAsset.assetId, payload: statusForm });
   };
 
-  const submitTransfer = async () => {
+  const submitTransfer = () => {
     if (!window.confirm(`Transfer this asset to ${transferForm.currentSite}?`)) return;
-
-    try {
-      setIsSubmitting(true);
-      const res = await axios.put(`${API}/machineryasset/transfer/${selectedAsset.assetId}`, transferForm);
-      if (res.data.status) {
-        toast.success("Asset transferred successfully");
-        fetchMachinery();
-        closeModal();
-      }
-    } catch (err) {
-      toast.error(err.response?.data?.message || "Transfer failed");
-    } finally {
-      setIsSubmitting(false);
-    }
+    submitTransferMutation({ assetId: selectedAsset.assetId, payload: transferForm });
   };
 
-  // --- Helper: Compliance Summary ---
   const getComplianceSummary = (compliance) => {
     if (!compliance) return { status: "Unknown", color: "text-gray-400" };
     const today = new Date();
@@ -159,43 +121,34 @@ const MachineryTable = () => {
       }
     });
 
-    if (expiredCount > 0) return { 
-      status: "Critical", 
-      label: `${expiredCount} Expired`, 
-      color: "text-red-600 dark:text-red-400", 
+    if (expiredCount > 0) return {
+      status: "Critical",
+      label: `${expiredCount} Expired`,
+      color: "text-red-600 dark:text-red-400",
       bg: "bg-red-100 dark:bg-red-900/30",
-      icon: AlertTriangle 
+      icon: AlertTriangle
     };
-    if (warningCount > 0) return { 
-      status: "Warning", 
-      label: `${warningCount} Expiring Soon`, 
-      color: "text-amber-600 dark:text-amber-400", 
+    if (warningCount > 0) return {
+      status: "Warning",
+      label: `${warningCount} Expiring Soon`,
+      color: "text-amber-600 dark:text-amber-400",
       bg: "bg-amber-100 dark:bg-amber-900/30",
       icon: AlertTriangle
     };
-    return { 
-      status: "Good", 
-      label: "Compliant", 
-      color: "text-emerald-600 dark:text-emerald-400", 
+    return {
+      status: "Good",
+      label: "Compliant",
+      color: "text-emerald-600 dark:text-emerald-400",
       bg: "bg-emerald-100 dark:bg-emerald-900/30",
-      icon: CheckCircle2 
+      icon: CheckCircle2
     };
   };
 
-  // --- Filter Logic ---
   const filteredData = useMemo(() => {
-    return machinery.filter(item => {
-      const matchesSearch = 
-        item.assetName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        item.assetId?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        item.serialNumber?.toLowerCase().includes(searchTerm.toLowerCase());
-      
-      const matchesStatus = statusFilter === "ALL" || item.currentStatus?.toUpperCase() === statusFilter;
-      return matchesSearch && matchesStatus;
-    });
-  }, [machinery, searchTerm, statusFilter]);
+    if (statusFilter === "ALL") return machinery;
+    return machinery.filter((item) => item.currentStatus?.toUpperCase() === statusFilter);
+  }, [machinery, statusFilter]);
 
-  // --- Stats ---
   const stats = {
     total: machinery.length,
     active: machinery.filter(m => m.currentStatus === 'Active').length,
@@ -205,8 +158,7 @@ const MachineryTable = () => {
 
   return (
     <div className="space-y-3 font-sans text-sm p-2 text-slate-800 dark:text-slate-200 relative min-h-screen">
-      
-      {/* --- Dashboard Header --- */}
+
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {[
           { label: "Total Assets", value: stats.total, icon: Truck, color: "text-blue-600", border: "border-l-4 border-blue-600" },
@@ -226,7 +178,6 @@ const MachineryTable = () => {
         ))}
       </div>
 
-      {/* --- Toolbar --- */}
       <div className="flex flex-col md:flex-row justify-between items-center gap-4 bg-white dark:bg-slate-900 p-3 rounded-t-lg border-x border-t border-slate-200 dark:border-slate-800">
         <div className="flex gap-1 bg-slate-100 dark:bg-slate-800 p-1 rounded-lg">
           {["ALL", "ACTIVE", "MAINTENANCE", "IDLE"].map((tab) => (
@@ -256,7 +207,6 @@ const MachineryTable = () => {
         </div>
       </div>
 
-      {/* --- Table --- */}
       <div className="overflow-visible border border-slate-200 dark:border-slate-800 rounded-b-lg shadow-sm bg-white dark:bg-slate-900">
         <table className="w-full text-left border-collapse">
           <thead className="bg-slate-50 dark:bg-slate-950 text-slate-500 dark:text-slate-400 text-xs uppercase font-semibold tracking-wide">
@@ -270,9 +220,9 @@ const MachineryTable = () => {
               <th className="p-4 text-right border-b dark:border-slate-800">Actions</th>
             </tr>
           </thead>
-          
+
           <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-            {loading ? (
+            {isLoading ? (
               <tr><td colSpan="7"><Loader /></td></tr>
             ) : filteredData.length === 0 ? (
               <tr><td colSpan="7" className="p-8 text-center text-slate-400 italic">No assets found.</td></tr>
@@ -283,7 +233,7 @@ const MachineryTable = () => {
 
                 return (
                   <tr key={item._id} className="group hover:bg-blue-50/50 dark:hover:bg-blue-900/10 transition-colors even:bg-slate-50/30 dark:even:bg-slate-800/30 relative">
-                    <td className="p-4 text-center text-slate-400 text-xs ">{index + 1}</td>
+                    <td className="p-4 text-center text-slate-400 text-xs ">{(currentPage - 1) * 10 + index + 1}</td>
 
                     <td className="p-4">
                       <div className="flex flex-col">
@@ -329,8 +279,8 @@ const MachineryTable = () => {
 
                     <td className="p-4 text-center">
                       <span className={`inline-block px-3 py-1 rounded text-[10px] font-bold uppercase tracking-wide border ${
-                        item.currentStatus === 'Active' 
-                          ? "bg-green-50 text-green-700 border-green-200 dark:bg-green-900/20 dark:text-green-400 dark:border-green-800" 
+                        item.currentStatus === 'Active'
+                          ? "bg-green-50 text-green-700 border-green-200 dark:bg-green-900/20 dark:text-green-400 dark:border-green-800"
                           : item.currentStatus === 'Maintenance'
                           ? "bg-orange-50 text-orange-700 border-orange-200 dark:bg-orange-900/20 dark:text-orange-400 dark:border-orange-800"
                           : "bg-slate-100 text-slate-600 border-slate-200 dark:bg-slate-800 dark:text-slate-400 dark:border-slate-700"
@@ -339,33 +289,31 @@ const MachineryTable = () => {
                       </span>
                     </td>
 
-                    {/* --- ACTIONS MENU --- */}
                     <td className="p-4 text-right relative">
-                      <button 
+                      <button
                         onClick={() => handleActionClick(item._id)}
                         className="text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 p-1.5 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 transition-all"
                       >
                         <MoreHorizontal className="w-5 h-5" />
                       </button>
 
-                      {/* Dropdown Popup */}
                       {activeActionId === item._id && (
                         <div className="absolute right-8 top-8 z-50 w-48 bg-white dark:bg-slate-800 rounded-lg shadow-xl border border-slate-200 dark:border-slate-700 py-1 animate-in fade-in zoom-in-95 duration-100">
-                          <button 
+                          <button
                             onClick={() => navigate(`/settings/assets/details/${item.assetId}`)}
                             className="w-full text-left px-4 py-2.5 text-xs font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 flex items-center gap-2"
                           >
                             <Eye className="w-4 h-4 text-blue-500" /> View Details
                           </button>
-                          
-                          <button 
+
+                          <button
                             onClick={() => openModal('STATUS', item)}
                             className="w-full text-left px-4 py-2.5 text-xs font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 flex items-center gap-2"
                           >
                             <RefreshCw className="w-4 h-4 text-orange-500" /> Update Status
                           </button>
-                          
-                          <button 
+
+                          <button
                             onClick={() => openModal('TRANSFER', item)}
                             className="w-full text-left px-4 py-2.5 text-xs font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 flex items-center gap-2"
                           >
@@ -380,19 +328,39 @@ const MachineryTable = () => {
             )}
           </tbody>
         </table>
+
+        {/* Pagination */}
+        {totalPages > 1 && (
+          <div className="flex items-center justify-between p-3 border-t border-slate-200 dark:border-slate-800 text-xs">
+            <span className="text-slate-500">Page {currentPage} of {totalPages}</span>
+            <div className="flex gap-2">
+              <button
+                disabled={currentPage <= 1}
+                onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                className="px-3 py-1.5 rounded border border-slate-300 dark:border-slate-700 disabled:opacity-40 flex items-center gap-1"
+              >
+                <ChevronLeft className="w-3.5 h-3.5" /> Prev
+              </button>
+              <button
+                disabled={currentPage >= totalPages}
+                onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                className="px-3 py-1.5 rounded border border-slate-300 dark:border-slate-700 disabled:opacity-40 flex items-center gap-1"
+              >
+                Next <ChevronRight className="w-3.5 h-3.5" />
+              </button>
+            </div>
+          </div>
+        )}
       </div>
 
-      {/* Backdrop for closing menu */}
       {activeActionId && (
         <div className="fixed inset-0 z-40 bg-transparent" onClick={() => setActiveActionId(null)} />
       )}
 
-      {/* --- MODAL (Shared) --- */}
       {modalType && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in">
           <div ref={modalRef} className="bg-white dark:bg-slate-900 w-full max-w-md rounded-xl shadow-2xl border border-slate-200 dark:border-slate-800 overflow-hidden">
-            
-            {/* Header */}
+
             <div className="px-6 py-4 border-b border-slate-200 dark:border-slate-800 flex justify-between items-center bg-slate-50 dark:bg-slate-950/50">
               <h3 className="text-lg font-bold text-slate-800 dark:text-white flex items-center gap-2">
                 {modalType === 'STATUS' ? <RefreshCw className="text-orange-500 w-5 h-5"/> : <ArrowRightLeft className="text-emerald-500 w-5 h-5"/>}
@@ -403,7 +371,6 @@ const MachineryTable = () => {
               </button>
             </div>
 
-            {/* Content */}
             <div className="p-6 space-y-4">
               <div className="bg-blue-50 dark:bg-blue-900/20 p-3 rounded-lg border border-blue-100 dark:border-blue-800/50 flex items-start gap-3">
                 <AlertCircle className="w-5 h-5 text-blue-600 dark:text-blue-400 mt-0.5" />
@@ -414,7 +381,6 @@ const MachineryTable = () => {
                 </div>
               </div>
 
-              {/* Status Form */}
               {modalType === 'STATUS' && (
                 <>
                   <div>
@@ -428,7 +394,7 @@ const MachineryTable = () => {
                   </div>
                   <div>
                     <label className="text-xs font-semibold text-slate-500 uppercase">Remarks</label>
-                    <textarea 
+                    <textarea
                       className="w-full mt-1 p-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none dark:text-white"
                       rows="3"
                       placeholder="Reason for status change..."
@@ -439,7 +405,6 @@ const MachineryTable = () => {
                 </>
               )}
 
-              {/* Transfer Form */}
               {modalType === 'TRANSFER' && (
                 <>
                   <div>
@@ -459,7 +424,7 @@ const MachineryTable = () => {
                   </div>
                   <div>
                     <label className="text-xs font-semibold text-slate-500 uppercase">New Site Location</label>
-                    <input 
+                    <input
                       type="text"
                       className="w-full mt-1 p-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none dark:text-white"
                       value={transferForm.currentSite}
@@ -468,19 +433,16 @@ const MachineryTable = () => {
                   </div>
                 </>
               )}
-
-            
             </div>
 
-            {/* Footer */}
             <div className="p-5 border-t border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950/50 flex justify-end gap-3">
-              <button 
+              <button
                 onClick={closeModal}
                 className="px-4 py-2 text-sm font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-800 rounded-lg transition-colors"
               >
                 Cancel
               </button>
-              <button 
+              <button
                 onClick={modalType === 'STATUS' ? submitStatusUpdate : submitTransfer}
                 disabled={isSubmitting}
                 className="px-6 py-2 text-sm font-bold text-white bg-blue-600 hover:bg-blue-700 rounded-lg shadow-md transition-all disabled:opacity-50 flex items-center gap-2"

@@ -6,7 +6,17 @@ export const usePayrollList = (queryParams = {}) => {
   return useQuery({
     queryKey: ["payroll-list", queryParams],
     queryFn: async () => {
-      const { data } = await api.get("/payroll/monthly-run", { params: queryParams });
+      const { data } = await api.get("/payroll/monthly-run", {
+        params: {
+          page: queryParams.page,
+          limit: queryParams.limit,
+          search: queryParams.search,
+          fromdate: queryParams.fromdate,
+          todate: queryParams.todate,
+          month: queryParams.month,
+          year: queryParams.year,
+        },
+      });
       return data;
     },
     placeholderData: keepPreviousData,
@@ -15,15 +25,23 @@ export const usePayrollList = (queryParams = {}) => {
   });
 };
 
-export const useEmployeePayslips = (employeeId, year) => {
+export const useEmployeePayslips = (employeeId, queryParams = {}) => {
   return useQuery({
-    queryKey: ["payslips", employeeId, year],
+    queryKey: ["payslips", employeeId, queryParams],
     queryFn: async () => {
       const { data } = await api.get(`/payroll/employee/${employeeId}`, {
-        params: { year },
+        params: {
+          page: queryParams.page,
+          limit: queryParams.limit,
+          search: queryParams.search,
+          fromdate: queryParams.fromdate,
+          todate: queryParams.todate,
+          year: queryParams.year,
+        },
       });
       return data;
     },
+    placeholderData: keepPreviousData,
     staleTime: 60 * 1000,
     enabled: !!employeeId,
   });

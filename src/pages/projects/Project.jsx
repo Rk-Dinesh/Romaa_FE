@@ -6,6 +6,7 @@ import { toast } from "react-toastify";
 import { useProject } from "../../context/ProjectContext";
 import { useProjects } from "./hooks/useProjects";
 import { useDebounce } from "../../hooks/useDebounce";
+import { useTableState } from "../../hooks/useTableState";
 
 const Columns = [
   { label: "Project ID", key: "workOrder_id" },
@@ -28,12 +29,8 @@ const Project = () => {
  
 
   // 1. Local State for Controls
-  const [currentPage, setCurrentPage] = useState(1);
+  const { currentPage, setCurrentPage, filterParams, setFilterParams } = useTableState("project");
   const [searchTerm, setSearchTerm] = useState("");
-  const [filterParams, setFilterParams] = useState({
-    fromdate: "",
-    todate: "",
-  });
 
   // 2. Debounce Search (Prevents spamming the API on every keystroke)
   const debouncedSearch = useDebounce(searchTerm, 500);

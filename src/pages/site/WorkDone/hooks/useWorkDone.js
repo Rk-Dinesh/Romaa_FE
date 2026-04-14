@@ -5,8 +5,16 @@ import { toast } from "react-toastify";
 // ── Fetchers ────────────────────────────────────────────────────────────────
 
 const fetchWorkDoneList = async (tenderId, params) => {
-  const { data } = await api.get(`/workdone/api/list/${tenderId}`, { params });
-  return data?.data || [];
+  const { data } = await api.get(`/workdone/api/list/${tenderId}`, {
+    params: {
+      page: params.page,
+      limit: params.limit,
+      search: params.search,
+      fromdate: params.fromdate,
+      todate: params.todate,
+    },
+  });
+  return { data: data?.data || [], totalPages: data?.totalPages || 1, totalCount: data?.totalCount || 0 };
 };
 
 const fetchWorkDoneDetail = async (id) => {

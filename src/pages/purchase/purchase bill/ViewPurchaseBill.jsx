@@ -4,6 +4,8 @@ import { ChevronLeft, ChevronDown, ChevronRight, RefreshCw, FileText, Search, Al
 import { useBillsByTender, useApprovePurchaseBill, useDeletePurchaseBill } from "./hooks/usePurchaseBill";
 import SearchableSelect from "../../../components/SearchableSelect";
 import Loader from "../../../components/Loader";
+import Pagination from "../../../components/Pagination";
+import { useDebounce } from "../../../hooks/useDebounce";
 
 /* ── helpers ── */
 const fmt = (n) => Number(n || 0).toLocaleString("en-IN", { minimumFractionDigits: 2 });
@@ -43,44 +45,38 @@ const ViewPurchaseBill = () => {
   const [page,       setPage]       = useState(1);
   const [expandedId, setExpandedId] = useState(null);
 
-  const { data: bills = [], isLoading, isFetching, refetch } = useBillsByTender(tenderId);
+  const debouncedSearch = useDebounce(search, 500);
+
+  const { data: rawData, isLoading, isFetching, refetch } = useBillsByTender(tenderId, {
+    page,
+    limit: ITEMS_PER_PAGE,
+    search: debouncedSearch,
+    fromdate: fromDate,
+    todate: toDate,
+  });
   const { mutate: approveBill, isPending: approving } = useApprovePurchaseBill();
   const { mutate: deleteBill,  isPending: deleting  } = useDeletePurchaseBill();
 
-  /* derived vendor list for dropdown */
+  const bills      = rawData?.data || [];
+  const totalPages = rawData?.totalPages || 1;
+
+  /* derived vendor list for dropdown (from current page data) */
   const vendors = useMemo(
     () => [...new Map(bills.map((b) => [b.vendor_id, b.vendor_name])).entries()]
             .map(([id, name]) => ({ id, name })),
     [bills],
   );
 
-  /* client-side filtering */
+  /* remaining client-side filters (status, vendor, docId, invoice) */
   const filtered = useMemo(() => {
-    const q         = search.toLowerCase();
-    const fromTs    = fromDate ? new Date(fromDate).setHours(0, 0, 0, 0)    : null;
-    const toTs      = toDate   ? new Date(toDate).setHours(23, 59, 59, 999) : null;
-
     return bills.filter((b) => {
       if (statusTab && b.status !== statusTab) return false;
-
-      const docDate = b.doc_date ? new Date(b.doc_date).getTime() : null;
-      if (fromTs && docDate && docDate < fromTs) return false;
-      if (toTs   && docDate && docDate > toTs)   return false;
-
       if (vendorQ  && b.vendor_id   !== vendorQ)                                       return false;
       if (docIdQ   && !b.doc_id?.toLowerCase().includes(docIdQ.toLowerCase()))         return false;
       if (invoiceQ && !b.invoice_no?.toLowerCase().includes(invoiceQ.toLowerCase()))   return false;
-
-      if (q) {
-        return (
-          b.doc_id?.toLowerCase().includes(q)      ||
-          b.invoice_no?.toLowerCase().includes(q)  ||
-          b.vendor_name?.toLowerCase().includes(q)
-        );
-      }
       return true;
     });
-  }, [bills, search, statusTab, fromDate, toDate, vendorQ, docIdQ, invoiceQ]);
+  }, [bills, statusTab, vendorQ, docIdQ, invoiceQ]);
 
   /* aggregates from filtered set */
   const totals = useMemo(() => filtered.reduce(
@@ -96,8 +92,7 @@ const ViewPurchaseBill = () => {
   ), [filtered]);
 
   /* pagination */
-  const totalPages = Math.ceil(filtered.length / ITEMS_PER_PAGE);
-  const paginated  = filtered.slice((page - 1) * ITEMS_PER_PAGE, page * ITEMS_PER_PAGE);
+  const paginated = filtered;
 
   const resetPage = () => setPage(1);
 
@@ -517,29 +512,13 @@ const ViewPurchaseBill = () => {
       </div>
 
       {/* ══ Footer / Pagination ══════════════════════════════════════════════ */}
-      {!isLoading && filtered.length > 0 && (
-        <div className="shrink-0 bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-800 px-6 py-2.5 flex items-center justify-between">
-          <span className="text-xs text-gray-400">
-            Showing{" "}
-            <strong className="text-gray-600 dark:text-gray-300">
-              {(page - 1) * ITEMS_PER_PAGE + 1}–{Math.min(page * ITEMS_PER_PAGE, filtered.length)}
-            </strong>{" "}
-            of <strong className="text-gray-600 dark:text-gray-300">{filtered.length}</strong> bills
-          </span>
-
-          {totalPages > 1 && (
-            <div className="flex items-center gap-1">
-              <PgBtn onClick={() => setPage(1)} disabled={page === 1}>«</PgBtn>
-              <PgBtn onClick={() => setPage((p) => p - 1)} disabled={page === 1}>‹</PgBtn>
-              {Array.from({ length: totalPages }, (_, k) => k + 1)
-                .filter((p) => Math.abs(p - page) <= 2)
-                .map((p) => (
-                  <PgBtn key={p} onClick={() => setPage(p)} active={p === page}>{p}</PgBtn>
-                ))}
-              <PgBtn onClick={() => setPage((p) => p + 1)} disabled={page === totalPages}>›</PgBtn>
-              <PgBtn onClick={() => setPage(totalPages)} disabled={page === totalPages}>»</PgBtn>
-            </div>
-          )}
+      {!isLoading && totalPages > 1 && (
+        <div className="shrink-0 bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-800 px-6 py-2.5">
+          <Pagination
+            currentPage={page}
+            setCurrentPage={setPage}
+            totalPages={totalPages}
+          />
         </div>
       )}
     </div>

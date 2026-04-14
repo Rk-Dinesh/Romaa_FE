@@ -40,7 +40,7 @@ const ProjectWorkProgress = () => {
       subtitle="Work Progress"
       pagetitle="Daily Progress Report"
       columns={columns}
-      endpoint={data || []}
+      endpoint={data?.data || []}
       loading={isLoading}
       isRefreshing={isFetching}
       AddModal={false}

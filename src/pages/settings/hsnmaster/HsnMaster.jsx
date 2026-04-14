@@ -1,60 +1,63 @@
-import React, { useEffect, useState } from 'react'
-import Table from '../../../components/Table'
-import { RiUserAddLine } from 'react-icons/ri';
-import axios from 'axios'
-import { API } from '../../../constant'
-import { toast } from 'react-toastify'
+import React, { useState } from 'react';
+import Table from '../../../components/Table';
+import Filters from '../../../components/Filters';
 import UploadHSN from './UploadHSN';
+import { useDebounce } from '../../../hooks/useDebounce';
+import { useHsnList } from './hooks/useHsnMaster';
 
 const HSNColumns = [
   { label: "HSN Code", key: "code" },
   { label: "Name", key: "shortDescription" },
   { label: "Type", key: "type" },
   { label: "Description", key: "description" },
-  { label: "TaxStructure", key: "taxStructure", render: (item) =>
+  {
+    label: "TaxStructure",
+    key: "taxStructure",
+    render: (item) =>
       item.taxStructure
         ? `${item.taxStructure.igst || ""} %, ${item.taxStructure.cgst || ""} %, ${item.taxStructure.sgst || ""} %`
-        : "-",},
+        : "-",
+  },
 ];
 
 const HsnMaster = () => {
-    const [loading, setLoading] = useState(false);
-    const [roles, setRoles] = useState([]); 
-    const fetchRoles = async () => {
-        setLoading(true);
-        try {
-          const res = await axios.get(`${API}/hsn/getall`);
-          setRoles(res.data.data);
-        } catch (err) {
-          toast.error("Failed to fetch clients");
-        } finally {
-          setLoading(false);
-        }
-      };
+  const [currentPage, setCurrentPage] = useState(1);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [filterParams, setFilterParams] = useState({ fromdate: "", todate: "" });
+  const debouncedSearch = useDebounce(searchTerm, 500);
 
-      useEffect(() => {
-        fetchRoles();
-      }, []);
+  const { data, isLoading, isFetching, refetch } = useHsnList({
+    page: currentPage,
+    limit: 10,
+    search: debouncedSearch,
+  });
+
+  const rows = Array.isArray(data) ? data : (data?.data || []);
+
   return (
-   <Table
+    <Table
       title="Settings"
       subtitle="HSN "
-      loading={loading}
       pagetitle="HSN"
-      endpoint={roles}
+      loading={isLoading}
+      isRefreshing={isFetching}
+      endpoint={rows}
+      totalPages={data?.totalPages || 0}
+      currentPage={currentPage}
+      setCurrentPage={setCurrentPage}
+      search={searchTerm}
+      setSearch={setSearchTerm}
+      filterParams={filterParams}
+      setFilterParams={setFilterParams}
       columns={HSNColumns}
       EditModal={true}
-    //  editroutepoint={"editroles"}
-      // DeleteModal={DeleteModal}
-      // deletetitle="role"
       idKey="role_id"
-      // onDelete={handleDelete}
-      //FilterModal={Filters}
+      FilterModal={Filters}
       UploadModal={UploadHSN}
-      // onUpdated={fetchRoles}
-     // onSuccess={fetchRoles}
+      onUpdated={refetch}
+      onSuccess={refetch}
     />
-  )
-}
+  );
+};
 
-export default HsnMaster
+export default HsnMaster;

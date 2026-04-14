@@ -1,4 +1,4 @@
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient, keepPreviousData } from "@tanstack/react-query";
 import { api } from "../../../../services/api";
 import { toast } from "react-toastify";
 
@@ -19,7 +19,16 @@ export const useNextJENo = () =>
 /* ── List Journal Entries ────────────────────────────────────────────────── */
 const fetchJEList = async ({ queryKey }) => {
   const [, params] = queryKey;
-  const { data } = await api.get("/journalentry/list", { params });
+  const { data } = await api.get("/journalentry/list", {
+    params: {
+      page: params.page,
+      limit: params.limit,
+      search: params.search,
+      fromdate: params.fromdate,
+      todate: params.todate,
+      status: params.status,
+    },
+  });
   return { data: data?.data || [], pagination: data?.pagination || {} };
 };
 
@@ -28,7 +37,7 @@ export const useJEList = (params = {}) =>
     queryKey: ["journal-entries", params],
     queryFn:  fetchJEList,
     staleTime: 30 * 1000,
-    placeholderData: (prev) => prev,
+    placeholderData: keepPreviousData,
   });
 
 /* ── Get JE by ID ────────────────────────────────────────────────────────── */

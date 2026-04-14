@@ -5,6 +5,7 @@ import Table from "../../../components/Table";
 import AddNMR from "./AddNMR";
 import { useDebounce } from "../../../hooks/useDebounce";
 import { useContractWorkers } from "./hooks/useContractWorkers";
+import { useTableState } from "../../../hooks/useTableState";
 
 const columns = [
   { label: "NMR ID", key: "worker_id" },
@@ -16,12 +17,8 @@ const columns = [
 ];
 
 const NMR = () => {
-  const [currentPage, setCurrentPage] = useState(1);
+  const { currentPage, setCurrentPage, filterParams, setFilterParams } = useTableState("nMR");
   const [searchTerm, setSearchTerm] = useState("");
-  const [filterParams, setFilterParams] = useState({
-    fromdate: "",
-    todate: "",
-  });
 
   const debouncedSearch = useDebounce(searchTerm, 500);
 

@@ -1,8 +1,10 @@
+import { useState } from "react";
 import { IoCartOutline } from "react-icons/io5";
 import Filters from "../../../components/Filters";
 import Table from "../../../components/Table";
 import CreateBill from "./CreateBill";
 import { useAllTendersSummary } from "./hooks/usePurchaseBill";
+import { useDebounce } from "../../../hooks/useDebounce";
 
 const fmt = (n) =>
   Number(n || 0).toLocaleString("en-IN", { minimumFractionDigits: 2 });
@@ -27,22 +29,43 @@ const Columns = [
 ];
 
 const PurchaseBill = () => {
-  const { data: summary = [], isLoading } = useAllTendersSummary();
+  const [currentPage, setCurrentPage]   = useState(1);
+  const [searchTerm, setSearchTerm]     = useState("");
+  const [filterParams, setFilterParams] = useState({ fromdate: "", todate: "" });
+
+  const debouncedSearch = useDebounce(searchTerm, 500);
+
+  const { data, isLoading, isFetching, refetch } = useAllTendersSummary({
+    page: currentPage,
+    limit: 10,
+    search: debouncedSearch,
+    fromdate: filterParams.fromdate,
+    todate: filterParams.todate,
+  });
 
   return (
     <Table
       title="Purchase Management"
       subtitle="Purchase Bill"
       pagetitle="Purchase Bill"
-      endpoint={summary}
       loading={isLoading}
+      isRefreshing={isFetching}
+      endpoint={data?.data || []}
+      totalPages={data?.totalPages || 0}
+      currentPage={currentPage}
+      setCurrentPage={setCurrentPage}
+      search={searchTerm}
+      setSearch={setSearchTerm}
+      filterParams={filterParams}
+      setFilterParams={setFilterParams}
+      FilterModal={Filters}
       columns={Columns}
       AddModal={CreateBill}
       ViewModal={true}
       routepoint={"viewpurchasebill"}
-      FilterModal={Filters}
       addButtonLabel="Create Bill"
       addButtonIcon={<IoCartOutline size={24} />}
+      onSuccess={refetch}
     />
   );
 };

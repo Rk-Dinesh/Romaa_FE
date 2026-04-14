@@ -3,6 +3,8 @@ import { FiSearch, FiRefreshCw, FiCheckCircle, FiXCircle, FiClock, FiAlertCircle
 import SearchableSelect from "../../../components/SearchableSelect";
 import { useAllPendingLeaves, useLeaveAction } from "./hooks/useLeave";
 import { IoClose } from "react-icons/io5";
+import Pagination from "../../../components/Pagination";
+import { useDebounce } from "../../../hooks/useDebounce";
 
 const StatusBadge = ({ status }) => {
   const config = {
@@ -136,24 +138,26 @@ const HRLeaveApproval = () => {
   const [statusFilter, setStatusFilter] = useState("Manager Approved");
   const [typeFilter, setTypeFilter] = useState("All");
   const [search, setSearch] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
+  const [filterParams, setFilterParams] = useState({ fromdate: "", todate: "" });
   const [actionItem, setActionItem] = useState(null);
 
+  const debouncedSearch = useDebounce(search, 500);
+
   const { data, isLoading, isFetching, refetch } = useAllPendingLeaves({
+    page: currentPage,
+    limit: 10,
+    search: debouncedSearch,
+    fromdate: filterParams.fromdate,
+    todate: filterParams.todate,
     status: statusFilter === "All" ? undefined : statusFilter,
   });
 
   const allLeaves = data?.data || [];
-  const filtered = allLeaves.filter((l) => {
-    if (typeFilter !== "All" && l.leaveType !== typeFilter) return false;
-    if (search) {
-      const q = search.toLowerCase();
-      if (
-        !l.employeeId?.name?.toLowerCase().includes(q) &&
-        !l.reason?.toLowerCase().includes(q)
-      ) return false;
-    }
-    return true;
-  });
+  const totalPages = data?.totalPages || 1;
+  const filtered = typeFilter === "All"
+    ? allLeaves
+    : allLeaves.filter((l) => l.leaveType === typeFilter);
 
   return (
     <div className="flex flex-col h-full gap-4">
@@ -184,10 +188,22 @@ const HRLeaveApproval = () => {
               type="text"
               placeholder="Search employee..."
               value={search}
-              onChange={(e) => setSearch(e.target.value)}
+              onChange={(e) => { setSearch(e.target.value); setCurrentPage(1); }}
               className="pl-9 pr-4 py-2 text-sm border border-gray-200 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 dark:text-white focus:outline-none focus:border-blue-500 w-48"
             />
           </div>
+          <input
+            type="date"
+            value={filterParams.fromdate}
+            onChange={(e) => { setFilterParams((p) => ({ ...p, fromdate: e.target.value })); setCurrentPage(1); }}
+            className="py-2 px-3 text-sm border border-gray-200 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 dark:text-white focus:outline-none focus:border-blue-500"
+          />
+          <input
+            type="date"
+            value={filterParams.todate}
+            onChange={(e) => { setFilterParams((p) => ({ ...p, todate: e.target.value })); setCurrentPage(1); }}
+            className="py-2 px-3 text-sm border border-gray-200 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 dark:text-white focus:outline-none focus:border-blue-500"
+          />
           <SearchableSelect
             value={typeFilter}
             onChange={(v) => setTypeFilter(v)}
@@ -284,6 +300,14 @@ const HRLeaveApproval = () => {
           </tbody>
         </table>
       </div>
+
+      {totalPages > 1 && (
+        <Pagination
+          currentPage={currentPage}
+          setCurrentPage={setCurrentPage}
+          totalPages={totalPages}
+        />
+      )}
 
       {actionItem && (
         <ActionModal

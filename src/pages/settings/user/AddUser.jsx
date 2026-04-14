@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { useForm, useWatch } from "react-hook-form";
 import { yupResolver } from "@hookform/resolvers/yup";
 import * as yup from "yup";
@@ -31,7 +31,11 @@ const AddUser = ({ onclose, onSuccess }) => {
   const [selectedUserDetails, setSelectedUserDetails] = useState(null);
 
   // --- TanStack Query Hooks ---
-  const { data: unassignedUsers = [], isLoading: isLoadingUsers } = useUnassignedEmployees();
+  const { data: unassignedResp, isLoading: isLoadingUsers } = useUnassignedEmployees({ page: 1, limit: 1000 });
+  const unassignedUsers = useMemo(
+    () => (Array.isArray(unassignedResp) ? unassignedResp : (unassignedResp?.data || [])),
+    [unassignedResp]
+  );
   const { data: roles = [], isLoading: isLoadingRoles } = useRolesDropdown();
   const { mutateAsync: grantAccess, isPending: loading } = useGrantUserAccess({ onSuccess, onclose });
 

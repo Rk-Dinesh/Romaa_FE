@@ -1,17 +1,15 @@
-import React from "react";
+import React, { useState } from "react";
 import Filters from "../../../components/Filters";
 import Table from "../../../components/Table";
 import { RiUserAddLine } from "react-icons/ri";
-// import DeleteModal from "../../../components/DeleteModal";
 import { FiLayers, FiShield } from "react-icons/fi";
+import { useDebounce } from "../../../hooks/useDebounce";
 import { useRolesList } from "./hooks/useRoles";
 
 
-// --- Helpers ---
 const getModule = (moduleAccess) => {
-  // Logic: If it's an object, count the keys. If number, use it.
-  const count = typeof moduleAccess === 'object' && moduleAccess !== null 
-    ? Object.keys(moduleAccess).length 
+  const count = typeof moduleAccess === 'object' && moduleAccess !== null
+    ? Object.keys(moduleAccess).length
     : (moduleAccess || 0);
 
   return (
@@ -39,7 +37,6 @@ const getPermission = (permissionAccess) => {
   );
 };
 
-// --- Column Configuration ---
 const RoleColumns = [
   { label: "Role ID", key: "role_id" },
   { label: "Name", key: "roleName" },
@@ -49,44 +46,45 @@ const RoleColumns = [
 ];
 
 const Roles = () => {
-  // --- TanStack Query Hooks ---
-  const { data: roles = [], isLoading, isFetching, refetch } = useRolesList();
-  //const { mutateAsync: deleteRole } = useDeleteRole();
+  const [currentPage, setCurrentPage] = useState(1);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [filterParams, setFilterParams] = useState({ fromdate: "", todate: "" });
+  const debouncedSearch = useDebounce(searchTerm, 500);
 
-  // Handlers
-  // const handleDelete = async (role_id) => {
-  //   await deleteRole(role_id);
-  // };
+  const { data, isLoading, isFetching, refetch } = useRolesList({
+    page: currentPage,
+    limit: 10,
+    search: debouncedSearch,
+    fromdate: filterParams.fromdate,
+    todate: filterParams.todate,
+  });
+
+  const rows = Array.isArray(data) ? data : (data?.data || []);
 
   return (
     <Table
       title="Settings"
       subtitle="Roles "
       pagetitle="Roles"
-      
-      // Data and Loading States from React Query
       loading={isLoading}
       isRefreshing={isFetching}
-      endpoint={roles}
-      
-      // Config
+      endpoint={rows}
+      totalPages={data?.totalPages || 0}
+      currentPage={currentPage}
+      setCurrentPage={setCurrentPage}
+      search={searchTerm}
+      setSearch={setSearchTerm}
+      filterParams={filterParams}
+      setFilterParams={setFilterParams}
       columns={RoleColumns}
       AddModal={true}
       addroutepoint={"addroles"}
       EditModal={true}
       editroutepoint={"editroles"}
       FilterModal={Filters}
-      
-      // Preserved Commented Code
-      // DeleteModal={DeleteModal}
-      // deletetitle="role"
-      // onDelete={handleDelete}
-      
       idKey="role_id"
       addButtonLabel="Add Roles"
       addButtonIcon={<RiUserAddLine size={23} />}
-      
-      // Triggers for background refetching
       onUpdated={refetch}
       onSuccess={refetch}
     />

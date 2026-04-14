@@ -1,4 +1,6 @@
 import { useState, useMemo } from "react";
+import { useDebounce } from "../../../hooks/useDebounce";
+import Pagination from "../../../components/Pagination";
 import {
   ArrowDownLeft, ArrowUpRight, RefreshCw,
   Search, Building2, CalendarDays, FileText,
@@ -58,15 +60,25 @@ const Debit_CreditNote = () => {
   const [tab, setTab]           = useState("CN"); // "CN" | "DN"
   const [showForm, setShowForm] = useState(false);
   const [search, setSearch]     = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
+  const [fromdate, setFromdate] = useState("");
+  const [todate, setTodate]     = useState("");
   const [actionModal, setActionModal] = useState({ isOpen: false, type: "", id: null, displayStr: "", extra: null });
 
   const isCN = tab === "CN";
+  const debouncedSearch = useDebounce(search, 500);
+  const limit = 15;
 
-  const { data: cnData, isLoading: cnLoading, isFetching: cnFetching, refetch: refetchCN } = useCNList();
-  const { data: dnData, isLoading: dnLoading, isFetching: dnFetching, refetch: refetchDN } = useDNList();
+  const cnParams = useMemo(() => ({ page: currentPage, limit, search: debouncedSearch, fromdate, todate }), [currentPage, debouncedSearch, fromdate, todate]);
+  const dnParams = useMemo(() => ({ page: currentPage, limit, search: debouncedSearch, fromdate, todate }), [currentPage, debouncedSearch, fromdate, todate]);
+
+  const { data: cnData, isLoading: cnLoading, isFetching: cnFetching, refetch: refetchCN } = useCNList(cnParams);
+  const { data: dnData, isLoading: dnLoading, isFetching: dnFetching, refetch: refetchDN } = useDNList(dnParams);
 
   const cnList = cnData?.data || [];
   const dnList = dnData?.data || [];
+  const cnTotalPages = cnData?.pagination?.totalPages || 1;
+  const dnTotalPages = dnData?.pagination?.totalPages || 1;
 
   const { mutate: approveCN, isPending: approvingCN } = useApproveCN();
   const { mutate: approveDN, isPending: approvingDN } = useApproveDN();
@@ -77,17 +89,9 @@ const Debit_CreditNote = () => {
   const isLoading  = isCN ? cnLoading  : dnLoading;
   const isFetching = isCN ? cnFetching : dnFetching;
   const refetch    = isCN ? refetchCN  : refetchDN;
+  const totalPages = isCN ? cnTotalPages : dnTotalPages;
 
-  const filtered = useMemo(() => {
-    if (!search) return [...list].reverse();
-    const q = search.toLowerCase();
-    return [...list].reverse().filter(
-      v =>
-        (v.cn_no || v.dn_no || "").toLowerCase().includes(q) ||
-        (v.supplier_name || "").toLowerCase().includes(q) ||
-        (v.tender_name || v.tender_id || "").toLowerCase().includes(q),
-    );
-  }, [list, search]);
+  const filtered = useMemo(() => list, [list]);
 
   const totalApproved = list
     .filter(v => v.status === "approved")
@@ -136,7 +140,7 @@ const Debit_CreditNote = () => {
           ].map(t => (
             <button
               key={t.key}
-              onClick={() => setTab(t.key)}
+              onClick={() => { setTab(t.key); setCurrentPage(1); }}
               className={`flex items-center gap-1.5 px-4 py-2.5 text-xs font-bold border-b-2 transition-all ${
                 tab === t.key
                   ? `${t.color} dark:text-white dark:border-white`
@@ -186,18 +190,22 @@ const Debit_CreditNote = () => {
           />
         </div>
 
-        {/* ── Search bar ── */}
-        <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 px-5 py-3.5 mb-4 flex items-center gap-3 relative z-10">
+        {/* ── Search + Date bar ── */}
+        <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 px-5 py-3.5 mb-4 flex flex-wrap items-center gap-3 relative z-10">
           <div className="relative flex-1 min-w-[200px]">
             <Search size={14} className="absolute left-3 top-2.5 text-gray-400" />
             <input
               type="text"
               placeholder={`Search ${isCN ? "CN" : "DN"} no., supplier, tender…`}
               value={search}
-              onChange={e => setSearch(e.target.value)}
+              onChange={e => { setSearch(e.target.value); setCurrentPage(1); }}
               className="w-full pl-9 border border-gray-200 dark:border-gray-700 rounded-lg px-3 py-2 text-sm bg-gray-50 dark:bg-gray-800 dark:text-white focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
             />
           </div>
+          <input type="date" value={fromdate} onChange={e => { setFromdate(e.target.value); setCurrentPage(1); }}
+            className="border border-gray-200 dark:border-gray-700 rounded-lg px-3 py-2 text-sm bg-gray-50 dark:bg-gray-800 dark:text-white focus:outline-none focus:ring-1 focus:ring-blue-500" />
+          <input type="date" value={todate} onChange={e => { setTodate(e.target.value); setCurrentPage(1); }}
+            className="border border-gray-200 dark:border-gray-700 rounded-lg px-3 py-2 text-sm bg-gray-50 dark:bg-gray-800 dark:text-white focus:outline-none focus:ring-1 focus:ring-blue-500" />
           <button
             onClick={refetch}
             disabled={isFetching}
@@ -245,7 +253,7 @@ const Debit_CreditNote = () => {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-100 dark:divide-gray-700/50">
-                  {filtered.slice().reverse().map((v, i) => (
+                  {filtered.map((v, i) => (
                     <tr
                       key={v._id || v[noKey]}
                       className={`hover:bg-gray-50/60 dark:hover:bg-gray-800/40 transition-colors ${
@@ -351,15 +359,19 @@ const Debit_CreditNote = () => {
 
             <div className="px-5 py-3 border-t border-gray-100 dark:border-gray-800 flex items-center justify-between text-xs text-gray-400">
               <span>
-                Showing <strong className="text-gray-600 dark:text-gray-300">{filtered.length}</strong> of{" "}
-                <strong className="text-gray-600 dark:text-gray-300">{list.length}</strong> notes
+                Showing <strong className="text-gray-600 dark:text-gray-300">{filtered.length}</strong> notes
               </span>
               {filtered.length > 0 && (
                 <span className={`font-semibold ${isCN ? "text-teal-600 dark:text-teal-400" : "text-violet-600 dark:text-violet-400"}`}>
-                  Filtered Total: ₹{fmt(filtered.reduce((s, v) => s + (v.amount || 0), 0))}
+                  Total: ₹{fmt(filtered.reduce((s, v) => s + (v.amount || 0), 0))}
                 </span>
               )}
             </div>
+          </div>
+        )}
+        {totalPages > 1 && (
+          <div className="mt-4">
+            <Pagination currentPage={currentPage} setCurrentPage={setCurrentPage} totalPages={totalPages} />
           </div>
         )}
       </div>

@@ -4,6 +4,7 @@ import Table from "../../../components/Table";
 import EditSecurityDeposit from "./EditSecurityDeposit";
 import { useDebounce } from "../../../hooks/useDebounce";
 import { useSecurityDeposit } from "../tenders/hooks/useTenders";
+import { useTableState } from "../../../hooks/useTableState";
 
 
 // ✅ Static Columns Definition
@@ -67,12 +68,8 @@ const Columns = [
 
 const SecurityDeposit = () => {
   // 1. Local State
-  const [currentPage, setCurrentPage] = useState(1);
+  const { currentPage, setCurrentPage, filterParams, setFilterParams } = useTableState("securityDeposit");
   const [searchTerm, setSearchTerm] = useState("");
-  const [filterParams, setFilterParams] = useState({
-    fromdate: "",
-    todate: "",
-  });
 
   // 2. Debounce Search
   const debouncedSearch = useDebounce(searchTerm, 500);

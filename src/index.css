@@ -10,43 +10,49 @@
 @custom-variant dark (&:where(.dark, .dark *));
 
 @theme {
+  --color-brand: var(--brand-color);
+  --color-brand-contrast: var(--brand-contrast);
   /* dark-theme */
-    /* dark-theme */
-  --color-layout-dark: #0D0D0D;
-  --color-overall_bg-dark: #1B1B1B;
+  /* dark-theme */
+  --color-layout-dark: #0d0d0d;
+  --color-overall_bg-dark: #1b1b1b;
   --color-icon-dark-blue: #002350;
-  --color-icon-dark-green: #005E00;
-  --color-icon-dark-red: #4C0000;
+  --color-icon-dark-green: #005e00;
+  --color-icon-dark-red: #4c0000;
   --color-border-dark-grey: #353535;
-  --color-icontext-dark-green: #BAFFBA;
-
-
-
+  --color-icontext-dark-green: #baffba;
 
   --color-light-blue: #e3ecff;
   --color-darkest-blue: #314165;
   --color-border-sidebar: #d0d6ff;
-  --color-select-subbar: #E2E2FF;
+  --color-select-subbar: #e2e2ff;
   --color-greyish: #616161;
-  --color-input-bordergrey: #D0D6FF;
+  --color-input-bordergrey: #d0d6ff;
 
   --font-roboto-flex: "Roboto Flex", sans-serif;
 }
 
 @keyframes slideUp {
-  from { transform: translateY(100%); }
-  to { transform: translateY(0); }
+  from {
+    transform: translateY(100%);
+  }
+  to {
+    transform: translateY(0);
+  }
 }
 
 .animate-slideUp {
   animation: slideUp 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
-
 /* Fade In */
 @keyframes fadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
 }
 .animate-fade-in {
   animation: fadeIn 0.4s ease-out forwards;
@@ -54,8 +60,14 @@
 
 /* Fade In Up */
 @keyframes fadeInUp {
-  from { opacity: 0; transform: translateY(12px); }
-  to { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 .animate-fade-in-up {
   animation: fadeInUp 0.4s ease-out forwards;
@@ -63,8 +75,14 @@
 
 /* Fade In Down */
 @keyframes fadeInDown {
-  from { opacity: 0; transform: translateY(-12px); }
-  to { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(-12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 .animate-fade-in-down {
   animation: fadeInDown 0.3s ease-out forwards;
@@ -72,8 +90,14 @@
 
 /* Optional Animation for Modal */
 @keyframes scaleIn {
-  from { transform: scale(0.95); opacity: 0; }
-  to { transform: scale(1); opacity: 1; }
+  from {
+    transform: scale(0.95);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
 }
 .animate-scaleIn {
   animation: scaleIn 0.2s ease-out forwards;

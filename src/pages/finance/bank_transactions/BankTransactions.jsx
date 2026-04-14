@@ -1,4 +1,6 @@
 import { useState, useMemo } from "react";
+import { useDebounce } from "../../../hooks/useDebounce";
+import Pagination from "../../../components/Pagination";
 import {
   ArrowUpRight, ArrowDownLeft, RefreshCw,
   Search, Building2, CalendarDays, CreditCard,
@@ -59,6 +61,9 @@ const BankTransactions = () => {
   const [tab, setTab]         = useState("PV"); // "PV" | "RV"
   const [showForm, setShowForm] = useState(false);
   const [search, setSearch]   = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
+  const [fromdate, setFromdate] = useState("");
+  const [todate, setTodate]     = useState("");
 
   /* ── Approve-with-bank modal state ── */
   const [approveModal, setApproveModal] = useState(null); // { voucher, type: "PV"|"RV" }
@@ -66,9 +71,19 @@ const BankTransactions = () => {
   const [actionModal, setActionModal] = useState({ isOpen: false, type: "", id: null, displayStr: "", extra: null });
 
   const isPV = tab === "PV";
+  const debouncedSearch = useDebounce(search, 500);
+  const limit = 15;
 
-  const { data: pvList = [], isLoading: pvLoading, isFetching: pvFetching, refetch: refetchPV } = usePVList();
-  const { data: rvList = [], isLoading: rvLoading, isFetching: rvFetching, refetch: refetchRV } = useRVList();
+  const pvParams = useMemo(() => ({ page: currentPage, limit, search: debouncedSearch, fromdate, todate }), [currentPage, debouncedSearch, fromdate, todate]);
+  const rvParams = useMemo(() => ({ page: currentPage, limit, search: debouncedSearch, fromdate, todate }), [currentPage, debouncedSearch, fromdate, todate]);
+
+  const { data: pvData, isLoading: pvLoading, isFetching: pvFetching, refetch: refetchPV } = usePVList(pvParams);
+  const { data: rvData, isLoading: rvLoading, isFetching: rvFetching, refetch: refetchRV } = useRVList(rvParams);
+  const pvList = pvData?.data || [];
+  const rvList = rvData?.data || [];
+  const pvTotalPages = pvData?.pagination?.totalPages || 1;
+  const rvTotalPages = rvData?.pagination?.totalPages || 1;
+
   const { mutate: approvePV, isPending: approvingPV } = useApprovePV();
   const { mutate: approveRV, isPending: approvingRV } = useApproveRV();
   const { mutate: deletePV,  isPending: deletingPV  } = useDeletePV();
@@ -77,10 +92,8 @@ const BankTransactions = () => {
 
   const handleApproveClick = (voucher) => {
     if (voucher.bank_account_code) {
-      // Already has bank_account_code — ask for confirmation first
       setActionModal({ isOpen: true, type: "approve", id: voucher._id, displayStr: voucher.pv_no || voucher.rv_no, extra: isPV });
     } else {
-      // Missing bank_account_code — show modal to pick one
       setApproveBank("");
       setApproveModal({ voucher, type: isPV ? "PV" : "RV" });
     }
@@ -104,17 +117,9 @@ const BankTransactions = () => {
   const isLoading  = isPV ? pvLoading  : rvLoading;
   const isFetching = isPV ? pvFetching : rvFetching;
   const refetch    = isPV ? refetchPV  : refetchRV;
+  const totalPages = isPV ? pvTotalPages : rvTotalPages;
 
-  const filtered = useMemo(() => {
-    if (!search) return [...list].reverse();
-    const q = search.toLowerCase();
-    return [...list].reverse().filter(
-      v =>
-        (v.pv_no || v.rv_no || "").toLowerCase().includes(q) ||
-        (v.supplier_name || "").toLowerCase().includes(q) ||
-        (v.tender_name || v.tender_id || "").toLowerCase().includes(q),
-    );
-  }, [list, search]);
+  const filtered = useMemo(() => list, [list]);
 
   const totalApproved = list
     .filter(v => v.status === "approved")
@@ -164,7 +169,7 @@ const BankTransactions = () => {
           ].map(t => (
             <button
               key={t.key}
-              onClick={() => setTab(t.key)}
+              onClick={() => { setTab(t.key); setCurrentPage(1); }}
               className={`flex items-center gap-1.5 px-4 py-2.5 text-xs font-bold border-b-2 transition-all ${
                 tab === t.key
                   ? `${t.color} dark:text-white dark:border-white`
@@ -214,18 +219,22 @@ const BankTransactions = () => {
           />
         </div>
 
-        {/* ── Search bar ── */}
-        <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 px-5 py-3.5 mb-4 flex items-center gap-3 relative z-10">
+        {/* ── Search + Date bar ── */}
+        <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 px-5 py-3.5 mb-4 flex flex-wrap items-center gap-3 relative z-10">
           <div className="relative flex-1 min-w-[200px]">
             <Search size={14} className="absolute left-3 top-2.5 text-gray-400" />
             <input
               type="text"
               placeholder={`Search ${isPV ? "PV" : "RV"} no., supplier, tender…`}
               value={search}
-              onChange={e => setSearch(e.target.value)}
+              onChange={e => { setSearch(e.target.value); setCurrentPage(1); }}
               className="w-full pl-9 border border-gray-200 dark:border-gray-700 rounded-lg px-3 py-2 text-sm bg-gray-50 dark:bg-gray-800 dark:text-white focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
             />
           </div>
+          <input type="date" value={fromdate} onChange={e => { setFromdate(e.target.value); setCurrentPage(1); }}
+            className="border border-gray-200 dark:border-gray-700 rounded-lg px-3 py-2 text-sm bg-gray-50 dark:bg-gray-800 dark:text-white focus:outline-none focus:ring-1 focus:ring-blue-500" />
+          <input type="date" value={todate} onChange={e => { setTodate(e.target.value); setCurrentPage(1); }}
+            className="border border-gray-200 dark:border-gray-700 rounded-lg px-3 py-2 text-sm bg-gray-50 dark:bg-gray-800 dark:text-white focus:outline-none focus:ring-1 focus:ring-blue-500" />
           <button
             onClick={refetch}
             disabled={isFetching}
@@ -270,7 +279,7 @@ const BankTransactions = () => {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-100 dark:divide-gray-700/50">
-                  {filtered.slice().reverse().map((v, i) => (
+                  {filtered.map((v, i) => (
                     <tr
                       key={v._id || v[noKey]}
                       className={`hover:bg-gray-50/60 dark:hover:bg-gray-800/40 transition-colors ${
@@ -376,15 +385,19 @@ const BankTransactions = () => {
 
             <div className="px-5 py-3 border-t border-gray-100 dark:border-gray-800 flex items-center justify-between text-xs text-gray-400">
               <span>
-                Showing <strong className="text-gray-600 dark:text-gray-300">{filtered.length}</strong> of{" "}
-                <strong className="text-gray-600 dark:text-gray-300">{list.length}</strong> vouchers
+                Showing <strong className="text-gray-600 dark:text-gray-300">{filtered.length}</strong> vouchers
               </span>
               {filtered.length > 0 && (
                 <span className={`font-semibold ${isPV ? "text-blue-600 dark:text-blue-400" : "text-emerald-600 dark:text-emerald-400"}`}>
-                  Filtered Total: ₹{fmt(filtered.reduce((s, v) => s + (v.amount || 0), 0))}
+                  Total: ₹{fmt(filtered.reduce((s, v) => s + (v.amount || 0), 0))}
                 </span>
               )}
             </div>
+          </div>
+        )}
+        {totalPages > 1 && (
+          <div className="mt-4">
+            <Pagination currentPage={currentPage} setCurrentPage={setCurrentPage} totalPages={totalPages} />
           </div>
         )}
       </div>

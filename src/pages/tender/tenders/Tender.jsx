@@ -6,6 +6,7 @@ import AddTender from "./AddTender";
 import EditTender from "./EditTender";
 import { useDebounce } from "../../../hooks/useDebounce";
 import { useTenders } from "./hooks/useTenders";
+import { useTableState } from "../../../hooks/useTableState";
 
 // ✅ Columns Definition (Static)
 const TenderColumns = [
@@ -60,12 +61,8 @@ const TenderColumns = [
 
 const Tender = () => {
   // 1. UI State
-  const [currentPage, setCurrentPage] = useState(1);
+  const { currentPage, setCurrentPage, filterParams, setFilterParams } = useTableState("tender");
   const [searchTerm, setSearchTerm] = useState("");
-  const [filterParams, setFilterParams] = useState({
-    fromdate: "",
-    todate: "",
-  });
 
   // 2. Debounce Search (Wait 500ms after typing)
   const debouncedSearch = useDebounce(searchTerm, 500);

@@ -3,11 +3,12 @@ import DeleteModal from "../../../../../components/DeleteModal";
 import Table from "../../../../../components/Table";
 import axios from "axios";
 import { API } from "../../../../../constant";
-import { useEffect, useState } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useEffect, useState, useCallback } from "react";
+import { useParams } from "react-router-dom";
 import { toast } from "react-toastify";
 import { MdArrowBackIosNew } from "react-icons/md";
 import AddPenalty from "./AddPenalities";
+import { useTableState } from "../../../../../hooks/useTableState";
 
 const penaltyColumns = [
   { label: "Penalty_id", key: "penalty_id" },
@@ -22,19 +23,14 @@ const penaltyColumns = [
 
 const Penalities = ({onBack}) => {
   const { tender_id } = useParams(); 
-  const navigate = useNavigate();
   const [penalty, setPenalty] = useState([]);
   const [loading, setLoading] = useState(false);
+  const { currentPage, setCurrentPage, filterParams, setFilterParams } = useTableState("penalties");
   const [searchTerm, setSearchTerm] = useState("");
-  const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(0);
-  const [filterParams, setFilterParams] = useState({
-    fromdate: "",
-    todate: "",
-  });
 
   // Fetch penalty list
-  const fetchPenalty = async () => {
+  const fetchPenalty = useCallback(async () => {
     setLoading(true);
     try {
       const res = await axios.get(`${API}/penalty/penalties/${tender_id}`, {
@@ -51,16 +47,16 @@ const Penalities = ({onBack}) => {
       console.log(res.data.data);
       
       setTotalPages(res.data.totalPages);
-    } catch (err) {
+    } catch  {
       toast.error("Failed to fetch penalty");
     } finally {
       setLoading(false);
     }
-  };
+  }, [currentPage, searchTerm, filterParams, tender_id]);
 
   useEffect(() => {
     fetchPenalty();
-  }, [currentPage, searchTerm, filterParams]);
+  }, [fetchPenalty]);
 
   // Handle delete contract
   const handleDeletePenalty = async (penalty_id) => {
@@ -68,7 +64,7 @@ const Penalities = ({onBack}) => {
       await axios.delete(`${API}/penalty/remove/${tender_id}/${penalty_id}`);
       toast.success("Contract was successfully removed!");
       fetchPenalty();
-    } catch (error) {
+    } catch  {
       toast.error("Failed to remove penalty.");
     }
   };
@@ -79,6 +75,7 @@ const Penalities = ({onBack}) => {
         contentMarginTop="mt-0"
         endpoint={penalty}
         columns={penaltyColumns}
+        loading={loading}
        // ViewModal={true}
         AddModal={AddPenalty}
         addButtonLabel="Add Penalty"
@@ -89,6 +86,8 @@ const Penalities = ({onBack}) => {
         totalPages={totalPages}
         currentPage={currentPage}
         setCurrentPage={setCurrentPage}
+        searchTerm={searchTerm}
+        setSearchTerm={setSearchTerm}
         filterParams={filterParams}
         setFilterParams={setFilterParams}
         onUpdated={fetchPenalty}

@@ -5,6 +5,7 @@ import Table from "../../../components/Table";
 import AddContractor from "./AddContractor";
 import { useDebounce } from "../../../hooks/useDebounce";
 import { useContractors } from "./hooks/useContractors";
+import { useTableState } from "../../../hooks/useTableState";
 
 const ContractColumns = [
   { label: "Contractor ID", key: "contractor_id" },
@@ -38,12 +39,8 @@ const ContractColumns = [
 ];
 
 const ContractNmr = () => {
-  const [currentPage, setCurrentPage] = useState(1);
+  const { currentPage, setCurrentPage, filterParams, setFilterParams } = useTableState("contractNmr");
   const [searchTerm, setSearchTerm] = useState("");
-  const [filterParams, setFilterParams] = useState({
-    fromdate: "",
-    todate: "",
-  });
 
   const debouncedSearch = useDebounce(searchTerm, 500);
 

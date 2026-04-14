@@ -1,4 +1,4 @@
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient, keepPreviousData } from "@tanstack/react-query";
 import { api } from "../../../../services/api";
 import { toast } from "react-toastify";
 
@@ -151,7 +151,16 @@ export const useApproveDN = () => {
 /* ── List Credit Notes ──────────────────────────────────────────────────── */
 const fetchCNList = async ({ queryKey }) => {
   const [, params] = queryKey;
-  const { data } = await api.get("/creditnote/list", { params });
+  const { data } = await api.get("/creditnote/list", {
+    params: {
+      page: params.page,
+      limit: params.limit,
+      search: params.search,
+      fromdate: params.fromdate,
+      todate: params.todate,
+      status: params.status,
+    },
+  });
   return { data: data?.data || [], pagination: data?.pagination || {} };
 };
 
@@ -160,13 +169,22 @@ export const useCNList = (params = {}) =>
     queryKey: ["credit-notes", params],
     queryFn:  fetchCNList,
     staleTime: 30 * 1000,
-    placeholderData: (prev) => prev,
+    placeholderData: keepPreviousData,
   });
 
 /* ── List Debit Notes ───────────────────────────────────────────────────── */
 const fetchDNList = async ({ queryKey }) => {
   const [, params] = queryKey;
-  const { data } = await api.get("/debitnote/list", { params });
+  const { data } = await api.get("/debitnote/list", {
+    params: {
+      page: params.page,
+      limit: params.limit,
+      search: params.search,
+      fromdate: params.fromdate,
+      todate: params.todate,
+      status: params.status,
+    },
+  });
   return { data: data?.data || [], pagination: data?.pagination || {} };
 };
 
@@ -175,7 +193,7 @@ export const useDNList = (params = {}) =>
     queryKey: ["debit-notes", params],
     queryFn:  fetchDNList,
     staleTime: 30 * 1000,
-    placeholderData: (prev) => prev,
+    placeholderData: keepPreviousData,
   });
 
 /* ── Get Credit Note by ID ──────────────────────────────────────────────── */
@@ -273,8 +291,16 @@ export const useDeleteDN = ({ onSuccess } = {}) => {
 /* ── Credit Notes by Supplier ───────────────────────────────────────────── */
 const fetchCNBySupplier = async ({ queryKey }) => {
   const [, supplierId, params] = queryKey;
-  const { data } = await api.get(`/creditnote/by-supplier/${supplierId}`, { params });
-  return data?.data || [];
+  const { data } = await api.get(`/creditnote/by-supplier/${supplierId}`, {
+    params: {
+      page: params.page,
+      limit: params.limit,
+      search: params.search,
+      fromdate: params.fromdate,
+      todate: params.todate,
+    },
+  });
+  return { data: data?.data || [], pagination: data?.pagination || {} };
 };
 
 export const useCNBySupplier = (supplierId, params = {}) =>
@@ -282,14 +308,23 @@ export const useCNBySupplier = (supplierId, params = {}) =>
     queryKey: ["credit-notes-by-supplier", supplierId, params],
     queryFn:  fetchCNBySupplier,
     enabled:  !!supplierId,
+    placeholderData: keepPreviousData,
     staleTime: 30 * 1000,
   });
 
 /* ── Debit Notes by Supplier ────────────────────────────────────────────── */
 const fetchDNBySupplier = async ({ queryKey }) => {
   const [, supplierId, params] = queryKey;
-  const { data } = await api.get(`/debitnote/by-supplier/${supplierId}`, { params });
-  return data?.data || [];
+  const { data } = await api.get(`/debitnote/by-supplier/${supplierId}`, {
+    params: {
+      page: params.page,
+      limit: params.limit,
+      search: params.search,
+      fromdate: params.fromdate,
+      todate: params.todate,
+    },
+  });
+  return { data: data?.data || [], pagination: data?.pagination || {} };
 };
 
 export const useDNBySupplier = (supplierId, params = {}) =>
@@ -297,14 +332,23 @@ export const useDNBySupplier = (supplierId, params = {}) =>
     queryKey: ["debit-notes-by-supplier", supplierId, params],
     queryFn:  fetchDNBySupplier,
     enabled:  !!supplierId,
+    placeholderData: keepPreviousData,
     staleTime: 30 * 1000,
   });
 
 /* ── Credit Notes by Tender ─────────────────────────────────────────────── */
 const fetchCNByTender = async ({ queryKey }) => {
   const [, tenderId, params] = queryKey;
-  const { data } = await api.get(`/creditnote/by-tender/${tenderId}`, { params });
-  return data?.data || [];
+  const { data } = await api.get(`/creditnote/by-tender/${tenderId}`, {
+    params: {
+      page: params.page,
+      limit: params.limit,
+      search: params.search,
+      fromdate: params.fromdate,
+      todate: params.todate,
+    },
+  });
+  return { data: data?.data || [], pagination: data?.pagination || {} };
 };
 
 export const useCNByTender = (tenderId, params = {}) =>
@@ -312,14 +356,23 @@ export const useCNByTender = (tenderId, params = {}) =>
     queryKey: ["credit-notes-by-tender", tenderId, params],
     queryFn:  fetchCNByTender,
     enabled:  !!tenderId,
+    placeholderData: keepPreviousData,
     staleTime: 30 * 1000,
   });
 
 /* ── Debit Notes by Tender ──────────────────────────────────────────────── */
 const fetchDNByTender = async ({ queryKey }) => {
   const [, tenderId, params] = queryKey;
-  const { data } = await api.get(`/debitnote/by-tender/${tenderId}`, { params });
-  return data?.data || [];
+  const { data } = await api.get(`/debitnote/by-tender/${tenderId}`, {
+    params: {
+      page: params.page,
+      limit: params.limit,
+      search: params.search,
+      fromdate: params.fromdate,
+      todate: params.todate,
+    },
+  });
+  return { data: data?.data || [], pagination: data?.pagination || {} };
 };
 
 export const useDNByTender = (tenderId, params = {}) =>
@@ -327,6 +380,7 @@ export const useDNByTender = (tenderId, params = {}) =>
     queryKey: ["debit-notes-by-tender", tenderId, params],
     queryFn:  fetchDNByTender,
     enabled:  !!tenderId,
+    placeholderData: keepPreviousData,
     staleTime: 30 * 1000,
   });
 

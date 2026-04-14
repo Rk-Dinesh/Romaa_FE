@@ -1,18 +1,29 @@
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient, keepPreviousData } from "@tanstack/react-query";
 import { api } from "../../../../services/api";
 import { toast } from "react-toastify";
 
 /* ── List Accounts ───────────────────────────────────────────────────────── */
 const fetchAccounts = async ({ queryKey }) => {
   const [, params] = queryKey;
-  const { data } = await api.get("/accounttree/list", { params });
-  return data?.data || [];
+  const { data } = await api.get("/accounttree/list", {
+    params: {
+      page: params.page,
+      limit: params.limit,
+      search: params.search,
+      fromdate: params.fromdate,
+      todate: params.todate,
+      parent_code: params.parent_code,
+      is_posting_account: params.is_posting_account,
+    },
+  });
+  return { data: data?.data || [], pagination: data?.pagination || {} };
 };
 
 export const useAccounts = (params = {}) =>
   useQuery({
     queryKey: ["accounttree-list", params],
     queryFn:  fetchAccounts,
+    placeholderData: keepPreviousData,
     staleTime: 30 * 1000,
   });
 

@@ -5,10 +5,11 @@ import Table from "../../../../../components/Table";
 import AddPermittedVendor from "./vendorPermitted";
 import axios from "axios";
 import { API } from "../../../../../constant";
-import { useEffect, useState } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useEffect, useState, useCallback } from "react";
+import { useParams } from "react-router-dom";
 import { toast } from "react-toastify";
 import { MdArrowBackIosNew } from "react-icons/md";
+import { useTableState } from "../../../../../hooks/useTableState";
 
 const customerColumns = [
   { label: "Vendor ID", key: "vendor_id" },
@@ -18,20 +19,16 @@ const customerColumns = [
   { label: "Status", key: "permitted_status" },
 ];
 
-const Vendor = ({onBack}) => {
+const Vendor = () => {
   const { tender_id } = useParams();
-  const navigate = useNavigate();
+
   const [permittedVendor, setPermittedVendor] = useState([]);
   const [loading, setLoading] = useState(false);
+  const { currentPage, setCurrentPage, filterParams, setFilterParams } = useTableState("vendor");
   const [searchTerm, setSearchTerm] = useState("");
-  const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(0);
-  const [filterParams, setFilterParams] = useState({
-    fromdate: "",
-    todate: "",
-  });
 
-  const fetchVendorPermitted = async () => {
+  const fetchVendorPermitted = useCallback(async () => {
     setLoading(true);
     try {
       const res = await axios.get(
@@ -50,16 +47,16 @@ const Vendor = ({onBack}) => {
       setPermittedVendor(res.data.data);
       setTotalPages(res.data.totalPages);
       console.log(res.data);
-    } catch (err) {
+    } catch {
       toast.error("Failed to fetch clients");
     } finally {
       setLoading(false);
     }
-  };
+  }, [currentPage, searchTerm, filterParams, tender_id]);
 
   useEffect(() => {
     fetchVendorPermitted();
-  }, [currentPage, searchTerm, filterParams]);
+  }, [fetchVendorPermitted]);
 
   const handleDeletePermittedVendor = async (vendor_id) => {
     try {
@@ -71,7 +68,7 @@ const Vendor = ({onBack}) => {
       toast.success("Vendor was successfully removed!");
       // Refresh the vendor list after deletion
       fetchVendorPermitted();
-    } catch (error) {
+    } catch  {
       toast.error("Failed to remove vendor.");
     }
   };
@@ -82,6 +79,7 @@ const Vendor = ({onBack}) => {
         contentMarginTop="mt-0"
         endpoint={permittedVendor}
         columns={customerColumns}
+        loading={loading}
         ViewModal={true}
         AddModal={AddPermittedVendor}
         addButtonLabel="Add Vendor"
@@ -92,6 +90,8 @@ const Vendor = ({onBack}) => {
         totalPages={totalPages}
         currentPage={currentPage}
         setCurrentPage={setCurrentPage}
+        searchTerm={searchTerm}
+        setSearchTerm={setSearchTerm}
         filterParams={filterParams}
         setFilterParams={setFilterParams}
         onUpdated={fetchVendorPermitted}

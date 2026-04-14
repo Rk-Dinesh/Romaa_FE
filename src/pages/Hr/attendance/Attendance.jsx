@@ -15,6 +15,7 @@ import { HiArrowsUpDown } from "react-icons/hi2";
 import Pagination from "../../../components/Pagination";
 import Filters from "../../../components/Filters";
 import { useSearch } from "../../../context/SearchBar";
+import { useDebounce } from "../../../hooks/useDebounce";
 import { useMonthlyAttendanceReport, useRegularizationRequests } from "./hooks/useAttendance";
 import ApplyRegularizationModal from "./ApplyRegularizationModal";
 import ActionRegularizationModal from "./ActionRegularizationModal";
@@ -61,21 +62,30 @@ const Attendance = () => {
 
   const itemsPerPage = 10;
   const days = getDaysInMonth(month, year);
+  const debouncedSearch = useDebounce(searchTerm, 500);
 
   const { data: monthlyData, isLoading: loadingMonthly, refetch: refetchMonthly } =
-    useMonthlyAttendanceReport({ month: month + 1, year });
+    useMonthlyAttendanceReport({
+      page: currentPage,
+      limit: itemsPerPage,
+      search: debouncedSearch,
+      fromdate: filterParams.fromdate,
+      todate: filterParams.todate,
+    });
 
   const { data: regData, isLoading: loadingReg, refetch: refetchReg } =
-    useRegularizationRequests({ status: regStatusFilter });
+    useRegularizationRequests({
+      page: 1,
+      limit: 50,
+      search: debouncedSearch,
+      fromdate: filterParams.fromdate,
+      todate: filterParams.todate,
+      status: regStatusFilter,
+    });
 
-  const allRows = monthlyData?.data || [];
-  const filteredRows = allRows.filter((r) =>
-    r.name?.toLowerCase().includes(searchTerm.toLowerCase())
-  );
-  const paginatedRows = filteredRows.slice(
-    (currentPage - 1) * itemsPerPage,
-    currentPage * itemsPerPage
-  );
+  const allRows      = monthlyData?.data || [];
+  const paginatedRows = allRows;
+  const totalMonthlyPages = monthlyData?.totalPages || 1;
 
   const regRequests = regData?.data || [];
 
@@ -259,12 +269,12 @@ const Attendance = () => {
             </table>
           </div>
 
-          {!loadingMonthly && filteredRows.length > itemsPerPage && (
+          {!loadingMonthly && totalMonthlyPages > 1 && (
             <div className="mt-3">
               <Pagination
                 currentPage={currentPage}
                 setCurrentPage={setCurrentPage}
-                totalPages={Math.ceil(filteredRows.length / itemsPerPage)}
+                totalPages={totalMonthlyPages}
               />
             </div>
           )}

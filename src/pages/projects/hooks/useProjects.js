@@ -60,6 +60,9 @@ const fetchZeroCostItems = async ({ queryKey }) => {
     params: {
       page: params.page,
       limit: params.limit,
+      search: params.search,
+      fromdate: params.fromdate,
+      todate: params.todate,
     },
   });
 

@@ -7,6 +7,7 @@ import EditClients from "./EditClients";
 import ViewClients from "./ViewClients";
 import { useClients } from "./hooks/useClients";
 import { useDebounce } from "../../../hooks/useDebounce";
+import { useTableState } from "../../../hooks/useTableState";
 
 const ClientColumns = [
   { label: "Client ID", key: "client_id" },
@@ -24,13 +25,9 @@ const ClientColumns = [
 ];
 
 const Clients = () => {
-  // 1. Local State
-  const [currentPage, setCurrentPage] = useState(1);
+  // 1. UI State
+  const { currentPage, setCurrentPage, filterParams, setFilterParams } = useTableState("clients");
   const [searchTerm, setSearchTerm] = useState("");
-  const [filterParams, setFilterParams] = useState({
-    fromdate: "",
-    todate: "",
-  });
 
   // 2. Debounce Search
   const debouncedSearch = useDebounce(searchTerm, 500);

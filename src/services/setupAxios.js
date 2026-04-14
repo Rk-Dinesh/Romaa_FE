@@ -3,6 +3,8 @@ import axios from "axios";
 // Applies a 401 interceptor to the global axios instance.
 // This covers all the files that import axios directly (not via src/services/api.js).
 export const setupAxiosInterceptors = () => {
+  axios.defaults.withCredentials = true;
+
   axios.interceptors.response.use(
     (response) => response,
     (error) => {

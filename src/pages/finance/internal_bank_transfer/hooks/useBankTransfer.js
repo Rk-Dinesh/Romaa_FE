@@ -1,4 +1,4 @@
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient, keepPreviousData } from "@tanstack/react-query";
 import { api } from "../../../../services/api";
 import { toast } from "react-toastify";
 
@@ -34,14 +34,24 @@ export const useNextBTNo = () =>
 /* ── List Bank Transfers ─────────────────────────────────────────────────── */
 const fetchBTList = async ({ queryKey }) => {
   const [, params] = queryKey;
-  const { data } = await api.get("/banktransfer/list", { params });
-  return data?.data || [];
+  const { data } = await api.get("/banktransfer/list", {
+    params: {
+      page: params.page,
+      limit: params.limit,
+      search: params.search,
+      fromdate: params.fromdate,
+      todate: params.todate,
+      status: params.status,
+    },
+  });
+  return { data: data?.data || [], pagination: data?.pagination || {} };
 };
 
 export const useBTList = (params = {}) =>
   useQuery({
     queryKey: [QK, params],
     queryFn:  fetchBTList,
+    placeholderData: keepPreviousData,
     staleTime: 30 * 1000,
   });
 

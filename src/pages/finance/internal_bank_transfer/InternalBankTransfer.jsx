@@ -1,4 +1,6 @@
 import { useState, useMemo } from "react";
+import { useDebounce } from "../../../hooks/useDebounce";
+import Pagination from "../../../components/Pagination";
 import {
   ArrowRightLeft, RefreshCw, Search, Building2, CalendarDays,
   Banknote, FileText, CheckCircle, Check, Trash2
@@ -78,25 +80,24 @@ const SummaryCard = ({ icon, label, value, sub, color }) => {
 const InternalBankTransfer = () => {
   const [showForm, setShowForm] = useState(false);
   const [search, setSearch]     = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
+  const [fromdate, setFromdate] = useState("");
+  const [todate, setTodate]     = useState("");
   const [actionModal, setActionModal] = useState({ isOpen: false, type: "", id: null, displayStr: "" });
 
-  const { data: list = [], isLoading, isFetching, refetch } = useBTList();
-  const { mutate: approveBT, isPending: approving }         = useApproveBT();
-  const { mutate: deleteBT,  isPending: deleting  }         = useDeleteBT();
+  const debouncedSearch = useDebounce(search, 500);
+  const limit = 15;
 
-  const filtered = useMemo(() => {
-    if (!search) return [...list].reverse();
-    const q = search.toLowerCase();
-    return [...list].reverse().filter(
-      (t) =>
-        (t.transfer_no        || "").toLowerCase().includes(q) ||
-        (t.from_account_name  || "").toLowerCase().includes(q) ||
-        (t.to_account_name    || "").toLowerCase().includes(q) ||
-        (t.from_account_code  || "").toLowerCase().includes(q) ||
-        (t.to_account_code    || "").toLowerCase().includes(q) ||
-        (t.tender_id          || "").toLowerCase().includes(q),
-    );
-  }, [list, search]);
+  const queryParams = useMemo(() => ({ page: currentPage, limit, search: debouncedSearch, fromdate, todate }), [currentPage, debouncedSearch, fromdate, todate]);
+
+  const { data: rawData, isLoading, isFetching, refetch } = useBTList(queryParams);
+  const list = rawData?.data || [];
+  const totalPages = rawData?.pagination?.totalPages || 1;
+
+  const { mutate: approveBT, isPending: approving } = useApproveBT();
+  const { mutate: deleteBT,  isPending: deleting  } = useDeleteBT();
+
+  const filtered = useMemo(() => list, [list]);
 
   const totalApproved = list
     .filter((t) => t.status === "approved")
@@ -162,18 +163,22 @@ const InternalBankTransfer = () => {
           />
         </div>
 
-        {/* ── Search bar ── */}
-        <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 px-5 py-3.5 mb-4 flex items-center gap-3 relative z-10">
+        {/* ── Search + Date bar ── */}
+        <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 px-5 py-3.5 mb-4 flex flex-wrap items-center gap-3 relative z-10">
           <div className="relative flex-1 min-w-[200px]">
             <Search size={14} className="absolute left-3 top-2.5 text-gray-400" />
             <input
               type="text"
               placeholder="Search transfer no., account name, tender…"
               value={search}
-              onChange={(e) => setSearch(e.target.value)}
+              onChange={(e) => { setSearch(e.target.value); setCurrentPage(1); }}
               className="w-full pl-9 border border-gray-200 dark:border-gray-700 rounded-lg px-3 py-2 text-sm bg-gray-50 dark:bg-gray-800 dark:text-white focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
             />
           </div>
+          <input type="date" value={fromdate} onChange={e => { setFromdate(e.target.value); setCurrentPage(1); }}
+            className="border border-gray-200 dark:border-gray-700 rounded-lg px-3 py-2 text-sm bg-gray-50 dark:bg-gray-800 dark:text-white focus:outline-none focus:ring-1 focus:ring-blue-500" />
+          <input type="date" value={todate} onChange={e => { setTodate(e.target.value); setCurrentPage(1); }}
+            className="border border-gray-200 dark:border-gray-700 rounded-lg px-3 py-2 text-sm bg-gray-50 dark:bg-gray-800 dark:text-white focus:outline-none focus:ring-1 focus:ring-blue-500" />
           <button
             onClick={refetch}
             disabled={isFetching}
@@ -222,7 +227,7 @@ const InternalBankTransfer = () => {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-100 dark:divide-gray-700/50">
-                  {filtered.slice().reverse().map((t, i) => (
+                  {filtered.map((t, i) => (
                     <tr
                       key={t._id || t.transfer_no}
                       className="hover:bg-blue-50/30 dark:hover:bg-blue-900/10 transition-colors"
@@ -338,16 +343,19 @@ const InternalBankTransfer = () => {
               <span>
                 Showing{" "}
                 <strong className="text-gray-600 dark:text-gray-300">{filtered.length}</strong>{" "}
-                of{" "}
-                <strong className="text-gray-600 dark:text-gray-300">{list.length}</strong>{" "}
                 transfers
               </span>
               {filtered.length > 0 && (
                 <span className="font-semibold text-blue-600 dark:text-blue-400">
-                  Filtered Total: ₹{fmt(filtered.reduce((s, t) => s + (t.amount || 0), 0))}
+                  Total: ₹{fmt(filtered.reduce((s, t) => s + (t.amount || 0), 0))}
                 </span>
               )}
             </div>
+          </div>
+        )}
+        {totalPages > 1 && (
+          <div className="mt-4">
+            <Pagination currentPage={currentPage} setCurrentPage={setCurrentPage} totalPages={totalPages} />
           </div>
         )}
       </div>

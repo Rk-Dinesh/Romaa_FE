@@ -2,9 +2,10 @@ import Table from "../../../../../components/Table";
 import axios from "axios";
 import { API } from "../../../../../constant";
 import { useCallback, useEffect, useState } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams } from "react-router-dom";
 import { toast } from "react-toastify";
 import { MdArrowBackIosNew } from "react-icons/md";
+import { useTableState } from "../../../../../hooks/useTableState";
 
 const customerColumns = [
   { label: "Contractor_id", key: "contractor_id" },
@@ -19,13 +20,9 @@ const Contract = () => {
   const { tender_id } = useParams(); 
   const [contracts, setContracts] = useState([]);
   const [_Loading, setLoading] = useState(false);
+  const { currentPage, setCurrentPage, filterParams, setFilterParams } = useTableState("contract");
   const [searchTerm, setSearchTerm] = useState("");
-  const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(0);
-  const [filterParams, setFilterParams] = useState({
-    fromdate: "",
-    todate: "",
-  });
 
   // Fetch contracts list
   const fetchContracts = useCallback(async () => {

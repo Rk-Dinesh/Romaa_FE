@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import Title from "../../../components/Title";
 import ButtonBg from "../../../components/Button";
 import { MapPin, Pencil, Trash2, ToggleLeft, ToggleRight, Plus } from "lucide-react";
@@ -6,26 +6,35 @@ import { FiRefreshCw, FiSearch } from "react-icons/fi";
 import { useGeofences, useDeleteGeofence, useToggleGeofence } from "./hooks/useGeofence";
 import AddGeofenceModal from "./AddGeofenceModal";
 import DeleteModal from "../../../components/DeleteModal";
+import Pagination from "../../../components/Pagination";
+import { useDebounce } from "../../../hooks/useDebounce";
 
 const Geofence = () => {
   const [search, setSearch] = useState("");
   const [filterActive, setFilterActive] = useState("all");
+  const [currentPage, setCurrentPage] = useState(1);
   const [addModal, setAddModal] = useState(false);
   const [editItem, setEditItem] = useState(null);
   const [deleteItem, setDeleteItem] = useState(null);
 
-  const { data, isLoading, isFetching, refetch } = useGeofences({
+  const debouncedSearch = useDebounce(search, 500);
+  const limit = 15;
+
+  const queryParams = useMemo(() => ({
+    page: currentPage,
+    limit,
+    search: debouncedSearch,
     isActive: filterActive === "all" ? undefined : filterActive === "active",
-  });
+  }), [currentPage, debouncedSearch, filterActive]);
+
+  const { data, isLoading, isFetching, refetch } = useGeofences(queryParams);
 
   const deleteMutation = useDeleteGeofence({ onSuccess: refetch });
   const toggleMutation = useToggleGeofence();
 
   const allGeofences = data?.data || [];
-  const filtered = allGeofences.filter((g) =>
-    g.name?.toLowerCase().includes(search.toLowerCase()) ||
-    g.description?.toLowerCase().includes(search.toLowerCase())
-  );
+  const totalPages = data?.totalPages || 1;
+  const filtered = allGeofences;
 
   return (
     <div className="font-layout-font h-full flex flex-col">
@@ -56,7 +65,7 @@ const Geofence = () => {
             type="text"
             placeholder="Search zones..."
             value={search}
-            onChange={(e) => setSearch(e.target.value)}
+            onChange={(e) => { setSearch(e.target.value); setCurrentPage(1); }}
             className="w-full pl-9 pr-4 py-2 text-sm border border-gray-200 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
           />
         </div>
@@ -64,7 +73,7 @@ const Geofence = () => {
           {["all", "active", "inactive"].map((f) => (
             <button
               key={f}
-              onClick={() => setFilterActive(f)}
+              onClick={() => { setFilterActive(f); setCurrentPage(1); }}
               className={`px-3 py-1.5 rounded-lg font-medium capitalize transition-all ${
                 filterActive === f
                   ? "bg-darkest-blue text-white shadow-sm"
@@ -216,8 +225,13 @@ const Geofence = () => {
       </div>
 
       {/* Footer */}
-      <div className="mt-3 text-xs text-gray-400 text-right">
-        {filtered.length} zone{filtered.length !== 1 ? "s" : ""}
+      <div className="mt-3 flex items-center justify-between">
+        <span className="text-xs text-gray-400">
+          {filtered.length} zone{filtered.length !== 1 ? "s" : ""}
+        </span>
+        {totalPages > 1 && (
+          <Pagination currentPage={currentPage} setCurrentPage={setCurrentPage} totalPages={totalPages} />
+        )}
       </div>
 
       {/* Modals */}

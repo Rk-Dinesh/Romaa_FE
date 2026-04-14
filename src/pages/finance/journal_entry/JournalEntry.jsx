@@ -1,4 +1,5 @@
 import { useState, useMemo } from "react";
+import { useDebounce } from "../../../hooks/useDebounce";
 import {
   FileText, RefreshCw, Search, CalendarDays,
   ChevronLeft, ChevronRight, RotateCcw, CheckCircle2,
@@ -157,14 +158,17 @@ const JournalEntry = () => {
   const limit = 20;
 
   /* ── Build query params ── */
-  const params = useMemo(() => {
-    const p = { page, limit };
-    if (filterType !== "All")   p.je_type = filterType;
-    if (filterStatus !== "all") p.status  = filterStatus;
-    if (fromDate)               p.from_date = fromDate;
-    if (toDate)                 p.to_date   = toDate;
-    return p;
-  }, [page, limit, filterType, filterStatus, fromDate, toDate]);
+  const debouncedSearch = useDebounce(search, 500);
+
+  const params = useMemo(() => ({
+    page,
+    limit,
+    search: debouncedSearch,
+    fromdate: fromDate,
+    todate: toDate,
+    status: filterStatus !== "all" ? filterStatus : undefined,
+    je_type: filterType !== "All" ? filterType : undefined,
+  }), [page, limit, debouncedSearch, fromDate, toDate, filterStatus, filterType]);
 
   const { data, isLoading, isFetching, refetch } = useJEList(params);
   const list       = useMemo(() => data?.data || [],       [data]);
@@ -176,18 +180,8 @@ const JournalEntry = () => {
     onSuccess: () => setReversingJE(null),
   });
 
-  /* ── Client-side search filter (on top of server results) ── */
-  const filtered = useMemo(() => {
-    if (!search) return list;
-    const q = search.toLowerCase();
-    return list.filter((je) =>
-      (je.je_no || "").toLowerCase().includes(q) ||
-      (je.narration || "").toLowerCase().includes(q) ||
-      (je.tender_id || "").toLowerCase().includes(q) ||
-      (je.tender_name || "").toLowerCase().includes(q) ||
-      (je.source_no || "").toLowerCase().includes(q)
-    );
-  }, [list, search]);
+  /* ── server does the search, just use list directly ── */
+  const filtered = useMemo(() => list, [list]);
 
   /* ── Summary stats ── */
   const approvedItems  = list.filter((je) => je.status === "approved");
@@ -411,7 +405,7 @@ const JournalEntry = () => {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-100 dark:divide-gray-700/50">
-                  {filtered.slice().reverse().map((je, i) => (
+                  {filtered.map((je, i) => (
                     <tr
                       key={je._id}
                       onClick={() => setViewJE(je)}

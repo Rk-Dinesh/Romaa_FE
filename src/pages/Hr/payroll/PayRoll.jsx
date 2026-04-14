@@ -5,6 +5,7 @@ import { DollarSign, Eye, Receipt, CreditCard } from "lucide-react";
 import { FiRefreshCw as FiRefresh, FiSearch } from "react-icons/fi";
 import { TbFileExport } from "react-icons/tb";
 import Pagination from "../../../components/Pagination";
+import { useDebounce } from "../../../hooks/useDebounce";
 import { useNavigate } from "react-router-dom";
 import { usePayrollList, useExportPayrollExcel } from "./hooks/usePayroll";
 import GeneratePayrollModal from "./GeneratePayrollModal";
@@ -40,18 +41,23 @@ const PayRoll = () => {
   const [statusItem, setStatusItem] = useState(null);
   const itemsPerPage = 10;
 
-  const { data, isLoading, isFetching, refetch } = usePayrollList({ month, year });
+  const debouncedSearch = useDebounce(search, 500);
+
+  const { data, isLoading, isFetching, refetch } = usePayrollList({
+    page: currentPage,
+    limit: itemsPerPage,
+    search: debouncedSearch,
+    month,
+    year,
+  });
   const { mutate: exportExcel, isPending: isExporting } = useExportPayrollExcel();
 
   const allRecords = data?.data || [];
-  const filtered = allRecords.filter((r) =>
-    r.employeeId?.name?.toLowerCase().includes(search.toLowerCase()) ||
-    r.employeeId?.employeeId?.toLowerCase().includes(search.toLowerCase())
-  );
-  const paginated = filtered.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
+  const totalPages = data?.totalPages || 1;
+  const paginated  = allRecords;
 
   const totalNetPay = allRecords.reduce((sum, r) => sum + (r.netPay || 0), 0);
-  const paidCount = allRecords.filter((r) => r.status === "Paid").length;
+  const paidCount   = allRecords.filter((r) => r.status === "Paid").length;
   const pendingCount = allRecords.filter((r) => r.status === "Pending").length;
 
   return (
@@ -214,12 +220,12 @@ const PayRoll = () => {
         </table>
       </div>
 
-      {!isLoading && filtered.length > itemsPerPage && (
+      {!isLoading && totalPages > 1 && (
         <div className="mt-3">
           <Pagination
             currentPage={currentPage}
             setCurrentPage={setCurrentPage}
-            totalPages={Math.ceil(filtered.length / itemsPerPage)}
+            totalPages={totalPages}
           />
         </div>
       )}

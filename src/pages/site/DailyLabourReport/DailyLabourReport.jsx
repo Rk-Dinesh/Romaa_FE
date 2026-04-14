@@ -1,7 +1,9 @@
+import { useState } from "react";
 import { TbPlus } from "react-icons/tb";
 import Filters from "../../../components/Filters";
 import Table from "../../../components/Table";
 import AddDailyLabourSite from "./AddDailyLabourSite";
+import { useDebounce } from "../../../hooks/useDebounce";
 import { useDLPSummary } from "./hooks/useDailyLabourReport";
 import { useProject } from "../../../context/ProjectContext";
 
@@ -27,8 +29,20 @@ const columns = [
 
 const DailyLabourReport = () => {
   const { tenderId } = useProject();
+  const [currentPage, setCurrentPage] = useState(1);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [filterParams, setFilterParams] = useState({ fromdate: "", todate: "" });
+  const debouncedSearch = useDebounce(searchTerm, 500);
 
-  const { data, isLoading, isFetching, refetch } = useDLPSummary(tenderId);
+  const { data, isLoading, isFetching, refetch } = useDLPSummary(tenderId, {
+    page: currentPage,
+    limit: 10,
+    search: debouncedSearch,
+    fromdate: filterParams.fromdate,
+    todate: filterParams.todate,
+  });
+
+  const rows = Array.isArray(data) ? data : (data?.data || []);
 
   return (
     <Table
@@ -36,9 +50,16 @@ const DailyLabourReport = () => {
       subtitle="Daily Labour Report"
       pagetitle="Daily Labour Report"
       columns={columns}
-      endpoint={data || []}
+      endpoint={rows}
+      totalPages={data?.totalPages || 0}
       loading={isLoading}
       isRefreshing={isFetching}
+      currentPage={currentPage}
+      setCurrentPage={setCurrentPage}
+      search={searchTerm}
+      setSearch={setSearchTerm}
+      filterParams={filterParams}
+      setFilterParams={setFilterParams}
       AddModal={AddDailyLabourSite}
       EditModal={false}
       routepoint="viewdailylabourReport"

@@ -3,32 +3,46 @@ import { api } from "../../../../services/api";
 import { toast } from "react-toastify";
 
 // Monthly report for all employees (HR view)
-export const useMonthlyAttendanceReport = ({ month, year }) => {
+export const useMonthlyAttendanceReport = (queryParams = {}) => {
   return useQuery({
-    queryKey: ["attendance-monthly", month, year],
+    queryKey: ["attendance-monthly", queryParams],
     queryFn: async () => {
       const { data } = await api.get("/attendance/get-monthly-report", {
-        params: { month, year },
+        params: {
+          page: queryParams.page,
+          limit: queryParams.limit,
+          search: queryParams.search,
+          fromdate: queryParams.fromdate,
+          todate: queryParams.todate,
+        },
       });
       return data;
     },
+    placeholderData: keepPreviousData,
     staleTime: 2 * 60 * 1000,
-    enabled: !!month && !!year,
+    enabled: !!(queryParams.fromdate || queryParams.todate),
   });
 };
 
 // Daily report for all employees (HR view)
-export const useDailyAttendanceReport = (date) => {
+export const useDailyAttendanceReport = (queryParams = {}) => {
   return useQuery({
-    queryKey: ["attendance-daily", date],
+    queryKey: ["attendance-daily", queryParams],
     queryFn: async () => {
       const { data } = await api.get("/attendance/get-daily-report", {
-        params: { date },
+        params: {
+          page: queryParams.page,
+          limit: queryParams.limit,
+          search: queryParams.search,
+          fromdate: queryParams.fromdate,
+          todate: queryParams.todate,
+        },
       });
       return data;
     },
+    placeholderData: keepPreviousData,
     staleTime: 60 * 1000,
-    enabled: !!date,
+    enabled: !!(queryParams.fromdate || queryParams.todate),
   });
 };
 
@@ -38,7 +52,13 @@ export const useRegularizationRequests = (queryParams = {}) => {
     queryKey: ["regularizations", queryParams],
     queryFn: async () => {
       const { data } = await api.get("/attendance/regularization-list", {
-        params: queryParams,
+        params: {
+          page: queryParams.page,
+          limit: queryParams.limit,
+          search: queryParams.search,
+          fromdate: queryParams.fromdate,
+          todate: queryParams.todate,
+        },
       });
       return data;
     },

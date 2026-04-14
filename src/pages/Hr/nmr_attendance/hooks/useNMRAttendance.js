@@ -7,8 +7,11 @@ const fetchNMRAttendanceList = async ({ queryKey }) => {
   const [, projectId, params] = queryKey;
   const { data } = await api.get(`/nmrattendance/api/list/${projectId}`, {
     params: {
-      from: params.from,
-      to: params.to,
+      page: params.page,
+      limit: params.limit,
+      search: params.search,
+      fromdate: params.fromdate,
+      todate: params.todate,
       contractor_id: params.contractor_id || undefined,
     },
   });

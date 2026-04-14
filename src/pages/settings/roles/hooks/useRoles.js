@@ -1,17 +1,26 @@
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery, keepPreviousData, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "react-toastify";
 import { api } from "../../../../services/api";
 import { useNavigate } from "react-router-dom";
 
-// --- 1. Fetch Roles ---
-export const useRolesList = () => {
+// --- 1. Fetch Roles (paginated) ---
+export const useRolesList = (queryParams = {}) => {
   return useQuery({
-    queryKey: ["roles-list"],
+    queryKey: ["roles-list", queryParams],
     queryFn: async () => {
-      const { data } = await api.get(`/role/list`);
-      return data?.data || [];
+      const { data } = await api.get(`/role/list`, {
+        params: {
+          page: queryParams.page,
+          limit: queryParams.limit,
+          search: queryParams.search,
+          fromdate: queryParams.fromdate,
+          todate: queryParams.todate,
+        },
+      });
+      return data;
     },
-    staleTime: 5 * 60 * 1000, // Cache for 5 minutes
+    placeholderData: keepPreviousData,
+    staleTime: 60 * 1000,
   });
 };
 

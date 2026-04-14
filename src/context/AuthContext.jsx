@@ -1,12 +1,21 @@
 import React, { createContext, useState, useEffect, useContext } from "react";
 import { useNavigate } from "react-router-dom";
+import { useTheme } from "./ThemeContext";
 
 const AuthContext = createContext();
+
+// 1. Define the cleanup function right at the top, outside the provider
+const clearTablePreferences = () => {
+  const allKeys = Object.keys(localStorage);
+  const tableKeys = allKeys.filter(key => key.startsWith('table_prefs_'));
+  tableKeys.forEach(key => localStorage.removeItem(key));
+};
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
+  const { setBrandColor } = useTheme();
 
   // 1. Check if user is already logged in on page load
   useEffect(() => {
@@ -27,6 +36,12 @@ export const AuthProvider = ({ children }) => {
 
   // 3. Logout Action
   const logout = () => {
+    setBrandColor("#0f2a47");
+    localStorage.removeItem("romaa_brand_color");
+    
+    // 2. Call the cleanup function here!
+    clearTablePreferences();
+
     // Clear storage
     localStorage.removeItem("crm_user");
     setUser(null);
@@ -54,4 +69,5 @@ export const AuthProvider = ({ children }) => {
   );
 };
 
+// eslint-disable-next-line react-refresh/only-export-components
 export const useAuth = () => useContext(AuthContext);

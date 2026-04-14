@@ -1,33 +1,47 @@
-import { useQuery,useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery, keepPreviousData, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "../../../../services/api";
 import { toast } from "react-toastify";
 
-// User.jsx
-const fetchUsers = async () => {
-  const { data } = await api.get(`/employee/with-roles`);
-  return data?.data || [];
-};
-
-export const useUsers = () => {
+// User.jsx (paginated)
+export const useUsers = (queryParams = {}) => {
   return useQuery({
-    queryKey: ["users"],
-    queryFn: fetchUsers,
-    staleTime: 5 * 60 * 1000, 
+    queryKey: ["users", queryParams],
+    queryFn: async () => {
+      const { data } = await api.get(`/employee/with-roles`, {
+        params: {
+          page: queryParams.page,
+          limit: queryParams.limit,
+          search: queryParams.search,
+          fromdate: queryParams.fromdate,
+          todate: queryParams.todate,
+        },
+      });
+      return data;
+    },
+    placeholderData: keepPreviousData,
+    staleTime: 60 * 1000,
   });
 };
 
 
 // AddUser.jsx
 
-// --- 1. Fetch Unassigned Employees ---
-export const useUnassignedEmployees = () => {
+// --- 1. Fetch Unassigned Employees (paginated) ---
+export const useUnassignedEmployees = (queryParams = {}) => {
   return useQuery({
-    queryKey: ["unassigned-employees"],
+    queryKey: ["unassigned-employees", queryParams],
     queryFn: async () => {
-      const { data } = await api.get(`/employee/unassigned`);
-      return data?.data || [];
+      const { data } = await api.get(`/employee/unassigned`, {
+        params: {
+          page: queryParams.page,
+          limit: queryParams.limit,
+          search: queryParams.search,
+        },
+      });
+      return data;
     },
-    staleTime: 5 * 60 * 1000, // Cache for 5 minutes
+    placeholderData: keepPreviousData,
+    staleTime: 60 * 1000,
   });
 };
 
