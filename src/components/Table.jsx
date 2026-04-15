@@ -1,4 +1,10 @@
-import React, { useEffect, useState, useMemo, useRef, useCallback } from "react";
+import React, {
+  useEffect,
+  useState,
+  useMemo,
+  useRef,
+  useCallback,
+} from "react";
 import Title from "./Title";
 import Button from "./Button";
 import { HiArrowsUpDown } from "react-icons/hi2";
@@ -80,8 +86,6 @@ const VIEW_MODES = [
   { id: "list", label: "List", icon: RiListUnordered },
   { id: "split", label: "Split", icon: RiLayoutLeft2Line },
 ];
-
-
 
 const truncateText = (text, wordLimit = 7) => {
   if (!text) return { displayText: "", isTruncated: false };
@@ -274,7 +278,7 @@ const Table = ({
   const navigate = useNavigate();
   const { searchTerm } = useSearch();
 
-  const storageKey = `table_prefs_${(title || "default").replace(/\s+/g, "_")}`;
+  const storageKey = `table_prefs_${(title || "default").replace(/\s+/g, "_")}_${(subtitle || pagetitle || "").replace(/\s+/g, "_")}`;
   const columnsKey = columns.map((c) => c.key).join(",");
 
   const [selectedItem, setSelectedItem] = useState(null);
@@ -297,7 +301,6 @@ const Table = ({
 
   const { brandColor: headerBgColor, setBrandColor: setHeaderBgColor } =
     useTheme();
-
 
   const [selectedRows, setSelectedRows] = useState(new Set());
   const masterCheckRef = useRef(null);
@@ -450,8 +453,11 @@ const Table = ({
     setCurrentPage(1);
   };
 
-  const getRowId = useCallback((item, absoluteIndex) =>
-    idKey ? String(item[idKey]) : String(absoluteIndex), [idKey]);
+  const getRowId = useCallback(
+    (item, absoluteIndex) =>
+      idKey ? String(item[idKey]) : String(absoluteIndex),
+    [idKey],
+  );
   const toggleRow = (item, absoluteIndex, e) => {
     e.stopPropagation();
     setSelectedRows((prev) => {
@@ -540,9 +546,8 @@ const Table = ({
   const startIndex = (currentPage - 1) * itemsPerPage;
   // This physically limits the DOM to only rendering the current 10 items
 
-
-// Change it to this:
-const paginatedItems = sortedItems; // The API already sliced the data
+  // Change it to this:
+  const paginatedItems = sortedItems; // The API already sliced the data
 
   const hasActionColumn = EditModal || editroutepoint || DeleteModal;
   const colSpan =
@@ -700,8 +705,6 @@ const paginatedItems = sortedItems; // The API already sliced the data
                     </button>
                   </div>
                 </div>
-
-
 
                 <div className="p-4 flex flex-col gap-6 max-h-[50vh] overflow-y-auto scrollbar-thin">
                   <div>
@@ -988,7 +991,7 @@ const paginatedItems = sortedItems; // The API already sliced the data
                           })}
                           {hasActionColumn && (
                             <td
-                              className={`${viewMode === "list" ? "px-3 py-1.5" : d.td} sticky right-0 bg-white group-hover/row:bg-[#f8fafc] dark:bg-gray-900 text-center shadow-[-4px_0_12px_rgba(0,0,0,0.03)] z-10`}
+                              className={`${viewMode === "list" ? "px-3 py-1.5" : d.td} sticky right-0 bg-white group-hover/row:bg-[#f8fafc] dark:bg-gray-900 text-center shadow-[-4px_0_12px_rgba(0,0,0,0.03)] `}
                             >
                               <div className="flex justify-center gap-3">
                                 {(EditModal || editroutepoint) && (

@@ -5,6 +5,7 @@ import { useAuth } from "../context/AuthContext";
 import { Menus } from "../helperConfigData/helperData";
 import Loader from "../components/Loader";
 import { PanelLeftClose, PanelLeftOpen } from "lucide-react";
+// import Ai from "../components/Ai";
 
 const LayOut = () => {
   const location = useLocation();
@@ -175,6 +176,7 @@ const LayOut = () => {
           </Suspense>
         </div>
       </div>
+      {/* <Ai /> */}
     </div>
   );
 };

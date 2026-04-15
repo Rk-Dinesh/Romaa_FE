@@ -115,8 +115,8 @@ const NotificationPanel = ({ open, onClose }) => {
     if (!notification.isRead) {
       setLocalNotifications((prev) =>
         prev.map((n) =>
-          n._id === notification._id ? { ...n, isRead: true } : n
-        )
+          n._id === notification._id ? { ...n, isRead: true } : n,
+        ),
       );
       markAsRead.mutate(notification._id);
     }
@@ -143,9 +143,7 @@ const NotificationPanel = ({ open, onClose }) => {
 
   const handleMarkAllRead = () => {
     // Optimistic: mark all as read locally
-    setLocalNotifications((prev) =>
-      prev.map((n) => ({ ...n, isRead: true }))
-    );
+    setLocalNotifications((prev) => prev.map((n) => ({ ...n, isRead: true })));
     markAllAsRead.mutate();
   };
 
@@ -156,7 +154,8 @@ const NotificationPanel = ({ open, onClose }) => {
   return (
     <div
       ref={panelRef}
-      className="absolute right-14 top-18 w-[420px] max-h-[85vh] bg-white dark:bg-layout-dark rounded-xl shadow-2xl border border-gray-200 dark:border-gray-700/50 z-50 flex flex-col overflow-hidden animate-in fade-in slide-in-from-top-2"
+      // FIXED: Mobile fluid width (w-[calc(100vw-2rem)]) vs Desktop fixed width (sm:w-[420px])
+      className="absolute right-4 sm:right-14 top-18 w-[calc(100vw-2rem)] sm:w-[420px] max-h-[85vh] bg-white dark:bg-layout-dark rounded-xl shadow-2xl border border-gray-200 dark:border-gray-700/50 z-50 flex flex-col overflow-hidden animate-in fade-in slide-in-from-top-2"
     >
       {/* Header */}
       <div className="flex items-center justify-between px-5 py-3.5 border-b border-gray-100 dark:border-gray-700/50">
@@ -173,6 +172,7 @@ const NotificationPanel = ({ open, onClose }) => {
         </div>
         <div className="flex items-center gap-3">
           <button
+            type="button" // FIXED: Added type attribute
             onClick={handleMarkAllRead}
             disabled={markAllAsRead.isPending || unreadLocalCount === 0}
             className={`text-[11px] flex items-center gap-1 font-medium transition-colors ${
@@ -185,6 +185,7 @@ const NotificationPanel = ({ open, onClose }) => {
             Mark all read
           </button>
           <button
+            type="button" // FIXED: Added type attribute
             onClick={onClose}
             className="p-1 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
           >
@@ -198,6 +199,7 @@ const NotificationPanel = ({ open, onClose }) => {
         {CATEGORY_FILTERS.map((f) => (
           <button
             key={f.value}
+            type="button" // FIXED: Added type attribute
             onClick={() => setCategory(f.value)}
             className={`text-[11px] px-3 py-1.5 rounded-full whitespace-nowrap font-medium transition-all ${
               category === f.value
@@ -210,6 +212,7 @@ const NotificationPanel = ({ open, onClose }) => {
         ))}
         <div className="ml-auto">
           <button
+            type="button" // FIXED: Added type attribute
             onClick={() =>
               setReadStatus(readStatus === "unread" ? "" : "unread")
             }
@@ -243,14 +246,17 @@ const NotificationPanel = ({ open, onClose }) => {
           <div className="divide-y divide-gray-50 dark:divide-gray-800/50">
             {localNotifications.map((n) => {
               const Icon = categoryIcons[n.category] || AlertTriangle;
-              const colors = priorityColors[n.priority] || priorityColors.medium;
+              const colors =
+                priorityColors[n.priority] || priorityColors.medium;
               const isDismissing = dismissing.has(n._id);
 
               return (
-                <div
+                <button
                   key={n._id}
+                  type="button" // FIXED: Added type attribute
                   onClick={() => handleNotificationClick(n)}
-                  className={`group flex items-start gap-3 px-4 py-3.5 border-l-[3px] ${colors.border} cursor-pointer transition-all duration-300 ${
+                  // FIXED: Changed from div to button, added w-full and text-left
+                  className={`group w-full text-left flex items-start gap-3 px-4 py-3.5 border-l-[3px] ${colors.border} cursor-pointer transition-all duration-300 ${
                     isDismissing
                       ? "opacity-0 -translate-x-8 max-h-0 py-0 overflow-hidden"
                       : "opacity-100 translate-x-0"
@@ -284,6 +290,7 @@ const NotificationPanel = ({ open, onClose }) => {
                         {n.title}
                       </p>
                       <button
+                        type="button" // FIXED: Added type attribute
                         onClick={(e) => handleDismiss(e, n._id)}
                         className="shrink-0 p-1 rounded-md opacity-0 group-hover:opacity-100 hover:bg-gray-200 dark:hover:bg-gray-700 transition-all"
                         title="Dismiss"
@@ -329,7 +336,7 @@ const NotificationPanel = ({ open, onClose }) => {
                       <div className="size-2 rounded-full bg-blue-500 shadow-sm shadow-blue-500/50" />
                     </div>
                   )}
-                </div>
+                </button>
               );
             })}
           </div>
