@@ -2,7 +2,7 @@
 
 **Base URL:** `/purchasebill`
 **Module:** `finance → purchasebill`
-**Auth:** JWT cookie or `Authorization: Bearer <token>` (currently commented out during development)
+**Auth:** JWT cookie or `Authorization: Bearer <token>`
 
 ---
 
@@ -14,7 +14,7 @@ Returns the `doc_id` that will be assigned to the next bill. Call this before op
 GET /purchasebill/next-id
 ```
 
-**Auth required:** No (dev) / `finance > purchasebill > read` (prod)
+**Auth required:** `finance > purchasebill > read`
 **Query params:** None
 
 ### Success Response `200`
@@ -49,7 +49,7 @@ Heavy arrays (`line_items`, `tax_groups`, `additional_charges`) are **excluded**
 GET /purchasebill/list
 ```
 
-**Auth required:** No (dev) / `finance > purchasebill > read` (prod)
+**Auth required:** `finance > purchasebill > read`
 
 ### Query Parameters
 
@@ -62,7 +62,9 @@ GET /purchasebill/list
 | `vendor_id` | `string` | Exact match — e.g. `VND-002` |
 | `tax_mode` | `"instate" \| "otherstate"` | Exact match |
 | `invoice_no` | `string` | Case-insensitive partial match |
-| `status` | `"draft" \| "pending" \| "approved" \| "paid"` | Exact match |
+| `status` | `"draft" \| "pending" \| "approved"` | Exact match |
+| `page` | `number` | Page number (1-based). Default: `1` |
+| `limit` | `number` | Records per page. Default: `20` |
 
 ### Response Fields
 
@@ -93,7 +95,7 @@ Each record contains only summary fields:
 ### Example Request
 
 ```
-GET /purchasebill/list?tender_id=TND-001&from_date=2025-04-01&to_date=2026-03-31&status=pending
+GET /purchasebill/list?tender_id=TND-001&from_date=2025-04-01&to_date=2026-03-31&status=pending&page=1&limit=20
 ```
 
 ### Success Response `200`
@@ -123,7 +125,13 @@ GET /purchasebill/list?tender_id=TND-001&from_date=2025-04-01&to_date=2026-03-31
       "status": "pending",
       "createdAt": "2026-03-19T10:30:00.000Z"
     }
-  ]
+  ],
+  "pagination": {
+    "page": 1,
+    "limit": 20,
+    "total": 42,
+    "pages": 3
+  }
 }
 ```
 
@@ -137,7 +145,7 @@ Returns **all bills** for a specific tender with complete details including `lin
 GET /purchasebill/by-tender/:tenderId
 ```
 
-**Auth required:** No (dev) / `finance > purchasebill > read` (prod)
+**Auth required:** `finance > purchasebill > read`
 
 ### Query Parameters
 
@@ -218,13 +226,13 @@ GET /purchasebill/by-tender/TND-001?vendor_id=VND-002&status=approved
 
 ## 4. All Tenders Summary Table
 
-Returns one summary row per tender — designed for the finance overview table showing billing status across all tenders at a glance.
+Returns one summary row per tender — designed for the finance overview table showing billing status across all tenders at a glance. Draft bills are excluded from all totals.
 
 ```
 GET /purchasebill/summary-all
 ```
 
-**Auth required:** No (dev) / `finance > purchasebill > read` (prod)
+**Auth required:** `finance > purchasebill > read`
 **Query params:** None
 
 ### Example Request
@@ -248,7 +256,6 @@ GET /purchasebill/summary-all
       "total_net": 283990,
       "pending_amount": 70290,
       "approved_amount": 118500,
-      "paid_amount": 95200,
       "latest_bill_date": "2026-03-19T00:00:00.000Z"
     },
     {
@@ -260,7 +267,6 @@ GET /purchasebill/summary-all
       "total_net": 100300,
       "pending_amount": 100300,
       "approved_amount": 0,
-      "paid_amount": 0,
       "latest_bill_date": "2026-03-10T00:00:00.000Z"
     }
   ]
@@ -279,7 +285,6 @@ GET /purchasebill/summary-all
 | `total_net` | Σ `net_amount` — total payable |
 | `pending_amount` | `net_amount` sum of bills in `pending` status |
 | `approved_amount` | `net_amount` sum of bills in `approved` status |
-| `paid_amount` | `net_amount` sum of bills in `paid` status |
 | `latest_bill_date` | Date of the most recent bill |
 
 > Results are sorted by `latest_bill_date` descending (most recently billed tender first).
@@ -294,7 +299,7 @@ Returns aggregate totals and a status breakdown for all bills under a tender. Us
 GET /purchasebill/summary/:tenderId
 ```
 
-**Auth required:** No (dev) / `finance > purchasebill > read` (prod)
+**Auth required:** `finance > purchasebill > read`
 **Query params:** None
 
 ### Example Request
@@ -358,7 +363,7 @@ POST /purchasebill/create
 Content-Type: application/json
 ```
 
-**Auth required:** No (dev) / `finance > purchasebill > create` (prod)
+**Auth required:** `finance > purchasebill > create`
 
 ### Request Body
 
@@ -437,7 +442,7 @@ Content-Type: application/json
 | `place_of_supply` | — | — | **Auto-filled** from vendor master — do not send |
 | `credit_days` | `number` | No | Defaults to vendor master `credit_day` if not provided |
 | `tax_mode` | `"instate" \| "otherstate"` | No | Tax mode |
-| `status` | `"draft" \| "pending" \| "approved" \| "paid"` | No | Defaults to `"pending"` |
+| `status` | `"draft" \| "pending" \| "approved"` | No | Defaults to `"pending"` |
 
 #### `line_items[]` — minimum 1 item required
 
@@ -465,7 +470,7 @@ Content-Type: application/json
 | `type` | `string` (enum) | One of the allowed charge types (see below) |
 | `amount` | `number` | Base charge amount |
 | `gst_pct` | `number` | GST % on the charge (0 if none) |
-| `is_deduction` | `boolean` | `true` → subtracts from total (Discount, TCS Receivable) |
+| `is_deduction` | `boolean` | `true` → subtracts from total |
 
 **Allowed `type` values:**
 
@@ -479,6 +484,8 @@ Content-Type: application/json
 | `Packing Charges` | No |
 | `Discount` | Yes |
 | `TCS Receivable` | Yes |
+| `Retention` | Yes |
+| `Security Deposit` | Yes |
 
 ### Server-computed Fields (do not send)
 
@@ -568,11 +575,9 @@ purchase_bill_id:  "<doc_id>"
 | `400` | `doc_id` missing | `"doc_id is required"` |
 | `400` | `vendor_id` missing | `"vendor_id is required"` |
 | `400` | `vendor_id` not found in vendor master | `"Vendor 'VND-XXX' not found"` |
-| `400` | `invoice_no` already exists | `"Invoice number '...' already exists"` |
+| `400` | `invoice_no` already exists for this vendor | `"Invoice number '...' already exists for this vendor"` |
 | `400` | `line_items` is empty | `"A purchase bill must have at least one line item"` |
 | `500` | DB error / duplicate `doc_id` | `error.message` |
-
----
 
 ---
 
@@ -584,7 +589,7 @@ Approves a purchase bill and **automatically posts a Credit entry** to the suppl
 PATCH /purchasebill/approve/:id
 ```
 
-**Auth required:** No (dev) / `finance > purchasebill > edit` (prod)
+**Auth required:** `finance > purchasebill > edit`
 **URL Params:** `id` — MongoDB `_id` of the purchase bill
 
 ### Success Response `200`
@@ -621,6 +626,99 @@ debit_amt     : 0
 ```
 
 > The ledger entry is protected against double-posting — calling approve twice returns `400 Already approved`.
+
+---
+
+## 9. Get Purchase Bill by ID
+
+```
+GET /purchasebill/:id
+```
+
+**Auth required:** `finance > purchasebill > read`
+**URL Params:** `id` — MongoDB `_id` of the purchase bill
+
+Returns the full bill detail including `line_items`, `tax_groups`, and `additional_charges`.
+
+> **Note:** This route must be placed last in the route file — after all named paths — to avoid `:id` matching route names like `list`, `next-id`, `summary-all`, etc.
+
+### Success Response `200`
+
+```json
+{
+  "status": true,
+  "data": { ...full bill fields... }
+}
+```
+
+### Error Responses
+
+| Status | Condition | Message |
+|---|---|---|
+| `404` | `id` not found | `"Purchase bill not found"` |
+
+---
+
+## 10. Update Purchase Bill
+
+```
+PATCH /purchasebill/update/:id
+Content-Type: application/json
+```
+
+**Auth required:** `finance > purchasebill > edit`
+
+Only `draft` or `pending` bills can be updated. Approved or paid bills are blocked.
+
+**Updatable fields:** `doc_date`, `invoice_no`, `invoice_date`, `credit_days`, `narration`, `tax_mode`, `line_items`, `additional_charges`, `status`
+
+> **Note:** Triggers the pre-save hook — all computed fields (`cgst_amt`, `net_amount`, `due_date`, etc.) are recalculated automatically. Do not send server-computed fields.
+
+### Success Response `200`
+
+```json
+{
+  "status": true,
+  "message": "Purchase bill updated",
+  "data": { ...updated bill fields... }
+}
+```
+
+### Error Responses
+
+| Status | Condition | Message |
+|---|---|---|
+| `400` | Bill is approved or paid | `"Cannot edit an approved or paid bill"` |
+| `404` | `id` not found | `"Purchase bill not found"` |
+
+---
+
+## 11. Delete Purchase Bill
+
+```
+DELETE /purchasebill/delete/:id
+```
+
+**Auth required:** `finance > purchasebill > delete`
+
+Only `draft` bills can be deleted. Approved or paid bills are blocked.
+
+### Success Response `200`
+
+```json
+{
+  "status": true,
+  "message": "Purchase bill deleted",
+  "data": { ...deleted bill fields... }
+}
+```
+
+### Error Responses
+
+| Status | Condition | Message |
+|---|---|---|
+| `400` | Bill is approved or paid | `"Cannot delete an approved or paid bill"` |
+| `404` | `id` not found | `"Purchase bill not found"` |
 
 ---
 

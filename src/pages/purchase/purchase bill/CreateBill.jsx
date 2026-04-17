@@ -225,6 +225,10 @@ const CreateBill = ({ onclose, onSuccess }) => {
         cgst_pct:         Number(cgst),
         sgst_pct:         Number(sgst),
         igst_pct:         Number(igst),
+        // GRN linkage — backend's buildDoc reads these from each line item
+        grn_no:           e.grn_bill_no || "",
+        grn_ref:          e._id         || "",
+        ref_date:         e.date ? e.date.split("T")[0] : "",
       };
     }));
 
@@ -367,6 +371,10 @@ const CreateBill = ({ onclose, onSuccess }) => {
         cgst_pct:         r.cgst_pct,
         sgst_pct:         r.sgst_pct,
         igst_pct:         r.igst_pct,
+        // GRN linkage — backend's buildDoc reads these per line item
+        grn_no:           r.grn_no   || undefined,
+        grn_ref:          r.grn_ref  || undefined,
+        ref_date:         r.ref_date || undefined,
       })),
 
       // Additional charges — include is_deduction as required by API

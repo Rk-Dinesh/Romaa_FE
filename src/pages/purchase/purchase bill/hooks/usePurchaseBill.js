@@ -37,7 +37,7 @@ const fetchBillsByTender = async ({ queryKey }) => {
       todate: params.todate,
     },
   });
-  return data?.data || [];
+  return data || [];
 };
 
 export const useBillsByTender = (tenderId, queryParams = {}) =>
