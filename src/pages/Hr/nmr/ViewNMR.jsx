@@ -39,7 +39,7 @@ const ViewNMR = () => {
   return (
     <>
       {!onEdit ? (
-        <div className="font-layout-font">
+        <div className="font-layout-font flex flex-col overflow-hidden h-screen">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-6">
             <Title title="HR Management" sub_title="NMR Details" page_title={worker.employee_name || "View NMR"} />
             <div className="mt-4 sm:mt-0">
@@ -47,7 +47,7 @@ const ViewNMR = () => {
             </div>
           </div>
 
-          <div className="flex flex-col gap-3">
+          <div className="flex-1 p-6 pt-2 space-y-4 overflow-y-auto">
 
             {/* Personal Info & Status */}
             <div className="bg-white dark:bg-layout-dark rounded-xl shadow-sm border border-gray-100 dark:border-gray-800 p-6">

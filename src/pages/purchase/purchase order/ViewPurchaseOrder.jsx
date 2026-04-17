@@ -314,183 +314,162 @@ const ViewPurchaseOrder = () => {
                 <AlertCircle size={48} className="opacity-20" />
                 <p>No item details found for this approved vendor.</p>
               </div>
-            ) : (
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm text-left table-fixed">
-                  <thead>
-                    <tr className="bg-gray-100 dark:bg-gray-900 text-gray-500 dark:text-gray-400 text-[10px] uppercase font-bold border-b dark:border-gray-700">
-                      <th className="px-3 py-3 border-r dark:border-gray-700 text-center" style={{ width: "48px" }}>
-                        S.No
-                      </th>
-                      <th className="px-4 py-3 border-r dark:border-gray-700">
-                        Material Description
-                      </th>
-                      <th className="px-3 py-3 border-r dark:border-gray-700 text-center" style={{ width: isInState ? "88px" : "100px" }}>
-                        Qty / Unit
-                      </th>
-                      <th className="px-3 py-3 border-r dark:border-gray-700 text-right" style={{ width: isInState ? "88px" : "100px" }}>
-                        Rate (₹)
-                      </th>
-                      <th className="px-3 py-3 border-r dark:border-gray-700 text-right" style={{ width: isInState ? "96px" : "112px" }}>
-                        Taxable Val (₹)
-                      </th>
-                      {isInState ? (
-                        <>
-                          <th className="px-3 py-3 border-r dark:border-gray-700 text-right" style={{ width: "88px" }}>CGST</th>
-                          <th className="px-3 py-3 border-r dark:border-gray-700 text-right" style={{ width: "88px" }}>SGST</th>
-                        </>
-                      ) : (
-                        <th className="px-3 py-3 border-r dark:border-gray-700 text-right" style={{ width: "112px" }}>IGST</th>
-                      )}
-                      <th className="px-3 py-3 text-right bg-blue-50/50 dark:bg-blue-900/10" style={{ width: isInState ? "96px" : "112px" }}>
-                        Total (₹)
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-gray-200 dark:divide-gray-800">
-                    {vendor.quoteItems?.map((item, idx) => {
-                      const taxableValue =
-                        (item.quantity || 0) * (item.quotedUnitRate || 0);
-                      const cgstAmt =
-                        (taxableValue * (item.taxStructure?.cgst || 0)) / 100;
-                      const sgstAmt =
-                        (taxableValue * (item.taxStructure?.sgst || 0)) / 100;
-                      const igstAmt =
-                        (taxableValue * (item.taxStructure?.igst || 0)) / 100;
-                      const totalTax = isInState ? cgstAmt + sgstAmt : igstAmt;
-                      const rowTotal = taxableValue + totalTax;
+            ) : (() => {
+              const totalTaxAmt = vendor.quoteItems?.reduce((acc, item) => {
+                const taxableValue = (item.quantity || 0) * (item.quotedUnitRate || 0);
+                const tax = isInState
+                  ? (taxableValue * ((item.taxStructure?.cgst || 0) + (item.taxStructure?.sgst || 0))) / 100
+                  : (taxableValue * (item.taxStructure?.igst || 0)) / 100;
+                return acc + tax;
+              }, 0) || 0;
+              const netPayableAmt = (vendor.totalQuotedValue || 0) + totalTaxAmt;
+              const fmtNum = (n) =>
+                Number(n || 0).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
-                      return (
-                        <tr
-                          key={idx}
-                          className="hover:bg-gray-50 dark:hover:bg-gray-800/30 transition-colors text-[11px]"
-                        >
-                          <td className="px-4 py-3 text-center border-r dark:border-gray-700 text-gray-500">
-                            {idx + 1}
-                          </td>
-                          <td className="px-4 py-3 border-r dark:border-gray-700">
-                            <div className="font-bold text-gray-700 dark:text-gray-200">
-                              {item.materialName}
-                            </div>
-                            <div className="text-[9px] text-gray-400 uppercase">
-                              HSN: {item.hsnSac || "N/A"}
-                            </div>
-                          </td>
-                          <td className="px-4 py-3 text-center border-r dark:border-gray-700">
-                            {item.quantity}{" "}
-                            <span className="text-gray-400">{item.unit}</span>
-                          </td>
-                          <td className="px-4 py-3 text-right border-r dark:border-gray-700 font-mono">
-                            {item.quotedUnitRate?.toLocaleString(undefined, {
-                              minimumFractionDigits: 2,
-                            })}
-                          </td>
-                          <td className="px-4 py-3 text-right border-r dark:border-gray-700 font-mono">
-                            {taxableValue.toLocaleString(undefined, {
-                              minimumFractionDigits: 2,
-                            })}
-                          </td>
+              return (
+                <>
+                  {/* ── Scrollable items table ── */}
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-sm text-left table-fixed">
+                      <thead>
+                        <tr className="bg-gray-100 dark:bg-gray-900 text-gray-500 dark:text-gray-400 text-[10px] uppercase font-bold border-b dark:border-gray-700">
+                          <th className="px-3 py-3 border-r dark:border-gray-700 text-center" style={{ width: "48px" }}>
+                            S.No
+                          </th>
+                          <th className="px-4 py-3 border-r dark:border-gray-700">
+                            Material Description
+                          </th>
+                          <th className="px-3 py-3 border-r dark:border-gray-700 text-center" style={{ width: isInState ? "88px" : "100px" }}>
+                            Qty / Unit
+                          </th>
+                          <th className="px-3 py-3 border-r dark:border-gray-700 text-right" style={{ width: isInState ? "88px" : "100px" }}>
+                            Rate (₹)
+                          </th>
+                          <th className="px-3 py-3 border-r dark:border-gray-700 text-right" style={{ width: isInState ? "96px" : "112px" }}>
+                            Taxable Val (₹)
+                          </th>
                           {isInState ? (
                             <>
-                              <td className="px-4 py-3 text-right border-r dark:border-gray-700 bg-gray-50/30 dark:bg-transparent">
-                                <div className="font-mono">{cgstAmt.toFixed(2)}</div>
-                                <div className="text-[9px] text-gray-400">{item.taxStructure?.cgst}%</div>
-                              </td>
-                              <td className="px-4 py-3 text-right border-r dark:border-gray-700 bg-gray-50/30 dark:bg-transparent">
-                                <div className="font-mono">{sgstAmt.toFixed(2)}</div>
-                                <div className="text-[9px] text-gray-400">{item.taxStructure?.sgst}%</div>
-                              </td>
+                              <th className="px-3 py-3 border-r dark:border-gray-700 text-right" style={{ width: "88px" }}>CGST</th>
+                              <th className="px-3 py-3 border-r dark:border-gray-700 text-right" style={{ width: "88px" }}>SGST</th>
                             </>
                           ) : (
-                            <td className="px-4 py-3 text-right border-r dark:border-gray-700 bg-gray-50/30 dark:bg-transparent">
-                              <div className="font-mono">{igstAmt.toFixed(2)}</div>
-                              <div className="text-[9px] text-gray-400">{item.taxStructure?.igst}%</div>
-                            </td>
+                            <th className="px-3 py-3 border-r dark:border-gray-700 text-right" style={{ width: "112px" }}>IGST</th>
                           )}
-                          <td className="px-4 py-3 text-right font-bold text-gray-800 dark:text-gray-200 bg-blue-50/20 dark:bg-blue-900/5">
-                            {rowTotal.toLocaleString(undefined, {
-                              minimumFractionDigits: 2,
-                            })}
-                          </td>
+                          <th className="px-3 py-3 text-right bg-blue-50/50 dark:bg-blue-900/10" style={{ width: isInState ? "96px" : "112px" }}>
+                            Total (₹)
+                          </th>
                         </tr>
-                      );
-                    })}
-                  </tbody>
+                      </thead>
+                      <tbody className="divide-y divide-gray-200 dark:divide-gray-800">
+                        {vendor.quoteItems?.map((item, idx) => {
+                          const taxableValue =
+                            (item.quantity || 0) * (item.quotedUnitRate || 0);
+                          const cgstAmt =
+                            (taxableValue * (item.taxStructure?.cgst || 0)) / 100;
+                          const sgstAmt =
+                            (taxableValue * (item.taxStructure?.sgst || 0)) / 100;
+                          const igstAmt =
+                            (taxableValue * (item.taxStructure?.igst || 0)) / 100;
+                          const totalTax = isInState ? cgstAmt + sgstAmt : igstAmt;
+                          const rowTotal = taxableValue + totalTax;
 
-                  <tfoot className="bg-gray-50/50 dark:bg-gray-900/50 border-t-2 border-gray-200 dark:border-gray-700">
-                    {/* 1. Base Amount (As provided in totalQuotedValue) */}
-                    <tr className="text-gray-600 dark:text-gray-400">
-                      <td
-                        colSpan={isInState ? 7 : 6}
-                        className="px-4 py-2 text-right text-[10px] uppercase font-bold tracking-wider"
-                      >
-                        Base Value
-                      </td>
-                      <td className="px-4 py-2 text-right font-mono font-bold text-gray-800 dark:text-gray-200">
-                        {vendor.totalQuotedValue?.toLocaleString(undefined, {
-                          minimumFractionDigits: 2,
+                          return (
+                            <tr
+                              key={idx}
+                              className="hover:bg-gray-50 dark:hover:bg-gray-800/30 transition-colors text-[11px]"
+                            >
+                              <td className="px-4 py-3 text-center border-r dark:border-gray-700 text-gray-500">
+                                {idx + 1}
+                              </td>
+                              <td className="px-4 py-3 border-r dark:border-gray-700">
+                                <div className="font-bold text-gray-700 dark:text-gray-200">
+                                  {item.materialName}
+                                </div>
+                                <div className="text-[9px] text-gray-400 uppercase">
+                                  HSN: {item.hsnSac || "N/A"}
+                                </div>
+                              </td>
+                              <td className="px-4 py-3 text-center border-r dark:border-gray-700">
+                                {item.quantity}{" "}
+                                <span className="text-gray-400">{item.unit}</span>
+                              </td>
+                              <td className="px-4 py-3 text-right border-r dark:border-gray-700 tabular-nums font-medium">
+                                {fmtNum(item.quotedUnitRate)}
+                              </td>
+                              <td className="px-4 py-3 text-right border-r dark:border-gray-700 tabular-nums font-medium">
+                                {fmtNum(taxableValue)}
+                              </td>
+                              {isInState ? (
+                                <>
+                                  <td className="px-4 py-3 text-right border-r dark:border-gray-700 bg-gray-50/30 dark:bg-transparent">
+                                    <div className="tabular-nums font-medium">{fmtNum(cgstAmt)}</div>
+                                    <div className="text-[9px] text-gray-400">{item.taxStructure?.cgst}%</div>
+                                  </td>
+                                  <td className="px-4 py-3 text-right border-r dark:border-gray-700 bg-gray-50/30 dark:bg-transparent">
+                                    <div className="tabular-nums font-medium">{fmtNum(sgstAmt)}</div>
+                                    <div className="text-[9px] text-gray-400">{item.taxStructure?.sgst}%</div>
+                                  </td>
+                                </>
+                              ) : (
+                                <td className="px-4 py-3 text-right border-r dark:border-gray-700 bg-gray-50/30 dark:bg-transparent">
+                                  <div className="tabular-nums font-medium">{fmtNum(igstAmt)}</div>
+                                  <div className="text-[9px] text-gray-400">{item.taxStructure?.igst}%</div>
+                                </td>
+                              )}
+                              <td className="px-4 py-3 text-right font-semibold tabular-nums text-gray-800 dark:text-gray-200 bg-blue-50/20 dark:bg-blue-900/5">
+                                {fmtNum(rowTotal)}
+                              </td>
+                            </tr>
+                          );
                         })}
-                      </td>
-                    </tr>
+                      </tbody>
+                    </table>
+                  </div>
 
-                    {/* 2. Calculated Tax Amount (Sum of all item taxes) */}
-                    <tr className="text-gray-500 border-b border-gray-100 dark:border-gray-800">
-                      <td
-                        colSpan={isInState ? 7 : 6}
-                        className="px-4 py-2 text-right text-[10px] uppercase font-bold tracking-wider"
-                      >
-                        {isInState ? "Tax Amount (CGST + SGST)" : "Tax Amount (IGST)"}
-                      </td>
-                      <td className="px-4 py-2 text-right font-mono font-bold text-amber-600">
-                        {vendor.quoteItems
-                          ?.reduce((acc, item) => {
-                            const taxableValue =
-                              (item.quantity || 0) * (item.quotedUnitRate || 0);
-                            const tax = isInState
-                              ? (taxableValue * ((item.taxStructure?.cgst || 0) + (item.taxStructure?.sgst || 0))) / 100
-                              : (taxableValue * (item.taxStructure?.igst || 0)) / 100;
-                            return acc + tax;
-                          }, 0)
-                          .toLocaleString(undefined, {
-                            minimumFractionDigits: 2,
-                          })}
-                      </td>
-                    </tr>
-
-                    {/* 3. Grand Total (Base + Tax) */}
-                    <tr className="bg-blue-600 dark:bg-blue-500 text-white">
-                      <td colSpan={isInState ? 7 : 6} className="px-4 py-4 text-right">
-                        <div className="text-xs font-black uppercase tracking-widest opacity-90 text-white">
-                          Net Payable Amount
-                        </div>
-                        <div className="text-[9px] italic opacity-80 text-blue-100 uppercase tracking-tighter">
-                          (Base Value + Calculated GST)
-                        </div>
-                      </td>
-                      <td className="px-4 py-4 text-right bg-blue-700 dark:bg-blue-600">
-                        <span className="text-xs mr-1 font-semibold">₹</span>
-                        <span className="text-lg font-black font-mono">
-                          {(
-                            (vendor.totalQuotedValue || 0) +
-                            vendor.quoteItems?.reduce((acc, item) => {
-                              const taxableValue =
-                                (item.quantity || 0) *
-                                (item.quotedUnitRate || 0);
-                              const tax = isInState
-                                ? (taxableValue * ((item.taxStructure?.cgst || 0) + (item.taxStructure?.sgst || 0))) / 100
-                                : (taxableValue * (item.taxStructure?.igst || 0)) / 100;
-                              return acc + tax;
-                            }, 0)
-                          ).toLocaleString(undefined, {
-                            minimumFractionDigits: 2,
-                          })}
+                  {/* ── Summary panel — outside scroll so it's always fully visible ── */}
+                  <div className="border-t-2 border-gray-200 dark:border-gray-700 px-6 py-4 bg-gray-50/50 dark:bg-gray-900/50 flex justify-end">
+                    <div className="w-72 space-y-2 text-sm">
+                      {/* Base Value */}
+                      <div className="flex justify-between items-center">
+                        <span className="text-[11px] font-bold uppercase tracking-wider text-gray-400">
+                          Base Value
                         </span>
-                      </td>
-                    </tr>
-                  </tfoot>
-                </table>
-              </div>
-            )}
+                        <span className="tabular-nums font-semibold text-gray-800 dark:text-gray-200">
+                          ₹ {fmtNum(vendor.totalQuotedValue)}
+                        </span>
+                      </div>
+                      {/* Tax */}
+                      <div className="flex justify-between items-center pb-3 border-b border-gray-200 dark:border-gray-700">
+                        <span className="text-[11px] font-bold uppercase tracking-wider text-gray-400">
+                          {isInState ? "Tax (CGST + SGST)" : "Tax (IGST)"}
+                        </span>
+                        <span className="tabular-nums font-semibold text-amber-600 dark:text-amber-400">
+                          + ₹ {fmtNum(totalTaxAmt)}
+                        </span>
+                      </div>
+                      {/* Net Payable */}
+                      <div className="flex justify-between items-center pt-1">
+                        <div>
+                          <p className="text-xs font-black uppercase tracking-widest text-blue-700 dark:text-blue-400">
+                            Net Payable
+                          </p>
+                          <p className="text-[9px] text-gray-400 mt-0.5 italic">
+                            Base Value + GST
+                          </p>
+                        </div>
+                        <div className="text-right">
+                          <span className="text-[11px] font-semibold text-blue-700 dark:text-blue-400 mr-1">₹</span>
+                          <span className="text-xl font-black tabular-nums text-blue-700 dark:text-blue-400">
+                            {fmtNum(netPayableAmt)}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </>
+              );
+            })()}
           </div>
         </div>
       </div>

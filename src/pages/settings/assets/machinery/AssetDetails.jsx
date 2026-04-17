@@ -124,7 +124,7 @@ const AssetDetails = () => {
   if (!data) return <div className="p-10 text-center">Asset not found</div>;
 
   return (
-    <div className="min-h-screen text-gray-800 dark:text-gray-200 font-sans pb-10">
+    <div className="h-full overflow-y-auto no-scrollbar text-gray-800 dark:text-gray-200 font-sans pb-10">
       
       <div className="bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 sticky top-0 z-10">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">

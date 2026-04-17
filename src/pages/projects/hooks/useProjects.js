@@ -265,7 +265,7 @@ export const useAllowedQuantities = (tenderId) => {
       const { data } = await api.get(
         `/raquantities/quantites/allowed/${tenderId}/contractor`,
       );
-      return data?.data || [];
+     return Array.isArray(data?.data) ? data.data : [];
     },
     enabled: !!tenderId,
     staleTime: 5 * 60 * 1000, // Cache for 5 mins

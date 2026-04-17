@@ -146,7 +146,7 @@ const ViewWOIssuance = () => {
       `}</style>
 
       {/* ── SCREEN VIEW ─────────────────────────────────────────────────────── */}
-      <div className="min-h-full dark:bg-[#0b0f19] p-5 pb-16 font-roboto-flex print:hidden">
+      <div className="h-full overflow-y-auto no-scrollbar dark:bg-[#0b0f19] p-5 pb-16 font-roboto-flex print:hidden">
         <div className="max-w-6xl mx-auto space-y-5">
 
           {/* ── Top bar ── */}

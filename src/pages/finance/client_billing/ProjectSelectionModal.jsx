@@ -10,7 +10,9 @@ const inputCls = "w-full border border-gray-200 dark:border-gray-700 rounded-lg 
 const SearchableSelect = ({ options = [], value, onChange, placeholder = "Search...", disabled = false, isLoading = false }) => {
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState("");
+  const [highlightedIndex, setHighlightedIndex] = useState(-1);
   const ref = useRef(null);
+  const listRef = useRef(null);
 
   useEffect(() => {
     const h = (e) => { if (ref.current && !ref.current.contains(e.target)) setOpen(false); };
@@ -18,8 +20,47 @@ const SearchableSelect = ({ options = [], value, onChange, placeholder = "Search
     return () => document.removeEventListener("mousedown", h);
   }, []);
 
+  // Reset highlight when search changes
+  useEffect(() => { setHighlightedIndex(-1); }, [search]);
+
   const filtered = options.filter(o => o.label.toLowerCase().includes(search.toLowerCase()));
   const selected = options.find(o => o.value === value);
+
+  const selectOption = (opt) => {
+    onChange(opt);
+    setOpen(false);
+    setSearch("");
+    setHighlightedIndex(-1);
+  };
+
+  const scrollToIndex = (idx) => {
+    if (listRef.current) {
+      const item = listRef.current.children[idx];
+      if (item) item.scrollIntoView({ block: "nearest" });
+    }
+  };
+
+  const handleSearchKeyDown = (e) => {
+    if (e.key === "ArrowDown") {
+      e.preventDefault();
+      const next = highlightedIndex < filtered.length - 1 ? highlightedIndex + 1 : 0;
+      setHighlightedIndex(next);
+      scrollToIndex(next);
+    } else if (e.key === "ArrowUp") {
+      e.preventDefault();
+      const prev = highlightedIndex > 0 ? highlightedIndex - 1 : filtered.length - 1;
+      setHighlightedIndex(prev);
+      scrollToIndex(prev);
+    } else if (e.key === "Enter") {
+      e.preventDefault();
+      if (highlightedIndex >= 0 && filtered[highlightedIndex]) {
+        selectOption(filtered[highlightedIndex]);
+      }
+    } else if (e.key === "Escape") {
+      setOpen(false);
+      setSearch("");
+    }
+  };
 
   return (
     <div className="relative w-full" ref={ref}>
@@ -44,13 +85,13 @@ const SearchableSelect = ({ options = [], value, onChange, placeholder = "Search
             <input
               autoFocus type="text" value={search}
               onChange={e => setSearch(e.target.value)}
+              onKeyDown={handleSearchKeyDown}
               placeholder="Type to search..."
               onClick={e => e.stopPropagation()}
-              onKeyDown={e => e.stopPropagation()}
               className="w-full text-sm px-2 py-1.5 border border-gray-200 dark:border-gray-600 rounded bg-gray-50 dark:bg-gray-900 dark:text-white focus:outline-none focus:border-blue-400"
             />
           </div>
-          <div className="overflow-y-auto">
+          <div ref={listRef} className="overflow-y-auto">
             {isLoading ? (
               <p className="text-xs text-gray-400 px-3 py-2 flex items-center gap-2">
                 <span className="w-3 h-3 border-2 border-gray-300 border-t-blue-500 rounded-full animate-spin inline-block" />
@@ -59,15 +100,20 @@ const SearchableSelect = ({ options = [], value, onChange, placeholder = "Search
             ) : filtered.length === 0 ? (
               <p className="text-xs text-gray-400 px-3 py-2">No projects found</p>
             ) : (
-              filtered.map(o => (
+              filtered.map((o, idx) => (
                 <div
                   key={o.value}
-                  onClick={() => { onChange(o); setOpen(false); setSearch(""); }}
-                  className={`px-3 py-2 cursor-pointer hover:bg-blue-50 dark:hover:bg-blue-900/20 ${
-                    o.value === value ? "bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 font-medium" : "text-gray-700 dark:text-gray-300"
+                  onMouseDown={(e) => { e.preventDefault(); selectOption(o); }}
+                  onMouseEnter={() => setHighlightedIndex(idx)}
+                  className={`px-3 py-2 cursor-pointer text-sm ${
+                    idx === highlightedIndex
+                      ? "bg-blue-600 text-white"
+                      : o.value === value
+                        ? "bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 font-medium"
+                        : "text-gray-700 dark:text-gray-300 hover:bg-blue-50 dark:hover:bg-blue-900/20"
                   }`}
                 >
-                  <span className="text-sm">{o.label}</span>
+                  {o.label}
                 </div>
               ))
             )}

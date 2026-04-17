@@ -329,12 +329,16 @@ const Table = ({
     setVisibleColumns(newVisible);
 
     const savedOrder = Array.isArray(p.columnOrder) ? p.columnOrder : [];
-    const validSavedOrder = savedOrder.filter((k) =>
-      columns.some((c) => c.key === k),
-    );
-    const missingKeys = columns
-      .map((c) => c.key)
-      .filter((k) => !validSavedOrder.includes(k));
+    const allKeys = columns.map((c) => c.key);
+    // Only restore saved order when it was saved for the same column set.
+    // If the fingerprint differs (e.g. stale data from a different table that
+    // shares the same storageKey), fall back to the default column order so
+    // that no column accidentally ends up in the wrong position.
+    const orderIsCompatible = p.columnsKey === columnsKey;
+    const validSavedOrder = orderIsCompatible
+      ? savedOrder.filter((k) => columns.some((c) => c.key === k))
+      : [];
+    const missingKeys = allKeys.filter((k) => !validSavedOrder.includes(k));
     setColumnOrder([...validSavedOrder, ...missingKeys]);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [storageKey, columnsKey]);
@@ -349,12 +353,12 @@ const Table = ({
         .filter((k) => !visibleColumns.has(k));
       localStorage.setItem(
         storageKey,
-        JSON.stringify({ hiddenColumns, density, viewMode, columnOrder }),
+        JSON.stringify({ hiddenColumns, density, viewMode, columnOrder, columnsKey }),
       );
     } catch (e) {
       console.warn("Could not save table preferences to localStorage", e);
     }
-  }, [visibleColumns, density, viewMode, columnOrder, storageKey, columns]);
+  }, [visibleColumns, density, viewMode, columnOrder, storageKey, columns, columnsKey]);
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),

@@ -1,22 +1,10 @@
 import React, { useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import {
-  FiArrowLeft,
-  FiMapPin,
-  FiShield,
-  FiActivity,
-  FiPhone,
-  FiMail,
-  FiCalendar,
-  FiCheckCircle,
-  FiEye,
-  FiPlus,
-  FiEdit2,
-  FiTrash2,
-  FiLayers,
-  FiCornerDownRight,
-  FiUser,
-  FiGlobe,
+  FiArrowLeft, FiMapPin, FiShield, FiActivity, FiPhone, FiMail,
+  FiCalendar, FiCheckCircle, FiLayers, FiCornerDownRight,
+  FiUser, FiGlobe, FiBriefcase, FiHash, FiClock, FiExternalLink,
+  FiEye, FiPlus, FiEdit2, FiTrash2 
 } from "react-icons/fi";
 import AssignSitesModal from "./AssignSiteModal";
 import { useAssignSitesToUser, useUserData } from "./hooks/useUsers";
@@ -25,442 +13,349 @@ import Loader from "../../../components/Loader";
 const ViewUser = () => {
   const location = useLocation();
   const navigate = useNavigate();
-
   const targetId = location.state?.item?.employeeId;
   const [showSiteModal, setShowSiteModal] = useState(false);
 
-  // --- TanStack Query Hooks ---
+  // --- Data Layer ---
   const { data: user, isLoading, isError } = useUserData(targetId);
   const { mutateAsync: assignSites } = useAssignSitesToUser(targetId);
 
-  // --- Helpers ---
-  const formatDate = (dateString) => {
-    if (!dateString) return "-";
-    return new Date(dateString).toLocaleDateString("en-GB", {
-      day: "numeric",
-      month: "long",
-      year: "numeric",
-    });
-  };
+  // --- Formatting Helpers ---
+  const formatDate = (date) => date ? new Date(date).toLocaleDateString("en-GB", {
+    day: "2-digit", month: "short", year: "numeric"
+  }) : "—";
 
   const hasActivePermissions = (data) => {
     if (!data) return false;
     if (data.read || data.create || data.edit || data.delete) return true;
-    return Object.values(data).some(
-      (val) => typeof val === "object" && hasActivePermissions(val),
-    );
+    return Object.values(data).some(val => typeof val === "object" && hasActivePermissions(val));
   };
 
-  // Handle Saving Sites
-  const handleAssignSites = async (selectedSiteIds) => {
-    await assignSites(selectedSiteIds);
-    setShowSiteModal(false);
-  };
-
-  // Extract initial IDs for the modal
-  const getInitialSiteIds = () => {
-    if (!user?.assignedProject) return [];
-    if (Array.isArray(user.assignedProject)) {
-      return user.assignedProject.map((p) =>
-        typeof p === "object" ? p._id : p,
-      );
-    }
-    return typeof user.assignedProject === "object"
-      ? [user.assignedProject._id]
-      : [user.assignedProject];
-  };
-
-  // --- Render States ---
-  if (!targetId) {
-    return (
-      <div className="flex h-screen items-center justify-center text-red-500 font-medium">
-        No user ID provided
-      </div>
-    );
-  }
-
-  if (isLoading) {
-    return <Loader />;
-  }
-
-  if (isError || !user) {
-    return (
-      <div className="flex h-screen items-center justify-center text-red-500 font-medium">
-        Failed to load user details
-      </div>
-    );
-  }
+  if (isLoading) return <div className="h-screen flex items-center justify-center bg-slate-50"><Loader /></div>;
+  if (isError || !user || !targetId) return <ErrorState message={!targetId ? "Null Reference" : "Data Sync Error"} />;
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-overall_bg-dark font-layout-font pb-20">
-      <div className="sticky top-0 z-30 bg-white/80 dark:bg-layout-dark/90 backdrop-blur-md border-b border-gray-200 dark:border-gray-800">
-        <div className="max-w-7xl mx-auto px-6 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <button
-                onClick={() => navigate(-1)}
-                className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors text-gray-500"
-              >
-                <FiArrowLeft size={20} />
-              </button>
+    <div className="h-screen flex flex-col overflow-hidden bg-[#F1F5F9] dark:bg-[#0b0f19] font-sans">
+      
+      {/* ── FIXED ERP CONTROL HEADER ── */}
+      <header className="flex-none bg-white/90 dark:bg-gray-900/90 backdrop-blur-xl border-b border-slate-200 dark:border-gray-800 z-50 px-8 py-5">
+        <div className="max-w-[1600px] mx-auto flex items-center justify-between">
+          <div className="flex items-center gap-6">
+            <button
+              onClick={() => navigate(-1)}
+              className="p-3 rounded-2xl border border-slate-200 dark:border-gray-700 hover:bg-slate-50 dark:hover:bg-gray-800 transition-all text-slate-400 hover:text-indigo-600 shadow-sm"
+            >
+              <FiArrowLeft size={22} />
+            </button>
+            
+            <div className="h-12 w-0.5 bg-slate-200 dark:bg-gray-700 mx-2" />
 
-              <div>
-                <h1 className="text-lg font-bold text-gray-900 dark:text-white flex items-center gap-2">
-                  {user.name}
-                  {user.status === "Active" ? (
-                    <span className="px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700 text-[10px] font-bold border border-emerald-200">
-                      ACTIVE
-                    </span>
-                  ) : (
-                    <span className="px-2 py-0.5 rounded-full bg-gray-100 text-gray-600 text-[10px] font-bold border border-gray-200">
-                      INACTIVE
-                    </span>
-                  )}
+            <div>
+              <div className="flex items-center gap-3">
+                <h1 className="text-2xl font-black text-slate-900 dark:text-white tracking-tighter uppercase italic">
+                  Employee <span className="text-indigo-600">Dossier</span>
                 </h1>
-
-                <div className="flex items-center gap-3 text-xs text-gray-500 dark:text-gray-400 mt-0.5">
-                  <span className="font-mono">{user.employeeId}</span>
-                  <span>•</span>
-                  <span>{user.designation}</span>
-                  <span className="font-semibold text-xs italic text-gray-900 dark:text-white">
-                    {user.accessMode || "No Access Mode"}
-                  </span>
-                </div>
+                <StatusBadge status={user.status} />
+              </div>
+              <div className="flex items-center gap-4 mt-1">
+                <span className="flex items-center gap-1.5 text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                  <FiHash className="text-indigo-500" /> {user.employeeId}
+                </span>
+                <span className="flex items-center gap-1.5 text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                  <FiShield className="text-indigo-500" /> {user.role?.roleName || "UNASSIGNED"}
+                </span>
               </div>
             </div>
+          </div>
 
-            <div className="hidden sm:flex items-center gap-3">
-              <button
-                onClick={() => setShowSiteModal(true)}
-                className="flex items-center gap-2 py-2 px-3 rounded-md text-sm text-white bg-darkest-blue font-light font-roboto-flex"
-              >
-                <FiMapPin /> Assign Sites
-              </button>
-            </div>
+          <div className="flex items-center gap-4">
+            <button
+              onClick={() => setShowSiteModal(true)}
+              className="flex items-center gap-2 px-6 py-3 rounded-2xl bg-slate-900 dark:bg-indigo-600 text-white text-[11px] font-black uppercase tracking-[0.15em] shadow-xl hover:shadow-indigo-200/50 hover:-translate-y-0.5 transition-all active:scale-95"
+            >
+              <FiMapPin size={16} /> Update Site Assignments
+            </button>
           </div>
         </div>
-      </div>
+      </header>
 
-      <div className="max-w-7xl mx-auto px-6 py-8 space-y-4">
-        {/* --- Top Row: Profile & Contact --- */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
-          {/* 1. Main Profile Card */}
-          <div className="lg:col-span-2 bg-white dark:bg-layout-dark rounded-2xl p-6 shadow-sm border border-gray-200 dark:border-gray-800 flex flex-col justify-between">
-            <div className="flex flex-col sm:flex-row gap-6">
-              {/* Avatar */}
-              <div className="h-24 w-24 rounded-2xl bg-gradient-to-br from-blue-500 to-blue-700 flex items-center justify-center text-4xl font-bold text-white shadow-lg shadow-blue-500/20 flex-shrink-0">
-                {user.name?.charAt(0).toUpperCase()}
-              </div>
-
-              {/* Info Grid */}
-              <div className="flex-1 grid grid-cols-1 sm:grid-cols-2 gap-y-4 gap-x-8">
-                <DetailItem
-                  icon={<FiMail className="text-gray-400" />}
-                  label="Email"
-                  value={user.email}
-                  isLink
-                  prefix="mailto:"
-                />
-                <DetailItem
-                  icon={<FiPhone className="text-gray-400" />}
-                  label="Phone"
-                  value={user.phone}
-                  isLink
-                  prefix="tel:"
-                />
-                <DetailItem
-                  icon={<FiCalendar className="text-gray-400" />}
-                  label="Joined Date"
-                  value={formatDate(user.dateOfJoining)}
-                />
-                <DetailItem
-                  icon={<FiUser className="text-gray-400" />}
-                  label="User Type"
-                  value={user.userType}
-                />
-              </div>
-            </div>
-            <div className="">
-              <span className=" w-3/4 px-3 py-1.5 rounded-lg text-xs font-bold bg-indigo-50 text-indigo-700 border border-indigo-100 dark:bg-indigo-900/30 dark:text-indigo-300 dark:border-indigo-800 flex items-center gap-2">
-                <FiShield /> {user.role?.roleName || "No Role"}
-              </span>
-              <span className="font-semibold text-xs italic text-gray-900 dark:text-white">
-                {user.designation || "No Designation"}
-              </span>
-              <br />
-            </div>
-
-            {/* Address Strip */}
-            <div className="mt-6 pt-6 border-t border-dashed border-gray-200 dark:border-gray-700">
-              <div className="flex items-start gap-3">
-                <FiMapPin className="text-red-500 mt-1 flex-shrink-0" />
-                <div className="text-sm text-gray-600 dark:text-gray-300 leading-relaxed">
-                  <span className="font-semibold text-gray-900 dark:text-white">
-                    Residential Address:
-                  </span>
-                  <br />
-                  {user.address?.street}, {user.address?.city},{" "}
-                  {user.address?.state} -{" "}
-                  <span className="font-mono">{user.address?.pincode}</span>
+      {/* ── SCROLLABLE DOSSIER BODY ── */}
+      <main className="flex-1 overflow-y-auto p-8 custom-scrollbar">
+        <div className="max-w-[1600px] mx-auto space-y-8 pb-20">
+          
+          {/* TOP SECTION: PROFILE & ASSIGNMENTS */}
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+            
+            {/* 1. Core Identity Panel */}
+            <div className="lg:col-span-8 bg-white dark:bg-gray-900 rounded-[32px] border border-slate-200 dark:border-gray-800 shadow-sm overflow-hidden flex flex-col">
+              <div className="p-6 flex flex-col md:flex-row gap-10 items-start">
+                <div className="relative group">
+                    <div className="h-36 w-36 rounded-[40px] bg-gradient-to-br from-slate-800 to-black flex items-center justify-center text-5xl font-black text-white shadow-2xl border-8 border-slate-50 dark:border-gray-800">
+                    {user.name?.charAt(0).toUpperCase()}
+                    </div>
+                    <div className="absolute -bottom-2 -right-2 bg-emerald-500 border-4 border-white dark:border-gray-900 w-8 h-8 rounded-full shadow-lg" />
                 </div>
+
+                <div className="flex-1 space-y-8">
+                  <div>
+                    <h2 className="text-3xl font-black text-slate-900 dark:text-white uppercase tracking-tighter">
+                      {user.name}
+                    </h2>
+                    <p className="text-indigo-500 font-bold text-xs uppercase tracking-[0.3em] mt-1 italic">
+                      {user.designation || "General Staff"} • {user.userType}
+                    </p>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-y-6 gap-x-12">
+                    <DetailItem icon={<FiMail />} label="Corporate Email" value={user.email} isLink prefix="mailto:" />
+                    <DetailItem icon={<FiPhone />} label="Primary Phone" value={user.phone} isLink prefix="tel:" />
+                    <DetailItem icon={<FiCalendar />} label="Joining Date" value={formatDate(user.dateOfJoining)} />
+                    <DetailItem icon={<FiClock />} label="System Access" value={user.accessMode || "Standard"} />
+                  </div>
+                </div>
+              </div>
+              
+              {/* Residential Ribbon */}
+              <div className="mt-auto bg-slate-50 dark:bg-gray-800/50 px-10 py-5 border-t border-slate-100 dark:border-gray-700 flex items-center gap-4">
+                <div className="bg-white dark:bg-gray-700 p-2 rounded-lg shadow-sm">
+                    <FiMapPin className="text-rose-500" size={16} />
+                </div>
+                <p className="text-[11px] font-bold text-slate-500 dark:text-gray-400 uppercase tracking-tight leading-relaxed">
+                  Registry Address: {user.address?.street}, {user.address?.city}, {user.address?.state} — {user.address?.pincode}
+                </p>
+              </div>
+            </div>
+
+            {/* 2. Site Assignments Sidebar */}
+            <div className="lg:col-span-4 space-y-4">
+              <div className="flex items-center justify-between px-2 mb-2">
+                <h3 className="text-[11px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
+                    <FiGlobe className="text-indigo-500" /> Active Tenders
+                </h3>
+                <span className="bg-slate-900 text-white text-[9px] font-black px-2 py-0.5 rounded tracking-tighter">
+                  {user.assignedProject?.length || 0} DEPLOYED
+                </span>
+              </div>
+              
+              <div className="space-y-3 overflow-y-auto max-h-[460px] pr-2 custom-scrollbar">
+                {Array.isArray(user.assignedProject) && user.assignedProject.length > 0 ? (
+                  user.assignedProject.map((p, i) => (
+                    <TenderCard key={p._id || i} project={p} />
+                  ))
+                ) : (
+                  <EmptyAssignmentState />
+                )}
               </div>
             </div>
           </div>
 
-          {/* 2. Right Column: Assigned Sites & Emergency (Stacked) */}
-          <div className="space-y-6">
-            {/* A. Assigned Sites Card */}
-            <div className="bg-white dark:bg-layout-dark rounded-2xl p-5 shadow-sm border border-gray-200 dark:border-gray-800 h-fit">
-              <div className="flex justify-between items-center mb-4">
-                <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider flex items-center gap-2">
-                  <FiGlobe className="text-blue-500" /> Assigned Sites /
-                  Projects
-                </h3>
+          {/* MIDDLE ROW: COMPLIANCE & EMERGENCY */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+            <div className="bg-white dark:bg-gray-900 rounded-[28px] p-8 border border-slate-200 dark:border-gray-800 flex items-center gap-6 shadow-sm">
+              <div className="p-5 bg-amber-50 dark:bg-amber-900/20 text-amber-600 rounded-3xl border border-amber-100 dark:border-amber-800">
+                <FiShield size={32} />
               </div>
-
-              {Array.isArray(user.assignedProject) &&
-              user.assignedProject.length > 0 ? (
-                <div className="flex flex-col gap-2">
-                  {user.assignedProject.map((p, i) => (
-                    <div
-                      key={p._id || i}
-                      className="w-full flex items-center justify-between p-3 bg-blue-50 dark:bg-blue-900/10 rounded-xl border border-blue-100 dark:border-blue-800"
-                    >
-                      <div className="flex flex-col overflow-hidden mr-2">
-                        <span
-                          className="text-sm font-bold text-blue-700 dark:text-blue-300 truncate"
-                          title={p.tender_project_name}
-                        >
-                          {p.tender_project_name || "Untitled Project"}
-                        </span>
-                        <span className="text-[10px] font-mono font-medium text-blue-500 dark:text-blue-400">
-                          {p.tender_id}
-                        </span>
-                      </div>
-                      <FiCheckCircle
-                        className="text-blue-500 dark:text-blue-400 flex-shrink-0"
-                        size={16}
-                      />
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="text-center py-6 bg-gray-50 dark:bg-gray-800 rounded-xl border border-dashed border-gray-200 dark:border-gray-700">
-                  <span className="text-xs text-gray-400 font-medium">
-                    No projects assigned currently
-                  </span>
-                </div>
-              )}
+              <div>
+                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Identity Document ({user.idProof?.type})</p>
+                <p className="text-2xl font-mono font-black text-slate-900 dark:text-gray-100 tracking-wider">
+                  {user.idProof?.number || "NOT_LOGGED"}
+                </p>
+              </div>
             </div>
 
-            {/* B. Emergency Contact Card */}
-            <div className="bg-white dark:bg-layout-dark rounded-2xl p-5 shadow-sm border border-gray-200 dark:border-gray-800 h-fit relative overflow-hidden">
-              <div className="absolute top-0 left-0 w-1 h-full bg-rose-500"></div>
-              <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-4 flex items-center gap-2">
-                <FiActivity className="text-rose-500" /> Emergency Contact
-              </h3>
-
-              <div className="space-y-1">
-                <p className="text-lg font-bold text-gray-900 dark:text-white leading-none">
-                  {user.emergencyContact?.name || "N/A"}
-                </p>
-                <p className="text-xs text-gray-500 uppercase font-medium tracking-wide">
-                  {user.emergencyContact?.relationship || "Relation N/A"}
-                </p>
+            <div className="bg-white dark:bg-gray-900 rounded-[28px] p-8 border-l-8 border-rose-500 border border-slate-200 dark:border-gray-800 flex items-center justify-between shadow-sm relative overflow-hidden">
+              <div className="flex items-center gap-6">
+                <div className="p-5 bg-rose-50 dark:bg-rose-900/20 text-rose-600 rounded-3xl">
+                  <FiActivity size={32} />
+                </div>
+                <div>
+                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Emergency POC</p>
+                  <p className="text-xl font-black text-slate-900 dark:text-gray-100 uppercase italic tracking-tighter">{user.emergencyContact?.name || "N/A"}</p>
+                  <p className="text-[10px] font-bold text-rose-500 uppercase tracking-widest mt-1">{user.emergencyContact?.relationship || "Relation Unknown"}</p>
+                </div>
               </div>
-
               {user.emergencyContact?.phone && (
-                <a
-                  href={`tel:${user.emergencyContact.phone}`}
-                  className="mt-4 flex items-center justify-center gap-2 w-full py-2 bg-rose-50 dark:bg-rose-900/20 text-rose-600 dark:text-rose-400 rounded-lg text-sm font-bold hover:bg-rose-100 dark:hover:bg-rose-900/40 transition-colors"
-                >
-                  <FiPhone size={14} /> {user.emergencyContact.phone}
+                <a href={`tel:${user.emergencyContact.phone}`} className="p-4 bg-slate-900 text-white rounded-2xl shadow-xl hover:scale-110 transition-transform active:scale-90">
+                  <FiPhone size={20} />
                 </a>
               )}
             </div>
           </div>
-        </div>
 
-        {/* --- Middle Row: Identity Proof --- */}
-        <div className="bg-white dark:bg-layout-dark rounded-2xl p-6 shadow-sm border border-gray-200 dark:border-gray-800 flex items-center gap-4">
-          <div className="p-3 bg-amber-50 dark:bg-amber-900/20 text-amber-600 rounded-xl">
-            <FiShield size={24} />
-          </div>
-          <div>
-            <p className="text-xs text-gray-500 uppercase font-bold tracking-wider">
-              Identity Proof ({user.idProof?.type})
-            </p>
-            <p className="text-lg font-mono font-medium text-gray-900 dark:text-gray-200 mt-0.5 tracking-wide">
-              {user.idProof?.number || "Not Submitted"}
-            </p>
-          </div>
-        </div>
-
-        {/* --- Bottom Row: Role & Permissions --- */}
-        {user.role?.permissions &&
-          hasActivePermissions(user.role.permissions) && (
-            <section className="animate-fade-in-up">
-              <div className="flex items-center justify-between mb-6">
-                <h3 className="text-lg font-bold text-gray-900 dark:text-white flex items-center gap-2">
-                  <span className="w-1 h-6 bg-indigo-600 rounded-full"></span>
-                  Role Access & Permissions
-                </h3>
-              </div>
-
-              <div className="bg-white dark:bg-layout-dark border border-gray-200 dark:border-gray-800 rounded-xl overflow-hidden shadow-sm">
-                {/* Header Row */}
-                <div className="grid grid-cols-12 bg-gray-50/80 dark:bg-gray-800/80 px-6 py-3 border-b border-gray-200 dark:border-gray-700 text-xs font-bold text-gray-500 uppercase tracking-wider">
-                  <div className="col-span-6 sm:col-span-4">Module Name</div>
-                  <div className="col-span-6 sm:col-span-8 text-right">
-                    Allowed Actions
-                  </div>
+          {/* BOTTOM SECTION: PERMISSION INFRASTRUCTURE */}
+          {user.role?.permissions && hasActivePermissions(user.role.permissions) && (
+            <div className="bg-white dark:bg-gray-900 rounded-[40px] border border-slate-200 dark:border-gray-800 overflow-hidden shadow-sm">
+              <div className="px-10 py-8 border-b border-slate-100 dark:border-gray-800 flex items-center justify-between bg-slate-50/50 dark:bg-gray-800/30">
+                <div className="flex items-center gap-4">
+                    <div className="h-3 w-3 bg-indigo-600 rounded-full animate-pulse shadow-[0_0_10px_rgba(79,70,229,0.5)]" />
+                    <h3 className="text-sm font-black text-slate-900 dark:text-white uppercase tracking-[0.2em]">Authorized Access Matrix</h3>
                 </div>
-
-                <div className="divide-y divide-gray-100 dark:divide-gray-800">
-                  {Object.entries(user.role.permissions)
-                    .filter(([, data]) => hasActivePermissions(data))
-                    .map(([moduleName, data]) => (
-                      <PermissionRow
-                        key={moduleName}
-                        name={moduleName}
-                        data={data}
-                        hasActivePermissions={hasActivePermissions}
-                      />
-                    ))}
-                </div>
+                <span className="text-[10px] font-bold text-slate-400 italic font-mono">ENCRYPTED_AUTH_DATA</span>
               </div>
-            </section>
+              
+              <div className="divide-y divide-slate-100 dark:divide-gray-800">
+                {Object.entries(user.role.permissions)
+                  .filter(([, data]) => hasActivePermissions(data))
+                  .map(([moduleName, data]) => (
+                    <PermissionModuleRow
+                      key={moduleName}
+                      name={moduleName}
+                      data={data}
+                      hasActivePermissions={hasActivePermissions}
+                    />
+                  ))}
+              </div>
+            </div>
           )}
-      </div>
+        </div>
+      </main>
+
+      {/* SITE ASSIGNMENT MODAL */}
       {showSiteModal && (
         <AssignSitesModal
-          initialSelected={getInitialSiteIds()}
+          initialSelected={getInitialSiteIds(user)}
           onClose={() => setShowSiteModal(false)}
-          onSave={handleAssignSites}
+          onSave={async (selectedIds) => {
+            await assignSites(selectedIds);
+            setShowSiteModal(false);
+          }}
         />
       )}
     </div>
   );
 };
 
-// --- Sub-Components ---
+/* ── REFINED SUB-COMPONENTS ── */
+
+const TenderCard = ({ project }) => (
+  <div className="bg-white dark:bg-gray-900 border border-slate-200 dark:border-gray-800 p-5 rounded-[22px] shadow-sm hover:border-indigo-500 hover:shadow-xl hover:shadow-indigo-500/5 transition-all duration-300 group">
+    <div className="flex justify-between items-start">
+      <div className="space-y-3">
+        <div>
+            <span className="text-[9px] font-black text-indigo-500 uppercase tracking-widest block mb-1">Registry Name</span>
+            <h4 className="text-[13px] font-black text-slate-800 dark:text-gray-100 leading-tight line-clamp-2" title={project.tender_project_name}>
+            {project.tender_project_name || "Undefined Project"}
+            </h4>
+        </div>
+        <div className="flex items-center gap-2">
+            <span className="text-[10px] font-mono font-bold text-slate-400 bg-slate-50 dark:bg-gray-800 px-2 py-0.5 rounded border border-slate-100 dark:border-gray-700">
+                {project.tender_id}
+            </span>
+            <FiExternalLink className="text-slate-300 group-hover:text-indigo-500 transition-colors" size={12} />
+        </div>
+      </div>
+      <div className="bg-slate-50 dark:bg-gray-800 p-3 rounded-2xl text-slate-400 group-hover:bg-indigo-600 group-hover:text-white transition-all shadow-inner">
+        <FiGlobe size={18} />
+      </div>
+    </div>
+  </div>
+);
 
 const DetailItem = ({ icon, label, value, isLink, prefix }) => (
-  <div>
-    <dt className="text-xs text-gray-500 dark:text-gray-400 mb-1 flex items-center gap-1.5">
-      {icon} {label}
+  <div className="flex flex-col gap-1.5">
+    <dt className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
+      <span className="text-indigo-500/60">{icon}</span> {label}
     </dt>
-    <dd className="text-sm font-semibold text-gray-900 dark:text-white truncate">
+    <dd className="text-[14px] font-bold text-slate-800 dark:text-gray-200 truncate">
       {isLink && value ? (
-        <a
-          href={`${prefix}${value}`}
-          className="hover:text-blue-600 transition-colors"
-        >
-          {value}
-        </a>
+        <a href={`${prefix}${value}`} className="hover:text-indigo-600 underline decoration-indigo-200/50 decoration-2 underline-offset-4">{value}</a>
       ) : (
-        value || "-"
+        value || "NOT_SET"
       )}
     </dd>
   </div>
 );
 
-const PermissionRow = ({ name, data, hasActivePermissions }) => {
-  const isDirectActions =
-    Object.hasOwn(data, "read") || Object.hasOwn(data, "create");
-
-  if (isDirectActions) {
-    return (
-      <div className="grid grid-cols-12 px-6 py-4 items-center hover:bg-gray-50 dark:hover:bg-gray-800/30 transition-colors">
-        <div className="col-span-6 sm:col-span-4 flex items-center gap-3">
-          <div className="p-1.5 rounded-lg bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400">
-            <FiLayers size={16} />
-          </div>
-          <span className="font-semibold text-gray-800 dark:text-gray-200 capitalize text-sm">
-            {name.replace(/_/g, " ")}
-          </span>
-        </div>
-        <div className="col-span-6 sm:col-span-8 flex justify-end">
-          <ActionTags actions={data} />
-        </div>
-      </div>
-    );
-  }
-
-  const activeSubmodules = Object.entries(data).filter(([, actions]) =>
-    hasActivePermissions(actions),
-  );
-
+const PermissionModuleRow = ({ name, data, hasActivePermissions }) => {
+  const isDirect = Object.hasOwn(data, "read") || Object.hasOwn(data, "create");
+  
   return (
-    <div className="group">
-      {/* Parent Module Title */}
-      <div className="bg-gray-50/50 dark:bg-gray-800/40 px-6 py-3 border-b border-gray-100 dark:border-gray-800 flex items-center gap-2">
-        <FiLayers className="text-gray-400" size={14} />
-        <span className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wide">
+    <div className="px-10 py-8 group hover:bg-slate-50/50 dark:hover:bg-gray-800/20 transition-colors">
+      <div className="flex items-center gap-4 mb-6">
+        <div className="bg-indigo-600 text-white p-2 rounded-xl shadow-lg shadow-indigo-200">
+            <FiBriefcase size={16} />
+        </div>
+        <span className="text-[13px] font-black text-slate-900 dark:text-white uppercase tracking-widest">
           {name.replace(/_/g, " ")} Module
         </span>
       </div>
-
-      {/* Child Rows */}
-      {activeSubmodules.map(([subName, actions]) => (
-        <div
-          key={subName}
-          className="grid grid-cols-12 px-6 py-3 items-center border-b border-gray-50 dark:border-gray-800 last:border-0 hover:bg-gray-50 dark:hover:bg-gray-800/30 transition-colors"
-        >
-          <div className="col-span-6 sm:col-span-4 flex items-center gap-3 pl-4 border-l-2 border-gray-200 dark:border-gray-700 ml-1">
-            <FiCornerDownRight className="text-gray-300" size={14} />
-            <span
-              className="text-sm font-medium text-gray-700 dark:text-gray-300 capitalize truncate"
-              title={subName}
-            >
-              {subName.replace(/_/g, " ")}
-            </span>
-          </div>
-          <div className="col-span-6 sm:col-span-8 flex justify-end">
-            <ActionTags actions={actions} />
-          </div>
+      
+      {isDirect ? (
+        <div className="flex flex-wrap gap-3 pl-12">
+          <ActionTags actions={data} />
         </div>
-      ))}
-    </div>
-  );
-};
-
-const ActionTags = ({ actions }) => {
-  return (
-    <div className="flex flex-wrap gap-2 justify-end">
-      {actions.read && (
-        <Pill label="View" color="blue" icon={<FiEye size={10} />} />
-      )}
-      {actions.create && (
-        <Pill label="Create" color="emerald" icon={<FiPlus size={10} />} />
-      )}
-      {actions.edit && (
-        <Pill label="Edit" color="amber" icon={<FiEdit2 size={10} />} />
-      )}
-      {actions.delete && (
-        <Pill label="Delete" color="rose" icon={<FiTrash2 size={10} />} />
+      ) : (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 pl-12">
+          {Object.entries(data)
+            .filter(([, actions]) => hasActivePermissions(actions))
+            .map(([subName, actions]) => (
+              <div key={subName} className="bg-white dark:bg-gray-800 p-4 rounded-2xl border border-slate-100 dark:border-gray-700 shadow-sm">
+                <p className="text-[10px] font-black text-slate-400 uppercase mb-3 flex items-center gap-2">
+                  <FiCornerDownRight className="text-indigo-500" /> {subName.replace(/_/g, " ")}
+                </p>
+                <ActionTags actions={actions} />
+              </div>
+            ))}
+        </div>
       )}
     </div>
   );
 };
 
-const Pill = ({ label, color, icon }) => {
-  const styles = {
-    blue: "text-blue-700 bg-blue-50 border-blue-200 dark:bg-blue-900/30 dark:text-blue-300 dark:border-blue-800",
-    emerald:
-      "text-emerald-700 bg-emerald-50 border-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-300 dark:border-emerald-800",
-    amber:
-      "text-amber-700 bg-amber-50 border-amber-200 dark:bg-amber-900/30 dark:text-amber-300 dark:border-amber-800",
-    rose: "text-rose-700 bg-rose-50 border-rose-200 dark:bg-rose-900/30 dark:text-rose-300 dark:border-rose-800",
+const ActionTags = ({ actions }) => (
+  <div className="flex flex-wrap gap-2">
+    {actions.read && <PermissionPill label="Read" color="blue" icon={<FiEye />} />}
+    {actions.create && <PermissionPill label="Write" color="emerald" icon={<FiPlus />} />}
+    {actions.edit && <PermissionPill label="Modify" color="amber" icon={<FiEdit2 />} />}
+    {actions.delete && <PermissionPill label="Purge" color="rose" icon={<FiTrash2 />} />}
+  </div>
+);
+
+const PermissionPill = ({ label, color, icon }) => {
+  const themes = {
+    blue: "bg-blue-50 text-blue-700 border-blue-100 dark:bg-blue-900/30 dark:text-blue-300",
+    emerald: "bg-emerald-50 text-emerald-700 border-emerald-100 dark:bg-emerald-900/30 dark:text-emerald-300",
+    amber: "bg-amber-50 text-amber-700 border-amber-100 dark:bg-amber-900/30 dark:text-amber-300",
+    rose: "bg-rose-50 text-rose-700 border-rose-100 dark:bg-rose-900/30 dark:text-rose-300",
   };
-
   return (
-    <span
-      className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[10px] font-bold uppercase border ${styles[color]}`}
-    >
+    <span className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[9px] font-black uppercase border shadow-sm ${themes[color]}`}>
       {icon} {label}
     </span>
   );
+};
+
+const StatusBadge = ({ status }) => (
+  <span className={`px-4 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-widest border ${
+    status === "Active" ? "bg-emerald-50 text-emerald-600 border-emerald-200" : "bg-slate-100 text-slate-500 border-slate-200"
+  }`}>
+    {status || "Archived"}
+  </span>
+);
+
+const EmptyAssignmentState = () => (
+  <div className="py-12 text-center border-2 border-dashed border-slate-200 dark:border-gray-700 rounded-[32px] bg-slate-50/50">
+    <FiGlobe size={32} className="mx-auto text-slate-200 mb-3" />
+    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">No Active Site Logs</p>
+  </div>
+);
+
+const ErrorState = ({ message }) => (
+  <div className="h-screen flex items-center justify-center bg-slate-50">
+    <div className="text-center p-12 bg-white rounded-[40px] shadow-2xl border border-red-50 max-w-sm mx-auto">
+      <div className="w-20 h-20 bg-red-50 text-red-500 rounded-full flex items-center justify-center mx-auto mb-6">
+        <FiShield size={40} />
+      </div>
+      <h3 className="text-2xl font-black text-slate-900 uppercase italic tracking-tighter mb-2">Sync Denied</h3>
+      <p className="text-slate-500 text-sm leading-relaxed mb-8">{message}</p>
+      <button onClick={() => window.history.back()} className="w-full py-4 bg-slate-900 text-white rounded-2xl font-black uppercase text-xs tracking-widest shadow-xl">Back to Terminal</button>
+    </div>
+  </div>
+);
+
+const getInitialSiteIds = (user) => {
+  if (!user?.assignedProject) return [];
+  return user.assignedProject.map(p => typeof p === "object" ? p._id : p);
 };
 
 export default ViewUser;

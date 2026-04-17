@@ -13,7 +13,7 @@ const fetchBillingList = async (tenderId, params) => {
       todate: params.todate,
     },
   });
-  return data;
+  return data?.data || [];
 };
 
 export const useWeeklyBillingList = (tenderId, queryParams = {}) =>

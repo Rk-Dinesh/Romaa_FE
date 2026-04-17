@@ -27,7 +27,7 @@ const ProjectMaterialQty = () => {
       const res = await axios.get(
         `${API}/raquantities/quantites/${tenderId}/${activeTab}`
       );
-      const { data, freeze } = res.data || {};
+      const { data, freeze } = res?.data?.data || {};
       setFreezed?.(!!freeze);
       setItems(Array.isArray(data) ? data : []);
     } catch (err) {
