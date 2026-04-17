@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+import { createPortal } from "react-dom";
 import { FiChevronDown, FiSearch } from "react-icons/fi";
 
 /**
@@ -32,6 +33,8 @@ const SearchableSelect = ({
   hasError,
   // When true, the trigger shows the raw value (e.g. an ID) instead of the label after selection
   showValueSelected,
+  // Override trigger styling (e.g. "rounded-xl py-3 px-4" for forms with taller inputs)
+  triggerClassName,
   // Wrapper
   label,
   error,
@@ -43,6 +46,7 @@ const SearchableSelect = ({
   const wrapperRef = useRef(null);
   const triggerRef = useRef(null);
   const listRef = useRef(null);
+  const dropdownRef = useRef(null);
 
   // Normalize options to {value, label}
   const normalizedOptions = options.map((opt) =>
@@ -128,9 +132,9 @@ const SearchableSelect = ({
 
   useEffect(() => {
     const handleClickOutside = (e) => {
-      if (wrapperRef.current && !wrapperRef.current.contains(e.target)) {
-        closeDropdown();
-      }
+      const inWrapper = wrapperRef.current?.contains(e.target);
+      const inDropdown = dropdownRef.current?.contains(e.target);
+      if (!inWrapper && !inDropdown) closeDropdown();
     };
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
@@ -189,7 +193,9 @@ const SearchableSelect = ({
       role="combobox"
       aria-expanded={isOpen}
       aria-haspopup="listbox"
-      className={`w-full border rounded-lg px-3 py-2 text-sm bg-white dark:bg-gray-900 dark:text-white flex justify-between items-center transition-all outline-none ${
+      className={`w-full border text-sm bg-white dark:bg-gray-900 dark:text-white flex justify-between items-center transition-all outline-none ${
+        triggerClassName ?? "rounded-lg px-3 py-2"
+      } ${
         disabled
           ? "opacity-50 cursor-not-allowed bg-gray-100 dark:bg-gray-800"
           : "cursor-pointer"
@@ -211,9 +217,11 @@ const SearchableSelect = ({
     </div>
   );
 
-  // Dropdown rendered with fixed positioning to escape overflow/stacking-context issues
-  const dropdown = isOpen && (
+  // Dropdown rendered via portal to document.body so it escapes any ancestor
+  // CSS transform / overflow / stacking-context (e.g. modals with scale-100).
+  const dropdownPanel = isOpen && (
     <div
+      ref={dropdownRef}
       style={{ top: dropdownStyle.top, left: dropdownStyle.left, width: dropdownStyle.width }}
       className="fixed z-[9999] mt-0 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg max-h-56 flex flex-col overflow-hidden"
     >
@@ -261,6 +269,8 @@ const SearchableSelect = ({
       </div>
     </div>
   );
+
+  const dropdown = dropdownPanel && createPortal(dropdownPanel, document.body);
 
   // If label is provided, wrap with label + error
   if (label !== undefined) {
