@@ -6,7 +6,7 @@ import { useParams } from "react-router-dom";
 import { API } from "../../../../../constant";
 // eslint-disable-next-line no-unused-vars
 import { motion, AnimatePresence } from "framer-motion";
-import { Check, ChevronRight, Upload, AlertCircle, Paperclip, CheckCircle2, Clock } from "lucide-react";
+import { Check, ChevronRight, Upload, AlertCircle, CheckCircle2, Clock, Download, X, Image, FileSpreadsheet, FileText, File } from "lucide-react";
 import { PreliminaryProcessContext, usePreliminaryProcess } from "./PreliminaryProcessContext.js";
 import { preliminarySiteWorkTemplate, getPreliminaryStepSchema } from "./StepperConstants.js";
 
@@ -72,9 +72,21 @@ export const PreliminaryProcessProvider = ({ onUploadSuccess, children }) => {
       await axios.post(`${API}/tender/preliminaryaws/step`, formData, {
         headers: { "Content-Type": "multipart/form-data" },
       });
-      setProcessData((prev) => prev.map((s, i) => i === currentStep ? { ...s, completed: true } : s));
+      const refreshed = await axios.get(`${API}/tender/preliminary/${tender_id}`);
+      const savedData = refreshed.data?.processData || [];
+      const updatedData = preliminarySiteWorkTemplate.map((tmpl) => {
+        const saved = savedData.find((d) => d.key === tmpl.key);
+        return {
+          ...tmpl,
+          notes: saved?.notes || "",
+          completed: saved?.completed === true,
+          file_name: saved?.file_name || "",
+          file_url: saved?.file_url || "",
+        };
+      });
+      setProcessData(updatedData);
       if (onUploadSuccess) onUploadSuccess();
-      if (currentStep < processData.length - 1) setCurrentStep(currentStep + 1);
+      if (currentStep < updatedData.length - 1) setCurrentStep(currentStep + 1);
     } catch (err) {
       console.error("Error saving preliminary step:", err);
     } finally {
@@ -94,6 +106,71 @@ export const PreliminaryProcessProvider = ({ onUploadSuccess, children }) => {
     }}>
       {children}
     </PreliminaryProcessContext.Provider>
+  );
+};
+
+// ── File helpers ───────────────────────────────────────────────────────────────
+const getFileIcon = (fileName) => {
+  if (!fileName) return File;
+  const ext = fileName.split(".").pop()?.toLowerCase();
+  if (["jpg", "jpeg", "png", "gif", "webp", "svg"].includes(ext)) return Image;
+  if (["xls", "xlsx", "csv"].includes(ext)) return FileSpreadsheet;
+  if (["pdf", "doc", "docx", "txt"].includes(ext)) return FileText;
+  return File;
+};
+
+const getFileIconColor = (fileName) => {
+  if (!fileName) return "text-slate-400 bg-slate-100 dark:bg-slate-800";
+  const ext = fileName.split(".").pop()?.toLowerCase();
+  if (["jpg", "jpeg", "png", "gif", "webp", "svg"].includes(ext)) return "text-violet-600 bg-violet-50 dark:bg-violet-900/30";
+  if (["xls", "xlsx", "csv"].includes(ext)) return "text-emerald-600 bg-emerald-50 dark:bg-emerald-900/30";
+  if (["pdf"].includes(ext)) return "text-red-600 bg-red-50 dark:bg-red-900/30";
+  if (["doc", "docx"].includes(ext)) return "text-blue-600 bg-blue-50 dark:bg-blue-900/30";
+  return "text-slate-500 bg-slate-100 dark:bg-slate-800";
+};
+
+const handleFileDownload = async (url, fileName) => {
+  try {
+    const res = await fetch(url);
+    const blob = await res.blob();
+    const blobUrl = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = blobUrl;
+    a.download = fileName || "attachment";
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(blobUrl);
+  } catch {
+    window.open(url, "_blank");
+  }
+};
+
+const FileCard = ({ fileUrl, fileName }) => {
+  const FileIcon = getFileIcon(fileName);
+  const iconColors = getFileIconColor(fileName);
+  const displayName = fileName || "Attachment";
+
+  return (
+    <div className="flex items-center gap-3 mt-1 ml-7 p-2.5 rounded-xl border border-emerald-100 dark:border-slate-700 bg-emerald-50/40 dark:bg-slate-800/60">
+      <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${iconColors}`}>
+        <FileIcon size={15} />
+      </div>
+      <div className="flex-1 min-w-0">
+        <p className="text-[11px] font-bold text-slate-700 dark:text-slate-200 truncate leading-tight">{displayName}</p>
+        <p className="text-[9px] font-semibold text-slate-400 uppercase tracking-wider mt-0.5">
+          {displayName.split(".").pop()?.toUpperCase() || "FILE"} · Attachment
+        </p>
+      </div>
+      <button
+        type="button"
+        title="Download file"
+        onClick={() => handleFileDownload(fileUrl, displayName)}
+        className="w-8 h-8 rounded-lg flex items-center justify-center text-emerald-600 hover:bg-emerald-100 dark:hover:bg-emerald-900/40 transition-colors shrink-0"
+      >
+        <Download size={14} />
+      </button>
+    </div>
   );
 };
 
@@ -117,10 +194,7 @@ const StepLogList = ({ rows, processData }) => (
           <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-relaxed pl-7 border-l-2 border-emerald-200 dark:border-emerald-800 ml-0.5">{s.notes}</p>
         )}
         {s.file_url && (
-          <a href={s.file_url} target="_blank" rel="noreferrer" className="flex items-center gap-1.5 pl-7 text-emerald-600 hover:text-emerald-700 transition-colors w-fit">
-            <Paperclip size={11} className="shrink-0" />
-            <span className="text-[10px] font-bold underline decoration-emerald-300 underline-offset-2 leading-tight break-all">{s.file_name || "Attachment"}</span>
-          </a>
+          <FileCard fileUrl={s.file_url} fileName={s.file_name} />
         )}
       </div>
     ))}
@@ -183,26 +257,52 @@ export const PreliminaryProcessEntry = () => {
 
                 <FormTextArea label="Observations & Notes" name="notes" register={register} error={errors.notes} placeholder="Enter site observations..." />
 
-                <div className="group relative">
-                  <label className="text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-2 block">Site Documents / Photos</label>
-                  <input type="file" onChange={(e) => setFile(e.target.files[0])} className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10 top-6" />
-                  <div className={`p-3.5 rounded-xl border-2 border-dashed flex items-center gap-3 transition-all ${file ? "border-emerald-500 bg-emerald-50/50 dark:bg-emerald-900/10" : "border-slate-200 dark:border-slate-700 hover:border-emerald-300"}`}>
-                    <div className={`w-9 h-9 rounded-lg flex items-center justify-center shrink-0 ${file ? "bg-emerald-500 text-white" : "bg-slate-100 dark:bg-slate-800 text-slate-400"}`}>
-                      <Upload size={16} />
+                <div className="space-y-1.5">
+                  <label className="text-[11px] font-bold text-slate-400 uppercase tracking-widest block">Site Documents / Photos</label>
+                  {file ? (
+                    <div className="flex items-center gap-3 p-3 rounded-xl border border-emerald-300 dark:border-emerald-700 bg-emerald-50/60 dark:bg-emerald-900/10">
+                      <div className={`w-9 h-9 rounded-lg flex items-center justify-center shrink-0 ${getFileIconColor(file.name)}`}>
+                        {React.createElement(getFileIcon(file.name), { size: 16 })}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-semibold text-emerald-700 dark:text-emerald-400 truncate">{file.name}</p>
+                        <p className="text-[10px] text-slate-400">{(file.size / 1024).toFixed(1)} KB · {file.name.split(".").pop()?.toUpperCase()}</p>
+                      </div>
+                      <button type="button" onClick={() => setFile(null)} className="w-7 h-7 rounded-lg flex items-center justify-center text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors shrink-0">
+                        <X size={14} />
+                      </button>
                     </div>
-                    <div className="flex-1 overflow-hidden">
-                      <p className={`text-sm font-semibold truncate ${file ? "text-emerald-600" : "text-slate-500"}`}>{file ? file.name : "Upload site media"}</p>
-                      <p className="text-[10px] text-slate-400">pdf, doc, jpg · max 10MB</p>
+                  ) : (
+                    <div className="group relative">
+                      <input type="file" onChange={(e) => setFile(e.target.files[0])} className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" />
+                      <div className="p-3.5 rounded-xl border-2 border-dashed border-slate-200 dark:border-slate-700 hover:border-emerald-300 dark:hover:border-emerald-600 flex items-center gap-3 transition-all cursor-pointer">
+                        <div className="w-9 h-9 rounded-lg flex items-center justify-center shrink-0 bg-slate-100 dark:bg-slate-800 text-slate-400 group-hover:bg-emerald-50 group-hover:text-emerald-500 transition-colors">
+                          <Upload size={16} />
+                        </div>
+                        <div>
+                          <p className="text-sm font-semibold text-slate-500 group-hover:text-emerald-600 transition-colors">Click to attach file</p>
+                          <p className="text-[10px] text-slate-400">PDF, DOC, XLS, JPG · max 10 MB</p>
+                        </div>
+                      </div>
                     </div>
-                  </div>
+                  )}
                 </div>
 
                 <div className="flex justify-end pt-1">
-                  <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}
+                  <motion.button whileHover={!(loading || isSubmitting) ? { scale: 1.02 } : {}} whileTap={!(loading || isSubmitting) ? { scale: 0.98 } : {}}
                     type="submit" disabled={loading || isSubmitting}
-                    className="group px-6 py-2.5 rounded-xl bg-emerald-600 text-white font-bold text-sm hover:bg-emerald-700 transition-all shadow shadow-emerald-500/30 disabled:opacity-50 flex items-center gap-2">
-                    {currentStep < processData.length - 1 ? "Next Step" : "Complete Work"}
-                    <ChevronRight size={15} className="group-hover:translate-x-0.5 transition-transform" />
+                    className="group min-w-[140px] px-6 py-2.5 rounded-xl bg-emerald-600 text-white font-bold text-sm hover:bg-emerald-700 disabled:bg-emerald-400 disabled:cursor-not-allowed transition-all shadow shadow-emerald-500/30 flex items-center justify-center gap-2">
+                    {loading || isSubmitting ? (
+                      <>
+                        <div className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin shrink-0" />
+                        <span>{file ? "Uploading..." : "Submitting..."}</span>
+                      </>
+                    ) : (
+                      <>
+                        {currentStep < processData.length - 1 ? "Next Step" : "Complete Work"}
+                        <ChevronRight size={15} className="group-hover:translate-x-0.5 transition-transform" />
+                      </>
+                    )}
                   </motion.button>
                 </div>
               </motion.form>

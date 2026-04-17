@@ -122,7 +122,7 @@ const StockRegister = () => {
   }, [materials, searchTerm, categoryFilter, statusFilter]);
 
   return (
-    <div className="min-h-screen  dark:bg-[#0b0f19] p-3 sm:p-6 font-roboto-flex">
+    <div className="h-full flex flex-col dark:bg-[#0b0f19] p-3 sm:p-6 font-roboto-flex">
 
       {/* --- Header Section --- */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
@@ -209,7 +209,7 @@ const StockRegister = () => {
           </button>
         </div>
       ) : (
-        <div className="bg-white dark:bg-gray-800 rounded-md shadow-sm border border-gray-200 dark:border-gray-700">
+        <div className="bg-white flex-1 min-h-0 overflow-auto dark:bg-gray-800 rounded-md shadow-sm border border-gray-200 dark:border-gray-700">
           <div className="overflow-x-auto">
             <table className="min-w-full table-auto text-sm">
               <thead className="bg-gray-50 dark:bg-gray-900 sticky top-0 z-10">

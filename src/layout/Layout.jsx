@@ -170,7 +170,7 @@ const LayOut = () => {
         )}
 
         {/* --- MAIN CONTENT AREA --- */}
-        <div id="romaa-page-content" className="flex-1 h-full px-2 py-4 overflow-hidden flex flex-col no-scrollbar">
+        <div id="romaa-page-content" className="flex-1 h-full px-2 py-4 overflow-hidden flex flex-col ">
           <Suspense fallback={<Loader fullScreen={false} />}>
             <Outlet />
           </Suspense>

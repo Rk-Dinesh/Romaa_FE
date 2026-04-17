@@ -1,4 +1,9 @@
-import { useQuery, useMutation, keepPreviousData, useQueryClient } from "@tanstack/react-query";
+import {
+  useQuery,
+  useMutation,
+  keepPreviousData,
+  useQueryClient,
+} from "@tanstack/react-query";
 import { api } from "../../../../services/api";
 import { toast } from "react-toastify";
 
@@ -13,6 +18,7 @@ const fetchBillingList = async (tenderId, params) => {
       todate: params.todate,
     },
   });
+
   return data || [];
 };
 
@@ -44,7 +50,7 @@ export const useSiteContractors = (tenderId) =>
 const fetchContractorSummary = async (tenderId, fromDate, toDate) => {
   const { data } = await api.get(
     `/weeklybilling/api/contractor-summary/${tenderId}`,
-    { params: { fromDate, toDate } }
+    { params: { fromDate, toDate } },
   );
   return data?.data || [];
 };
@@ -60,7 +66,7 @@ export const useContractorWorkSummary = (tenderId, fromDate, toDate) =>
 // ── Sub-bill transactions ──────────────────────────────────────────────────────
 const fetchSubBillTransactions = async (subBillNo) => {
   const { data } = await api.get(
-    `/weeklybilling/api/sub-bill/${encodeURIComponent(subBillNo)}`
+    `/weeklybilling/api/sub-bill/${encodeURIComponent(subBillNo)}`,
   );
   return data?.data || null;
 };
@@ -76,7 +82,7 @@ export const useSubBillTransactions = (subBillNo) =>
 // ── Bill detail (with transactions) ───────────────────────────────────────────
 const fetchBillDetail = async (billNo) => {
   const { data } = await api.get(
-    `/weeklybilling/api/detail/${encodeURIComponent(billNo)}`
+    `/weeklybilling/api/detail/${encodeURIComponent(billNo)}`,
   );
   return data?.data || null;
 };
@@ -130,7 +136,9 @@ export const useGenerateBill = ({ onSuccess, onClose }) => {
     mutationFn: (payload) => api.post("/weeklybilling/api/generate", payload),
     onSuccess: (_, vars) => {
       toast.success("Bill generated successfully!");
-      qc.invalidateQueries({ queryKey: ["weekly-billing-list", vars.tender_id] });
+      qc.invalidateQueries({
+        queryKey: ["weekly-billing-list", vars.tender_id],
+      });
       if (onSuccess) onSuccess();
       if (onClose) onClose();
     },

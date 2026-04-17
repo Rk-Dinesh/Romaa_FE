@@ -19,111 +19,285 @@ const Dashboard = lazy(() => import("../pages/dashboard/Dashboard"));
 const ViewCalendar = lazy(() => import("../pages/dashboard/ViewCalendar"));
 const Tickets = lazy(() => import("../pages/dashboard/tickets/Tickets"));
 const Profile = lazy(() => import("../pages/dashboard/profile/Profile"));
-const EmployeeDashboard = lazy(() => import("../pages/dashboard/employee dashboard/EmployeeDashboard"));
+const EmployeeDashboard = lazy(
+  () => import("../pages/dashboard/employee dashboard/EmployeeDashboard"),
+);
 
 // Tender
 const Customer = lazy(() => import("../pages/tender/clients/Clients"));
 const ViewCustomer = lazy(() => import("../pages/tender/clients/ViewClients"));
 const Tender = lazy(() => import("../pages/tender/tenders/Tender"));
-const ViewTender = lazy(() => import("../pages/tender/tenders/view tenders/ViewTender"));
-const TenderDetailedEstimate = lazy(() => import("../pages/tender/tenders/view tenders/detailed estimate/TenderDetailedEstimate"));
-const TenderZeroCost = lazy(() => import("../pages/tender/tenders/view tenders/zero cost/TenderZeroCost"));
+const ViewTender = lazy(
+  () => import("../pages/tender/tenders/view tenders/ViewTender"),
+);
+const TenderDetailedEstimate = lazy(
+  () =>
+    import("../pages/tender/tenders/view tenders/detailed estimate/TenderDetailedEstimate"),
+);
+const TenderZeroCost = lazy(
+  () => import("../pages/tender/tenders/view tenders/zero cost/TenderZeroCost"),
+);
 const WorkOrder = lazy(() => import("../pages/tender/work order/WorkOrder"));
-const ViewWorkOrder = lazy(() => import("../pages/tender/work order/view work order/ViewWorkOrder"));
-const ViewTableWOBoq = lazy(() => import("../pages/tender/work order/view work order/Work order Boq/ViewTableWOBoq"));
+const ViewWorkOrder = lazy(
+  () => import("../pages/tender/work order/view work order/ViewWorkOrder"),
+);
+const ViewTableWOBoq = lazy(
+  () =>
+    import("../pages/tender/work order/view work order/Work order Boq/ViewTableWOBoq"),
+);
 const EMD = lazy(() => import("../pages/tender/emd/EMD"));
-const EMDTrackingTable = lazy(() => import("../pages/tender/emd/viewEMDTracking"));
+const EMDTrackingTable = lazy(
+  () => import("../pages/tender/emd/viewEMDTracking"),
+);
 const DLP = lazy(() => import("../pages/tender/dlp/DLP"));
-const SecurityDeposit = lazy(() => import("../pages/tender/security deposit/SecurityDeposit"));
-const SecurityDepositTrackingTable = lazy(() => import("../pages/tender/security deposit/viewSDTracking"));
-const ProjectPenalty = lazy(() => import("../pages/tender/project penalty/ProjectPenalty"));
-const PenaltyCardGrid = lazy(() => import("../pages/tender/project penalty/PenaltyView"));
+const SecurityDeposit = lazy(
+  () => import("../pages/tender/security deposit/SecurityDeposit"),
+);
+const SecurityDepositTrackingTable = lazy(
+  () => import("../pages/tender/security deposit/viewSDTracking"),
+);
+const ProjectPenalty = lazy(
+  () => import("../pages/tender/project penalty/ProjectPenalty"),
+);
+const PenaltyCardGrid = lazy(
+  () => import("../pages/tender/project penalty/PenaltyView"),
+);
 
 // Projects
 const Project = lazy(() => import("../pages/projects/Project"));
-const ZeroCost = lazy(() => import("../pages/projects/Project zero cost/ZeroCost"));
-const ViewBoqSplit = lazy(() => import("../pages/tender/tenders/view tenders/zero cost/boq split/ViewBoqSplit"));
-const EditRateAnalysis = lazy(() => import("../pages/tender/tenders/view tenders/zero cost/Rate analysis/EditRateAnalysis"));
-const DetailedEstimate = lazy(() => import("../pages/projects/Detailed estimate/DetailedEstimate"));
+const ZeroCost = lazy(
+  () => import("../pages/projects/Project zero cost/ZeroCost"),
+);
+const ViewBoqSplit = lazy(
+  () =>
+    import("../pages/tender/tenders/view tenders/zero cost/boq split/ViewBoqSplit"),
+);
+const EditRateAnalysis = lazy(
+  () =>
+    import("../pages/tender/tenders/view tenders/zero cost/Rate analysis/EditRateAnalysis"),
+);
+const DetailedEstimate = lazy(
+  () => import("../pages/projects/Detailed estimate/DetailedEstimate"),
+);
 //const ViewGs = lazy(() => import("../pages/projects/Detailed estimate/general abstract/ViewGs"));
 //const ViewBillQtyProject = lazy(() => import("../pages/projects/Detailed estimate/BOQProjects/ViewBOQProject"));
 //const ViewNewInletDet = lazy(() => import("../pages/projects/Detailed estimate/new inlet det/ViewNewInletDet"));
 //const ViewNewInletAbs = lazy(() => import("../pages/projects/Detailed estimate/new inlet abs/ViewNewInletAbs"));
 //const ViewVendorProject = lazy(() => import("../pages/projects/Detailed estimate/vendor/ViewVendorProjects"));
-const DrawingBoqPage = lazy(() => import("../pages/projects/drawing vs Boq/DrawingBoqPage"));
+const DrawingBoqPage = lazy(
+  () => import("../pages/projects/drawing vs Boq/DrawingBoqPage"),
+);
 //const ViewDrawingBoq = lazy(() => import("../pages/projects/drawing vs Boq/ViewDrawingBoq"));
+const SiteDrawingPlan = lazy(
+  () => import("../pages/projects/site drawing/SitePlan"),
+);
 const WBS = lazy(() => import("../pages/projects/WBQ/WBS"));
 const ViewWbs = lazy(() => import("../pages/projects/WBQ/ViewWbs"));
-const ScheduleProjects = lazy(() => import("../pages/projects/schedule/schedule/ScheduleProjects"));
-const ViewDailyProject = lazy(() => import("../pages/projects/schedule/schedule/tabs/daily/ViewDailyProjects"));
-const ViewWeekly = lazy(() => import("../pages/projects/schedule/schedule/tabs/weekly/ViewWeekly"));
-const ViewProjectSchedule = lazy(() => import("../pages/projects/schedule/schedule/tabs/project schedule/ViewProjectSchedule"));
-const ViewManPowerHistogram = lazy(() => import("../pages/projects/schedule/schedule/tabs/Man Power Histogram/ViewManPowerHistogram"));
-const ViewMachinerySchedule = lazy(() => import("../pages/projects/schedule/schedule/tabs/machinery Schedule/ViewMachinerySchedule"));
-const WoIssuance = lazy(() => import("../pages/projects/Wo issuance/WOIssuance"));
-const ViewWORequest = lazy(() => import("../pages/projects/Wo issuance/work order request/ViewWORequest"));
-const ViewWOIssuance = lazy(() => import("../pages/projects/Wo issuance/Work order issuance/ViewWOIssuance"));
-const ClientBillingProject = lazy(() => import("../pages/projects/client_billing/ClientBillingProject"));
-const ViewClBillProjects = lazy(() => import("../pages/projects/client_billing/ViewClBillProjects"));
-const ProjectWorkProgress = lazy(() => import("../pages/projects/work progress/ProjectWorkProgress"));
-const ViewProjectWorkProgress = lazy(() => import("../pages/projects/work progress/ViewProjectWorkProgress"));
-const ProjectMaterialQty = lazy(() => import("../pages/projects/Project Material quantity/ProjectMaterialQty"));
-const StockProject = lazy(() => import("../pages/projects/project stocks/StockProject"));
-const ProjectAsset = lazy(() => import("../pages/projects/project assets/ProjectAsset"));
-const WorkOrderRequestForm = lazy(() => import("../pages/projects/Wo issuance/work order request/WorkOrderRequestForm"));
+const ScheduleProjects = lazy(
+  () => import("../pages/projects/schedule/schedule/ScheduleProjects"),
+);
+const ViewDailyProject = lazy(
+  () =>
+    import("../pages/projects/schedule/schedule/tabs/daily/ViewDailyProjects"),
+);
+const ViewWeekly = lazy(
+  () => import("../pages/projects/schedule/schedule/tabs/weekly/ViewWeekly"),
+);
+const ViewProjectSchedule = lazy(
+  () =>
+    import("../pages/projects/schedule/schedule/tabs/project schedule/ViewProjectSchedule"),
+);
+const ViewManPowerHistogram = lazy(
+  () =>
+    import("../pages/projects/schedule/schedule/tabs/Man Power Histogram/ViewManPowerHistogram"),
+);
+const ViewMachinerySchedule = lazy(
+  () =>
+    import("../pages/projects/schedule/schedule/tabs/machinery Schedule/ViewMachinerySchedule"),
+);
+const WoIssuance = lazy(
+  () => import("../pages/projects/Wo issuance/WOIssuance"),
+);
+const ViewWORequest = lazy(
+  () =>
+    import("../pages/projects/Wo issuance/work order request/ViewWORequest"),
+);
+const ViewWOIssuance = lazy(
+  () =>
+    import("../pages/projects/Wo issuance/Work order issuance/ViewWOIssuance"),
+);
+const ClientBillingProject = lazy(
+  () => import("../pages/projects/client_billing/ClientBillingProject"),
+);
+const ViewClBillProjects = lazy(
+  () => import("../pages/projects/client_billing/ViewClBillProjects"),
+);
+const ProjectWorkProgress = lazy(
+  () => import("../pages/projects/work progress/ProjectWorkProgress"),
+);
+const ViewProjectWorkProgress = lazy(
+  () => import("../pages/projects/work progress/ViewProjectWorkProgress"),
+);
+const ProjectMaterialQty = lazy(
+  () =>
+    import("../pages/projects/Project Material quantity/ProjectMaterialQty"),
+);
+const StockProject = lazy(
+  () => import("../pages/projects/project stocks/StockProject"),
+);
+const ProjectAsset = lazy(
+  () => import("../pages/projects/project assets/ProjectAsset"),
+);
+const WorkOrderRequestForm = lazy(
+  () =>
+    import("../pages/projects/Wo issuance/work order request/WorkOrderRequestForm"),
+);
 
 // Purchase
-const VendorSupplier = lazy(() => import("../pages/purchase/Vendor & supplier/VendorSupplier"));
-const ViewVendorSupplier = lazy(() => import("../pages/purchase/Vendor & supplier/view vendor supplier/ViewVendorSupplier"));
-const PurchaseRequest = lazy(() => import("../pages/purchase/purchase request/PurchaseRequest"));
-const ViewPurchaseRequest = lazy(() => import("../pages/purchase/purchase request/ViewPurchaseRequest"));
-const PurchaseEnquiry = lazy(() => import("../pages/purchase/purchase enquiry/PurchaseEnquiry"));
-const ViewPurchaseEnquiry = lazy(() => import("../pages/purchase/purchase enquiry/ViewPurchaseEnquiry"));
-const EnquiryForm = lazy(() => import("../pages/purchase/purchase enquiry/EnquiryForm"));
-const PurchaseOrder = lazy(() => import("../pages/purchase/purchase order/PurchaseOrder"));
-const ViewPurchaseOrder = lazy(() => import("../pages/purchase/purchase order/ViewPurchaseOrder"));
-const GoodsReceipt = lazy(() => import("../pages/purchase/goods receipt/GoodsReceipt"));
-const ViewGoodReceipt = lazy(() => import("../pages/purchase/goods receipt/ViewGoodReceipt"));
-const PurchaseBill = lazy(() => import("../pages/purchase/purchase bill/PurchaseBill"));
-const ViewPurchaseBill = lazy(() => import("../pages/purchase/purchase bill/ViewPurchaseBill"));
-const MachineryTracking = lazy(() => import("../pages/purchase/machinery tracking/MachineryTracking"));
-const PurchaseStocks = lazy(() => import("../pages/purchase/purchase stocks/PurchaseStocks"));
-const PurchaseAssets = lazy(() => import("../pages/purchase/purchase assets/PurchaseAssets"));
+const VendorSupplier = lazy(
+  () => import("../pages/purchase/Vendor & supplier/VendorSupplier"),
+);
+const ViewVendorSupplier = lazy(
+  () =>
+    import("../pages/purchase/Vendor & supplier/view vendor supplier/ViewVendorSupplier"),
+);
+const PurchaseRequest = lazy(
+  () => import("../pages/purchase/purchase request/PurchaseRequest"),
+);
+const ViewPurchaseRequest = lazy(
+  () => import("../pages/purchase/purchase request/ViewPurchaseRequest"),
+);
+const PurchaseEnquiry = lazy(
+  () => import("../pages/purchase/purchase enquiry/PurchaseEnquiry"),
+);
+const ViewPurchaseEnquiry = lazy(
+  () => import("../pages/purchase/purchase enquiry/ViewPurchaseEnquiry"),
+);
+const EnquiryForm = lazy(
+  () => import("../pages/purchase/purchase enquiry/EnquiryForm"),
+);
+const PurchaseOrder = lazy(
+  () => import("../pages/purchase/purchase order/PurchaseOrder"),
+);
+const ViewPurchaseOrder = lazy(
+  () => import("../pages/purchase/purchase order/ViewPurchaseOrder"),
+);
+const GoodsReceipt = lazy(
+  () => import("../pages/purchase/goods receipt/GoodsReceipt"),
+);
+const ViewGoodReceipt = lazy(
+  () => import("../pages/purchase/goods receipt/ViewGoodReceipt"),
+);
+const PurchaseBill = lazy(
+  () => import("../pages/purchase/purchase bill/PurchaseBill"),
+);
+const ViewPurchaseBill = lazy(
+  () => import("../pages/purchase/purchase bill/ViewPurchaseBill"),
+);
+const MachineryTracking = lazy(
+  () => import("../pages/purchase/machinery tracking/MachineryTracking"),
+);
+const PurchaseStocks = lazy(
+  () => import("../pages/purchase/purchase stocks/PurchaseStocks"),
+);
+const PurchaseAssets = lazy(
+  () => import("../pages/purchase/purchase assets/PurchaseAssets"),
+);
 
 // Site
 const Site = lazy(() => import("../pages/site/Site"));
 const BOQSite = lazy(() => import("../pages/site/BOQSite/BOQSite"));
-const DetailedEstimateSite = lazy(() => import("../pages/site/DetailedEstimateSite/DetailedEstimateSite"));
-const ViewGS = lazy(() => import("../pages/site/DetailedEstimateSite/GS/ViewGS"));
-const ViewBillQtySite = lazy(() => import("../pages/site/DetailedEstimateSite/BillQty/viewBillQtySite"));
-const ViewNewInletSite = lazy(() => import("../pages/site/DetailedEstimateSite/NewInletDetSite/viewNewInletSite"));
-const ViewNewInletAbsSite = lazy(() => import("../pages/site/DetailedEstimateSite/NewInletAbsSite/ViewNewInletAbs"));
-const ViewRoadDetailsSite = lazy(() => import("../pages/site/DetailedEstimateSite/Roaddetails/ViewRoadDetails"));
-const ViewRoadAbstractSite = lazy(() => import("../pages/site/DetailedEstimateSite/RoadAbstract/ViewRoadAbstractSite"));
-const ViewRetainingWallSite = lazy(() => import("../pages/site/DetailedEstimateSite/RetainingWall/ViewRetainingWallSite"));
-const ViewRetainingAbstractSite = lazy(() => import("../pages/site/DetailedEstimateSite/retaining abstract site/ViewRetainingAbstractSite"));
-const ViewVendorSite = lazy(() => import("../pages/site/DetailedEstimateSite/vendor site/ViewVendorSite"));
-const ReconciliationSite = lazy(() => import("../pages/site/reconciliation site/ReconciliationSite"));
-const PlannedvsAchived = lazy(() => import("../pages/site/planned_vs_achived/PlannedvsAchived"));
-const MachineryEntry = lazy(() => import("../pages/site/machinery_Enry/MachineryEntry"));
+const DetailedEstimateSite = lazy(
+  () => import("../pages/site/DetailedEstimateSite/DetailedEstimateSite"),
+);
+const ViewGS = lazy(
+  () => import("../pages/site/DetailedEstimateSite/GS/ViewGS"),
+);
+const ViewBillQtySite = lazy(
+  () => import("../pages/site/DetailedEstimateSite/BillQty/viewBillQtySite"),
+);
+const ViewNewInletSite = lazy(
+  () =>
+    import("../pages/site/DetailedEstimateSite/NewInletDetSite/viewNewInletSite"),
+);
+const ViewNewInletAbsSite = lazy(
+  () =>
+    import("../pages/site/DetailedEstimateSite/NewInletAbsSite/ViewNewInletAbs"),
+);
+const ViewRoadDetailsSite = lazy(
+  () =>
+    import("../pages/site/DetailedEstimateSite/Roaddetails/ViewRoadDetails"),
+);
+const ViewRoadAbstractSite = lazy(
+  () =>
+    import("../pages/site/DetailedEstimateSite/RoadAbstract/ViewRoadAbstractSite"),
+);
+const ViewRetainingWallSite = lazy(
+  () =>
+    import("../pages/site/DetailedEstimateSite/RetainingWall/ViewRetainingWallSite"),
+);
+const ViewRetainingAbstractSite = lazy(
+  () =>
+    import("../pages/site/DetailedEstimateSite/retaining abstract site/ViewRetainingAbstractSite"),
+);
+const ViewVendorSite = lazy(
+  () => import("../pages/site/DetailedEstimateSite/vendor site/ViewVendorSite"),
+);
+const ReconciliationSite = lazy(
+  () => import("../pages/site/reconciliation site/ReconciliationSite"),
+);
+const PlannedvsAchived = lazy(
+  () => import("../pages/site/planned_vs_achived/PlannedvsAchived"),
+);
+const MachineryEntry = lazy(
+  () => import("../pages/site/machinery_Enry/MachineryEntry"),
+);
 const SiteDrawing = lazy(() => import("../pages/site/SiteDrawing/SiteDrawing"));
-const ViewSiteDrawing = lazy(() => import("../pages/site/SiteDrawing/ViewSiteDrawing"));
-const WorkOrderDone = lazy(() => import("../pages/site/WorkOrderDone/WorkOrderDone"));
-const ViewWorkOrderDone = lazy(() => import("../pages/site/WorkOrderDone/ViewWorkOrderDone"));
+const ViewSiteDrawing = lazy(
+  () => import("../pages/site/SiteDrawing/ViewSiteDrawing"),
+);
+const WorkOrderDone = lazy(
+  () => import("../pages/site/WorkOrderDone/WorkOrderDone"),
+);
+const ViewWorkOrderDone = lazy(
+  () => import("../pages/site/WorkOrderDone/ViewWorkOrderDone"),
+);
 const WorkDone = lazy(() => import("../pages/site/WorkDone/WorkDone"));
 const ViewWorkDone = lazy(() => import("../pages/site/WorkDone/ViewWorkDone"));
-const DailyLabourReport = lazy(() => import("../pages/site/DailyLabourReport/DailyLabourReport"));
-const ViewDailyReportSite = lazy(() => import("../pages/site/DailyLabourReport/ViewDailyReportSite"));
-const MaterialRecievedSite = lazy(() => import("../pages/site/MaterialRecieved/MaterialRecievedSite"));
-const ViewMaterialRecieved = lazy(() => import("../pages/site/MaterialRecieved/ViewMaterialRecieved"));
-const MaterialIssue = lazy(() => import("../pages/site/MaterialIssued/MaterialIssue"));
-const ViewMaterialIssue = lazy(() => import("../pages/site/MaterialIssued/ViewMaterialIssue"));
-const StockRegister = lazy(() => import("../pages/site/StockRegister/StockRegister"));
-const ViewStockRegisterSite = lazy(() => import("../pages/site/StockRegister/ViewStockRegisterSite"));
-const PurchaseRequestSite = lazy(() => import("../pages/site/PurchaseRequest/PurchaseRequestSite"));
-const ViewPurchaseRequestSite = lazy(() => import("../pages/site/PurchaseRequest/ViewPurchaseRequestSite"));
+const DailyLabourReport = lazy(
+  () => import("../pages/site/DailyLabourReport/DailyLabourReport"),
+);
+const ViewDailyReportSite = lazy(
+  () => import("../pages/site/DailyLabourReport/ViewDailyReportSite"),
+);
+const MaterialRecievedSite = lazy(
+  () => import("../pages/site/MaterialRecieved/MaterialRecievedSite"),
+);
+const ViewMaterialRecieved = lazy(
+  () => import("../pages/site/MaterialRecieved/ViewMaterialRecieved"),
+);
+const MaterialIssue = lazy(
+  () => import("../pages/site/MaterialIssued/MaterialIssue"),
+);
+const ViewMaterialIssue = lazy(
+  () => import("../pages/site/MaterialIssued/ViewMaterialIssue"),
+);
+const StockRegister = lazy(
+  () => import("../pages/site/StockRegister/StockRegister"),
+);
+const ViewStockRegisterSite = lazy(
+  () => import("../pages/site/StockRegister/ViewStockRegisterSite"),
+);
+const PurchaseRequestSite = lazy(
+  () => import("../pages/site/PurchaseRequest/PurchaseRequestSite"),
+);
+const ViewPurchaseRequestSite = lazy(
+  () => import("../pages/site/PurchaseRequest/ViewPurchaseRequestSite"),
+);
 const SiteAsset = lazy(() => import("../pages/site/SiteAssest/SiteAsset"));
-const WeeklyBilling = lazy(() => import("../pages/site/WeeklyBilling/WeeklyBilling"));
+const WeeklyBilling = lazy(
+  () => import("../pages/site/WeeklyBilling/WeeklyBilling"),
+);
 
 // HR
 const Employee = lazy(() => import("../pages/Hr/employee/Employee"));
@@ -135,57 +309,132 @@ const PayRoll = lazy(() => import("../pages/Hr/payroll/PayRoll"));
 const ViewPayroll = lazy(() => import("../pages/Hr/payroll/ViewPayroll"));
 const Geofence = lazy(() => import("../pages/Hr/geofence/Geofence"));
 const HRScorecard = lazy(() => import("../pages/Hr/HRScorecard"));
-const ContractNmr = lazy(() => import("../pages/Hr/contract & Nmr/ContractNmr"));
-const ViewContractor = lazy(() => import("../pages/Hr/contract & Nmr/ViewContractor"));
-const EditContractor = lazy(() => import("../pages/Hr/contract & Nmr/EditContractor"));
-const NMRattendance = lazy(() => import("../pages/Hr/nmr_attendance/NMRattendance"));
-const ViewNMRAttendance = lazy(() => import("../pages/Hr/nmr_attendance/ViewNMRAttendance"));
+const ContractNmr = lazy(
+  () => import("../pages/Hr/contract & Nmr/ContractNmr"),
+);
+const ViewContractor = lazy(
+  () => import("../pages/Hr/contract & Nmr/ViewContractor"),
+);
+const EditContractor = lazy(
+  () => import("../pages/Hr/contract & Nmr/EditContractor"),
+);
+const NMRattendance = lazy(
+  () => import("../pages/Hr/nmr_attendance/NMRattendance"),
+);
+const ViewNMRAttendance = lazy(
+  () => import("../pages/Hr/nmr_attendance/ViewNMRAttendance"),
+);
 const NMR = lazy(() => import("../pages/Hr/nmr/NMR"));
 const ViewNMR = lazy(() => import("../pages/Hr/nmr/ViewNMR"));
 const EditNMR = lazy(() => import("../pages/Hr/nmr/EditNMR"));
 
 // Finance
-const ClientBilling = lazy(() => import("../pages/finance/client_billing/ClientBilling"));
-const ViewFinanceClientBill = lazy(() => import("../pages/finance/client_billing/ViewFinanceClientBill"));
-const Debit_CreditNote = lazy(() => import("../pages/finance/debit_creditnote/Debit_CreditNote"));
-const BankTransactions = lazy(() => import("../pages/finance/bank_transactions/BankTransactions"));
-const JournalEntry = lazy(() => import("../pages/finance/journal_entry/JournalEntry"));
+const ClientBilling = lazy(
+  () => import("../pages/finance/client_billing/ClientBilling"),
+);
+const ViewFinanceClientBill = lazy(
+  () => import("../pages/finance/client_billing/ViewFinanceClientBill"),
+);
+const Debit_CreditNote = lazy(
+  () => import("../pages/finance/debit_creditnote/Debit_CreditNote"),
+);
+const BankTransactions = lazy(
+  () => import("../pages/finance/bank_transactions/BankTransactions"),
+);
+const JournalEntry = lazy(
+  () => import("../pages/finance/journal_entry/JournalEntry"),
+);
 const Banks = lazy(() => import("../pages/finance/banks/Banks"));
 const TDS = lazy(() => import("../pages/finance/tds/TDS"));
 const CashEntry = lazy(() => import("../pages/finance/cash_entry/CashEntry"));
-const SupplierOutstanding = lazy(() => import("../pages/finance/supplier_outstanding/SupplierOutstanding"));
-const PurchaseTotalBill = lazy(() => import("../pages/finance/purchase_bill/PurchaseTotalBill"));
-const ContractorBill = lazy(() => import("../pages/finance/contractor_bill/ContractorBill"));
-const InternalBankTransfer = lazy(() => import("../pages/finance/internal_bank_transfer/InternalBankTransfer"));
-const LedgerEntry = lazy(() => import("../pages/finance/ledger_entry/LedgerEntry"));
-const ViewLedgerEntry = lazy(() => import("../pages/finance/ledger_entry/ViewLedgerEntry"));
-const Overall_expenses = lazy(() => import("../pages/finance/overall_expenses/Overall_expenses"));
-const CompanyBankDetails = lazy(() => import("../pages/finance/company_bank_details/CompanyBankDetails"));
+const SupplierOutstanding = lazy(
+  () => import("../pages/finance/supplier_outstanding/SupplierOutstanding"),
+);
+const PurchaseTotalBill = lazy(
+  () => import("../pages/finance/purchase_bill/PurchaseTotalBill"),
+);
+const ContractorBill = lazy(
+  () => import("../pages/finance/contractor_bill/ContractorBill"),
+);
+const InternalBankTransfer = lazy(
+  () => import("../pages/finance/internal_bank_transfer/InternalBankTransfer"),
+);
+const LedgerEntry = lazy(
+  () => import("../pages/finance/ledger_entry/LedgerEntry"),
+);
+const ViewLedgerEntry = lazy(
+  () => import("../pages/finance/ledger_entry/ViewLedgerEntry"),
+);
+const Overall_expenses = lazy(
+  () => import("../pages/finance/overall_expenses/Overall_expenses"),
+);
+const CompanyBankDetails = lazy(
+  () => import("../pages/finance/company_bank_details/CompanyBankDetails"),
+);
 
 // Reports
-const ProjectDashboard = lazy(() => import("../pages/reports/project_dashboard/ProjectDashboard"));
-const WorkAnalysis = lazy(() => import("../pages/reports/work_analysis/WorkAnalysis"));
-const ViewWorkAnalysis = lazy(() => import("../pages/reports/work_analysis/ViewWorkAnalysis"));
-const ClientBilling_Report = lazy(() => import("../pages/reports/client_billing/ClientBilling_Report"));
-const ViewClientBilling = lazy(() => import("../pages/reports/client_billing/ViewClientBilling"));
-const FinancialReport = lazy(() => import("../pages/reports/financial_report/FinancialReport"));
-const ViewFinancialReport = lazy(() => import("../pages/reports/financial_report/ViewFinancialReport"));
-const ExpensesReport = lazy(() => import("../pages/reports/expenses_report/ExpensesReport"));
-const VendorReport = lazy(() => import("../pages/reports/vendor_report/VendorReport"));
-const Reconciliation = lazy(() => import("../pages/reports/reconciliation/Reconciliation"));
-const ActualvsBilled = lazy(() => import("../pages/reports/actual_vs_billed/ActualvsBilled"));
-const CosttoComplete = lazy(() => import("../pages/reports/cost_to_complete/CosttoComplete"));
+const ProjectDashboard = lazy(
+  () => import("../pages/reports/project_dashboard/ProjectDashboard"),
+);
+const WorkAnalysis = lazy(
+  () => import("../pages/reports/work_analysis/WorkAnalysis"),
+);
+const ViewWorkAnalysis = lazy(
+  () => import("../pages/reports/work_analysis/ViewWorkAnalysis"),
+);
+const ClientBilling_Report = lazy(
+  () => import("../pages/reports/client_billing/ClientBilling_Report"),
+);
+const ViewClientBilling = lazy(
+  () => import("../pages/reports/client_billing/ViewClientBilling"),
+);
+const FinancialReport = lazy(
+  () => import("../pages/reports/financial_report/FinancialReport"),
+);
+const ViewFinancialReport = lazy(
+  () => import("../pages/reports/financial_report/ViewFinancialReport"),
+);
+const ExpensesReport = lazy(
+  () => import("../pages/reports/expenses_report/ExpensesReport"),
+);
+const VendorReport = lazy(
+  () => import("../pages/reports/vendor_report/VendorReport"),
+);
+const Reconciliation = lazy(
+  () => import("../pages/reports/reconciliation/Reconciliation"),
+);
+const ActualvsBilled = lazy(
+  () => import("../pages/reports/actual_vs_billed/ActualvsBilled"),
+);
+const CosttoComplete = lazy(
+  () => import("../pages/reports/cost_to_complete/CosttoComplete"),
+);
 const Schedule = lazy(() => import("../pages/reports/schedule/Schedule"));
 const P_L = lazy(() => import("../pages/reports/p&l/P_L"));
 const ViewP_L = lazy(() => import("../pages/reports/p&l/ViewP_L"));
 const CashFlow = lazy(() => import("../pages/reports/cash_flow/CashFlow"));
-const PlannedvsAcutal = lazy(() => import("../pages/reports/planned_vs_actual/PlannedvsAcutal"));
-const ViewTableReport = lazy(() => import("../pages/reports/planned_vs_actual/table/ViewTableReport"));
-const LabourProductivity = lazy(() => import("../pages/reports/labour_productiviy/LabourProductivity"));
-const ViewLabourProductivity = lazy(() => import("../pages/reports/labour_productiviy/ViewLabourProductivity"));
-const MachineProductivity = lazy(() => import("../pages/reports/machine_productivity/MachineProductivity"));
-const CollectionProjection = lazy(() => import("../pages/reports/collection_projection/CollectionProjection"));
-const ViewCollectionProjection = lazy(() => import("../pages/reports/collection_projection/ViewCollectionProjection"));
+const PlannedvsAcutal = lazy(
+  () => import("../pages/reports/planned_vs_actual/PlannedvsAcutal"),
+);
+const ViewTableReport = lazy(
+  () => import("../pages/reports/planned_vs_actual/table/ViewTableReport"),
+);
+const LabourProductivity = lazy(
+  () => import("../pages/reports/labour_productiviy/LabourProductivity"),
+);
+const ViewLabourProductivity = lazy(
+  () => import("../pages/reports/labour_productiviy/ViewLabourProductivity"),
+);
+const MachineProductivity = lazy(
+  () => import("../pages/reports/machine_productivity/MachineProductivity"),
+);
+const CollectionProjection = lazy(
+  () => import("../pages/reports/collection_projection/CollectionProjection"),
+);
+const ViewCollectionProjection = lazy(
+  () =>
+    import("../pages/reports/collection_projection/ViewCollectionProjection"),
+);
 
 // Settings
 const User = lazy(() => import("../pages/settings/user/User"));
@@ -194,23 +443,33 @@ const Roles = lazy(() => import("../pages/settings/roles/Roles"));
 const AddRoles = lazy(() => import("../pages/settings/roles/AddRoles"));
 const EditRoles = lazy(() => import("../pages/settings/roles/EditRoles"));
 const Assets = lazy(() => import("../pages/settings/assets/Assets"));
-const AssetDetails = lazy(() => import("../pages/settings/assets/machinery/AssetDetails"));
+const AssetDetails = lazy(
+  () => import("../pages/settings/assets/machinery/AssetDetails"),
+);
 
 const AppRoutes = () => {
   return (
     <>
-      <Suspense fallback={
-        <div className="h-screen w-full flex items-center justify-center">
-          <Loader />
-        </div>
-      }>
+      <Suspense
+        fallback={
+          <div className="h-screen w-full flex items-center justify-center">
+            <Loader />
+          </div>
+        }
+      >
         <Routes>
           <Route path="" element={<Login />} />
           <Route path="/forgotpassword" element={<ForgotPassword />} />
           <Route path="/resetpassword" element={<ResetPassword />} />
-          <Route path="/projects/woissuance/requestform/:tenderId/:requestId" element={<WorkOrderRequestForm />} />
-          <Route path="/purchase/enquiryform/:tenderId/:requestId" element={<EnquiryForm />} />
-          
+          <Route
+            path="/projects/woissuance/requestform/:tenderId/:requestId"
+            element={<WorkOrderRequestForm />}
+          />
+          <Route
+            path="/purchase/enquiryform/:tenderId/:requestId"
+            element={<EnquiryForm />}
+          />
+
           <Route element={<ProtectedRoute />}>
             <Route path="/" element={<LayOut />}>
               <Route path="/dashboard">
@@ -218,16 +477,31 @@ const AppRoutes = () => {
                 <Route path="viewcalendar" element={<ViewCalendar />} />
                 <Route path="tickets" element={<Tickets />} />
                 <Route path="profile" element={<Profile />} />
-                <Route path="employeedashboard" element={<EmployeeDashboard />} />
+                <Route
+                  path="employeedashboard"
+                  element={<EmployeeDashboard />}
+                />
               </Route>
               <Route path="/tender">
                 <Route path="customers" element={<Customer />} />
-                <Route path="customers/viewcustomer/:id" element={<ViewCustomer/>} />
+                <Route
+                  path="customers/viewcustomer/:id"
+                  element={<ViewCustomer />}
+                />
                 <Route path="tenders">
                   <Route index element={<Tender />} />
-                  <Route path="viewtender/:tender_id" element={<ViewTender />} />
-                  <Route path=":tender_id/detailedestimate" element={<TenderDetailedEstimate />} />
-                  <Route path=":tender_id/zerocost" element={<TenderZeroCost />} />
+                  <Route
+                    path="viewtender/:tender_id"
+                    element={<ViewTender />}
+                  />
+                  <Route
+                    path=":tender_id/detailedestimate"
+                    element={<TenderDetailedEstimate />}
+                  />
+                  <Route
+                    path=":tender_id/zerocost"
+                    element={<TenderZeroCost />}
+                  />
                 </Route>
                 <Route path="workorders">
                   <Route index element={<WorkOrder />} />
@@ -241,12 +515,18 @@ const AppRoutes = () => {
                 </Route>
                 <Route path="emd">
                   <Route index element={<EMD />} />
-                  <Route path="viewemd/:tender_id" element={<EMDTrackingTable />} />
+                  <Route
+                    path="viewemd/:tender_id"
+                    element={<EMDTrackingTable />}
+                  />
                 </Route>
                 <Route path="dlp" element={<DLP />} />
                 <Route path="securitydeposit">
                   <Route index element={<SecurityDeposit />} />
-                  <Route path="viewsecuritydeposit/:tender_id" element={<SecurityDepositTrackingTable />} />
+                  <Route
+                    path="viewsecuritydeposit/:tender_id"
+                    element={<SecurityDepositTrackingTable />}
+                  />
                 </Route>
                 <Route path="projectpenalty">
                   <Route index element={<ProjectPenalty />} />
@@ -261,7 +541,10 @@ const AppRoutes = () => {
                 <Route path="zerocost">
                   <Route index element={<ZeroCost />} />
                   <Route path="viewboqsplit" element={<ViewBoqSplit />} />
-                  <Route path="editrateanalysis" element={<EditRateAnalysis />} />
+                  <Route
+                    path="editrateanalysis"
+                    element={<EditRateAnalysis />}
+                  />
                 </Route>
                 <Route path="detailestimate">
                   <Route index element={<DetailedEstimate />} />
@@ -270,13 +553,19 @@ const AppRoutes = () => {
                   <Route index element={<DrawingBoqPage />} />
                   {/* <Route path="viewdrawingboq" element={<ViewDrawingBoq />} /> */}
                 </Route>
+                <Route path="sitedrawing">
+                  <Route index element={<SiteDrawingPlan />} />
+                </Route>
                 <Route path="wbs">
                   <Route index element={<WBS />} />
                   <Route path="viewwbs" element={<ViewWbs />} />
                 </Route>
                 <Route path="projectschedule">
                   <Route index element={<ScheduleProjects />} />
-                  <Route path="viewdailyproject" element={<ViewDailyProject />} />
+                  <Route
+                    path="viewdailyproject"
+                    element={<ViewDailyProject />}
+                  />
                   <Route path="viewweekly" element={<ViewWeekly />} />
                   <Route
                     path="viewprojectschedule"
@@ -357,11 +646,17 @@ const AppRoutes = () => {
                 </Route>
                 <Route path="bill">
                   <Route index element={<PurchaseBill />} />
-                  <Route path="viewpurchasebill" element={<ViewPurchaseBill />} />
+                  <Route
+                    path="viewpurchasebill"
+                    element={<ViewPurchaseBill />}
+                  />
                 </Route>
-                <Route path="machinerytracking" element={<MachineryTracking />} />
+                <Route
+                  path="machinerytracking"
+                  element={<MachineryTracking />}
+                />
                 <Route path="purchasestocks" element={<PurchaseStocks />} />
-                <Route path="purchaseassets"  >
+                <Route path="purchaseassets">
                   <Route index element={<PurchaseAssets />} />
                   <Route path="details/:assetId" element={<AssetDetails />} />
                 </Route>
@@ -408,7 +703,10 @@ const AppRoutes = () => {
                 </Route>
                 <Route path="workorderdone">
                   <Route index element={<WorkOrderDone />} />
-                  <Route path="viewworkorderdone" element={<ViewWorkOrderDone />} />
+                  <Route
+                    path="viewworkorderdone"
+                    element={<ViewWorkOrderDone />}
+                  />
                 </Route>
                 <Route path="workdone">
                   <Route index element={<WorkDone />} />
@@ -489,9 +787,15 @@ const AppRoutes = () => {
               <Route path="/finance">
                 <Route path="clientbilling">
                   <Route index element={<ClientBilling />} />
-                  <Route path="viewfinanceclientbill" element={<ViewFinanceClientBill />} />
+                  <Route
+                    path="viewfinanceclientbill"
+                    element={<ViewFinanceClientBill />}
+                  />
                 </Route>
-                <Route path="purchasetotalbill" element={<PurchaseTotalBill />} />
+                <Route
+                  path="purchasetotalbill"
+                  element={<PurchaseTotalBill />}
+                />
                 <Route path="contractorbill" element={<ContractorBill />} />
                 <Route
                   path="internalbanktransfer"
@@ -506,20 +810,29 @@ const AppRoutes = () => {
                 <Route path="cashentry" element={<CashEntry />} />
                 <Route path="ledgerentry">
                   <Route index element={<LedgerEntry />} />
-                  <Route path="viewledgerentry/:supplierId" element={<ViewLedgerEntry />} />
+                  <Route
+                    path="viewledgerentry/:supplierId"
+                    element={<ViewLedgerEntry />}
+                  />
                 </Route>{" "}
                 <Route
                   path="supplieroutstanding"
                   element={<SupplierOutstanding />}
                 />
                 <Route path="overallexpenses" element={<Overall_expenses />} />
-                <Route path="companybankdetails" element={<CompanyBankDetails />} />
+                <Route
+                  path="companybankdetails"
+                  element={<CompanyBankDetails />}
+                />
               </Route>
               <Route path="/reports">
                 <Route path="projectdashboard" element={<ProjectDashboard />} />
                 <Route path="workanalysis">
                   <Route index element={<WorkAnalysis />} />
-                  <Route path="viewworkanalysis" element={<ViewWorkAnalysis />} />
+                  <Route
+                    path="viewworkanalysis"
+                    element={<ViewWorkAnalysis />}
+                  />
                 </Route>
                 <Route path="clientbilling">
                   <Route index element={<ClientBilling_Report />} />
@@ -582,11 +895,11 @@ const AppRoutes = () => {
                   <Route path="addroles" element={<AddRoles />} />
                 </Route>
 
-                <Route path="assets" >
+                <Route path="assets">
                   <Route index element={<Assets />} />
                   <Route path="details/:assetId" element={<AssetDetails />} />
                 </Route>
-                <Route path="hsnmaster" >
+                <Route path="hsnmaster">
                   <Route index element={<HsnMaster />} />
                 </Route>
               </Route>

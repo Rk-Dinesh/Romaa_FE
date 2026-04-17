@@ -84,64 +84,71 @@ const ViewDailyReportSite = () => {
     );
 
   return (
-    <div className="font-roboto-flex min-h-screen dark:bg-[#0b0f19] p-6 pb-20">
-      <div className="max-w-7xl mx-auto space-y-5">
-        {/* ── Page Header ── */}
-        <div className="flex items-center gap-4">
-          <button
-            onClick={() => navigate(-1)}
-            className="p-2 rounded-lg bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-500 hover:text-blue-600 transition-colors shadow-sm"
-          >
-            <ArrowLeft size={18} />
-          </button>
-          <div>
-            <div className="flex items-center gap-2 flex-wrap">
-              <h1 className="text-xl font-bold text-gray-900 dark:text-white">
-                Daily Labour Report
-              </h1>
-              <span className="px-2 py-0.5 text-xs font-mono bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 rounded">
-                {formatDate(reportDate)}
-              </span>
+    <div className="font-roboto-flex dark:bg-[#0b0f19] h-full overflow-y-auto">
+
+      {/* ── Sticky Header ── */}
+      <div className="sticky top-0 z-10 px-6 pt-6 pb-4 border-b border-gray-100 dark:border-gray-800 bg-gray-50 dark:bg-[#0b0f19]">
+        <div className="max-w-7xl mx-auto space-y-4">
+          <div className="flex items-center gap-4">
+            <button
+              onClick={() => navigate(-1)}
+              className="p-2 rounded-lg bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-500 hover:text-blue-600 transition-colors shadow-sm"
+            >
+              <ArrowLeft size={18} />
+            </button>
+            <div>
+              <div className="flex items-center gap-2 flex-wrap">
+                <h1 className="text-xl font-bold text-gray-900 dark:text-white">
+                  Daily Labour Report
+                </h1>
+                <span className="px-2 py-0.5 text-xs font-mono bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 rounded">
+                  {formatDate(reportDate)}
+                </span>
+              </div>
+              <p className="text-xs text-gray-400 mt-0.5">
+                {item.project_name || tenderId} · {records.length} contractor
+                {records.length !== 1 ? "s" : ""}
+              </p>
             </div>
-            <p className="text-xs text-gray-400 mt-0.5">
-              {item.project_name || tenderId} · {records.length} contractor
-              {records.length !== 1 ? "s" : ""}
-            </p>
+          </div>
+
+          {/* ── Summary Cards ── */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            <SummaryCard
+              icon={<CalendarDays size={18} />}
+              color="blue"
+              label="Report Date"
+              value={formatDate(reportDate)}
+            />
+            <SummaryCard
+              icon={<ClipboardList size={18} />}
+              color="indigo"
+              label="Contractors"
+              value={records.length}
+            />
+            <SummaryCard
+              icon={<Users size={18} />}
+              color="purple"
+              label="Man Days"
+              value={totals.manDays.toFixed(1)}
+            />
+            <SummaryCard
+              icon={<IndianRupee size={18} />}
+              color="green"
+              label="Total Wages"
+              value={`₹${fmt(totals.amount)}`}
+            />
           </div>
         </div>
+      </div>
 
-        {/* ── Summary Cards ── */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-          <SummaryCard
-            icon={<CalendarDays size={18} />}
-            color="blue"
-            label="Report Date"
-            value={formatDate(reportDate)}
-          />
-          <SummaryCard
-            icon={<ClipboardList size={18} />}
-            color="indigo"
-            label="Contractors"
-            value={records.length}
-          />
-          <SummaryCard
-            icon={<Users size={18} />}
-            color="purple"
-            label="Man Days"
-            value={totals.manDays.toFixed(1)}
-          />
-          <SummaryCard
-            icon={<IndianRupee size={18} />}
-            color="green"
-            label="Total Wages"
-            value={`₹${fmt(totals.amount)}`}
-          />
+      {/* ── Per-contractor Cards ── */}
+      <div className="px-6 py-5">
+        <div className="max-w-7xl mx-auto space-y-5">
+          {records.map((record, i) => (
+            <ContractorCard key={record._id || i} record={record} index={i} />
+          ))}
         </div>
-
-        {/* ── Per-contractor Cards ── */}
-        {records.map((record, i) => (
-          <ContractorCard key={record._id || i} record={record} index={i} />
-        ))}
       </div>
     </div>
   );

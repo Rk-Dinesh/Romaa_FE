@@ -132,6 +132,12 @@ export const Menus = [
         to: "/projects/drawingboq",
         subModule: "drawing_boq",
       },
+       {
+        title: "Site Drawing",
+        icon: <PiBoundingBoxBold size={23} />,
+        to: "/projects/sitedrawing",
+        subModule: "site_drawing",
+      },
       {
         title: "WBS",
         icon: <RiNodeTree size={23} />,

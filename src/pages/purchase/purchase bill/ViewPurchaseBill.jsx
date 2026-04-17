@@ -57,8 +57,7 @@ const ViewPurchaseBill = () => {
   const { mutate: approveBill, isPending: approving } = useApprovePurchaseBill();
   const { mutate: deleteBill,  isPending: deleting  } = useDeletePurchaseBill();
 
-  const bills      = rawData?.data || [];
-  const totalPages = rawData?.totalPages || 1;
+  const bills      = useMemo(() => rawData || [], [rawData]);
 
   /* derived vendor list for dropdown (from current page data) */
   const vendors = useMemo(
@@ -511,16 +510,6 @@ const ViewPurchaseBill = () => {
         )}
       </div>
 
-      {/* ══ Footer / Pagination ══════════════════════════════════════════════ */}
-      {!isLoading && totalPages > 1 && (
-        <div className="shrink-0 bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-800 px-6 py-2.5">
-          <Pagination
-            currentPage={page}
-            setCurrentPage={setPage}
-            totalPages={totalPages}
-          />
-        </div>
-      )}
     </div>
   );
 };
