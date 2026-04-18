@@ -1,9 +1,7 @@
 import React, { useEffect, useState } from "react";
-import { useParams } from "react-router-dom";
 import Title from "../.././../components/Title";
 import axios from "axios";
 import { API } from "../../../constant";
-import { toast } from "react-toastify";
 import GeneralAbstract from "../../projects/Detailed estimate/general abstract/GeneralAbstract";
 import BOQProject from "../../projects/Detailed estimate/BOQProjects/BOQProject";
 import NewInletDet from "../../projects/Detailed estimate/new inlet det/NewInletDet";
@@ -19,8 +17,7 @@ const DetailedEstimateSite = () => {
     { id: "2", label: "Bill of Qty", component: <BOQProject /> },
   ]);
   const [activeTab, setActiveTab] = useState("1");
-  const [name, setName] = useState("");
-  const [loading, setLoading] = useState(false);
+
 
   // ✅ Fetch headings from backend
   const fetchHeadings = async () => {

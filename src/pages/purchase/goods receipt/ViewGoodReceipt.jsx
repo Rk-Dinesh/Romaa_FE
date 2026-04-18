@@ -133,9 +133,9 @@ const ViewGoodReceipt = () => {
     v ? new Date(v).toLocaleDateString("en-GB") : "—";
 
   return (
-    <div className="h-full flex flex-col dark:bg-[#0b0f19] p-4 overflow-hidden font-roboto-flex">
+    <div className="h-full flex flex-col dark:bg-[#0b0f19] p-4 overflow-hidden font-roboto-flex gap-4">
       {/* ── Header ── */}
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-5 gap-3">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-3">
         <div>
           <Title
             title="Purchase Management"
@@ -161,9 +161,8 @@ const ViewGoodReceipt = () => {
         />
       </div>
 
-      <div className="flex-1 overflow-y-auto pb-6 space-y-4 pr-1 custom-scrollbar">
-        {/* ── Summary Stats ── */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+      {/* ── Summary Stats ── */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
           <StatCard
             icon={<PackageCheck size={16} className="text-green-600" />}
             label="Total Entries"
@@ -190,8 +189,8 @@ const ViewGoodReceipt = () => {
           />
         </div>
 
-        {/* ── Filters ── */}
-        <div className="bg-white dark:bg-layout-dark rounded-md border border-gray-200 dark:border-gray-700 p-4">
+      {/* ── Filters ── */}
+      <div className="bg-white dark:bg-layout-dark rounded-md border border-gray-200 dark:border-gray-700 p-4">
           <div className="flex items-center justify-between mb-3">
             <p className="text-xs font-bold text-gray-600 dark:text-gray-400 uppercase tracking-wide flex items-center gap-1.5">
               <Search size={13} />
@@ -336,8 +335,8 @@ const ViewGoodReceipt = () => {
           </div>
         </div>
 
-        {/* ── GRN Entries Table ── */}
-        <div className="bg-white dark:bg-layout-dark rounded-md border border-gray-200 dark:border-gray-700 overflow-hidden">
+      {/* ── GRN Entries Table ── */}
+      <div className="flex-1 min-h-0 bg-white dark:bg-layout-dark rounded-md border border-gray-200 dark:border-gray-700 overflow-hidden flex flex-col">
           {/* Table header bar */}
           <div className="px-5 py-3 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50 flex items-center justify-between">
             <h3 className="text-xs font-bold text-gray-700 dark:text-gray-200 uppercase tracking-wide flex items-center gap-2">
@@ -381,9 +380,9 @@ const ViewGoodReceipt = () => {
               )}
             </div>
           ) : (
-            <div className="overflow-x-auto">
+            <div className="flex-1 min-h-0 overflow-auto">
               <table className="w-full text-xs text-left">
-                <thead>
+                <thead className="sticky top-0 z-10">
                   <tr className="bg-gray-100 dark:bg-gray-900 text-gray-500 dark:text-gray-400 text-[10px] uppercase font-bold border-b dark:border-gray-700">
                     <th className="px-3 py-3 border-r dark:border-gray-700 w-9 text-center">
                       #
@@ -540,7 +539,6 @@ const ViewGoodReceipt = () => {
             </div>
           )}
         </div>
-      </div>
     </div>
   );
 };

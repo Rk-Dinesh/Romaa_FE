@@ -23,6 +23,7 @@ const initialVendor = { vendorId: "", vendorName: "" };
 const HsnAutocomplete = ({ isReadOnly, material, onSelect }) => {
   const [searchTerm, setSearchTerm] = useState("");
   const [options, setOptions] = useState([]);
+
   const [isOpen, setIsOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const wrapperRef = useRef(null);

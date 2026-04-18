@@ -19,19 +19,22 @@ const fmtDate = (v) =>
     : "—";
 
 const Columns = [
-  { label: "Tender ID",       key: "tender_id" },
-  { label: "Tender Name",     key: "tender_name" },
-  { label: "Total Bills",     key: "total_bills" },
-  { label: "Base Amount",     key: "total_grand",      formatter: (v) => `₹${fmt(v)}` },
-  { label: "Total Tax",       key: "total_tax",        formatter: (v) => `₹${fmt(v)}` },
-  { label: "Total Net",       key: "total_net",        formatter: (v) => `₹${fmt(v)}` },
-  { label: "Latest Bill",     key: "latest_bill_date", formatter: fmtDate },
+  { label: "Tender ID", key: "tender_id" },
+  { label: "Tender Name", key: "tender_name" },
+  { label: "Total Bills", key: "total_bills" },
+  { label: "Base Amount", key: "total_grand", formatter: (v) => `₹${fmt(v)}` },
+  { label: "Total Tax", key: "total_tax", formatter: (v) => `₹${fmt(v)}` },
+  { label: "Total Net", key: "total_net", formatter: (v) => `₹${fmt(v)}` },
+  { label: "Latest Bill", key: "latest_bill_date", formatter: fmtDate },
 ];
 
 const PurchaseBill = () => {
-  const [currentPage, setCurrentPage]   = useState(1);
-  const [searchTerm, setSearchTerm]     = useState("");
-  const [filterParams, setFilterParams] = useState({ fromdate: "", todate: "" });
+  const [currentPage, setCurrentPage] = useState(1);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [filterParams, setFilterParams] = useState({
+    fromdate: "",
+    todate: "",
+  });
 
   const debouncedSearch = useDebounce(searchTerm, 500);
 

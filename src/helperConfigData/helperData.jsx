@@ -20,6 +20,7 @@ import { LuScrollText } from "react-icons/lu";
 import { TbContract } from "react-icons/tb";
 import {
   Quote,
+  Scale,
 } from "lucide-react";
 import { BookUser } from "lucide-react";
 import { ScrollText } from "lucide-react";
@@ -503,6 +504,67 @@ export const Menus = [
         icon: <TbReportAnalytics size={23} />,
         to: "/finance/overallexpenses",
         subModule: "overall_expenses",
+      },
+      // ── Finance Reports ──
+      {
+        title: "Trial Balance",
+        icon: <Scale size={23} />,
+        to: "/finance/trialbalance",
+        subModule: "trial_balance",
+      },
+      {
+        title: "Profit & Loss",
+        icon: <TrendingUp size={23} />,
+        to: "/finance/profitloss",
+        subModule: "profit_loss",
+      },
+      {
+        title: "Balance Sheet",
+        icon: <LuBookOpen size={23} />,
+        to: "/finance/balancesheet",
+        subModule: "balance_sheet",
+      },
+      {
+        title: "General Ledger",
+        icon: <LuBookMarked size={23} />,
+        to: "/finance/generalledger",
+        subModule: "general_ledger",
+      },
+      {
+        title: "Cash Flow",
+        icon: <TbReportMoney size={23} />,
+        to: "/finance/cashflowstatement",
+        subModule: "cash_flow",
+      },
+      {
+        title: "GSTR-1",
+        icon: <TbFileOrientation size={23} />,
+        to: "/finance/gstr1",
+        subModule: "gstr1",
+      },
+      {
+        title: "GSTR-2B",
+        icon: <TbFileOrientation size={23} />,
+        to: "/finance/gstr2b",
+        subModule: "gstr2b",
+      },
+      {
+        title: "GSTR-3B",
+        icon: <TbFileOrientation size={23} />,
+        to: "/finance/gstr3b",
+        subModule: "gstr3b",
+      },
+      {
+        title: "ITC Reversal",
+        icon: <TbExchange size={23} />,
+        to: "/finance/itcreversal",
+        subModule: "itc_reversal",
+      },
+      {
+        title: "TDS Register",
+        icon: <TbReceiptTax size={23} />,
+        to: "/finance/tdsregister",
+        subModule: "tds_register",
       },
     ],
   },

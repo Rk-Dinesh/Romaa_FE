@@ -372,6 +372,18 @@ const CompanyBankDetails = lazy(
   () => import("../pages/finance/company_bank_details/CompanyBankDetails"),
 );
 
+// Finance Reports
+const TrialBalance = lazy(() => import("../pages/finance/reports/TrialBalance"));
+const ProfitLoss = lazy(() => import("../pages/finance/reports/ProfitLoss"));
+const BalanceSheet = lazy(() => import("../pages/finance/reports/BalanceSheet"));
+const GeneralLedger = lazy(() => import("../pages/finance/reports/GeneralLedger"));
+const CashFlowReport = lazy(() => import("../pages/finance/reports/CashFlow"));
+const GSTR1 = lazy(() => import("../pages/finance/reports/GSTR1"));
+const GSTR2B = lazy(() => import("../pages/finance/reports/GSTR2B"));
+const GSTR3B = lazy(() => import("../pages/finance/reports/GSTR3B"));
+const ITCReversal = lazy(() => import("../pages/finance/reports/ITCReversal"));
+const TDSRegister = lazy(() => import("../pages/finance/reports/TDSRegister"));
+
 // Reports
 const ProjectDashboard = lazy(
   () => import("../pages/reports/project_dashboard/ProjectDashboard"),
@@ -824,6 +836,17 @@ const AppRoutes = () => {
                   path="companybankdetails"
                   element={<CompanyBankDetails />}
                 />
+                {/* ── Finance Reports ── */}
+                <Route path="trialbalance" element={<TrialBalance />} />
+                <Route path="profitloss" element={<ProfitLoss />} />
+                <Route path="balancesheet" element={<BalanceSheet />} />
+                <Route path="generalledger" element={<GeneralLedger />} />
+                <Route path="cashflowstatement" element={<CashFlowReport />} />
+                <Route path="gstr1" element={<GSTR1 />} />
+                <Route path="gstr2b" element={<GSTR2B />} />
+                <Route path="gstr3b" element={<GSTR3B />} />
+                <Route path="itcreversal" element={<ITCReversal />} />
+                <Route path="tdsregister" element={<TDSRegister />} />
               </Route>
               <Route path="/reports">
                 <Route path="projectdashboard" element={<ProjectDashboard />} />
