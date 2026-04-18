@@ -345,7 +345,6 @@ const JournalEntry = lazy(
   () => import("../pages/finance/journal_entry/JournalEntry"),
 );
 const Banks = lazy(() => import("../pages/finance/banks/Banks"));
-const TDS = lazy(() => import("../pages/finance/tds/TDS"));
 const CashEntry = lazy(() => import("../pages/finance/cash_entry/CashEntry"));
 const SupplierOutstanding = lazy(
   () => import("../pages/finance/supplier_outstanding/SupplierOutstanding"),
@@ -818,7 +817,6 @@ const AppRoutes = () => {
                 <Route path="journalentry" element={<JournalEntry />} />
                 {/* <Route path="gst" element={<GST_PL />} /> */}
                 <Route path="banks" element={<Banks />} />
-                <Route path="tds" element={<TDS />} />
                 <Route path="cashentry" element={<CashEntry />} />
                 <Route path="ledgerentry">
                   <Route index element={<LedgerEntry />} />

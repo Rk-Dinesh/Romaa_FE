@@ -494,12 +494,6 @@ export const Menus = [
         subModule: "debit_credit_note",
       },
       {
-        title: "TDS",
-        icon: <TbReceiptTax size={23} />,
-        to: "/finance/tds",
-        subModule: "tds",
-      },
-      {
         title: "Overall Expenses",
         icon: <TbReportAnalytics size={23} />,
         to: "/finance/overallexpenses",
