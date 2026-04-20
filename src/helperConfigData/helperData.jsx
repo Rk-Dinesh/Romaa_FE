@@ -49,8 +49,9 @@ import { RiShareBoxLine } from "react-icons/ri";
 import { HiOutlineCash } from "react-icons/hi";
 import { TfiLayoutListThumb } from "react-icons/tfi";
 import { HiOutlineClipboardDocumentList } from "react-icons/hi2";
-import { TbBuildingBank, TbTransferIn, TbExchange, TbReceiptTax, TbAlertCircle } from "react-icons/tb";
+import { TbBuildingBank, TbTransferIn, TbExchange, TbReceiptTax, TbAlertCircle, TbRepeat, TbTarget } from "react-icons/tb";
 import { LuBookOpen, LuBookMarked } from "react-icons/lu";
+import { GitMerge, Clock, FileText as FileText26Q, Package } from "lucide-react";
 
 import { BiShapeSquare } from "react-icons/bi";
 import { BsBoxSeam } from "react-icons/bs";
@@ -494,6 +495,12 @@ export const Menus = [
         subModule: "debit_credit_note",
       },
       {
+        title: "TDS",
+        icon: <TbReceiptTax size={23} />,
+        to: "/finance/tds",
+        subModule: "tds",
+      },
+      {
         title: "Overall Expenses",
         icon: <TbReportAnalytics size={23} />,
         to: "/finance/overallexpenses",
@@ -559,6 +566,43 @@ export const Menus = [
         icon: <TbReceiptTax size={23} />,
         to: "/finance/tdsregister",
         subModule: "tds_register",
+      },
+      // ── Finance Tier 2 ──
+      {
+        title: "Bank Reconciliation",
+        icon: <GitMerge size={23} />,
+        to: "/finance/bankreconciliation",
+        subModule: "bank_reconciliation",
+      },
+      {
+        title: "Recurring Vouchers",
+        icon: <TbRepeat size={23} />,
+        to: "/finance/recurringvouchers",
+        subModule: "recurring_vouchers",
+      },
+      {
+        title: "Budgets & Variance",
+        icon: <TbTarget size={23} />,
+        to: "/finance/budgets",
+        subModule: "budgets",
+      },
+      {
+        title: "Aging Reports",
+        icon: <Clock size={23} />,
+        to: "/finance/agingreports",
+        subModule: "aging_reports",
+      },
+      {
+        title: "Fixed Assets",
+        icon: <Package size={23} />,
+        to: "/finance/fixedassets",
+        subModule: "fixed_assets",
+      },
+      {
+        title: "Form 26Q",
+        icon: <FileText26Q size={23} />,
+        to: "/finance/form26q",
+        subModule: "form_26q",
       },
     ],
   },

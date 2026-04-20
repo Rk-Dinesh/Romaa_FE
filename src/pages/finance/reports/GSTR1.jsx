@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { FileText, RefreshCw, Download, Info } from "lucide-react";
+import { FileText, RefreshCw, Download } from "lucide-react";
 import { useGSTR1 } from "./hooks/useFinanceReports";
 
 const fmt = (n) => Number(n || 0).toLocaleString("en-IN", { minimumFractionDigits: 2 });
@@ -29,6 +29,8 @@ const B2BRow = ({ row }) => (
 
 const B2CSRow = ({ row }) => (
   <tr className="border-b border-gray-50 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800/20 transition-colors">
+    <td className="px-3 py-2 text-xs text-gray-600 dark:text-gray-300">{row.client_state || "—"}</td>
+    <td className="px-3 py-2 text-xs text-gray-600 dark:text-gray-300">{row.place_of_supply || "—"}</td>
     <td className="px-3 py-2 text-xs text-gray-600 dark:text-gray-300">{row.tax_mode}</td>
     <td className="px-3 py-2 text-xs tabular-nums text-right text-gray-700 dark:text-gray-200">{row.rate_pct}%</td>
     <td className="px-3 py-2 text-xs tabular-nums text-right text-gray-700 dark:text-gray-200">₹{fmt(row.taxable)}</td>
@@ -36,6 +38,23 @@ const B2CSRow = ({ row }) => (
     <td className="px-3 py-2 text-xs tabular-nums text-right text-gray-600 dark:text-gray-300">₹{fmt(row.sgst)}</td>
     <td className="px-3 py-2 text-xs tabular-nums text-right text-gray-600 dark:text-gray-300">₹{fmt(row.igst)}</td>
     <td className="px-3 py-2 text-xs tabular-nums text-right text-gray-500">{row.invoice_count}</td>
+  </tr>
+);
+
+const CDNRow = ({ row, isCDNR }) => (
+  <tr className="border-b border-gray-50 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800/20 transition-colors">
+    <td className="px-3 py-2 text-xs font-mono text-gray-500">{fmtDate(row.ccn_date)}</td>
+    <td className="px-3 py-2 text-xs font-mono text-indigo-600 dark:text-indigo-400">{row.ccn_no}</td>
+    <td className="px-3 py-2 text-xs text-gray-700 dark:text-gray-200">{row.client_name}</td>
+    <td className="px-3 py-2 text-xs font-mono text-gray-500">
+      {isCDNR ? (row.client_gstin || <span className="text-amber-500">—</span>) : "—"}
+    </td>
+    <td className="px-3 py-2 text-xs text-gray-500">{row.place_of_supply || "—"}</td>
+    <td className="px-3 py-2 text-xs tabular-nums text-right text-gray-700 dark:text-gray-200">₹{fmt(row.taxable)}</td>
+    <td className="px-3 py-2 text-xs tabular-nums text-right text-gray-600 dark:text-gray-300">₹{fmt(row.cgst_amt)}</td>
+    <td className="px-3 py-2 text-xs tabular-nums text-right text-gray-600 dark:text-gray-300">₹{fmt(row.sgst_amt)}</td>
+    <td className="px-3 py-2 text-xs tabular-nums text-right text-gray-600 dark:text-gray-300">₹{fmt(row.igst_amt)}</td>
+    <td className="px-3 py-2 text-xs tabular-nums text-right font-semibold text-gray-800 dark:text-white">₹{fmt(row.cn_value)}</td>
   </tr>
 );
 
@@ -96,16 +115,6 @@ const GSTR1 = () => {
         </div>
       )}
 
-      {/* Notes banner */}
-      {data?.notes?.length > 0 && (
-        <div className="mx-6 mt-3 flex items-start gap-2 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-xl px-4 py-3">
-          <Info size={14} className="text-blue-500 mt-0.5 shrink-0" />
-          <div className="space-y-0.5">
-            {data.notes.map((n, i) => <p key={i} className="text-xs text-blue-700 dark:text-blue-300">{n}</p>)}
-          </div>
-        </div>
-      )}
-
       {isLoading && (
         <div className="flex-1 flex items-center justify-center text-sm text-gray-400">
           <span className="animate-spin h-5 w-5 border-2 border-orange-400 border-t-transparent rounded-full mr-2" />Loading…
@@ -142,11 +151,20 @@ const GSTR1 = () => {
             {tab === "b2cs" ? (
               <table className="w-full">
                 <thead><tr className="bg-gray-50 dark:bg-gray-800/50 border-b border-gray-200 dark:border-gray-700">
-                  {["Tax Mode", "Rate %", "Taxable", "CGST", "SGST", "IGST", "# Invoices"].map((h) => (
+                  {["State", "Place of Supply", "Tax Mode", "Rate %", "Taxable", "CGST", "SGST", "IGST", "# Invoices"].map((h) => (
                     <th key={h} className="px-3 py-2 text-[10px] font-bold text-gray-500 uppercase tracking-wider text-right first:text-left">{h}</th>
                   ))}
                 </tr></thead>
                 <tbody>{rows.map((r, i) => <B2CSRow key={i} row={r} />)}</tbody>
+              </table>
+            ) : (tab === "cdnr" || tab === "cdnur") ? (
+              <table className="w-full">
+                <thead><tr className="bg-gray-50 dark:bg-gray-800/50 border-b border-gray-200 dark:border-gray-700">
+                  {["Date", "CN No.", "Client", "GSTIN", "Place of Supply", "Taxable", "CGST", "SGST", "IGST", "CN Value"].map((h) => (
+                    <th key={h} className="px-3 py-2 text-[10px] font-bold text-gray-500 uppercase tracking-wider text-right first:text-left">{h}</th>
+                  ))}
+                </tr></thead>
+                <tbody>{rows.map((r, i) => <CDNRow key={i} row={r} isCDNR={tab === "cdnr"} />)}</tbody>
               </table>
             ) : (
               <table className="w-full">

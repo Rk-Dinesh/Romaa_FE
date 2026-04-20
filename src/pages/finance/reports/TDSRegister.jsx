@@ -37,7 +37,10 @@ const TDSRegister = () => {
     a.click();
   };
 
-  const missingPAN = data?.rows?.filter((r) => !r.deductee_pan);
+  const TRACKABLE_TYPES = ["Vendor", "Contractor", "Client", "Employee"];
+  const missingPAN = data?.rows?.filter(
+    (r) => !r.deductee_pan && TRACKABLE_TYPES.includes(r.deductee_type)
+  );
 
   return (
     <div className="flex flex-col h-full font-roboto-flex bg-gray-50 dark:bg-gray-950 overflow-auto">
@@ -136,12 +139,22 @@ const TDSRegister = () => {
                   ))}
                 </tr></thead>
                 <tbody>
-                  {data.rows?.map((r, i) => (
-                    <tr key={i} className="border-b border-gray-50 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800/20 transition-colors">
-                      <td className="px-3 py-2 text-xs text-gray-500">{fmtDate(r.payment_date)}</td>
+                  {data.rows?.map((r, i) => {
+                    const panRequired = TRACKABLE_TYPES.includes(r.deductee_type);
+                    const panMissing  = panRequired && !r.deductee_pan;
+                    return (
+                    <tr key={i} className={`border-b border-gray-50 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800/20 transition-colors ${panMissing ? "bg-red-50/30 dark:bg-red-900/10" : ""}`}>
+                      <td className="px-3 py-2 text-xs text-gray-500">
+                        <div className="flex items-center gap-1.5">
+                          {panMissing && (
+                            <span title="PAN missing on master — required for TDS return" className="w-2 h-2 rounded-full bg-red-500 shrink-0 cursor-help" />
+                          )}
+                          {fmtDate(r.payment_date)}
+                        </div>
+                      </td>
                       <td className="px-3 py-2 text-xs font-mono text-indigo-600 dark:text-indigo-400">{r.voucher_no}</td>
                       <td className="px-3 py-2 text-xs text-gray-700 dark:text-gray-200">{r.deductee_name}</td>
-                      <td className="px-3 py-2 text-xs font-mono">{r.deductee_pan ? <span className="text-gray-700 dark:text-gray-200">{r.deductee_pan}</span> : <span className="text-red-500 font-semibold">MISSING</span>}</td>
+                      <td className="px-3 py-2 text-xs font-mono">{r.deductee_pan ? <span className="text-gray-700 dark:text-gray-200">{r.deductee_pan}</span> : <span className="text-red-500 font-semibold" title={panRequired ? "PAN missing on master — required for TDS return" : undefined}>MISSING</span>}</td>
                       <td className="px-3 py-2 text-xs font-mono text-gray-500">{r.deductee_gstin || "—"}</td>
                       <td className="px-3 py-2 text-xs"><span className="px-1.5 py-0.5 bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-400 rounded text-[10px] font-semibold">{r.tds_section}</span></td>
                       <td className="px-3 py-2 text-xs tabular-nums text-right text-gray-600 dark:text-gray-300">{r.tds_pct}%</td>
@@ -149,7 +162,8 @@ const TDSRegister = () => {
                       <td className="px-3 py-2 text-xs tabular-nums text-right text-amber-700 dark:text-amber-400 font-semibold">₹{fmt(r.tds_amount)}</td>
                       <td className="px-3 py-2 text-xs tabular-nums text-right text-gray-700 dark:text-gray-200">₹{fmt(r.net_paid)}</td>
                     </tr>
-                  ))}
+                    );
+                  })}
                   {!data.rows?.length && <tr><td colSpan={10} className="text-center py-8 text-sm text-gray-400">No TDS entries.</td></tr>}
                 </tbody>
               </table>

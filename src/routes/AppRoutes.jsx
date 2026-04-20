@@ -383,6 +383,14 @@ const GSTR3B = lazy(() => import("../pages/finance/reports/GSTR3B"));
 const ITCReversal = lazy(() => import("../pages/finance/reports/ITCReversal"));
 const TDSRegister = lazy(() => import("../pages/finance/reports/TDSRegister"));
 
+// Finance Tier 2
+const BankReconciliation = lazy(() => import("../pages/finance/bank_reconciliation/BankReconciliation"));
+const RecurringVouchers = lazy(() => import("../pages/finance/recurring_vouchers/RecurringVouchers"));
+const Budgets = lazy(() => import("../pages/finance/budgets/Budgets"));
+const AgingReports = lazy(() => import("../pages/finance/reports/AgingReports"));
+const FixedAssets = lazy(() => import("../pages/finance/fixed_assets/FixedAssets"));
+const Form26Q = lazy(() => import("../pages/finance/reports/Form26Q"));
+
 // Reports
 const ProjectDashboard = lazy(
   () => import("../pages/reports/project_dashboard/ProjectDashboard"),
@@ -845,6 +853,13 @@ const AppRoutes = () => {
                 <Route path="gstr3b" element={<GSTR3B />} />
                 <Route path="itcreversal" element={<ITCReversal />} />
                 <Route path="tdsregister" element={<TDSRegister />} />
+                {/* ── Finance Tier 2 ── */}
+                <Route path="bankreconciliation" element={<BankReconciliation />} />
+                <Route path="recurringvouchers" element={<RecurringVouchers />} />
+                <Route path="budgets" element={<Budgets />} />
+                <Route path="agingreports" element={<AgingReports />} />
+                <Route path="fixedassets" element={<FixedAssets />} />
+                <Route path="form26q" element={<Form26Q />} />
               </Route>
               <Route path="/reports">
                 <Route path="projectdashboard" element={<ProjectDashboard />} />

@@ -85,12 +85,38 @@ function ViewFinanceClientBill() {
       </div>
 
       {status && (
-        <div className="flex items-center gap-2 mb-4">
-          <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold border capitalize ${STATUS_CLS[status] ?? STATUS_CLS.Draft}`}>
-            {status}
-          </span>
-          {billData?.bill_id && (
-            <span className="text-xs text-gray-400">{billData.bill_id} · {billData.client_name}</span>
+        <div className="flex flex-wrap items-start gap-3 mb-4">
+          <div className="flex items-center gap-2">
+            <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold border capitalize ${STATUS_CLS[status] ?? STATUS_CLS.Draft}`}>
+              {status}
+            </span>
+            {billData?.bill_id && (
+              <span className="text-xs text-gray-400">{billData.bill_id} · {billData.client_name}</span>
+            )}
+          </div>
+
+          {/* Tax Profile panel — Tier 1.5 */}
+          {billData && (
+            <div className="flex items-center gap-3 px-3 py-1.5 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50 text-xs">
+              <span className="font-semibold text-gray-400 uppercase tracking-wide">Tax Profile</span>
+              <span className="font-mono text-gray-700 dark:text-gray-200">
+                {billData.client_gstin || <span className="text-amber-500 italic">No GSTIN</span>}
+              </span>
+              <span className="text-gray-300 dark:text-gray-600">·</span>
+              <span className="text-gray-600 dark:text-gray-300">
+                {billData.client_state || "—"}
+              </span>
+              <span className="text-gray-300 dark:text-gray-600">·</span>
+              <span className={`font-semibold ${billData.place_of_supply === "Others" ? "text-blue-600 dark:text-blue-400" : "text-gray-600 dark:text-gray-300"}`}>
+                {billData.place_of_supply || "InState"}
+              </span>
+              {/* B2CL advisory: no GSTIN + interstate + large invoice */}
+              {!billData.client_gstin && billData.place_of_supply === "Others" && (billData.grand_total > 250000) && (
+                <span className="ml-1 px-1.5 py-0.5 rounded text-[10px] bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300 border border-blue-200 dark:border-blue-700">
+                  B2CL
+                </span>
+              )}
+            </div>
           )}
         </div>
       )}

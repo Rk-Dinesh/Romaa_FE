@@ -1,8 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { api } from "../../../../services/api";
 
-const today = () => new Date().toISOString().slice(0, 10);
-
 /* ── 1. Trial Balance ─────────────────────────────────────────────────────── */
 const fetchTrialBalance = async ({ queryKey }) => {
   const [, params] = queryKey;
@@ -97,3 +95,35 @@ const fetchTDSRegister = async ({ queryKey }) => {
 };
 export const useTDSRegister = (params = {}) =>
   useQuery({ queryKey: ["tds-register", params], queryFn: fetchTDSRegister, staleTime: 60_000 });
+
+/* ── 11. AR Aging ─────────────────────────────────────────────────────────── */
+const fetchARAgingReport = async ({ queryKey }) => {
+  const [, params] = queryKey;
+  const { data } = await api.get("/reports/ar-aging", { params });
+  return data?.data;
+};
+export const useARAgingReport = (params = {}) =>
+  useQuery({ queryKey: ["ar-aging", params], queryFn: fetchARAgingReport, staleTime: 60_000 });
+
+/* ── 12. AP Aging ─────────────────────────────────────────────────────────── */
+const fetchAPAgingReport = async ({ queryKey }) => {
+  const [, params] = queryKey;
+  const { data } = await api.get("/reports/ap-aging", { params });
+  return data?.data;
+};
+export const useAPAgingReport = (params = {}) =>
+  useQuery({ queryKey: ["ap-aging", params], queryFn: fetchAPAgingReport, staleTime: 60_000 });
+
+/* ── 13. Form 26Q ─────────────────────────────────────────────────────────── */
+const fetchForm26Q = async ({ queryKey }) => {
+  const [, params] = queryKey;
+  const { data } = await api.get("/reports/form-26q", { params });
+  return data?.data;
+};
+export const useForm26Q = (params = {}) =>
+  useQuery({
+    queryKey: ["form-26q", params],
+    queryFn: fetchForm26Q,
+    enabled: !!params.financial_year && !!params.quarter,
+    staleTime: 60_000,
+  });

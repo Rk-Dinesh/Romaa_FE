@@ -63,8 +63,10 @@ const ContractorBill = () => {
   const [contractorFilter, setContractorFilter] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
 
-  const { data: bills = [], isLoading, isFetching, refetch } =
+  const { data: billData = [], isLoading, isFetching, refetch } =
     useWeeklyBillingList(selectedTender);
+
+  const bills = useMemo(() => billData?.data || [], [billData?.data]);
 
   const contractors = useMemo(
     () => [...new Set(bills.map((b) => b.contractor_name).filter(Boolean))],

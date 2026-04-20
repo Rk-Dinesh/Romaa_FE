@@ -173,8 +173,8 @@ const BillCard = ({ item, isLast, navigate }) => {
             <span>{open ? "Hide" : "Show"} tax & deductions</span>
           </button>
 
-          <div className={`overflow-hidden transition-all duration-300 ease-in-out ${open ? "max-h-72" : "max-h-0"}`}>
-            <div className="px-4 pt-3 pb-4 grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-2 bg-gray-50/60 dark:bg-gray-800/30 border-t border-gray-100 dark:border-gray-700/60">
+          <div className={`overflow-hidden transition-all duration-300 ease-in-out ${open ? "max-h-96" : "max-h-0"}`}>
+            <div className="px-4 pt-3 pb-4 grid grid-cols-1 sm:grid-cols-3 gap-x-8 gap-y-2 bg-gray-50/60 dark:bg-gray-800/30 border-t border-gray-100 dark:border-gray-700/60">
               <div>
                 <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-2">Tax Breakdown</p>
                 <DetailRow label="CGST"      value={fmt(item.cgst_amt)} />
@@ -186,6 +186,22 @@ const BillCard = ({ item, isLast, navigate }) => {
                 <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-2">Deductions</p>
                 <DetailRow label="Retention"        value={fmt(item.retention_amount)} valueClass="text-orange-600 dark:text-orange-400" />
                 <DetailRow label="Other Deductions" value={fmt(item.total_deductions)} valueClass="text-orange-600 dark:text-orange-400" />
+              </div>
+              <div className="mt-3 sm:mt-0">
+                <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-2">Tax Profile</p>
+                <div className="flex justify-between items-center py-1.5 border-b border-dashed border-gray-100 dark:border-gray-700/60">
+                  <span className="text-xs text-gray-400 uppercase tracking-wide">GSTIN</span>
+                  <span className="text-sm font-mono text-gray-700 dark:text-gray-200">
+                    {item.client_gstin || <span className="text-amber-500 italic text-xs">No GSTIN</span>}
+                  </span>
+                </div>
+                <DetailRow label="State" value={item.client_state || "—"} />
+                <div className="flex justify-between items-center py-1.5">
+                  <span className="text-xs text-gray-400 uppercase tracking-wide">Supply</span>
+                  <span className={`text-sm font-semibold ${item.place_of_supply === "Others" ? "text-blue-600 dark:text-blue-400" : "text-gray-700 dark:text-gray-200"}`}>
+                    {item.place_of_supply || "InState"}
+                  </span>
+                </div>
               </div>
             </div>
           </div>
