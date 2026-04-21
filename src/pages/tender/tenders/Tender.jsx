@@ -12,6 +12,7 @@ import { useTableState } from "../../../hooks/useTableState";
 const TenderColumns = [
   { label: "Tender ID", key: "tender_id" },
   { label: "Name", key: "tender_name", className: "text-left" },
+
   {
     label: "Location",
     key: "tender_location",

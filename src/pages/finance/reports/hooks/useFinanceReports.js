@@ -8,7 +8,11 @@ const fetchTrialBalance = async ({ queryKey }) => {
   return data?.data;
 };
 export const useTrialBalance = (params = {}) =>
-  useQuery({ queryKey: ["trial-balance", params], queryFn: fetchTrialBalance, staleTime: 60_000 });
+  useQuery({
+    queryKey: ["trial-balance", params],
+    queryFn: fetchTrialBalance,
+    staleTime: 60_000,
+  });
 
 /* ── 2. Profit & Loss ─────────────────────────────────────────────────────── */
 const fetchProfitLoss = async ({ queryKey }) => {
@@ -17,7 +21,11 @@ const fetchProfitLoss = async ({ queryKey }) => {
   return data?.data;
 };
 export const useProfitLoss = (params = {}) =>
-  useQuery({ queryKey: ["profit-loss", params], queryFn: fetchProfitLoss, staleTime: 60_000 });
+  useQuery({
+    queryKey: ["profit-loss", params],
+    queryFn: fetchProfitLoss,
+    staleTime: 60_000,
+  });
 
 /* ── 3. Balance Sheet ─────────────────────────────────────────────────────── */
 const fetchBalanceSheet = async ({ queryKey }) => {
@@ -26,7 +34,11 @@ const fetchBalanceSheet = async ({ queryKey }) => {
   return data?.data;
 };
 export const useBalanceSheet = (params = {}) =>
-  useQuery({ queryKey: ["balance-sheet", params], queryFn: fetchBalanceSheet, staleTime: 60_000 });
+  useQuery({
+    queryKey: ["balance-sheet", params],
+    queryFn: fetchBalanceSheet,
+    staleTime: 60_000,
+  });
 
 /* ── 4. General Ledger ────────────────────────────────────────────────────── */
 const fetchGeneralLedger = async ({ queryKey }) => {
@@ -49,7 +61,11 @@ const fetchCashFlow = async ({ queryKey }) => {
   return data?.data;
 };
 export const useCashFlow = (params = {}) =>
-  useQuery({ queryKey: ["cash-flow", params], queryFn: fetchCashFlow, staleTime: 60_000 });
+  useQuery({
+    queryKey: ["cash-flow", params],
+    queryFn: fetchCashFlow,
+    staleTime: 60_000,
+  });
 
 /* ── 6. GSTR-1 ────────────────────────────────────────────────────────────── */
 const fetchGSTR1 = async ({ queryKey }) => {
@@ -58,7 +74,11 @@ const fetchGSTR1 = async ({ queryKey }) => {
   return data?.data;
 };
 export const useGSTR1 = (params = {}) =>
-  useQuery({ queryKey: ["gstr-1", params], queryFn: fetchGSTR1, staleTime: 60_000 });
+  useQuery({
+    queryKey: ["gstr-1", params],
+    queryFn: fetchGSTR1,
+    staleTime: 60_000,
+  });
 
 /* ── 7. GSTR-2B ───────────────────────────────────────────────────────────── */
 const fetchGSTR2B = async ({ queryKey }) => {
@@ -67,7 +87,11 @@ const fetchGSTR2B = async ({ queryKey }) => {
   return data?.data;
 };
 export const useGSTR2B = (params = {}) =>
-  useQuery({ queryKey: ["gstr-2b", params], queryFn: fetchGSTR2B, staleTime: 60_000 });
+  useQuery({
+    queryKey: ["gstr-2b", params],
+    queryFn: fetchGSTR2B,
+    staleTime: 60_000,
+  });
 
 /* ── 8. GSTR-3B ───────────────────────────────────────────────────────────── */
 const fetchGSTR3B = async ({ queryKey }) => {
@@ -76,7 +100,11 @@ const fetchGSTR3B = async ({ queryKey }) => {
   return data?.data;
 };
 export const useGSTR3B = (params = {}) =>
-  useQuery({ queryKey: ["gstr-3b", params], queryFn: fetchGSTR3B, staleTime: 60_000 });
+  useQuery({
+    queryKey: ["gstr-3b", params],
+    queryFn: fetchGSTR3B,
+    staleTime: 60_000,
+  });
 
 /* ── 9. ITC Reversal Register ─────────────────────────────────────────────── */
 const fetchITCReversal = async ({ queryKey }) => {
@@ -85,7 +113,11 @@ const fetchITCReversal = async ({ queryKey }) => {
   return data?.data;
 };
 export const useITCReversal = (params = {}) =>
-  useQuery({ queryKey: ["itc-reversal", params], queryFn: fetchITCReversal, staleTime: 60_000 });
+  useQuery({
+    queryKey: ["itc-reversal", params],
+    queryFn: fetchITCReversal,
+    staleTime: 60_000,
+  });
 
 /* ── 10. TDS Register ─────────────────────────────────────────────────────── */
 const fetchTDSRegister = async ({ queryKey }) => {
@@ -94,7 +126,11 @@ const fetchTDSRegister = async ({ queryKey }) => {
   return data?.data;
 };
 export const useTDSRegister = (params = {}) =>
-  useQuery({ queryKey: ["tds-register", params], queryFn: fetchTDSRegister, staleTime: 60_000 });
+  useQuery({
+    queryKey: ["tds-register", params],
+    queryFn: fetchTDSRegister,
+    staleTime: 60_000,
+  });
 
 /* ── 11. AR Aging ─────────────────────────────────────────────────────────── */
 const fetchARAgingReport = async ({ queryKey }) => {
@@ -103,7 +139,11 @@ const fetchARAgingReport = async ({ queryKey }) => {
   return data?.data;
 };
 export const useARAgingReport = (params = {}) =>
-  useQuery({ queryKey: ["ar-aging", params], queryFn: fetchARAgingReport, staleTime: 60_000 });
+  useQuery({
+    queryKey: ["ar-aging", params],
+    queryFn: fetchARAgingReport,
+    staleTime: 60_000,
+  });
 
 /* ── 12. AP Aging ─────────────────────────────────────────────────────────── */
 const fetchAPAgingReport = async ({ queryKey }) => {
@@ -112,7 +152,11 @@ const fetchAPAgingReport = async ({ queryKey }) => {
   return data?.data;
 };
 export const useAPAgingReport = (params = {}) =>
-  useQuery({ queryKey: ["ap-aging", params], queryFn: fetchAPAgingReport, staleTime: 60_000 });
+  useQuery({
+    queryKey: ["ap-aging", params],
+    queryFn: fetchAPAgingReport,
+    staleTime: 60_000,
+  });
 
 /* ── 13. Form 26Q ─────────────────────────────────────────────────────────── */
 const fetchForm26Q = async ({ queryKey }) => {

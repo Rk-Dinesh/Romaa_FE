@@ -1,7 +1,8 @@
 import { useState, useMemo } from "react";
-import { FileCheck, CheckCircle2, Inbox, ChevronRight } from "lucide-react";
+import { FileCheck, CheckCircle2, ShieldCheck, Inbox, ChevronRight } from "lucide-react";
 import Filters from "../../../../components/Filters";
 import Table from "../../../../components/Table";
+import { useDebounce } from "../../../../hooks/useDebounce";
 import { useQuotationApprovedRequests } from "../../hooks/useProjects";
 
 const formatDate = (dateString) => {
@@ -25,11 +26,9 @@ const formatDate = (dateString) => {
 const getStatusBadge = (status) => {
   const safeStatus = status || "Unknown";
   const styles = {
-    "Request Raised":     "bg-amber-50 text-amber-700 border-amber-200",
-    "Quotation Requested":"bg-amber-50 text-amber-700 border-amber-200",
-    "Contractor Approved":"bg-indigo-50 text-indigo-700 border-indigo-200",
-    "Work Order Issued":  "bg-violet-50 text-violet-700 border-violet-200",
-    "Completed":          "bg-green-50 text-green-700 border-green-200",
+    "Contractor Approved": "bg-indigo-50 text-indigo-700 border-indigo-200",
+    "Work Order Issued":   "bg-violet-50 text-violet-700 border-violet-200",
+    "Completed":           "bg-green-50 text-green-700 border-green-200",
   };
   const activeStyle = styles[safeStatus] || "bg-slate-50 text-slate-600 border-slate-200";
   return (
@@ -63,31 +62,61 @@ const STAGES = [
 
 const WorkOrderIssuance = () => {
   const projectId = localStorage.getItem("tenderId");
+  const [currentPage,  setCurrentPage]  = useState(1);
+  const [searchTerm,   setSearchTerm]   = useState("");
+  const [filterParams, setFilterParams] = useState({ fromdate: "", todate: "" });
   const [statusFilter, setStatusFilter] = useState("All");
+  const debouncedSearch = useDebounce(searchTerm, 500);
 
-  const { data = [], isLoading, isFetching } = useQuotationApprovedRequests(projectId);
+  const activeApprovalType = statusFilter !== "All" ? statusFilter : undefined;
 
-  const rows = useMemo(() => (Array.isArray(data) ? data : (data?.data || [])), [data]);
+  const { data, isLoading, isFetching, refetch } = useQuotationApprovedRequests(projectId, {
+    page: currentPage,
+    limit: 10,
+    search: debouncedSearch,
+    fromdate: filterParams.fromdate,
+    todate:   filterParams.todate,
+    approval_type: activeApprovalType,
+  });
+
+  const rows = useMemo(() => {
+    const list = Array.isArray(data) ? data : (data?.data || []);
+    return list.map((item) => ({
+      requestId:           item.requestId,
+      requestDate:         item.requestDate,
+      projectId:           item.projectId,
+      tender_project_name: item.tender_project_name,
+      tender_name:         item.tender_name,
+      requiredOn:          item.requiredByDate,
+      siteIncharge:        item.siteDetails?.siteIncharge || "N/A",
+      status:              item.status,
+    }));
+  }, [data]);
 
   const counts = useMemo(() => {
+    const apiCounts = data?.counts;
+    if (apiCounts) {
+      return {
+        total:                apiCounts.total || 0,
+        "Contractor Approved": apiCounts["Contractor Approved"] || 0,
+        "Work Order Issued":   apiCounts["Work Order Issued"] || 0,
+        "Completed":           apiCounts["Completed"] || 0,
+      };
+    }
     const result = { total: rows.length };
     STAGES.forEach((s) => { result[s.key] = rows.filter((r) => s.match(r.status || "")).length; });
     return result;
-  }, [rows]);
+  }, [data, rows]);
 
-  const filteredRows = useMemo(() => {
-    if (statusFilter === "All") return rows;
-    const stage = STAGES.find((s) => s.key === statusFilter);
-    return stage ? rows.filter((r) => stage.match(r.status || "")) : rows;
-  }, [rows, statusFilter]);
+  const filteredRows = rows;
 
   const Columns = useMemo(() => [
-    { label: "Request ID",          key: "requestId",           render: (row) => <span className="font-semibold text-gray-900">{row.requestId || "-"}</span> },
-    { label: "Project",             key: "tender_project_name", render: (row) => <span className="text-gray-700 truncate max-w-[200px] block" title={row.tender_project_name}>{row.tender_project_name || "-"}</span> },
-    { label: "Request Date",        key: "requestDate",         render: (row) => formatDate(row.requestDate) },
-    { label: "Date of Requirements",key: "requiredOn",          render: (row) => formatDate(row.requiredOn) },
-    { label: "Requested By",        key: "siteIncharge",        render: (row) => row.siteIncharge ? <span className="font-medium text-gray-700">{row.siteIncharge}</span> : <span className="text-gray-400 text-sm italic">Unassigned</span> },
-    { label: "Status",              key: "status",              render: (row) => getStatusBadge(row.status) },
+    { label: "Request ID",           key: "requestId",           render: (row) => <span className="font-semibold text-gray-900">{row.requestId || "-"}</span> },
+    { label: "Project",              key: "tender_project_name", render: (row) => <span className="text-gray-700 truncate max-w-[200px] block" title={row.tender_project_name}>{row.tender_project_name || "-"}</span> },
+    { label: "Request Date",         key: "requestDate",         render: (row) => formatDate(row.requestDate) },
+    { label: "Date of Requirements", key: "requiredOn",          render: (row) => formatDate(row.requiredOn) },
+    { label: "Requested By",         key: "siteIncharge",        render: (row) => row.siteIncharge && row.siteIncharge !== "N/A" ? <span className="font-medium text-gray-700">{row.siteIncharge}</span> : <span className="text-gray-400 text-sm italic">Unassigned</span> },
+    { label: "Status",               key: "status",              render: (row) => getStatusBadge(row.status) },
   ], []);
 
   return (
@@ -98,7 +127,7 @@ const WorkOrderIssuance = () => {
 
         {/* Total block */}
         <div
-          onClick={() => setStatusFilter("All")}
+          onClick={() => { setStatusFilter("All"); setCurrentPage(1); }}
           className={`flex items-center gap-3 px-5 py-4 cursor-pointer transition-colors shrink-0 ${
             statusFilter === "All" ? "bg-gray-900" : "hover:bg-gray-50"
           }`}
@@ -124,7 +153,7 @@ const WorkOrderIssuance = () => {
               <div key={stage.key} className="flex items-center gap-1.5 shrink-0">
                 {i > 0 && <ChevronRight size={13} className="text-gray-300" />}
                 <button
-                  onClick={() => setStatusFilter(isActive ? "All" : stage.key)}
+                  onClick={() => { setStatusFilter(isActive ? "All" : stage.key); setCurrentPage(1); }}
                   className={`flex items-center gap-2 px-3.5 py-2 rounded-lg border transition-all duration-150 ${
                     isActive
                       ? `${stage.active} border-transparent shadow-sm`
@@ -150,14 +179,12 @@ const WorkOrderIssuance = () => {
           <div className="flex items-center px-4 shrink-0">
             <div className="flex items-center gap-1.5 bg-gray-50 border border-gray-200 rounded-lg px-3 py-1.5">
               <span className="text-[11px] text-gray-500 font-medium">Showing</span>
-              <span className="text-[11px] font-bold text-gray-800">{filteredRows.length}</span>
+              <span className="text-[11px] font-bold text-gray-800">{counts[statusFilter] ?? filteredRows.length}</span>
               <button
-                onClick={() => setStatusFilter("All")}
+                onClick={() => { setStatusFilter("All"); setCurrentPage(1); }}
                 className="ml-1 text-gray-400 hover:text-gray-700 text-[13px] font-bold leading-none"
                 title="Clear filter"
-              >
-                ×
-              </button>
+              >×</button>
             </div>
           </div>
         )}
@@ -169,9 +196,18 @@ const WorkOrderIssuance = () => {
           loading={isLoading}
           isRefreshing={isFetching}
           endpoint={filteredRows}
+          totalPages={data?.totalPages || 0}
           columns={Columns}
           routepoint="viewwoissuance"
           FilterModal={Filters}
+          currentPage={currentPage}
+          setCurrentPage={setCurrentPage}
+          search={searchTerm}
+          setSearch={setSearchTerm}
+          filterParams={filterParams}
+          setFilterParams={setFilterParams}
+          onSuccess={refetch}
+          onUpdated={refetch}
         />
       </div>
     </div>

@@ -12,6 +12,7 @@ export const usePurchaseEnquiries = (queryParams = {}) => {
           search: queryParams.search,
           fromdate: queryParams.fromdate,
           todate: queryParams.todate,
+          ...(queryParams.approval_type ? { approval_type: queryParams.approval_type } : {}),
         },
       });
       return data;

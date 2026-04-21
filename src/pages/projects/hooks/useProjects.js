@@ -386,33 +386,27 @@ export const useSubmitVendorQuotation = () => {
 
 // Work Order Request => WorkOrderIssuance.jsx
 
-export const useQuotationApprovedRequests = (projectId) => {
+export const useQuotationApprovedRequests = (projectId, queryParams = {}) => {
   return useQuery({
-    queryKey: ["wo-approved-requests", projectId],
+    queryKey: ["wo-approved-requests", projectId, queryParams],
     queryFn: async () => {
       const { data } = await api.get(
         `/workorderrequest/api/getbyIdQuotationApproved/${projectId}`,
+        {
+          params: {
+            page: queryParams.page,
+            limit: queryParams.limit,
+            search: queryParams.search,
+            fromdate: queryParams.fromdate,
+            todate: queryParams.todate,
+            ...(queryParams.approval_type ? { approval_type: queryParams.approval_type } : {}),
+          },
+        },
       );
-      return data?.data || [];
+      return data; // full response: { status, currentPage, totalPages, totalCount, counts, data }
     },
-    // The select function formats the data immediately after fetching
-    select: (data) =>
-      data.map((item) => ({
-        ...item, // Spread to keep original data if needed elsewhere
-        requestId: item.requestId,
-        requestDate: item.requestDate
-          ? new Date(item.requestDate).toLocaleDateString("en-GB")
-          : "-",
-        projectId: item.projectId,
-        tender_project_name: item.tender_project_name,
-        tender_name: item.tender_name,
-        requiredOn: item.requiredByDate
-          ? new Date(item.requiredByDate).toLocaleDateString("en-GB")
-          : "-",
-        siteIncharge: item.siteDetails?.siteIncharge || "N/A",
-        status: item.status,
-      })),
-    enabled: !!projectId, // Only run the query if projectId is present
-    staleTime: 5 * 60 * 1000, // Cache for 5 minutes
+    enabled: !!projectId,
+    placeholderData: keepPreviousData,
+    staleTime: 5 * 60 * 1000,
   });
 };

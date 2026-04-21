@@ -1,5 +1,5 @@
 import { useState, useMemo } from "react";
-import { FileCheck, Clock, FileSearch, ShieldCheck, Inbox, ChevronRight } from "lucide-react";
+import { FileCheck, Clock, FileSearch, Inbox, ChevronRight } from "lucide-react";
 import Table from "../../../components/Table";
 import Filters from "../../../components/Filters";
 import CreateEnquiry from "./CreateEnquiry";
@@ -43,10 +43,10 @@ const getStatusBadge = (status) => {
 
 const STAGES = [
   {
-    key:    "Awaiting Quotes",
-    label:  "Awaiting Quotes",
+    key:    "Quotation Requested",
+    label:  "Quotation Requested",
     Icon:   Clock,
-    match:  (s) => s === "Request Raised" || s === "Quotation Requested",
+    match:  (s) => s === "Quotation Requested",
     active: "bg-amber-100 text-amber-800",
     count:  "bg-amber-200 text-amber-900",
     dot:    "bg-amber-400",
@@ -60,15 +60,6 @@ const STAGES = [
     count:  "bg-blue-200 text-blue-900",
     dot:    "bg-blue-500",
   },
-  {
-    key:    "Vendor Approved",
-    label:  "Vendor Approved",
-    Icon:   ShieldCheck,
-    match:  (s) => s === "Vendor Approved" || s === "Purchase Order Issued",
-    active: "bg-indigo-100 text-indigo-800",
-    count:  "bg-indigo-200 text-indigo-900",
-    dot:    "bg-indigo-500",
-  },
 ];
 
 const PurchaseEnquiry = () => {
@@ -78,11 +69,14 @@ const PurchaseEnquiry = () => {
   const [statusFilter, setStatusFilter] = useState("All");
   const debouncedSearch = useDebounce(searchTerm, 500);
 
+  const activeApprovalType = statusFilter !== "All" ? statusFilter : undefined;
+
   const { data, isLoading, isFetching, refetch } = usePurchaseEnquiries({
     page: currentPage, limit: 10,
     search: debouncedSearch,
     fromdate: filterParams.fromdate,
     todate:   filterParams.todate,
+    approval_type: activeApprovalType,
   });
 
   const rows = useMemo(() => {
@@ -100,16 +94,21 @@ const PurchaseEnquiry = () => {
   }, [data]);
 
   const counts = useMemo(() => {
+    const apiCounts = data?.counts;
+    if (apiCounts) {
+      return {
+        total:                  apiCounts.total || 0,
+        "Quotation Requested":  apiCounts["Quotation Requested"] || 0,
+        "Quotation Received":   apiCounts["Quotation Received"] || 0,
+      };
+    }
     const result = { total: rows.length };
     STAGES.forEach((s) => { result[s.key] = rows.filter((r) => s.match(r.status || "")).length; });
     return result;
-  }, [rows]);
+  }, [data, rows]);
 
-  const filteredRows = useMemo(() => {
-    if (statusFilter === "All") return rows;
-    const stage = STAGES.find((s) => s.key === statusFilter);
-    return stage ? rows.filter((r) => stage.match(r.status || "")) : rows;
-  }, [rows, statusFilter]);
+  // Backend filters when approval_type is active; show all returned rows
+  const filteredRows = rows;
 
   const Columns = useMemo(() => [
     { label: "Request ID",   key: "requestId",           render: (row) => <span className="font-semibold text-gray-900">{row.requestId || "-"}</span> },
@@ -161,7 +160,6 @@ const PurchaseEnquiry = () => {
                       : "bg-white border-gray-200 text-gray-500 hover:border-gray-300 hover:text-gray-700 hover:bg-gray-50"
                   }`}
                 >
-                  {/* colored stage dot */}
                   <span className={`w-2 h-2 rounded-full shrink-0 ${isActive ? stage.dot : "bg-gray-300"}`} />
                   <stage.Icon size={14} strokeWidth={2.5} />
                   <span className="text-[12px] font-semibold whitespace-nowrap">{stage.label}</span>
@@ -181,14 +179,12 @@ const PurchaseEnquiry = () => {
           <div className="flex items-center px-4 shrink-0">
             <div className="flex items-center gap-1.5 bg-gray-50 border border-gray-200 rounded-lg px-3 py-1.5">
               <span className="text-[11px] text-gray-500 font-medium">Showing</span>
-              <span className="text-[11px] font-bold text-gray-800">{filteredRows.length}</span>
+              <span className="text-[11px] font-bold text-gray-800">{counts[statusFilter] ?? filteredRows.length}</span>
               <button
                 onClick={() => { setStatusFilter("All"); setCurrentPage(1); }}
                 className="ml-1 text-gray-400 hover:text-gray-700 text-[13px] font-bold leading-none"
                 title="Clear filter"
-              >
-                ×
-              </button>
+              >×</button>
             </div>
           </div>
         )}
