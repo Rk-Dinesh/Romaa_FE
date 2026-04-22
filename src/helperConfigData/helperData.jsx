@@ -902,7 +902,27 @@ export const Menus = [
         icon: <TbFileDelta size={23} />,
         to: "/settings/hsnmaster",
         subModule: "hsn_sac",
-      }
+      },
+      {
+        title: "Approval Rules",
+        icon: <CheckCircle size={23} />,
+        to: "/settings/approval-rules",
+        subModule: "approval_config",
+      },
+      {
+        title: "Audit Trail",
+        icon: <ClipboardList size={23} />,
+        to: "/settings/audit-trail",
+        module: "audit",
+        subModule: "audit_trail",
+      },
+      {
+        title: "Audit Retention",
+        icon: <Archive size={23} />,
+        to: "/settings/audit-retention",
+        module: "audit",
+        subModule: "audit_retention",
+      },
     ],
   },
 ];

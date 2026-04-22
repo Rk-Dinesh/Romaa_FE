@@ -24,9 +24,11 @@ const LayOut = () => {
   };
 
   // --- Filter Parent Menus ---
+  // Sub-items may override the parent's `module` (e.g. an audit item nested under Settings
+  // that should be gated by the `audit.trail.read` permission, not `settings.*`).
   const visibleMenus = Menus.filter((menu) => {
     if (!menu.nested) return checkAccess(menu.module, null);
-    return menu.nested.some((child) => checkAccess(menu.module, child.subModule));
+    return menu.nested.some((child) => checkAccess(child.module || menu.module, child.subModule));
   });
 
   // --- Active State Logic ---
@@ -140,7 +142,7 @@ const LayOut = () => {
             <div className="text-sm my-4 rounded-lg dark:bg-layout-dark bg-white overflow-auto no-scrollbar py-6 h-full min-w-[224px]">
               <ul>
                 {activeNestedMenu.nested.map((item, subIndex) => {
-                  if (!checkAccess(activeNestedMenu.module, item.subModule)) return null;
+                  if (!checkAccess(item.module || activeNestedMenu.module, item.subModule)) return null;
                   const isActive = location.pathname.startsWith(item.to);
                   return (
                     <li key={subIndex} className="mb-1">

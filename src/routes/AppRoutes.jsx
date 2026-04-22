@@ -496,6 +496,16 @@ const Assets = lazy(() => import("../pages/settings/assets/Assets"));
 const AssetDetails = lazy(
   () => import("../pages/settings/assets/machinery/AssetDetails"),
 );
+const ApprovalRules = lazy(
+  () => import("../pages/settings/approval_rules/ApprovalRules"),
+);
+const AppAuditTrail = lazy(
+  () => import("../pages/settings/audit_trail/AuditTrail"),
+);
+const AuditRetention = lazy(
+  () => import("../pages/settings/audit_retention/AuditRetention"),
+);
+const MyActivity = lazy(() => import("../pages/me_activity/MyActivity"));
 
 const AppRoutes = () => {
   return (
@@ -522,6 +532,7 @@ const AppRoutes = () => {
 
           <Route element={<ProtectedRoute />}>
             <Route path="/" element={<LayOut />}>
+              <Route path="/me/activity" element={<MyActivity />} />
               <Route path="/dashboard">
                 <Route index element={<Dashboard />} />
                 <Route path="viewcalendar" element={<ViewCalendar />} />
@@ -1001,6 +1012,9 @@ const AppRoutes = () => {
                 <Route path="hsnmaster">
                   <Route index element={<HsnMaster />} />
                 </Route>
+                <Route path="approval-rules" element={<ApprovalRules />} />
+                <Route path="audit-trail" element={<AppAuditTrail />} />
+                <Route path="audit-retention" element={<AuditRetention />} />
               </Route>
             </Route>
           </Route>

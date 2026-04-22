@@ -1,6 +1,6 @@
 import { useState } from "react";
 import LOGO from "../assets/images/romaa logo.png";
-import { Search } from "lucide-react";
+import { Search, History } from "lucide-react";
 import { HiOutlineBell } from "react-icons/hi";
 import { useSearch } from "../context/SearchBar";
 import ThemeToggle from "../components/ThemeToggle";
@@ -79,6 +79,14 @@ const Headers = () => {
         >
           <HiOutlineTicket className=" size-5  dark:text-white  text-darkest-blue" />
         </p>
+
+        <button
+          title="My Activity"
+          className="dark:bg-overall_bg-dark bg-light-blue w-9 h-9 lg:p-2 md:p-2 p-1.5 rounded-full flex items-center justify-center"
+          onClick={() => navigate("/me/activity")}
+        >
+          <History className="size-5 dark:text-white text-darkest-blue" />
+        </button>
 
         <div className="pb-0.5  ">
           <ThemeToggle />
