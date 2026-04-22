@@ -171,3 +171,136 @@ export const useForm26Q = (params = {}) =>
     enabled: !!params.financial_year && !!params.quarter,
     staleTime: 60_000,
   });
+
+/* ── 14. Form 24Q ─────────────────────────────────────────────────────────── */
+const fetchForm24Q = async ({ queryKey }) => {
+  const [, params] = queryKey;
+  const { data } = await api.get("/reports/form-24q", { params });
+  return data?.data;
+};
+export const useForm24Q = (params = {}) =>
+  useQuery({
+    queryKey: ["form-24q", params],
+    queryFn: fetchForm24Q,
+    enabled: !!params.financial_year && !!params.quarter,
+    staleTime: 60_000,
+  });
+
+/* ── 15. Form 16 ──────────────────────────────────────────────────────────── */
+const fetchForm16 = async ({ queryKey }) => {
+  const [, params] = queryKey;
+  const { data } = await api.get("/reports/form-16", { params });
+  return data?.data;
+};
+export const useForm16 = (params = {}) =>
+  useQuery({
+    queryKey: ["form-16", params],
+    queryFn: fetchForm16,
+    enabled: !!params.financial_year,
+    staleTime: 60_000,
+  });
+
+/* ── 16. Form 16A ─────────────────────────────────────────────────────────── */
+const fetchForm16A = async ({ queryKey }) => {
+  const [, params] = queryKey;
+  const { data } = await api.get("/reports/form-16a", { params });
+  return data?.data;
+};
+export const useForm16A = (params = {}) =>
+  useQuery({
+    queryKey: ["form-16a", params],
+    queryFn: fetchForm16A,
+    enabled: !!params.financial_year && !!params.quarter,
+    staleTime: 60_000,
+  });
+
+/* ── 17. GSTR-9 ───────────────────────────────────────────────────────────── */
+const fetchGSTR9 = async ({ queryKey }) => {
+  const [, params] = queryKey;
+  const { data } = await api.get("/reports/gstr-9", { params });
+  return data?.data;
+};
+export const useGSTR9 = (params = {}) =>
+  useQuery({
+    queryKey: ["gstr-9", params],
+    queryFn: fetchGSTR9,
+    enabled: !!params.financial_year,
+    staleTime: 60_000,
+  });
+
+/* ── 18. Audit Trail ──────────────────────────────────────────────────────── */
+const fetchAuditTrail = async ({ queryKey }) => {
+  const [, params] = queryKey;
+  const { data } = await api.get("/reports/audit-trail", { params });
+  return { data: data?.data || [], totalPages: data?.totalPages || 1, totalCount: data?.totalCount || 0 };
+};
+export const useAuditTrail = (params = {}) =>
+  useQuery({
+    queryKey: ["audit-trail", params],
+    queryFn: fetchAuditTrail,
+    staleTime: 30_000,
+  });
+
+const fetchAuditTrailDocument = async ({ queryKey }) => {
+  const [, params] = queryKey;
+  const { data } = await api.get("/reports/audit-trail/document", { params });
+  return data?.data;
+};
+export const useAuditTrailDocument = (params = {}) =>
+  useQuery({
+    queryKey: ["audit-trail-doc", params],
+    queryFn: fetchAuditTrailDocument,
+    enabled: !!params.source_type && !!params.source_no,
+    staleTime: 30_000,
+  });
+
+/* ── 19. Tender Profitability ─────────────────────────────────────── */
+export const useTenderProfitability = (params = {}) =>
+  useQuery({
+    queryKey: ["tender-profitability", params],
+    queryFn: async ({ queryKey }) => {
+      const [, p] = queryKey;
+      const { data } = await api.get("/reports/tender-profitability", { params: p });
+      return Array.isArray(data?.data) ? data.data : [];
+    },
+    staleTime: 60_000,
+  });
+
+/* ── 20. Cash-Flow Forecast ───────────────────────────────────────── */
+export const useCashFlowForecast = (params = {}) =>
+  useQuery({
+    queryKey: ["cash-flow-forecast", params],
+    queryFn: async ({ queryKey }) => {
+      const [, p] = queryKey;
+      const { data } = await api.get("/reports/cash-flow-forecast", { params: p });
+      return data?.data;
+    },
+    enabled: !!params.as_of,
+    staleTime: 60_000,
+  });
+
+/* ── 21. Fund-Flow ────────────────────────────────────────────────── */
+export const useFundFlow = (params = {}) =>
+  useQuery({
+    queryKey: ["fund-flow", params],
+    queryFn: async ({ queryKey }) => {
+      const [, p] = queryKey;
+      const { data } = await api.get("/reports/fund-flow", { params: p });
+      return data?.data;
+    },
+    enabled: !!params.opening_date && !!params.closing_date,
+    staleTime: 60_000,
+  });
+
+/* ── 22. Ratio Analysis ───────────────────────────────────────────── */
+export const useRatioAnalysis = (params = {}) =>
+  useQuery({
+    queryKey: ["ratio-analysis", params],
+    queryFn: async ({ queryKey }) => {
+      const [, p] = queryKey;
+      const { data } = await api.get("/reports/ratio-analysis", { params: p });
+      return data?.data;
+    },
+    enabled: !!params.as_of_date,
+    staleTime: 60_000,
+  });

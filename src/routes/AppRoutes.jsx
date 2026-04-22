@@ -391,6 +391,31 @@ const AgingReports = lazy(() => import("../pages/finance/reports/AgingReports"))
 const FixedAssets = lazy(() => import("../pages/finance/fixed_assets/FixedAssets"));
 const Form26Q = lazy(() => import("../pages/finance/reports/Form26Q"));
 
+// Finance Tier 3
+const EInvoice = lazy(() => import("../pages/finance/einvoice/EInvoice"));
+const EWayBill = lazy(() => import("../pages/finance/ewaybill/EWayBill"));
+const GSTMatcher = lazy(() => import("../pages/finance/gst_matcher/GSTMatcher"));
+const AdvanceAllocation = lazy(() => import("../pages/finance/advance_allocation/AdvanceAllocation"));
+const Retention = lazy(() => import("../pages/finance/retention/Retention"));
+const AuditTrail = lazy(() => import("../pages/finance/audit_trail/AuditTrail"));
+const Form24Q = lazy(() => import("../pages/finance/reports/Form24Q"));
+const Form16 = lazy(() => import("../pages/finance/reports/Form16"));
+const Form16A = lazy(() => import("../pages/finance/reports/Form16A"));
+const GSTR9 = lazy(() => import("../pages/finance/reports/GSTR9"));
+// Finance Tier 4
+const Consolidation = lazy(() => import("../pages/finance/consolidation/Consolidation"));
+const TenderProfitability = lazy(() => import("../pages/finance/tender_profitability/TenderProfitability"));
+const CashFlowForecast = lazy(() => import("../pages/finance/reports/CashFlowForecast"));
+const FundFlow = lazy(() => import("../pages/finance/reports/FundFlow"));
+const RatioAnalysis = lazy(() => import("../pages/finance/reports/RatioAnalysis"));
+const ContractPOC = lazy(() => import("../pages/finance/contract_poc/ContractPOC"));
+const SupplierScorecard = lazy(() => import("../pages/finance/supplier_scorecard/SupplierScorecard"));
+const Approvals = lazy(() => import("../pages/finance/approvals/Approvals"));
+const StatutoryDeadlines = lazy(() => import("../pages/finance/statutory_deadlines/StatutoryDeadlines"));
+const Form26AS = lazy(() => import("../pages/finance/form26as/Form26AS"));
+const LedgerSeal = lazy(() => import("../pages/finance/ledger_seal/LedgerSeal"));
+const YearEndClose = lazy(() => import("../pages/finance/year_end_close/YearEndClose"));
+
 // Reports
 const ProjectDashboard = lazy(
   () => import("../pages/reports/project_dashboard/ProjectDashboard"),
@@ -860,6 +885,30 @@ const AppRoutes = () => {
                 <Route path="agingreports" element={<AgingReports />} />
                 <Route path="fixedassets" element={<FixedAssets />} />
                 <Route path="form26q" element={<Form26Q />} />
+                {/* ── Finance Tier 3 ── */}
+                <Route path="einvoice" element={<EInvoice />} />
+                <Route path="ewaybill" element={<EWayBill />} />
+                <Route path="gstmatcher" element={<GSTMatcher />} />
+                <Route path="advanceallocation" element={<AdvanceAllocation />} />
+                <Route path="retention" element={<Retention />} />
+                <Route path="audittrail" element={<AuditTrail />} />
+                <Route path="form24q" element={<Form24Q />} />
+                <Route path="form16" element={<Form16 />} />
+                <Route path="form16a" element={<Form16A />} />
+                <Route path="gstr9" element={<GSTR9 />} />
+                {/* ── Finance Tier 4 ── */}
+                <Route path="consolidation" element={<Consolidation />} />
+                <Route path="tenderprofitability" element={<TenderProfitability />} />
+                <Route path="cashflowforecast" element={<CashFlowForecast />} />
+                <Route path="fundflow" element={<FundFlow />} />
+                <Route path="ratioanalysis" element={<RatioAnalysis />} />
+                <Route path="contractpoc" element={<ContractPOC />} />
+                <Route path="supplierscorecard" element={<SupplierScorecard />} />
+                <Route path="approvals" element={<Approvals />} />
+                <Route path="statutorydeadlines" element={<StatutoryDeadlines />} />
+                <Route path="form26as" element={<Form26AS />} />
+                <Route path="ledgerseal" element={<LedgerSeal />} />
+                <Route path="yearendclose" element={<YearEndClose />} />
               </Route>
               <Route path="/reports">
                 <Route path="projectdashboard" element={<ProjectDashboard />} />

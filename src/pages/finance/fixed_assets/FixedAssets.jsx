@@ -6,6 +6,7 @@ import {
 import {
   useAssetRegister, useAssetList, useCreateAsset,
   useArchiveAsset, usePostDepreciation, useDepreciateOne, useDisposeAsset,
+  usePostITDepreciation, useDualDepreciationReport,
 } from "./hooks/useFixedAssets";
 import DeleteModal from "../../../components/DeleteModal";
 
@@ -181,6 +182,7 @@ const FixedAssets = () => {
   const [tab, setTab] = useState("register");
   const [listParams, setListParams] = useState({ page: 1, limit: 20, status: "", category: "" });
   const [registerParams, setRegisterParams] = useState({ as_of_date: new Date().toISOString().slice(0, 10) });
+  const [dualParams, setDualParams] = useState({ as_of: new Date().toISOString().slice(0, 10) });
   const [showCreate, setShowCreate] = useState(false);
   const [disposeId, setDisposeId] = useState(null);
   const [archiveId, setArchiveId] = useState(null);
@@ -188,8 +190,10 @@ const FixedAssets = () => {
 
   const { data: regData, isLoading: regLoading, refetch: refetchReg } = useAssetRegister(registerParams);
   const { data: listData, isLoading: listLoading, refetch: refetchList } = useAssetList(listParams);
+  const { data: dualData, isLoading: dualLoading } = useDualDepreciationReport(dualParams);
   const { mutate: archive } = useArchiveAsset();
   const { mutate: postDep, isPending: depPosting } = usePostDepreciation();
+  const { mutate: postITDep, isPending: itDepPosting } = usePostITDepreciation();
   const { mutate: depOne } = useDepreciateOne();
 
   const register = regData?.rows || [];
@@ -214,10 +218,18 @@ const FixedAssets = () => {
           <button
             onClick={() => postDep(depPeriod ? `${depPeriod}-01` : undefined)}
             disabled={depPosting}
-            title="Post monthly depreciation for all assets"
+            title="Post monthly Book depreciation for all assets"
             className="flex items-center gap-1.5 px-3 py-1.5 bg-amber-500 hover:bg-amber-600 text-white text-xs font-semibold rounded-lg transition-colors disabled:opacity-50"
           >
-            <PlayCircle size={13} />Depreciate All
+            <PlayCircle size={13} />Book Dep
+          </button>
+          <button
+            onClick={() => postITDep(depPeriod ? `${depPeriod}-01` : undefined)}
+            disabled={itDepPosting}
+            title="Post IT-Act shadow depreciation (no JE)"
+            className="flex items-center gap-1.5 px-3 py-1.5 bg-purple-500 hover:bg-purple-600 text-white text-xs font-semibold rounded-lg transition-colors disabled:opacity-50"
+          >
+            <PlayCircle size={13} />IT-Act Dep
           </button>
         </div>
         <button onClick={() => { refetchReg(); refetchList(); }} className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-500"><RefreshCw size={15} /></button>
@@ -229,7 +241,7 @@ const FixedAssets = () => {
       <div className="px-6 py-5 space-y-4">
         {/* Tabs */}
         <div className="flex gap-1 bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-1 w-fit">
-          {[{ key: "register", label: "Register" }, { key: "list", label: "Asset List" }].map(({ key, label }) => (
+          {[{ key: "register", label: "Register" }, { key: "list", label: "Asset List" }, { key: "dual", label: "Dual Depreciation" }].map(({ key, label }) => (
             <button key={key} onClick={() => setTab(key)}
               className={`px-4 py-1.5 rounded-lg text-xs font-semibold transition-colors ${tab === key ? "bg-teal-600 text-white" : "text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800"}`}>
               {label}
@@ -364,6 +376,64 @@ const FixedAssets = () => {
                       </tr>
                     ))}
                     {!list.length && <tr><td colSpan={7} className="text-center py-12 text-sm text-gray-400">No assets found.</td></tr>}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </>
+        )}
+
+        {tab === "dual" && (
+          <>
+            <div className="flex flex-wrap items-center gap-3">
+              <div className="flex items-center gap-2">
+                <span className="text-xs text-gray-500 font-semibold">As of</span>
+                <input type="date" value={dualParams.as_of}
+                  onChange={(e) => setDualParams({ ...dualParams, as_of: e.target.value })}
+                  className="border border-gray-200 dark:border-gray-700 rounded-lg px-3 py-1.5 text-sm bg-white dark:bg-gray-800 dark:text-white focus:outline-none focus:ring-1 focus:ring-purple-400" />
+              </div>
+              <p className="text-xs text-gray-400">Book depreciation posts JEs (P&L). IT-Act is a shadow register — no JEs, used for deferred-tax working only.</p>
+            </div>
+
+            {dualLoading && <div className="flex items-center justify-center py-12 text-sm text-gray-400"><span className="animate-spin h-5 w-5 border-2 border-purple-400 border-t-transparent rounded-full mr-2" />Loading…</div>}
+
+            {!dualLoading && (
+              <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm overflow-x-auto">
+                <table className="w-full text-xs">
+                  <thead>
+                    <tr className="bg-gray-50 dark:bg-gray-800/50 border-b border-gray-200 dark:border-gray-700">
+                      <th className="px-3 py-2 text-[10px] font-bold text-gray-500 uppercase tracking-wider text-left" rowSpan={2}>Asset</th>
+                      <th className="px-3 py-2 text-[10px] font-bold text-gray-500 uppercase tracking-wider text-center border-l border-gray-200 dark:border-gray-700" colSpan={3}>Book (Companies Act)</th>
+                      <th className="px-3 py-2 text-[10px] font-bold text-gray-500 uppercase tracking-wider text-center border-l border-gray-200 dark:border-gray-700" colSpan={3}>IT Act (WDV Block)</th>
+                      <th className="px-3 py-2 text-[10px] font-bold text-gray-500 uppercase tracking-wider text-right border-l border-gray-200 dark:border-gray-700">Timing Diff</th>
+                    </tr>
+                    <tr className="bg-gray-50 dark:bg-gray-800/40 border-b border-gray-200 dark:border-gray-700">
+                      {["Cost", "Accum. Dep.", "NBV"].map((h) => <th key={`b-${h}`} className="px-3 py-2 text-[10px] font-bold text-gray-400 uppercase tracking-wider text-right">{h}</th>)}
+                      {["Cost", "Accum. Dep.", "NBV"].map((h) => <th key={`it-${h}`} className="px-3 py-2 text-[10px] font-bold text-gray-400 uppercase tracking-wider text-right border-l border-gray-200 dark:border-gray-700">{h}</th>)}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {(dualData || []).map((a, i) => {
+                      const timingDiff = (a.book_nbv || 0) - (a.it_nbv || 0);
+                      return (
+                        <tr key={i} className="border-b border-gray-50 dark:border-gray-800 hover:bg-gray-50/60 dark:hover:bg-gray-800/40">
+                          <td className="px-3 py-2">
+                            <p className="font-semibold text-gray-700 dark:text-gray-200">{a.asset_name}</p>
+                            <p className="text-[10px] text-gray-400 font-mono">{a.asset_no}</p>
+                          </td>
+                          <td className="px-3 py-2 tabular-nums text-right text-gray-600 dark:text-gray-300">₹{fmtCompact(a.book_cost)}</td>
+                          <td className="px-3 py-2 tabular-nums text-right text-amber-600 dark:text-amber-400">₹{fmtCompact(a.book_acc_dep)}</td>
+                          <td className="px-3 py-2 tabular-nums text-right font-semibold text-teal-600 dark:text-teal-400">₹{fmtCompact(a.book_nbv)}</td>
+                          <td className="px-3 py-2 tabular-nums text-right text-gray-600 dark:text-gray-300 border-l border-gray-100 dark:border-gray-800">₹{fmtCompact(a.it_cost)}</td>
+                          <td className="px-3 py-2 tabular-nums text-right text-amber-600 dark:text-amber-400">₹{fmtCompact(a.it_acc_dep)}</td>
+                          <td className="px-3 py-2 tabular-nums text-right font-semibold text-purple-600 dark:text-purple-400">₹{fmtCompact(a.it_nbv)}</td>
+                          <td className={`px-3 py-2 tabular-nums text-right font-semibold border-l border-gray-100 dark:border-gray-800 ${timingDiff > 0 ? "text-red-500" : timingDiff < 0 ? "text-emerald-600" : "text-gray-400"}`}>
+                            {timingDiff >= 0 ? "+" : ""}₹{fmtCompact(timingDiff)}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                    {!(dualData || []).length && <tr><td colSpan={8} className="text-center py-12 text-sm text-gray-400">No dual depreciation data. Run Book + IT-Act depreciation first.</td></tr>}
                   </tbody>
                 </table>
               </div>

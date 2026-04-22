@@ -51,7 +51,7 @@ import { TfiLayoutListThumb } from "react-icons/tfi";
 import { HiOutlineClipboardDocumentList } from "react-icons/hi2";
 import { TbBuildingBank, TbTransferIn, TbExchange, TbReceiptTax, TbAlertCircle, TbRepeat, TbTarget } from "react-icons/tb";
 import { LuBookOpen, LuBookMarked } from "react-icons/lu";
-import { GitMerge, Clock, FileText as FileText26Q, Package } from "lucide-react";
+import { GitMerge, Clock, FileText as FileText26Q, Package, FileCheck, Truck, Banknote, Shield, ClipboardList, Layers, TrendingDown, ArrowRightLeft, BarChart2, Activity, Star, CheckCircle, Calendar, FileSearch, Lock, Archive } from "lucide-react";
 
 import { BiShapeSquare } from "react-icons/bi";
 import { BsBoxSeam } from "react-icons/bs";
@@ -603,6 +603,140 @@ export const Menus = [
         icon: <FileText26Q size={23} />,
         to: "/finance/form26q",
         subModule: "form_26q",
+      },
+      // ── Finance Tier 3 ──
+      {
+        title: "E-Invoice (IRN)",
+        icon: <FileCheck size={23} />,
+        to: "/finance/einvoice",
+        subModule: "einvoice",
+      },
+      {
+        title: "E-Way Bill",
+        icon: <Truck size={23} />,
+        to: "/finance/ewaybill",
+        subModule: "ewaybill",
+      },
+      {
+        title: "GST 2A/2B Matcher",
+        icon: <GitMerge size={23} />,
+        to: "/finance/gstmatcher",
+        subModule: "gst_matcher",
+      },
+      {
+        title: "Advance Allocation",
+        icon: <Banknote size={23} />,
+        to: "/finance/advanceallocation",
+        subModule: "advance_allocation",
+      },
+      {
+        title: "Retention Ledger",
+        icon: <Shield size={23} />,
+        to: "/finance/retention",
+        subModule: "retention",
+      },
+      {
+        title: "Audit Trail",
+        icon: <ClipboardList size={23} />,
+        to: "/finance/audittrail",
+        subModule: "audit_trail",
+      },
+      {
+        title: "Form 24Q",
+        icon: <FileText26Q size={23} />,
+        to: "/finance/form24q",
+        subModule: "form_24q",
+      },
+      {
+        title: "Form 16",
+        icon: <FileText26Q size={23} />,
+        to: "/finance/form16",
+        subModule: "form_16",
+      },
+      {
+        title: "Form 16A",
+        icon: <FileText26Q size={23} />,
+        to: "/finance/form16a",
+        subModule: "form_16a",
+      },
+      {
+        title: "GSTR-9 (Annual)",
+        icon: <FileText26Q size={23} />,
+        to: "/finance/gstr9",
+        subModule: "gstr9",
+      },
+      // ── Finance Tier 4 ──
+      {
+        title: "Consolidation",
+        icon: <Layers size={23} />,
+        to: "/finance/consolidation",
+        subModule: "consolidation",
+      },
+      {
+        title: "Tender Profitability",
+        icon: <TrendingUp size={23} />,
+        to: "/finance/tenderprofitability",
+        subModule: "tender_profitability",
+      },
+      {
+        title: "Cash-Flow Forecast",
+        icon: <TrendingDown size={23} />,
+        to: "/finance/cashflowforecast",
+        subModule: "cash_flow_forecast",
+      },
+      {
+        title: "Fund Flow",
+        icon: <ArrowRightLeft size={23} />,
+        to: "/finance/fundflow",
+        subModule: "fund_flow",
+      },
+      {
+        title: "Ratio Analysis",
+        icon: <BarChart2 size={23} />,
+        to: "/finance/ratioanalysis",
+        subModule: "ratio_analysis",
+      },
+      {
+        title: "Contract POC",
+        icon: <Activity size={23} />,
+        to: "/finance/contractpoc",
+        subModule: "contract_poc",
+      },
+      {
+        title: "Supplier Scorecard",
+        icon: <Star size={23} />,
+        to: "/finance/supplierscorecard",
+        subModule: "supplier_scorecard",
+      },
+      {
+        title: "Approvals",
+        icon: <CheckCircle size={23} />,
+        to: "/finance/approvals",
+        subModule: "approvals",
+      },
+      {
+        title: "Statutory Deadlines",
+        icon: <Calendar size={23} />,
+        to: "/finance/statutorydeadlines",
+        subModule: "statutory_deadlines",
+      },
+      {
+        title: "Form 26AS",
+        icon: <FileSearch size={23} />,
+        to: "/finance/form26as",
+        subModule: "form26as",
+      },
+      {
+        title: "Ledger Seal",
+        icon: <Lock size={23} />,
+        to: "/finance/ledgerseal",
+        subModule: "ledger_seal",
+      },
+      {
+        title: "Year-End Close",
+        icon: <Archive size={23} />,
+        to: "/finance/yearendclose",
+        subModule: "year_end_close",
       },
     ],
   },

@@ -140,3 +140,44 @@ export const useDisposeAsset = ({ onSuccess } = {}) => {
     onError: (err) => toast.error(err.response?.data?.message || "Disposal failed"),
   });
 };
+
+/* ── Post IT-Act depreciation (all assets, shadow — no JE) ──────── */
+export const usePostITDepreciation = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (period_date) =>
+      api.post("/fixedasset/post-it-depreciation", period_date ? { period_date } : {}).then((r) => r.data?.data),
+    onSuccess: (result) => {
+      toast.success(`IT-Act depreciation posted: ${result?.posted ?? 0} asset(s)`);
+      qc.invalidateQueries({ queryKey: [QK] });
+    },
+    onError: (err) => toast.error(err.response?.data?.message || "IT depreciation failed"),
+  });
+};
+
+/* ── Post IT-Act depreciation (single asset) ─────────────────────── */
+export const useITDepreciateOne = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, period_date }) =>
+      api.post(`/fixedasset/${id}/it-depreciate`, period_date ? { period_date } : {}).then((r) => r.data),
+    onSuccess: (_, { id }) => {
+      toast.success("IT-Act depreciation posted for this asset");
+      qc.invalidateQueries({ queryKey: [QK] });
+      qc.invalidateQueries({ queryKey: [QK, "detail", id] });
+    },
+    onError: (err) => toast.error(err.response?.data?.message || "IT depreciation failed"),
+  });
+};
+
+/* ── Dual depreciation reconciliation report ─────────────────────── */
+export const useDualDepreciationReport = (params = {}) =>
+  useQuery({
+    queryKey: [QK, "dual-dep-report", params],
+    queryFn: async ({ queryKey }) => {
+      const [, , p] = queryKey;
+      const { data } = await api.get("/fixedasset/dual-depreciation-report", { params: p });
+      return data?.data || [];
+    },
+    staleTime: 60_000,
+  });
