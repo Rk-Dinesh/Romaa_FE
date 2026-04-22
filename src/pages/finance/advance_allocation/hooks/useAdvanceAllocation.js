@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { api } from "../../../../services/api";
+import { api, extractApiError } from "../../../../services/api";
 import { toast } from "react-toastify";
 
 const QK = "advance";
@@ -71,7 +71,7 @@ export const useAllocateAdvance = ({ onSuccess } = {}) => {
       qc.invalidateQueries({ queryKey: [QK] });
       if (onSuccess) onSuccess();
     },
-    onError: (err) => toast.error(err.response?.data?.message || "Allocation failed"),
+    onError: (err) => toast.error(extractApiError(err, "Allocation failed")),
   });
 };
 
@@ -84,6 +84,6 @@ export const useUnallocateAdvance = ({ onSuccess } = {}) => {
       qc.invalidateQueries({ queryKey: [QK] });
       if (onSuccess) onSuccess();
     },
-    onError: (err) => toast.error(err.response?.data?.message || "Unallocate failed"),
+    onError: (err) => toast.error(extractApiError(err, "Unallocate failed")),
   });
 };

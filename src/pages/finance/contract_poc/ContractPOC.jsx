@@ -79,10 +79,19 @@ const DetailDrawer = ({ tenderId, onClose }) => {
 };
 
 /* ── Main Page ──────────────────────────────────────────────────── */
+const todayStr = () => new Date().toISOString().split("T")[0];
+
 const ContractPOC = () => {
   const [selected, setSelected] = useState(null);
   const [confirmSnap, setConfirmSnap] = useState(null);
-  const [snapNote, setSnapNote] = useState("");
+  /* Spec §16 snapshot body: { as_of, contract_asset_code, contract_liability_code, revenue_code } */
+  const [snapForm, setSnapForm] = useState({
+    as_of: todayStr(),
+    contract_asset_code: "1300",
+    contract_liability_code: "2100",
+    revenue_code: "4001",
+    note: "",
+  });
 
   const { data: list = [], isLoading, refetch } = useContractPOCList();
   const safeList = Array.isArray(list) ? list : [];
@@ -151,8 +160,8 @@ const ContractPOC = () => {
                           className="p-1 rounded hover:bg-teal-50 dark:hover:bg-teal-900/20 text-teal-600" title="Recompute">
                           <Play size={12} />
                         </button>
-                        <button onClick={() => { setConfirmSnap(r.tender_id); setSnapNote(""); }}
-                          className="p-1 rounded hover:bg-indigo-50 dark:hover:bg-indigo-900/20 text-indigo-600" title="Snapshot">
+                        <button onClick={() => { setConfirmSnap(r.tender_id); setSnapForm((f) => ({ ...f, note: "" })); }}
+                          className="p-1 rounded hover:bg-indigo-50 dark:hover:bg-indigo-900/20 text-indigo-600" title="Snapshot + post to ledger">
                           <Camera size={12} />
                         </button>
                       </div>
@@ -172,16 +181,70 @@ const ContractPOC = () => {
 
       {confirmSnap && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
-          <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-2xl p-6 w-full max-w-sm">
-            <p className="text-sm font-bold text-gray-800 dark:text-white mb-3">Snapshot POC — {confirmSnap}</p>
-            <p className="text-xs text-gray-500 mb-3">This will lock the current POC calculation as a historical snapshot.</p>
-            <input value={snapNote} onChange={(e) => setSnapNote(e.target.value)}
-              placeholder="Note (optional)" className="w-full border border-gray-200 dark:border-gray-700 rounded-lg px-3 py-2 text-sm bg-white dark:bg-gray-800 dark:text-white focus:outline-none mb-4" />
-            <div className="flex justify-end gap-2">
+          <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-2xl p-6 w-full max-w-md space-y-3">
+            <p className="text-sm font-bold text-gray-800 dark:text-white">Snapshot POC — {confirmSnap}</p>
+            <p className="text-xs text-gray-500">
+              Locks the current POC calculation as a historical snapshot and posts the adjustment JE to the ledger using the GL accounts below.
+            </p>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-[10px] font-semibold text-gray-500 uppercase tracking-wider mb-1">As of</label>
+                <input
+                  type="date"
+                  value={snapForm.as_of}
+                  onChange={(e) => setSnapForm({ ...snapForm, as_of: e.target.value })}
+                  className="w-full border border-gray-200 dark:border-gray-700 rounded-lg px-3 py-1.5 text-sm bg-white dark:bg-gray-800 dark:text-white focus:outline-none"
+                />
+              </div>
+              <div>
+                <label className="block text-[10px] font-semibold text-gray-500 uppercase tracking-wider mb-1">Revenue GL</label>
+                <input
+                  value={snapForm.revenue_code}
+                  onChange={(e) => setSnapForm({ ...snapForm, revenue_code: e.target.value })}
+                  className="w-full border border-gray-200 dark:border-gray-700 rounded-lg px-3 py-1.5 text-sm bg-white dark:bg-gray-800 dark:text-white focus:outline-none font-mono"
+                />
+              </div>
+              <div>
+                <label className="block text-[10px] font-semibold text-gray-500 uppercase tracking-wider mb-1">Contract Asset GL</label>
+                <input
+                  value={snapForm.contract_asset_code}
+                  onChange={(e) => setSnapForm({ ...snapForm, contract_asset_code: e.target.value })}
+                  className="w-full border border-gray-200 dark:border-gray-700 rounded-lg px-3 py-1.5 text-sm bg-white dark:bg-gray-800 dark:text-white focus:outline-none font-mono"
+                />
+              </div>
+              <div>
+                <label className="block text-[10px] font-semibold text-gray-500 uppercase tracking-wider mb-1">Contract Liability GL</label>
+                <input
+                  value={snapForm.contract_liability_code}
+                  onChange={(e) => setSnapForm({ ...snapForm, contract_liability_code: e.target.value })}
+                  className="w-full border border-gray-200 dark:border-gray-700 rounded-lg px-3 py-1.5 text-sm bg-white dark:bg-gray-800 dark:text-white focus:outline-none font-mono"
+                />
+              </div>
+            </div>
+            <div>
+              <label className="block text-[10px] font-semibold text-gray-500 uppercase tracking-wider mb-1">Note (optional)</label>
+              <input
+                value={snapForm.note}
+                onChange={(e) => setSnapForm({ ...snapForm, note: e.target.value })}
+                placeholder="Monthly revenue recognition"
+                className="w-full border border-gray-200 dark:border-gray-700 rounded-lg px-3 py-1.5 text-sm bg-white dark:bg-gray-800 dark:text-white focus:outline-none"
+              />
+            </div>
+            <div className="flex justify-end gap-2 pt-2">
               <button onClick={() => setConfirmSnap(null)} className="px-4 py-1.5 text-sm text-gray-600 hover:bg-gray-100 rounded-lg">Cancel</button>
-              <button onClick={() => snapshot.mutate({ tender_id: confirmSnap, note: snapNote })} disabled={snapshot.isPending}
-                className="px-4 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold rounded-lg disabled:opacity-60">
-                {snapshot.isPending ? "Saving…" : "Confirm Snapshot"}
+              <button
+                onClick={() => snapshot.mutate({
+                  tender_id: confirmSnap,
+                  as_of: snapForm.as_of,
+                  contract_asset_code: snapForm.contract_asset_code,
+                  contract_liability_code: snapForm.contract_liability_code,
+                  revenue_code: snapForm.revenue_code,
+                  note: snapForm.note || undefined,
+                })}
+                disabled={snapshot.isPending || !snapForm.as_of || !snapForm.revenue_code}
+                className="px-4 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold rounded-lg disabled:opacity-60"
+              >
+                {snapshot.isPending ? "Posting JE…" : "Snapshot &amp; Post"}
               </button>
             </div>
           </div>

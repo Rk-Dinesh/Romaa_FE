@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient, keepPreviousData } from "@tanstack/react-query";
-import { api } from "../../../../services/api";
+import { api, extractApiError } from "../../../../services/api";
 import { toast } from "react-toastify";
 
 const QK = "recurring-vouchers";
@@ -40,7 +40,7 @@ export const useCreateRV = ({ onSuccess, onClose } = {}) => {
       if (onSuccess) onSuccess();
       if (onClose) onClose();
     },
-    onError: (err) => toast.error(err.response?.data?.message || "Failed to create template"),
+    onError: (err) => toast.error(extractApiError(err, "Failed to create template")),
   });
 };
 
@@ -55,7 +55,7 @@ export const useUpdateRV = ({ onSuccess } = {}) => {
       qc.invalidateQueries({ queryKey: [QK, "detail", id] });
       if (onSuccess) onSuccess();
     },
-    onError: (err) => toast.error(err.response?.data?.message || "Update failed"),
+    onError: (err) => toast.error(extractApiError(err, "Update failed")),
   });
 };
 
@@ -69,7 +69,7 @@ export const usePauseRV = () => {
       qc.invalidateQueries({ queryKey: [QK] });
       qc.invalidateQueries({ queryKey: [QK, "detail", id] });
     },
-    onError: (err) => toast.error(err.response?.data?.message || "Failed to pause"),
+    onError: (err) => toast.error(extractApiError(err, "Failed to pause")),
   });
 };
 
@@ -83,7 +83,7 @@ export const useResumeRV = () => {
       qc.invalidateQueries({ queryKey: [QK] });
       qc.invalidateQueries({ queryKey: [QK, "detail", id] });
     },
-    onError: (err) => toast.error(err.response?.data?.message || "Failed to resume"),
+    onError: (err) => toast.error(extractApiError(err, "Failed to resume")),
   });
 };
 
@@ -96,7 +96,7 @@ export const useEndRV = () => {
       toast.success("Template ended — no further runs");
       qc.invalidateQueries({ queryKey: [QK] });
     },
-    onError: (err) => toast.error(err.response?.data?.message || "Failed to end template"),
+    onError: (err) => toast.error(extractApiError(err, "Failed to end template")),
   });
 };
 
@@ -109,7 +109,7 @@ export const useRunNowRV = () => {
       toast.success("Voucher fired manually");
       qc.invalidateQueries({ queryKey: [QK, "detail", id] });
     },
-    onError: (err) => toast.error(err.response?.data?.message || "Run failed"),
+    onError: (err) => toast.error(extractApiError(err, "Run failed")),
   });
 };
 
@@ -122,6 +122,6 @@ export const useDeleteRV = () => {
       toast.success("Template deleted");
       qc.invalidateQueries({ queryKey: [QK] });
     },
-    onError: (err) => toast.error(err.response?.data?.message || "Delete failed"),
+    onError: (err) => toast.error(extractApiError(err, "Delete failed")),
   });
 };

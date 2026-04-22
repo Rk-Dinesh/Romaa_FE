@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { api } from "../../../../services/api";
+import { api, extractApiError } from "../../../../services/api";
 import { toast } from "react-toastify";
 
 const QK = "company-cash-accounts";
@@ -15,6 +15,29 @@ export const useCashAccounts = () =>
     queryKey: [QK],
     queryFn: fetchCashAccounts,
     staleTime: 30 * 1000,
+  });
+
+/* ── By account code ───────────────────────────────────────────────────── */
+export const useCashAccountByCode = (code) =>
+  useQuery({
+    queryKey: [QK, "by-code", code],
+    queryFn: async () => {
+      const { data } = await api.get(`/companycashaccount/by-code/${code}`);
+      return data?.data;
+    },
+    enabled: !!code,
+    staleTime: 60_000,
+  });
+
+/* ── Single cash account by ObjectId ───────────────────────────────────── */
+export const useCashAccount = (id) =>
+  useQuery({
+    queryKey: [QK, "one", id],
+    queryFn: async () => {
+      const { data } = await api.get(`/companycashaccount/${id}`);
+      return data?.data;
+    },
+    enabled: !!id,
   });
 
 /* ── Create ─────────────────────────────────────────────────────────────── */
@@ -33,7 +56,7 @@ export const useCreateCashAccount = ({ onClose } = {}) => {
       if (onClose) onClose();
     },
     onError: (err) =>
-      toast.error(err.response?.data?.message || "Failed to create cash account"),
+      toast.error(extractApiError(err, "Failed to create cash account")),
   });
 };
 
@@ -53,7 +76,7 @@ export const useUpdateCashAccount = ({ onClose } = {}) => {
       if (onClose) onClose();
     },
     onError: (err) =>
-      toast.error(err.response?.data?.message || "Failed to update cash account"),
+      toast.error(extractApiError(err, "Failed to update cash account")),
   });
 };
 
@@ -73,6 +96,6 @@ export const useDeleteCashAccount = ({ onClose } = {}) => {
       if (onClose) onClose();
     },
     onError: (err) =>
-      toast.error(err.response?.data?.message || "Failed to delete cash account"),
+      toast.error(extractApiError(err, "Failed to delete cash account")),
   });
 };

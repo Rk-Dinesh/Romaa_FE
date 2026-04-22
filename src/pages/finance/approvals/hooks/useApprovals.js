@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient, keepPreviousData } from "@tanstack/react-query";
-import { api } from "../../../../services/api";
+import { api, extractApiError } from "../../../../services/api";
 import { toast } from "react-toastify";
 
 const QK = "approvals";
@@ -69,7 +69,7 @@ export const useApproveRequest = ({ onSuccess } = {}) => {
       qc.invalidateQueries({ queryKey: [QK] });
       if (onSuccess) onSuccess();
     },
-    onError: (err) => toast.error(err.response?.data?.message || "Approval failed"),
+    onError: (err) => toast.error(extractApiError(err, "Approval failed")),
   });
 };
 
@@ -82,7 +82,7 @@ export const useRejectRequest = ({ onSuccess } = {}) => {
       qc.invalidateQueries({ queryKey: [QK] });
       if (onSuccess) onSuccess();
     },
-    onError: (err) => toast.error(err.response?.data?.message || "Rejection failed"),
+    onError: (err) => toast.error(extractApiError(err, "Rejection failed")),
   });
 };
 
@@ -95,7 +95,7 @@ export const useWithdrawRequest = ({ onSuccess } = {}) => {
       qc.invalidateQueries({ queryKey: [QK] });
       if (onSuccess) onSuccess();
     },
-    onError: (err) => toast.error(err.response?.data?.message || "Withdraw failed"),
+    onError: (err) => toast.error(extractApiError(err, "Withdraw failed")),
   });
 };
 
@@ -108,6 +108,6 @@ export const useCreateApprovalRule = ({ onSuccess } = {}) => {
       qc.invalidateQueries({ queryKey: [QK, "rules"] });
       if (onSuccess) onSuccess();
     },
-    onError: (err) => toast.error(err.response?.data?.message || "Failed to save rule"),
+    onError: (err) => toast.error(extractApiError(err, "Failed to save rule")),
   });
 };

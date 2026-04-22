@@ -1,9 +1,11 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState } from "react";
 import { IoChevronBackSharp } from "react-icons/io5";
 import { useLocation, useNavigate } from "react-router-dom";
-import axios from "axios";
 import Title from "../../../components/Title";
 import Button from "../../../components/Button";
+import { useClientBillDetails, useApproveClientBill } from "./hooks/useClientBilling";
+import AttachmentsPanel from "../shared/components/AttachmentsPanel";
+import AuditHistoryPanel from "../shared/components/AuditHistoryPanel";
 
 // Import exact shared components
 import ComparativeTable from "../../projects/client_billing/components/ComparativeTable";
@@ -13,9 +15,8 @@ import BillSummaryTab from "../../projects/client_billing/components/BillSummary
 // Import finance-specific read-only clones
 import FinanceBillDetailedTable from "./FinanceBillDetailedTable";
 import FinanceSteelDetailedTable from "./FinanceSteelDetailedTable";
-import { API } from "../../../constant";
 
-const TABS = ["Bill Summary", "Comparative", "Bill Abstract", "Bill Detailed", "Steel"];
+const TABS = ["Bill Summary", "Comparative", "Bill Abstract", "Bill Detailed", "Steel", "Attachments", "History"];
 
 const STATUS_CLS = {
   Draft:     "bg-gray-100 text-gray-600 border-gray-200 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-700",
@@ -34,27 +35,14 @@ function ViewFinanceClientBill() {
   const tenderId = rowData?.tender_id;
   const billId   = rowData?.bill_id;
 
-  const [activeTab,   setActiveTab]   = useState("Bill Summary");
-  const [billData,    setBillData]    = useState(null);
+  const [activeTab, setActiveTab] = useState("Bill Summary");
 
-  const fetchBill = useCallback(async () => {
-    if (!tenderId || !billId) return;
-    try {
-      const res = await axios.get(
-        `${API}/clientbilling/api/details?tender_id=${tenderId}&bill_id=${billId}`,
-        { withCredentials: true }
-      );
-      if (res.data.status || res.data.success) {
-        setBillData(res.data.data);
-      }
-    } catch {
-      // silent
-    }
-  }, [tenderId, billId]);
-
-  useEffect(() => { fetchBill(); }, [fetchBill]);
+  const { data: billData } = useClientBillDetails(tenderId, billId);
+  const approve = useApproveClientBill();
 
   const status = billData?.status ?? rowData?.status;
+  const docId = billData?._id || rowData?._id;
+  const canApprove = status && !["Approved", "Paid"].includes(status);
 
   /* ── Tab content ── */
   const renderTab = () => {
@@ -69,6 +57,17 @@ function ViewFinanceClientBill() {
         return <FinanceBillDetailedTable tenderId={tenderId} billId={billId} />;
       case "Steel":
         return <FinanceSteelDetailedTable tenderId={tenderId} billId={billId} />;
+      case "Attachments":
+        return (
+          <AttachmentsPanel
+            sourceType="ClientBilling"
+            sourceRef={docId}
+            sourceNo={billId}
+            tenderId={tenderId}
+          />
+        );
+      case "History":
+        return <AuditHistoryPanel entityType="ClientBilling" entityId={docId} />;
       default:
         return null;
     }
@@ -143,7 +142,16 @@ function ViewFinanceClientBill() {
         {renderTab()}
       </div>
 
-      <div className="flex justify-end py-4">
+      <div className="flex justify-end items-center gap-2 py-4">
+        {canApprove && docId && (
+          <button
+            onClick={() => approve.mutate(docId)}
+            disabled={approve.isPending}
+            className="px-5 py-2 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white text-sm font-semibold rounded-lg"
+          >
+            {approve.isPending ? "Approving…" : "Approve Bill"}
+          </button>
+        )}
         <Button onClick={() => navigate("..")} button_name="Back" button_icon={<IoChevronBackSharp />} />
       </div>
     </div>

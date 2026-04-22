@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient, keepPreviousData } from "@tanstack/react-query";
-import { api } from "../../../../services/api";
+import { api, extractApiError } from "../../../../services/api";
 import { toast } from "react-toastify";
 
 /* ── Bank + Cash Accounts (for transfer from/to dropdowns) ─────────────── */
@@ -73,7 +73,7 @@ export const useCreateBT = ({ onSuccess, onClose } = {}) => {
       if (onClose)   onClose();
     },
     onError: (err) =>
-      toast.error(err.response?.data?.message || "Failed to create bank transfer"),
+      toast.error(extractApiError(err, "Failed to create bank transfer")),
   });
 };
 
@@ -88,7 +88,36 @@ export const useApproveBT = () => {
       queryClient.invalidateQueries({ queryKey: ["finance-all-bank-cash-accounts"] });
     },
     onError: (err) =>
-      toast.error(err.response?.data?.message || "Failed to approve bank transfer"),
+      toast.error(extractApiError(err, "Failed to approve bank transfer")),
+  });
+};
+
+/* ── Single Bank Transfer ───────────────────────────────────────────────── */
+export const useBankTransfer = (id) =>
+  useQuery({
+    queryKey: [QK, "one", id],
+    queryFn: async () => {
+      const { data } = await api.get(`/banktransfer/${id}`);
+      return data?.data;
+    },
+    enabled: !!id,
+    staleTime: 15 * 1000,
+  });
+
+/* ── Update Bank Transfer (draft, requires _version) ────────────────────── */
+export const useUpdateBT = ({ onSuccess, onClose } = {}) => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, ...payload }) =>
+      api.patch(`/banktransfer/update/${id}`, payload).then((r) => r.data),
+    onSuccess: () => {
+      toast.success("Bank transfer updated");
+      queryClient.invalidateQueries({ queryKey: [QK] });
+      if (onSuccess) onSuccess();
+      if (onClose) onClose();
+    },
+    onError: (err) =>
+      toast.error(extractApiError(err, "Failed to update bank transfer")),
   });
 };
 
@@ -102,6 +131,6 @@ export const useDeleteBT = () => {
       queryClient.invalidateQueries({ queryKey: [QK] });
     },
     onError: (err) =>
-      toast.error(err.response?.data?.message || "Failed to delete bank transfer"),
+      toast.error(extractApiError(err, "Failed to delete bank transfer")),
   });
 };

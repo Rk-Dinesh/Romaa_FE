@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient, keepPreviousData } from "@tanstack/react-query";
-import { api } from "../../../../services/api";
+import { api, extractApiError } from "../../../../services/api";
 import { toast } from "react-toastify";
 
 const QK = "bank-reconciliation";
@@ -78,7 +78,23 @@ export const useCreateBR = ({ onSuccess } = {}) => {
       qc.invalidateQueries({ queryKey: ["next-br-no"] });
       if (onSuccess) onSuccess();
     },
-    onError: (err) => toast.error(err.response?.data?.message || "Failed to create statement"),
+    onError: (err) => toast.error(extractApiError(err, "Failed to create statement")),
+  });
+};
+
+/* ── Append bank statement lines to an existing statement ───────── */
+export const useAppendBRLines = ({ onSuccess } = {}) => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, lines }) =>
+      api.post(`/bankreconciliation/${id}/lines`, { lines }).then((r) => r.data),
+    onSuccess: (_, { id }) => {
+      toast.success("Lines appended");
+      qc.invalidateQueries({ queryKey: [QK, "detail", id] });
+      if (onSuccess) onSuccess();
+    },
+    onError: (err) =>
+      toast.error(extractApiError(err, "Failed to append lines")),
   });
 };
 
@@ -92,7 +108,7 @@ export const useAutoMatch = () => {
       toast.success(`Auto-matched ${result?.auto_matched ?? 0} line(s)`);
       qc.invalidateQueries({ queryKey: [QK, "detail", id] });
     },
-    onError: (err) => toast.error(err.response?.data?.message || "Auto-match failed"),
+    onError: (err) => toast.error(extractApiError(err, "Auto-match failed")),
   });
 };
 
@@ -106,7 +122,7 @@ export const useManualMatch = () => {
       toast.success("Line matched");
       qc.invalidateQueries({ queryKey: [QK, "detail", id] });
     },
-    onError: (err) => toast.error(err.response?.data?.message || "Match failed"),
+    onError: (err) => toast.error(extractApiError(err, "Match failed")),
   });
 };
 
@@ -119,7 +135,7 @@ export const useUnmatch = () => {
     onSuccess: (_, { id }) => {
       qc.invalidateQueries({ queryKey: [QK, "detail", id] });
     },
-    onError: (err) => toast.error(err.response?.data?.message || "Unmatch failed"),
+    onError: (err) => toast.error(extractApiError(err, "Unmatch failed")),
   });
 };
 
@@ -133,7 +149,7 @@ export const useIgnoreLine = () => {
       toast.success("Line ignored");
       qc.invalidateQueries({ queryKey: [QK, "detail", id] });
     },
-    onError: (err) => toast.error(err.response?.data?.message || "Failed"),
+    onError: (err) => toast.error(extractApiError(err, "Failed")),
   });
 };
 
@@ -147,7 +163,7 @@ export const useCloseBR = () => {
       qc.invalidateQueries({ queryKey: [QK] });
       qc.invalidateQueries({ queryKey: [QK, "detail", id] });
     },
-    onError: (err) => toast.error(err.response?.data?.message || "Close failed"),
+    onError: (err) => toast.error(extractApiError(err, "Close failed")),
   });
 };
 
@@ -160,6 +176,6 @@ export const useDeleteBR = () => {
       toast.success("Statement deleted");
       qc.invalidateQueries({ queryKey: [QK] });
     },
-    onError: (err) => toast.error(err.response?.data?.message || "Delete failed"),
+    onError: (err) => toast.error(extractApiError(err, "Delete failed")),
   });
 };

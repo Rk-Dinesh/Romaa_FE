@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient, keepPreviousData } from "@tanstack/react-query";
-import { api } from "../../../../services/api";
+import { api, extractApiError } from "../../../../services/api";
 import { toast } from "react-toastify";
 
 const QK = "contract-poc";
@@ -60,7 +60,7 @@ export const useUpsertContractPOC = ({ onSuccess } = {}) => {
       qc.invalidateQueries({ queryKey: [QK] });
       if (onSuccess) onSuccess(data);
     },
-    onError: (err) => toast.error(err.response?.data?.message || "Failed to save POC baseline"),
+    onError: (err) => toast.error(extractApiError(err, "Failed to save POC baseline")),
   });
 };
 
@@ -74,6 +74,6 @@ export const useSnapshotContractPOC = ({ onSuccess } = {}) => {
       qc.invalidateQueries({ queryKey: [QK] });
       if (onSuccess) onSuccess(data);
     },
-    onError: (err) => toast.error(err.response?.data?.message || "Snapshot failed"),
+    onError: (err) => toast.error(extractApiError(err, "Snapshot failed")),
   });
 };

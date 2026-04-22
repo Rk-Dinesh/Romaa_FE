@@ -415,6 +415,12 @@ const StatutoryDeadlines = lazy(() => import("../pages/finance/statutory_deadlin
 const Form26AS = lazy(() => import("../pages/finance/form26as/Form26AS"));
 const LedgerSeal = lazy(() => import("../pages/finance/ledger_seal/LedgerSeal"));
 const YearEndClose = lazy(() => import("../pages/finance/year_end_close/YearEndClose"));
+/* ── Finance Admin ── */
+const FinanceCurrency = lazy(() => import("../pages/finance/admin/Currency"));
+const FinanceSettings = lazy(() => import("../pages/finance/admin/FinanceSettings"));
+const FinanceWebhooks = lazy(() => import("../pages/finance/admin/Webhooks"));
+const FinanceBulk = lazy(() => import("../pages/finance/admin/BulkImportExport"));
+const FinanceLedgerBrowser = lazy(() => import("../pages/finance/admin/LedgerAccountBrowser"));
 
 // Reports
 const ProjectDashboard = lazy(
@@ -909,6 +915,14 @@ const AppRoutes = () => {
                 <Route path="form26as" element={<Form26AS />} />
                 <Route path="ledgerseal" element={<LedgerSeal />} />
                 <Route path="yearendclose" element={<YearEndClose />} />
+                {/* ── Finance Admin ── */}
+                <Route path="admin">
+                  <Route path="currency" element={<FinanceCurrency />} />
+                  <Route path="settings" element={<FinanceSettings />} />
+                  <Route path="webhooks" element={<FinanceWebhooks />} />
+                  <Route path="bulk" element={<FinanceBulk />} />
+                  <Route path="accountbrowser" element={<FinanceLedgerBrowser />} />
+                </Route>
               </Route>
               <Route path="/reports">
                 <Route path="projectdashboard" element={<ProjectDashboard />} />

@@ -9,6 +9,7 @@ import {
   usePostITDepreciation, useDualDepreciationReport,
 } from "./hooks/useFixedAssets";
 import DeleteModal from "../../../components/DeleteModal";
+import AttachmentsBadge from "../shared/components/AttachmentsBadge";
 
 const fmt = (n) => Number(n || 0).toLocaleString("en-IN", { minimumFractionDigits: 2 });
 const fmtCompact = (n) => {
@@ -39,6 +40,9 @@ const CreateAssetForm = ({ onClose }) => {
     accumulated_depreciation_account_code: "1110-DEP",
     depreciation_expense_account_code: "5410",
     tender_id: "", narration: "",
+    /* IT Act block + rate for dual-depreciation report (spec §5, §24) */
+    it_block: "Plant", it_rate_pct: "15", it_acquired_in_year_half: false,
+    linked_machinery_id: "",
   });
 
   const { mutate: create, isPending } = useCreateAsset({ onClose });
@@ -51,6 +55,7 @@ const CreateAssetForm = ({ onClose }) => {
       salvage_value: parseFloat(form.salvage_value) || 0,
       useful_life_months: parseInt(form.useful_life_months) || 0,
       wdv_rate_pct: parseFloat(form.wdv_rate_pct) || 0,
+      it_rate_pct: parseFloat(form.it_rate_pct) || 0,
     });
   };
 
@@ -125,10 +130,42 @@ const CreateAssetForm = ({ onClose }) => {
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
+          <div className="border-t border-gray-100 dark:border-gray-700 pt-3">
+            <p className="text-xs font-semibold text-gray-500 mb-2">Income Tax Act Classification</p>
+            <div className="grid grid-cols-3 gap-3">
+              <div>
+                <label className="block text-xs text-gray-400 mb-1">IT Block</label>
+                <select className={inp} value={form.it_block} onChange={(e) => setForm({ ...form, it_block: e.target.value })}>
+                  {["Building", "Plant", "Furniture", "Computers", "Vehicles", "Other"].map((b) => (
+                    <option key={b} value={b}>{b}</option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="block text-xs text-gray-400 mb-1">IT Rate (%)</label>
+                <input type="number" step="0.01" className={inp} value={form.it_rate_pct} onChange={(e) => setForm({ ...form, it_rate_pct: e.target.value })} placeholder="15" />
+              </div>
+              <div className="flex items-center gap-2 pt-5">
+                <input type="checkbox" id="it_half_year"
+                  checked={form.it_acquired_in_year_half}
+                  onChange={(e) => setForm({ ...form, it_acquired_in_year_half: e.target.checked })}
+                  className="h-4 w-4"
+                />
+                <label htmlFor="it_half_year" className="text-xs font-semibold text-gray-600 dark:text-gray-300">
+                  Acquired in 2nd half of FY (half-year IT rate)
+                </label>
+              </div>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-3 gap-3">
             <div>
               <label className="block text-xs font-semibold text-gray-500 mb-1">Tender ID (optional)</label>
               <input className={inp} value={form.tender_id} onChange={(e) => setForm({ ...form, tender_id: e.target.value })} placeholder="TND-001" />
+            </div>
+            <div>
+              <label className="block text-xs font-semibold text-gray-500 mb-1">Linked Machinery ID</label>
+              <input className={inp} value={form.linked_machinery_id} onChange={(e) => setForm({ ...form, linked_machinery_id: e.target.value })} placeholder="MCH-003" />
             </div>
             <div>
               <label className="block text-xs font-semibold text-gray-500 mb-1">Narration</label>
@@ -290,7 +327,7 @@ const FixedAssets = () => {
               <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm overflow-x-auto">
                 <table className="w-full text-xs">
                   <thead><tr className="bg-gray-50 dark:bg-gray-800/50 border-b border-gray-200 dark:border-gray-700">
-                    {["Asset", "Category", "Acquired", "Cost", "Accum. Dep.", "NBV", "Method", "Status"].map((h) => (
+                    {["Asset", "Category", "Acquired", "Cost", "Accum. Dep.", "NBV", "Method", "Status", ""].map((h) => (
                       <th key={h} className="px-3 py-2 text-[10px] font-bold text-gray-500 uppercase tracking-wider text-right first:text-left">{h}</th>
                     ))}
                   </tr></thead>
@@ -310,9 +347,12 @@ const FixedAssets = () => {
                         <td className="px-3 py-2 text-right">
                           <span className={`text-[10px] font-bold uppercase px-1.5 py-0.5 rounded-full border ${STATUS_CLS[a.status] || STATUS_CLS.active}`}>{a.status}</span>
                         </td>
+                        <td className="px-3 py-2 text-right">
+                          <AttachmentsBadge sourceType="FixedAsset" sourceRef={a._id} sourceNo={a.asset_no} />
+                        </td>
                       </tr>
                     ))}
-                    {!register.length && <tr><td colSpan={8} className="text-center py-12 text-sm text-gray-400">No assets. Click "Add Asset" to start.</td></tr>}
+                    {!register.length && <tr><td colSpan={9} className="text-center py-12 text-sm text-gray-400">No assets. Click &ldquo;Add Asset&rdquo; to start.</td></tr>}
                   </tbody>
                 </table>
               </div>

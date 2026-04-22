@@ -1,7 +1,6 @@
 import React, { useEffect, useState, useCallback } from "react";
-import axios from "axios";
 import { Loader2 } from "lucide-react";
-import { API } from "../../../constant";
+import { api } from "../../../services/api";
 import { TbFileExport } from "react-icons/tb";
 
 const FinanceSteelDetailedTable = ({ tenderId, billId }) => {
@@ -11,9 +10,9 @@ const FinanceSteelDetailedTable = ({ tenderId, billId }) => {
     const fetchData = useCallback(async () => {
         try {
             setLoading(true);
-            const res = await axios.get(
-                `${API}/steelestimate/details?tender_id=${tenderId}&bill_id=${billId}`
-            );
+            const res = await api.get("/steelestimate/details", {
+                params: { tender_id: tenderId, bill_id: billId },
+            });
 
             if (res.data.status) {
                 setDetailedData(res.data.data);

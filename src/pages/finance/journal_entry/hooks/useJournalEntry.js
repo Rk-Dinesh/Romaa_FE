@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient, keepPreviousData } from "@tanstack/react-query";
-import { api } from "../../../../services/api";
+import { api, extractApiError } from "../../../../services/api";
 import { toast } from "react-toastify";
 
 /* ── Next JE Number ─────────────────────────────────────────────────────── */
@@ -72,7 +72,7 @@ export const useCreateJE = ({ onSuccess, onClose } = {}) => {
       if (onClose)   onClose();
     },
     onError: (err) => {
-      toast.error(err.response?.data?.message || "Failed to create journal entry");
+      toast.error(extractApiError(err, "Failed to create journal entry"));
     },
   });
 };
@@ -91,7 +91,7 @@ export const useUpdateJE = ({ onSuccess, onClose } = {}) => {
       if (onClose)   onClose();
     },
     onError: (err) => {
-      toast.error(err.response?.data?.message || "Failed to update journal entry");
+      toast.error(extractApiError(err, "Failed to update journal entry"));
     },
   });
 };
@@ -106,7 +106,7 @@ export const useApproveJE = () => {
       queryClient.invalidateQueries({ queryKey: ["journal-entries"] });
     },
     onError: (err) =>
-      toast.error(err.response?.data?.message || "Failed to approve journal entry"),
+      toast.error(extractApiError(err, "Failed to approve journal entry")),
   });
 };
 
@@ -126,7 +126,7 @@ export const useReverseJE = ({ onSuccess } = {}) => {
       if (onSuccess) onSuccess();
     },
     onError: (err) =>
-      toast.error(err.response?.data?.message || "Failed to reverse journal entry"),
+      toast.error(extractApiError(err, "Failed to reverse journal entry")),
   });
 };
 
@@ -141,7 +141,7 @@ export const useDeleteJE = ({ onSuccess } = {}) => {
       if (onSuccess) onSuccess();
     },
     onError: (err) =>
-      toast.error(err.response?.data?.message || "Failed to delete journal entry"),
+      toast.error(extractApiError(err, "Failed to delete journal entry")),
   });
 };
 
@@ -157,7 +157,7 @@ export const useProcessAutoReversals = () => {
       queryClient.invalidateQueries({ queryKey: ["journal-entries"] });
     },
     onError: (err) =>
-      toast.error(err.response?.data?.message || "Failed to process auto-reversals"),
+      toast.error(extractApiError(err, "Failed to process auto-reversals")),
   });
 };
 

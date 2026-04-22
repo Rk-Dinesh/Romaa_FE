@@ -101,26 +101,79 @@ const GenerateModal = ({ onClose }) => {
 };
 
 /* ── Part B Modal ─────────────────────────────────────────────────── */
+/* Spec §22: POST /ewaybill/:id/part-b body = { delivery_state, vehicle_number, transport_mode } */
 const PartBModal = ({ ewbId, onClose }) => {
-  const [form, setForm] = useState({ vehicle_no: "", from_place: "", reason: "" });
+  const [form, setForm] = useState({
+    vehicle_number: "",
+    transport_mode: "Road",
+    delivery_state: "",
+    reason: "",
+  });
   const { mutate: updatePartB, isPending } = useUpdatePartB({ onSuccess: onClose });
+  const submit = (e) => {
+    e.preventDefault();
+    updatePartB({
+      id: ewbId,
+      vehicle_number: form.vehicle_number,
+      transport_mode: form.transport_mode,
+      delivery_state: form.delivery_state || undefined,
+      reason: form.reason || undefined,
+    });
+  };
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
-      <form onSubmit={(e) => { e.preventDefault(); updatePartB({ id: ewbId, ...form }); }}
+      <form onSubmit={submit}
         className="bg-white dark:bg-gray-900 rounded-2xl shadow-2xl border border-gray-200 dark:border-gray-700 w-full max-w-sm mx-4">
         <div className="px-6 py-4 border-b border-gray-100 dark:border-gray-800 flex items-center justify-between">
-          <h2 className="text-sm font-bold text-gray-900 dark:text-white">Update Part B (Vehicle)</h2>
+          <h2 className="text-sm font-bold text-gray-900 dark:text-white">Update Part B (Vehicle &amp; Transport)</h2>
           <button type="button" onClick={onClose}><XCircle size={18} className="text-gray-400" /></button>
         </div>
         <div className="px-6 py-5 space-y-3">
-          <div><label className="block text-xs font-semibold text-gray-500 mb-1">Vehicle No.</label><input className={inp} required value={form.vehicle_no} onChange={(e) => setForm({ ...form, vehicle_no: e.target.value })} placeholder="TN01AB1234" /></div>
-          <div><label className="block text-xs font-semibold text-gray-500 mb-1">From Place (optional)</label><input className={inp} value={form.from_place} onChange={(e) => setForm({ ...form, from_place: e.target.value })} /></div>
-          <div><label className="block text-xs font-semibold text-gray-500 mb-1">Reason (optional)</label><input className={inp} value={form.reason} onChange={(e) => setForm({ ...form, reason: e.target.value })} /></div>
+          <div>
+            <label className="block text-xs font-semibold text-gray-500 mb-1">Vehicle Number</label>
+            <input
+              className={inp}
+              required
+              value={form.vehicle_number}
+              onChange={(e) => setForm({ ...form, vehicle_number: e.target.value.toUpperCase() })}
+              placeholder="TN01AB1234"
+              maxLength={15}
+            />
+          </div>
+          <div>
+            <label className="block text-xs font-semibold text-gray-500 mb-1">Transport Mode</label>
+            <select
+              className={inp}
+              value={form.transport_mode}
+              onChange={(e) => setForm({ ...form, transport_mode: e.target.value })}
+            >
+              {TRANSPORT_MODES.map((m) => <option key={m}>{m}</option>)}
+            </select>
+          </div>
+          <div>
+            <label className="block text-xs font-semibold text-gray-500 mb-1">Delivery State (optional)</label>
+            <input
+              className={inp}
+              value={form.delivery_state}
+              onChange={(e) => setForm({ ...form, delivery_state: e.target.value })}
+              placeholder="Tamil Nadu"
+            />
+          </div>
+          <div>
+            <label className="block text-xs font-semibold text-gray-500 mb-1">Reason (optional)</label>
+            <input
+              className={inp}
+              value={form.reason}
+              onChange={(e) => setForm({ ...form, reason: e.target.value })}
+              placeholder="Vehicle changed / transporter swap"
+            />
+          </div>
+          <p className="text-[10px] text-gray-400">Part-B is mandatory before the consignment moves when distance &gt; 50km or inter-state.</p>
         </div>
         <div className="px-6 py-4 border-t border-gray-100 dark:border-gray-800 flex justify-end gap-2">
           <button type="button" onClick={onClose} className="px-4 py-2 text-sm text-gray-600 border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800">Cancel</button>
-          <button type="submit" disabled={isPending} className="px-4 py-2 text-sm font-semibold text-white bg-blue-600 hover:bg-blue-700 rounded-lg disabled:opacity-50">
-            {isPending ? "Updating…" : "Update Part B"}
+          <button type="submit" disabled={isPending || !form.vehicle_number} className="px-4 py-2 text-sm font-semibold text-white bg-blue-600 hover:bg-blue-700 rounded-lg disabled:opacity-50">
+            {isPending ? "Updating…" : "Save Part B"}
           </button>
         </div>
       </form>

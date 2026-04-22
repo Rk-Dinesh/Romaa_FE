@@ -51,7 +51,7 @@ import { TfiLayoutListThumb } from "react-icons/tfi";
 import { HiOutlineClipboardDocumentList } from "react-icons/hi2";
 import { TbBuildingBank, TbTransferIn, TbExchange, TbReceiptTax, TbAlertCircle, TbRepeat, TbTarget } from "react-icons/tb";
 import { LuBookOpen, LuBookMarked } from "react-icons/lu";
-import { GitMerge, Clock, FileText as FileText26Q, Package, FileCheck, Truck, Banknote, Shield, ClipboardList, Layers, TrendingDown, ArrowRightLeft, BarChart2, Activity, Star, CheckCircle, Calendar, FileSearch, Lock, Archive } from "lucide-react";
+import { GitMerge, Clock, FileText as FileText26Q, Package, FileCheck, Truck, Banknote, Shield, ClipboardList, Layers, TrendingDown, ArrowRightLeft, BarChart2, Activity, Star, CheckCircle, Calendar, FileSearch, Lock, Archive, Coins, Webhook, Sliders, FileUp, BookOpen } from "lucide-react";
 
 import { BiShapeSquare } from "react-icons/bi";
 import { BsBoxSeam } from "react-icons/bs";
@@ -712,19 +712,19 @@ export const Menus = [
         title: "Approvals",
         icon: <CheckCircle size={23} />,
         to: "/finance/approvals",
-        subModule: "approvals",
+        subModule: "approval",
       },
       {
         title: "Statutory Deadlines",
         icon: <Calendar size={23} />,
         to: "/finance/statutorydeadlines",
-        subModule: "statutory_deadlines",
+        subModule: "statutory_deadline",
       },
       {
         title: "Form 26AS",
         icon: <FileSearch size={23} />,
         to: "/finance/form26as",
-        subModule: "form26as",
+        subModule: "form_26as",
       },
       {
         title: "Ledger Seal",
@@ -737,6 +737,36 @@ export const Menus = [
         icon: <Archive size={23} />,
         to: "/finance/yearendclose",
         subModule: "year_end_close",
+      },
+      {
+        title: "Currencies",
+        icon: <Coins size={23} />,
+        to: "/finance/admin/currency",
+        subModule: "currency",
+      },
+      {
+        title: "Finance Settings",
+        icon: <Sliders size={23} />,
+        to: "/finance/admin/settings",
+        subModule: "finance_settings",
+      },
+      {
+        title: "Webhooks",
+        icon: <Webhook size={23} />,
+        to: "/finance/admin/webhooks",
+        subModule: "webhooks",
+      },
+      {
+        title: "Bulk Import / Export",
+        icon: <FileUp size={23} />,
+        to: "/finance/admin/bulk",
+        subModule: "bulk_import_export",
+      },
+      {
+        title: "Account Browser",
+        icon: <BookOpen size={23} />,
+        to: "/finance/admin/accountbrowser",
+        subModule: "account_browser",
       },
     ],
   },

@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient, keepPreviousData } from "@tanstack/react-query";
-import { api } from "../../../../services/api";
+import { useNavigate } from "react-router-dom";
+import { api, extractApiError, isApprovalRequired } from "../../../../services/api";
 import { toast } from "react-toastify";
 
 /* ── Shared party hooks (re-exported from DN/CN) ────────────────────────── */
@@ -8,6 +9,7 @@ export { useTenderIds, useVendors, useContractors } from "../../debit_creditnote
 /* ── Approve Payment Voucher ────────────────────────────────────────────── */
 export const useApprovePV = () => {
   const queryClient = useQueryClient();
+  const navigate = useNavigate();
   return useMutation({
     mutationFn: ({ id, bank_account_code }) =>
       api.patch(`/paymentvoucher/approve/${id}`, { bank_account_code }).then((r) => r.data),
@@ -17,14 +19,21 @@ export const useApprovePV = () => {
       queryClient.invalidateQueries({ queryKey: ["finance-bank-only-accounts"] });
       queryClient.invalidateQueries({ queryKey: ["finance-payable-bills"] });
     },
-    onError: (err) =>
-      toast.error(err.response?.data?.message || "Failed to approve payment voucher"),
+    onError: (err) => {
+      if (isApprovalRequired(err)) {
+        toast.info("Amount exceeds threshold — redirected to approval queue.");
+        navigate("/finance/approvals");
+        return;
+      }
+      toast.error(extractApiError(err, "Failed to approve payment voucher"));
+    },
   });
 };
 
 /* ── Approve Receipt Voucher ────────────────────────────────────────────── */
 export const useApproveRV = () => {
   const queryClient = useQueryClient();
+  const navigate = useNavigate();
   return useMutation({
     mutationFn: ({ id, bank_account_code }) =>
       api.patch(`/receiptvoucher/approve/${id}`, { bank_account_code }).then((r) => r.data),
@@ -33,8 +42,14 @@ export const useApproveRV = () => {
       queryClient.invalidateQueries({ queryKey: ["bank-receipt-vouchers"] });
       queryClient.invalidateQueries({ queryKey: ["finance-bank-only-accounts"] });
     },
-    onError: (err) =>
-      toast.error(err.response?.data?.message || "Failed to approve receipt voucher"),
+    onError: (err) => {
+      if (isApprovalRequired(err)) {
+        toast.info("Amount exceeds threshold — redirected to approval queue.");
+        navigate("/finance/approvals");
+        return;
+      }
+      toast.error(extractApiError(err, "Failed to approve receipt voucher"));
+    },
   });
 };
 
@@ -85,7 +100,7 @@ export const useCreatePV = ({ onSuccess, onClose } = {}) => {
       if (onClose)   onClose();
     },
     onError: (err) => {
-      toast.error(err.response?.data?.message || "Failed to create payment voucher");
+      toast.error(extractApiError(err, "Failed to create payment voucher"));
     },
   });
 };
@@ -108,7 +123,7 @@ export const useCreateRV = ({ onSuccess, onClose } = {}) => {
       if (onClose)   onClose();
     },
     onError: (err) => {
-      toast.error(err.response?.data?.message || "Failed to create receipt voucher");
+      toast.error(extractApiError(err, "Failed to create receipt voucher"));
     },
   });
 };
@@ -201,7 +216,7 @@ export const useUpdatePV = ({ onSuccess, onClose } = {}) => {
       if (onClose)   onClose();
     },
     onError: (err) =>
-      toast.error(err.response?.data?.message || "Failed to update payment voucher"),
+      toast.error(extractApiError(err, "Failed to update payment voucher")),
   });
 };
 
@@ -217,7 +232,7 @@ export const useUpdateRV = ({ onSuccess, onClose } = {}) => {
       if (onClose)   onClose();
     },
     onError: (err) =>
-      toast.error(err.response?.data?.message || "Failed to update receipt voucher"),
+      toast.error(extractApiError(err, "Failed to update receipt voucher")),
   });
 };
 
@@ -231,7 +246,7 @@ export const useDeletePV = () => {
       queryClient.invalidateQueries({ queryKey: ["bank-payment-vouchers"] });
     },
     onError: (err) =>
-      toast.error(err.response?.data?.message || "Failed to delete payment voucher"),
+      toast.error(extractApiError(err, "Failed to delete payment voucher")),
   });
 };
 
@@ -245,7 +260,7 @@ export const useDeleteRV = () => {
       queryClient.invalidateQueries({ queryKey: ["bank-receipt-vouchers"] });
     },
     onError: (err) =>
-      toast.error(err.response?.data?.message || "Failed to delete receipt voucher"),
+      toast.error(extractApiError(err, "Failed to delete receipt voucher")),
   });
 };
 

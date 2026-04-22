@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient, keepPreviousData } from "@tanstack/react-query";
-import { api } from "../../../../services/api";
+import { api, extractApiError } from "../../../../services/api";
 import { toast } from "react-toastify";
 
 const QK = "form26as";
@@ -24,20 +24,31 @@ export const useForm26ASReconcile = (params = {}) =>
       const { data } = await api.get("/form26as/reconcile", { params: p });
       return data?.data;
     },
-    enabled: !!params.financial_year && !!params.quarter,
+    enabled: !!params.financial_year,
     staleTime: 30_000,
   });
 
+/* Upload is multipart/form-data: fields { file, financial_year, section } */
 export const useUploadForm26AS = ({ onSuccess } = {}) => {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (entries) => api.post("/form26as/upload", { entries }).then((r) => r.data?.data),
+    mutationFn: ({ file, financial_year, section }) => {
+      const fd = new FormData();
+      if (file) fd.append("file", file);
+      if (financial_year) fd.append("financial_year", financial_year);
+      if (section) fd.append("section", section);
+      return api
+        .post("/form26as/upload", fd, {
+          headers: { "Content-Type": "multipart/form-data" },
+        })
+        .then((r) => r.data?.data);
+    },
     onSuccess: (data) => {
       toast.success(`Uploaded: ${data?.inserted || 0} new, ${data?.skipped || 0} skipped`);
       qc.invalidateQueries({ queryKey: [QK] });
       if (onSuccess) onSuccess(data);
     },
-    onError: (err) => toast.error(err.response?.data?.message || "Upload failed"),
+    onError: (err) => toast.error(extractApiError(err, "Upload failed")),
   });
 };
 
@@ -49,6 +60,6 @@ export const useDeleteForm26AS = () => {
       toast.success("Entry deleted");
       qc.invalidateQueries({ queryKey: [QK] });
     },
-    onError: (err) => toast.error(err.response?.data?.message || "Delete failed"),
+    onError: (err) => toast.error(extractApiError(err, "Delete failed")),
   });
 };

@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient, keepPreviousData } from "@tanstack/react-query";
-import { api } from "../../../../services/api";
+import { api, extractApiError } from "../../../../services/api";
 import { toast } from "react-toastify";
 
 const QK = "budgets";
@@ -65,7 +65,7 @@ export const useCreateBudget = ({ onSuccess, onClose } = {}) => {
       if (onSuccess) onSuccess();
       if (onClose) onClose();
     },
-    onError: (err) => toast.error(err.response?.data?.message || "Failed to create budget"),
+    onError: (err) => toast.error(extractApiError(err, "Failed to create budget")),
   });
 };
 
@@ -80,7 +80,7 @@ export const useUpdateBudget = ({ onSuccess } = {}) => {
       qc.invalidateQueries({ queryKey: [QK, "detail", id] });
       if (onSuccess) onSuccess();
     },
-    onError: (err) => toast.error(err.response?.data?.message || "Update failed"),
+    onError: (err) => toast.error(extractApiError(err, "Update failed")),
   });
 };
 
@@ -94,7 +94,7 @@ export const useApproveBudget = () => {
       qc.invalidateQueries({ queryKey: [QK] });
       qc.invalidateQueries({ queryKey: [QK, "detail", id] });
     },
-    onError: (err) => toast.error(err.response?.data?.message || "Approval failed"),
+    onError: (err) => toast.error(extractApiError(err, "Approval failed")),
   });
 };
 
@@ -107,7 +107,7 @@ export const useArchiveBudget = () => {
       toast.success("Budget archived");
       qc.invalidateQueries({ queryKey: [QK] });
     },
-    onError: (err) => toast.error(err.response?.data?.message || "Archive failed"),
+    onError: (err) => toast.error(extractApiError(err, "Archive failed")),
   });
 };
 
@@ -120,6 +120,6 @@ export const useDeleteBudget = () => {
       toast.success("Budget deleted");
       qc.invalidateQueries({ queryKey: [QK] });
     },
-    onError: (err) => toast.error(err.response?.data?.message || "Delete failed"),
+    onError: (err) => toast.error(extractApiError(err, "Delete failed")),
   });
 };

@@ -15,6 +15,7 @@ import {
 import CreateDebitCreditNote from "./CreateDebitCreditNote";
 import ConfirmModal from "../../../components/ConfirmModal";
 import DeleteModal from "../../../components/DeleteModal";
+import AttachmentsBadge from "../shared/components/AttachmentsBadge";
 
 const fmt = (n) =>
   Number(n || 0).toLocaleString("en-IN", { minimumFractionDigits: 2 });
@@ -323,6 +324,13 @@ const Debit_CreditNote = () => {
 
                       <td className="px-4 py-3">
                         <div className="flex items-center gap-1.5">
+                          <AttachmentsBadge
+                            sourceType={isCN ? "CreditNote" : "DebitNote"}
+                            sourceRef={v._id}
+                            sourceNo={v[noKey]}
+                            tenderId={v.tender_id}
+                            readOnly={v.status === "approved"}
+                          />
                           {v.status === "pending" && (
                             <button
                               onClick={(e) => {

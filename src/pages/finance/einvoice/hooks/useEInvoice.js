@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient, keepPreviousData } from "@tanstack/react-query";
-import { api } from "../../../../services/api";
+import { api, extractApiError } from "../../../../services/api";
 import { toast } from "react-toastify";
 
 const QK = "einvoice";
@@ -36,7 +36,7 @@ export const useGenerateEInvoice = ({ onSuccess } = {}) => {
       qc.invalidateQueries({ queryKey: [QK] });
       if (onSuccess) onSuccess(data);
     },
-    onError: (err) => toast.error(err.response?.data?.message || "Failed to generate E-Invoice"),
+    onError: (err) => toast.error(extractApiError(err, "Failed to generate E-Invoice")),
   });
 };
 
@@ -49,9 +49,20 @@ export const useCancelEInvoice = ({ onSuccess } = {}) => {
       qc.invalidateQueries({ queryKey: [QK] });
       if (onSuccess) onSuccess();
     },
-    onError: (err) => toast.error(err.response?.data?.message || "Cancellation failed"),
+    onError: (err) => toast.error(extractApiError(err, "Cancellation failed")),
   });
 };
+
+export const useEInvoiceByIRN = (irn) =>
+  useQuery({
+    queryKey: [QK, "by-irn", irn],
+    queryFn: async () => {
+      const { data } = await api.get(`/einvoice/by-irn/${irn}`);
+      return data?.data;
+    },
+    enabled: !!irn,
+    staleTime: 60_000,
+  });
 
 export const useEInvoiceQR = (id) =>
   useQuery({

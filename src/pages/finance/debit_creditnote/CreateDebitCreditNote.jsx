@@ -34,9 +34,11 @@ const schema = yup.object().shape({
 });
 
 /* ── Constants ───────────────────────────────────────────────────────────── */
-const ADJ_TYPES   = ["Against Bill", "Advance Adjustment", "On Account"];
-const TAX_TYPES   = ["GST", "NonGST", "Exempt"];
-const SALES_TYPES = ["Local", "Interstate", "Export", "SEZ", "Exempt"];
+/* spec §5: adj_type = "Against Bill" | "Standalone"; tax_type = "GST" | "Non-GST"; sales_type = "Local" | "Interstate" */
+const ADJ_TYPES   = ["Against Bill", "Standalone"];
+const TAX_TYPES   = ["GST", "Non-GST"];
+const SALES_TYPES = ["Local", "Interstate"];
+const RAISED_BY   = ["Company", "Vendor"]; /* Debit Note only */
 
 const emptyEntry     = () => ({ dr_cr: "Dr", account_name: "", debit_amt: "", credit_amt: "", entry_type: "material" });
 const supplierEntry  = (isCN) => ({ dr_cr: isCN ? "Cr" : "Dr", account_name: "", debit_amt: "", credit_amt: "", entry_type: "supplier" });
@@ -175,6 +177,7 @@ const CreateDebitCreditNote = ({ onclose, onSuccess }) => {
   const [gstPercent, setGstPercent] = useState("");
   const [salesType, setSalesType] = useState("Local");
   const [revCharge, setRevCharge] = useState(false);
+  const [raisedBy,  setRaisedBy]  = useState("Company"); /* DN only: "Company" | "Vendor" */
 
   /* ── Bill selection ── */
   const [selectedBill, setSelectedBill] = useState(null);
@@ -379,6 +382,7 @@ const CreateDebitCreditNote = ({ onclose, onSuccess }) => {
         dn_no:       data.doc_no,
         dn_date:     data.doc_date,
         service_amt: data.service_amt != null && data.service_amt !== "" ? Number(data.service_amt) : undefined,
+        raised_by:   raisedBy,
         ...payload,
       });
     }
@@ -680,6 +684,14 @@ const CreateDebitCreditNote = ({ onclose, onSuccess }) => {
                     </span>
                   </div>
                 </Field>
+
+                {!isCN && (
+                  <Field label="Raised By">
+                    <select value={raisedBy} onChange={e => setRaisedBy(e.target.value)} className={selectCls}>
+                      {RAISED_BY.map(t => <option key={t} value={t}>{t}</option>)}
+                    </select>
+                  </Field>
+                )}
               </div>
             </SectionCard>
 

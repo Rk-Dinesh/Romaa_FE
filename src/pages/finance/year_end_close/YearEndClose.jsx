@@ -1,9 +1,10 @@
 import { useState } from "react";
-import { Archive, RefreshCw, CheckCircle, RotateCcw, ChevronRight, ChevronDown } from "lucide-react";
+import { Archive, RefreshCw, CheckCircle, RotateCcw, ChevronRight, ChevronDown, Loader2, AlertTriangle, PlayCircle } from "lucide-react";
 import {
   useYearEndCloseList, useYearEndCloseDetail, useYearEndClosePreview,
   useYearEndCloseOpeningBalances, usePerformYearEndClose, useReopenYearEnd,
 } from "./hooks/useYearEndClose";
+import { useStartArchival, useArchivalStatus, useArchivalJobs } from "../shared/hooks/useArchival";
 
 const fmt = (n) => Number(n || 0).toLocaleString("en-IN", { minimumFractionDigits: 2 });
 const fmtCompact = (n) => {
@@ -155,6 +156,110 @@ const ReopenDialog = ({ fy, onClose, onDone }) => {
   );
 };
 
+/* ── Archival Panel ─────────────────────────────────────────────── */
+const ArchivalPanel = ({ fy }) => {
+  const { data: status } = useArchivalStatus(fy);
+  const { data: jobs = [] } = useArchivalJobs();
+  const start = useStartArchival();
+
+  const current = status;
+  const isRunning = current?.status === "running" || current?.status === "pending";
+  const progressPct = current?.progress ? Math.round(current.progress * 100) : 0;
+
+  const recent = (Array.isArray(jobs) ? jobs : [])
+    .filter((j) => j.fin_year === fy)
+    .slice(0, 3);
+
+  return (
+    <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 overflow-hidden">
+      <div className="px-5 py-3 border-b border-gray-100 dark:border-gray-800 flex items-center gap-2">
+        <Archive size={14} className="text-purple-500" />
+        <p className="text-xs font-bold text-gray-700 dark:text-gray-200">Archival — FY {fy}</p>
+        <span className="ml-auto">
+          {current?.status === "completed" && (
+            <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300">Completed</span>
+          )}
+          {isRunning && (
+            <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300">
+              {current.status === "pending" ? "Pending" : "Running"}
+            </span>
+          )}
+          {current?.status === "failed" && (
+            <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400">Failed</span>
+          )}
+        </span>
+      </div>
+
+      <div className="p-5 space-y-4">
+        <div className="flex items-start gap-3">
+          {isRunning ? (
+            <Loader2 size={18} className="animate-spin text-blue-500 mt-1 shrink-0" />
+          ) : current?.status === "completed" ? (
+            <CheckCircle size={18} className="text-emerald-500 mt-1 shrink-0" />
+          ) : current?.status === "failed" ? (
+            <AlertTriangle size={18} className="text-red-500 mt-1 shrink-0" />
+          ) : (
+            <PlayCircle size={18} className="text-gray-400 mt-1 shrink-0" />
+          )}
+          <div className="flex-1">
+            <p className="text-xs font-semibold text-gray-700 dark:text-gray-200">
+              {isRunning
+                ? `Archiving FY ${fy} transactions…`
+                : current?.status === "completed"
+                ? `FY ${fy} has been archived`
+                : current?.status === "failed"
+                ? "Last archival job failed — see job history below"
+                : "Archive approved transactions to cold storage before closing the year"}
+            </p>
+            <p className="text-[11px] text-gray-500 mt-0.5">
+              {current?.created_at && <>Started {new Date(current.created_at).toLocaleString("en-GB")}</>}
+              {current?.completed_at && <> · Completed {new Date(current.completed_at).toLocaleString("en-GB")}</>}
+            </p>
+            {isRunning && (
+              <div className="mt-2 h-1.5 bg-gray-100 dark:bg-gray-800 rounded-full overflow-hidden max-w-md">
+                <div className="h-full bg-blue-500 transition-all duration-300" style={{ width: `${progressPct || 10}%` }} />
+              </div>
+            )}
+          </div>
+          <button
+            onClick={() => {
+              if (window.confirm(`Start archival job for FY ${fy}? This moves approved transactions into cold storage.`)) {
+                start.mutate(fy);
+              }
+            }}
+            disabled={isRunning || start.isPending}
+            className="flex items-center gap-1 px-3 py-1.5 bg-purple-600 hover:bg-purple-700 disabled:opacity-40 text-white text-xs font-semibold rounded-lg shrink-0"
+          >
+            {start.isPending || isRunning ? <Loader2 size={11} className="animate-spin" /> : <PlayCircle size={11} />}
+            {isRunning ? "Running" : current?.status === "completed" ? "Re-run" : "Start archival"}
+          </button>
+        </div>
+
+        {recent.length > 0 && (
+          <div className="border-t border-gray-100 dark:border-gray-800 pt-3">
+            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1.5">Job history</p>
+            <ul className="space-y-1">
+              {recent.map((j) => (
+                <li key={j._id || j.job_id} className="flex items-center gap-2 text-[11px]">
+                  <span className="font-mono text-gray-400">{j.job_id || j._id?.slice(-8)}</span>
+                  <span className="capitalize text-gray-500">{j.status}</span>
+                  <span className="ml-auto text-gray-400">
+                    {j.completed_at
+                      ? new Date(j.completed_at).toLocaleString("en-GB")
+                      : j.created_at
+                      ? new Date(j.created_at).toLocaleString("en-GB")
+                      : "—"}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
 /* ── Main Page ──────────────────────────────────────────────────── */
 const YearEndClose = () => {
   const [fy, setFy] = useState(currentFY);
@@ -204,6 +309,9 @@ const YearEndClose = () => {
       </div>
 
       <div className="px-6 py-5 space-y-5">
+        {/* Archival */}
+        <ArchivalPanel fy={fy} />
+
         {/* Preview & Opening Balances */}
         <PreviewPanel fy={fy} />
         <OpeningBalancesPanel fy={fy} />

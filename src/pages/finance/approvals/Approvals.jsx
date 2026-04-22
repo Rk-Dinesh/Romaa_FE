@@ -74,40 +74,128 @@ const RequestRow = ({ req, onApprove, onReject, onWithdraw, isMine }) => (
   </tr>
 );
 
+/* spec §5 VOUCHER_SOURCE */
+const SOURCE_TYPES = [
+  "PurchaseBill", "PaymentVoucher", "ReceiptVoucher", "CreditNote",
+  "DebitNote", "ExpenseVoucher", "BankTransfer", "JournalEntry",
+  "ClientBilling", "WeeklyBilling",
+];
+
 /* ── New Rule Modal ─────────────────────────────────────────────── */
 const NewRuleModal = ({ onClose }) => {
-  const [form, setForm] = useState({ source_type: "", min_amount: "", max_amount: "", approver_roles: "", approvals_required: 1 });
+  const [sourceType, setSourceType] = useState("PurchaseBill");
+  const [isActive, setIsActive] = useState(true);
+  /* thresholds: each row = { min_amount, max_amount, approvers (comma-sep employee ids), any_of } */
+  const [thresholds, setThresholds] = useState([
+    { min_amount: "0", max_amount: "50000", approvers: "", any_of: true },
+  ]);
+
+  const addTier = () =>
+    setThresholds((t) => [...t, { min_amount: "", max_amount: "", approvers: "", any_of: true }]);
+  const removeTier = (i) => setThresholds((t) => t.filter((_, idx) => idx !== i));
+  const updateTier = (i, patch) =>
+    setThresholds((t) => t.map((row, idx) => (idx === i ? { ...row, ...patch } : row)));
+
   const create = useCreateApprovalRule({ onSuccess: onClose });
   const submit = () => {
     create.mutate({
-      ...form,
-      min_amount: form.min_amount ? +form.min_amount : undefined,
-      max_amount: form.max_amount ? +form.max_amount : undefined,
-      approver_roles: form.approver_roles.split(",").map((s) => s.trim()).filter(Boolean),
+      source_type: sourceType,
+      is_active: isActive,
+      thresholds: thresholds.map((t) => ({
+        min_amount: t.min_amount === "" ? undefined : Number(t.min_amount),
+        max_amount: t.max_amount === "" ? undefined : Number(t.max_amount),
+        approvers: t.approvers
+          .split(",")
+          .map((s) => s.trim())
+          .filter(Boolean),
+        any_of: !!t.any_of,
+      })),
     });
   };
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
-      <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-2xl p-6 w-full max-w-sm space-y-3">
+      <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-2xl p-6 w-full max-w-xl max-h-[85vh] overflow-y-auto space-y-4">
         <p className="text-sm font-bold text-gray-800 dark:text-white">New Approval Rule</p>
-        {[
-          { label: "Source Type", key: "source_type", placeholder: "e.g. purchase_bill" },
-          { label: "Min Amount", key: "min_amount", placeholder: "0" },
-          { label: "Max Amount", key: "max_amount", placeholder: "leave blank for unlimited" },
-          { label: "Approver Roles (comma separated)", key: "approver_roles", placeholder: "admin, finance_manager" },
-        ].map(({ label, key, placeholder }) => (
-          <div key={key}>
-            <label className="block text-[10px] font-semibold text-gray-500 uppercase tracking-wider mb-1">{label}</label>
-            <input value={form[key]} onChange={(e) => setForm({ ...form, [key]: e.target.value })}
-              placeholder={placeholder}
-              className="w-full border border-gray-200 dark:border-gray-700 rounded-lg px-3 py-2 text-sm bg-white dark:bg-gray-800 dark:text-white focus:outline-none" />
+
+        <div className="grid grid-cols-2 gap-3">
+          <div>
+            <label className="block text-[10px] font-semibold text-gray-500 uppercase tracking-wider mb-1">Source Type</label>
+            <select
+              value={sourceType}
+              onChange={(e) => setSourceType(e.target.value)}
+              className="w-full border border-gray-200 dark:border-gray-700 rounded-lg px-3 py-2 text-sm bg-white dark:bg-gray-800 dark:text-white focus:outline-none"
+            >
+              {SOURCE_TYPES.map((s) => (
+                <option key={s} value={s}>{s}</option>
+              ))}
+            </select>
           </div>
-        ))}
-        <div>
-          <label className="block text-[10px] font-semibold text-gray-500 uppercase tracking-wider mb-1">Approvals Required</label>
-          <input type="number" min={1} value={form.approvals_required} onChange={(e) => setForm({ ...form, approvals_required: +e.target.value })}
-            className="w-full border border-gray-200 dark:border-gray-700 rounded-lg px-3 py-2 text-sm bg-white dark:bg-gray-800 dark:text-white focus:outline-none" />
+          <div className="flex items-end gap-2">
+            <input
+              id="rule-active"
+              type="checkbox"
+              checked={isActive}
+              onChange={(e) => setIsActive(e.target.checked)}
+              className="h-4 w-4"
+            />
+            <label htmlFor="rule-active" className="text-xs font-semibold text-gray-600 dark:text-gray-300 pb-2">
+              Active
+            </label>
+          </div>
         </div>
+
+        <div>
+          <div className="flex items-center justify-between mb-2">
+            <label className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider">Thresholds</label>
+            <button onClick={addTier} className="text-xs font-semibold text-indigo-600 hover:text-indigo-700">
+              + Add tier
+            </button>
+          </div>
+          <div className="space-y-2">
+            {thresholds.map((t, i) => (
+              <div key={i} className="grid grid-cols-12 gap-2 items-start p-2 rounded-lg border border-gray-100 dark:border-gray-700">
+                <input
+                  type="number"
+                  value={t.min_amount}
+                  onChange={(e) => updateTier(i, { min_amount: e.target.value })}
+                  placeholder="Min ₹"
+                  className="col-span-2 border border-gray-200 dark:border-gray-700 rounded-lg px-2 py-1.5 text-xs bg-white dark:bg-gray-800 dark:text-white"
+                />
+                <input
+                  type="number"
+                  value={t.max_amount}
+                  onChange={(e) => updateTier(i, { max_amount: e.target.value })}
+                  placeholder="Max ₹ (blank = ∞)"
+                  className="col-span-2 border border-gray-200 dark:border-gray-700 rounded-lg px-2 py-1.5 text-xs bg-white dark:bg-gray-800 dark:text-white"
+                />
+                <input
+                  type="text"
+                  value={t.approvers}
+                  onChange={(e) => updateTier(i, { approvers: e.target.value })}
+                  placeholder="Approver employee IDs (comma separated)"
+                  className="col-span-5 border border-gray-200 dark:border-gray-700 rounded-lg px-2 py-1.5 text-xs bg-white dark:bg-gray-800 dark:text-white"
+                />
+                <label className="col-span-2 flex items-center gap-1 text-[11px] text-gray-600 dark:text-gray-300">
+                  <input
+                    type="checkbox"
+                    checked={t.any_of}
+                    onChange={(e) => updateTier(i, { any_of: e.target.checked })}
+                  />
+                  Any-of
+                </label>
+                <button
+                  onClick={() => removeTier(i)}
+                  disabled={thresholds.length === 1}
+                  className="col-span-1 text-xs text-red-500 hover:text-red-700 disabled:opacity-30"
+                >
+                  <X size={14} />
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
+
         <div className="flex justify-end gap-2 pt-2">
           <button onClick={onClose} className="px-4 py-1.5 text-sm text-gray-600 hover:bg-gray-100 rounded-lg">Cancel</button>
           <button onClick={submit} disabled={create.isPending} className="px-4 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold rounded-lg disabled:opacity-60">

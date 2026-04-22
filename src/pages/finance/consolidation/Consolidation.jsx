@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Layers, RefreshCw, ChevronDown, ChevronRight } from "lucide-react";
 import {
   useConsolidationEntities, useConsolidationTrialBalance,
-  useConsolidationPnL, useConsolidationBalanceSheet, useConsolidationInterEntity,
+  useConsolidationPnL, useConsolidationInterEntity,
 } from "./hooks/useConsolidation";
 
 const fmt = (n) => Number(n || 0).toLocaleString("en-IN", { minimumFractionDigits: 2 });
@@ -36,7 +36,7 @@ const EntityLegend = ({ entities, colourMap }) => (
 );
 
 /* ── Trial Balance Tab ────────────────────────────────────────────── */
-const TrialBalanceTab = ({ params, colourMap, entities }) => {
+const TrialBalanceTab = ({ params, colourMap }) => {
   const [open, setOpen] = useState({});
   const { data: tbData, isLoading } = useConsolidationTrialBalance(params);
   const rows = Array.isArray(tbData) ? tbData : [];

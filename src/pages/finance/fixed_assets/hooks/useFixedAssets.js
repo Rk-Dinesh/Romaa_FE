@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient, keepPreviousData } from "@tanstack/react-query";
-import { api } from "../../../../services/api";
+import { api, extractApiError } from "../../../../services/api";
 import { toast } from "react-toastify";
 
 const QK = "fixed-assets";
@@ -64,7 +64,7 @@ export const useCreateAsset = ({ onSuccess, onClose } = {}) => {
       if (onSuccess) onSuccess();
       if (onClose) onClose();
     },
-    onError: (err) => toast.error(err.response?.data?.message || "Failed to add asset"),
+    onError: (err) => toast.error(extractApiError(err, "Failed to add asset")),
   });
 };
 
@@ -79,7 +79,7 @@ export const useUpdateAsset = ({ onSuccess } = {}) => {
       qc.invalidateQueries({ queryKey: [QK, "detail", id] });
       if (onSuccess) onSuccess();
     },
-    onError: (err) => toast.error(err.response?.data?.message || "Update failed"),
+    onError: (err) => toast.error(extractApiError(err, "Update failed")),
   });
 };
 
@@ -92,7 +92,7 @@ export const useArchiveAsset = () => {
       toast.success("Asset archived");
       qc.invalidateQueries({ queryKey: [QK] });
     },
-    onError: (err) => toast.error(err.response?.data?.message || "Archive failed"),
+    onError: (err) => toast.error(extractApiError(err, "Archive failed")),
   });
 };
 
@@ -106,7 +106,7 @@ export const usePostDepreciation = () => {
       toast.success(`Depreciation posted: ${result?.posted ?? 0} asset(s)`);
       qc.invalidateQueries({ queryKey: [QK] });
     },
-    onError: (err) => toast.error(err.response?.data?.message || "Depreciation failed"),
+    onError: (err) => toast.error(extractApiError(err, "Depreciation failed")),
   });
 };
 
@@ -121,7 +121,7 @@ export const useDepreciateOne = () => {
       qc.invalidateQueries({ queryKey: [QK] });
       qc.invalidateQueries({ queryKey: [QK, "detail", id] });
     },
-    onError: (err) => toast.error(err.response?.data?.message || "Depreciation failed"),
+    onError: (err) => toast.error(extractApiError(err, "Depreciation failed")),
   });
 };
 
@@ -137,7 +137,7 @@ export const useDisposeAsset = ({ onSuccess } = {}) => {
       qc.invalidateQueries({ queryKey: [QK, "detail", id] });
       if (onSuccess) onSuccess();
     },
-    onError: (err) => toast.error(err.response?.data?.message || "Disposal failed"),
+    onError: (err) => toast.error(extractApiError(err, "Disposal failed")),
   });
 };
 
@@ -151,7 +151,7 @@ export const usePostITDepreciation = () => {
       toast.success(`IT-Act depreciation posted: ${result?.posted ?? 0} asset(s)`);
       qc.invalidateQueries({ queryKey: [QK] });
     },
-    onError: (err) => toast.error(err.response?.data?.message || "IT depreciation failed"),
+    onError: (err) => toast.error(extractApiError(err, "IT depreciation failed")),
   });
 };
 
@@ -166,7 +166,7 @@ export const useITDepreciateOne = () => {
       qc.invalidateQueries({ queryKey: [QK] });
       qc.invalidateQueries({ queryKey: [QK, "detail", id] });
     },
-    onError: (err) => toast.error(err.response?.data?.message || "IT depreciation failed"),
+    onError: (err) => toast.error(extractApiError(err, "IT depreciation failed")),
   });
 };
 

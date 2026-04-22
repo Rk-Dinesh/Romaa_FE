@@ -4,6 +4,9 @@ import {
   BookOpen, ArrowRightLeft, Hash, AlertTriangle,
 } from "lucide-react";
 import { FiUser } from "react-icons/fi";
+import AttachmentsPanel from "../shared/components/AttachmentsPanel";
+import AuditHistoryPanel from "../shared/components/AuditHistoryPanel";
+import ApprovalHistoryPanel from "../shared/components/ApprovalHistoryPanel";
 
 const fmt     = (n) => Number(n || 0).toLocaleString("en-IN", { minimumFractionDigits: 2 });
 const fmtDate = (v) =>
@@ -226,6 +229,21 @@ const ViewJournalEntry = ({ je, onClose, onApprove, onReverse, onDelete }) => {
               </table>
             </div>
           </div>
+
+          {/* ── Attachments · Audit · Approval side panels ───────────── */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 pt-2">
+            <AttachmentsPanel
+              sourceType="JournalEntry"
+              sourceRef={je._id}
+              sourceNo={je.je_no}
+              tenderId={je.tender_id}
+              readOnly={je.status === "approved"}
+            />
+            <AuditHistoryPanel entityType="JournalEntry" entityId={je._id} />
+          </div>
+          {Array.isArray(je.approval_log) && je.approval_log.length > 0 && (
+            <ApprovalHistoryPanel log={je.approval_log} />
+          )}
 
         </div>
 

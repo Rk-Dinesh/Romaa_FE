@@ -13,6 +13,7 @@ import CreateVoucher from "./CreateVoucher";
 import Loader from "../../../components/Loader";
 import ConfirmModal from "../../../components/ConfirmModal";
 import DeleteModal from "../../../components/DeleteModal";
+import AttachmentsBadge from "../shared/components/AttachmentsBadge";
 
 const fmt = (n) =>
   Number(n || 0).toLocaleString("en-IN", { minimumFractionDigits: 2 });
@@ -349,6 +350,13 @@ const BankTransactions = () => {
 
                       <td className="px-4 py-3">
                         <div className="flex items-center gap-1.5">
+                          <AttachmentsBadge
+                            sourceType={isPV ? "PaymentVoucher" : "ReceiptVoucher"}
+                            sourceRef={v._id}
+                            sourceNo={v[noKey]}
+                            tenderId={v.tender_id}
+                            readOnly={v.status === "approved"}
+                          />
                           {v.status === "pending" && (
                             <button
                               onClick={(e) => {

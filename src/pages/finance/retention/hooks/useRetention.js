@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient, keepPreviousData } from "@tanstack/react-query";
-import { api } from "../../../../services/api";
+import { api, extractApiError } from "../../../../services/api";
 import { toast } from "react-toastify";
 
 const QK = "retention";
@@ -37,6 +37,18 @@ export const useRetentionSummary = (params = {}) =>
     staleTime: 30_000,
   });
 
+/* Retention releases against a specific bill */
+export const useRetentionByBill = (billId) =>
+  useQuery({
+    queryKey: [QK, "bill", billId],
+    queryFn: async () => {
+      const { data } = await api.get(`/retention/bill/${billId}`);
+      return data?.data || [];
+    },
+    enabled: !!billId,
+    staleTime: 30_000,
+  });
+
 export const useRetentionReleaseList = (params = {}) =>
   useQuery({
     queryKey: [QK, "release-list", params],
@@ -69,7 +81,7 @@ export const useCreateRetentionRelease = ({ onSuccess } = {}) => {
       qc.invalidateQueries({ queryKey: [QK] });
       if (onSuccess) onSuccess(data);
     },
-    onError: (err) => toast.error(err.response?.data?.message || "Failed to create release"),
+    onError: (err) => toast.error(extractApiError(err, "Failed to create release")),
   });
 };
 
@@ -82,7 +94,7 @@ export const useApproveRetentionRelease = ({ onSuccess } = {}) => {
       qc.invalidateQueries({ queryKey: [QK] });
       if (onSuccess) onSuccess();
     },
-    onError: (err) => toast.error(err.response?.data?.message || "Approval failed"),
+    onError: (err) => toast.error(extractApiError(err, "Approval failed")),
   });
 };
 
@@ -95,6 +107,6 @@ export const useCancelRetentionRelease = ({ onSuccess } = {}) => {
       qc.invalidateQueries({ queryKey: [QK] });
       if (onSuccess) onSuccess();
     },
-    onError: (err) => toast.error(err.response?.data?.message || "Cancel failed"),
+    onError: (err) => toast.error(extractApiError(err, "Cancel failed")),
   });
 };

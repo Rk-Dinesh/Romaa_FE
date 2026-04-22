@@ -25,9 +25,22 @@ const schema = yup.object().shape({
   amount:      yup.number().typeError("Must be a number").positive("Must be positive").required("Amount is required"),
   against_no:  yup.string().nullable(),
   narration:   yup.string().nullable(),
+  tds_section: yup.string().nullable(),
+  tds_pct:     yup.number().typeError("Must be a number").min(0).max(100).nullable().transform((v, o) => (o === "" ? null : v)),
 });
 
-const PAYMENT_MODES = ["Cash", "Cheque", "NEFT", "RTGS", "UPI", "DD"];
+/* spec §5: TDS_SECTION = 194C | 194J | 194I | 194Q | 194H */
+const TDS_SECTIONS = ["", "194C", "194J", "194I", "194Q", "194H"];
+
+/* spec: PAYMENT_MODE = bank|cash|upi|cheque|neft|rtgs|imps (all lowercase on the wire) */
+const PAYMENT_MODES = [
+  { label: "NEFT", value: "neft" },
+  { label: "RTGS", value: "rtgs" },
+  { label: "IMPS", value: "imps" },
+  { label: "Cheque", value: "cheque" },
+  { label: "UPI", value: "upi" },
+  { label: "Bank", value: "bank" },
+];
 
 const fmt = (n) =>
   Number(n || 0).toLocaleString("en-IN", { minimumFractionDigits: 2 });
@@ -152,7 +165,7 @@ const CreateVoucher = ({ onclose, onSuccess }) => {
   const [voucherType, setVoucherType] = useState("PV");
   const isPV = voucherType === "PV";
 
-  const [txMode,           setTxMode]           = useState("NEFT");
+  const [txMode,           setTxMode]           = useState("neft");
   const [supplierType,     setSupplierType]      = useState("Vendor");
   const [selectedTenderId, setSelectedTenderId]  = useState("");
   const [selectedTenderRef,setSelectedTenderRef] = useState("");
@@ -300,7 +313,7 @@ const CreateVoucher = ({ onclose, onSuccess }) => {
     setSelectedSupplierId("");
     setSelectedBankId(""); setSelectedBankName(""); setSelectedBankCode("");
     setSelectedBill(null); setSettledAmt("");
-    setTxMode("NEFT");
+    setTxMode("neft");
     setEntries(makeEntries());
     reset({ doc_no: "", doc_date: "", bank_ref: "", cheque_no: "", cheque_date: "", amount: "", against_no: "", narration: "" });
   };
@@ -342,8 +355,8 @@ const CreateVoucher = ({ onclose, onSuccess }) => {
       bank_account_code: selectedBankCode   || undefined,
       bank_name:        selectedBankName    || undefined,
       bank_ref:         data.bank_ref       || undefined,
-      cheque_no:     txMode === "Cheque" ? (data.cheque_no   || undefined) : undefined,
-      cheque_date:   txMode === "Cheque" ? (data.cheque_date || undefined) : undefined,
+      cheque_no:     txMode === "cheque" ? (data.cheque_no   || undefined) : undefined,
+      cheque_date:   txMode === "cheque" ? (data.cheque_date || undefined) : undefined,
       entries: validEntries.map(e => ({
         dr_cr:        e.dr_cr,
         account_name: e.account_name,
@@ -360,6 +373,9 @@ const CreateVoucher = ({ onclose, onSuccess }) => {
         pv_date:      data.doc_date,
         payment_mode: txMode,
         gross_amount: Number(data.amount),
+        amount:       Number(data.amount),
+        tds_section:  data.tds_section || undefined,
+        tds_pct:      data.tds_pct != null && data.tds_pct !== "" ? Number(data.tds_pct) : 0,
         bill_refs: selectedBill
           ? [{ bill_type: selectedBill.bill_type, bill_ref: selectedBill.value, bill_no: selectedBill.bill_no, settled_amt: parseFloat(settledAmt) || 0 }]
           : [],
@@ -474,13 +490,13 @@ const CreateVoucher = ({ onclose, onSuccess }) => {
                 <Field label={isPV ? "Payment Mode" : "Receipt Mode"} required>
                   <div className="flex flex-wrap gap-1.5">
                     {PAYMENT_MODES.map(mode => (
-                      <button key={mode} type="button" onClick={() => setTxMode(mode)}
+                      <button key={mode.value} type="button" onClick={() => setTxMode(mode.value)}
                         className={`px-3 py-1.5 rounded-lg text-xs font-semibold border transition-all ${
-                          txMode === mode
+                          txMode === mode.value
                             ? isPV ? "bg-blue-600 border-blue-600 text-white" : "bg-emerald-600 border-emerald-600 text-white"
                             : "bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:border-gray-400"
                         }`}
-                      >{mode}</button>
+                      >{mode.label}</button>
                     ))}
                   </div>
                 </Field>
@@ -585,10 +601,10 @@ const CreateVoucher = ({ onclose, onSuccess }) => {
                 <div className="grid grid-cols-2 gap-3">
                   <Field label="UTR / Transaction Ref." error={errors.bank_ref}>
                     <input type="text" {...register("bank_ref")} className={inputCls}
-                      placeholder={txMode === "Cheque" ? "Cheque number" : "UTR reference"} />
+                      placeholder={txMode === "cheque" ? "Cheque number" : "UTR reference"} />
                   </Field>
 
-                  {txMode === "Cheque" ? (
+                  {txMode === "cheque" ? (
                     <>
                       <Field label="Cheque No." error={errors.cheque_no}>
                         <input type="text" {...register("cheque_no")} className={inputCls} placeholder="e.g. 000123" />
@@ -623,6 +639,23 @@ const CreateVoucher = ({ onclose, onSuccess }) => {
                       className={`${readonlyCls} pl-7`} placeholder="Auto-filled from entries" />
                   </div>
                 </Field>
+
+                {isPV && (
+                  <div className="grid grid-cols-2 gap-3">
+                    <Field label="TDS Section" error={errors.tds_section}>
+                      <select {...register("tds_section")} className={inputCls}>
+                        {TDS_SECTIONS.map(s => <option key={s || "none"} value={s}>{s || "— None —"}</option>)}
+                      </select>
+                    </Field>
+                    <Field label="TDS %" error={errors.tds_pct}>
+                      <div className="relative">
+                        <input type="number" step="0.01" min="0" max="100" {...register("tds_pct")}
+                          className={`${inputCls} pr-8`} placeholder="e.g. 2" />
+                        <span className="absolute right-3 top-2.5 text-xs text-gray-400 font-semibold">%</span>
+                      </div>
+                    </Field>
+                  </div>
+                )}
 
                 <Field label="Narration" error={errors.narration}>
                   <textarea {...register("narration")} rows={isPV ? 2 : 4}

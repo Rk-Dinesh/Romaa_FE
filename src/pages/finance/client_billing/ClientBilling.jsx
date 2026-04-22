@@ -1,7 +1,6 @@
-import { useEffect, useState, useCallback } from "react";
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import axios from "axios";
-import { API } from "../../../constant";
+import { useClientBillingHistory } from "./hooks/useClientBilling";
 import {
   TbFileInvoice, TbCurrencyRupee,
   TbReceipt, TbWallet, TbAlertCircle,
@@ -218,27 +217,12 @@ import { TbFolderOpen } from "react-icons/tb";
 
 const ClientBilling = () => {
   const navigate = useNavigate();
-  const [items, setItems]       = useState([]);
-  const [loading, setLoading]   = useState(false);
-  
+
   // Local state for the selected project
   const [selectedTender, setSelectedTender] = useState("");
   const [isModalOpen, setIsModalOpen]       = useState(true);
 
-  const fetchBilling = useCallback(async () => {
-    if (!selectedTender) return;
-    setLoading(true);
-    try {
-      const res = await axios.get(`${API}/clientbilling/history/${selectedTender}`, { withCredentials: true });
-      setItems(res.data.data || []);
-    } catch {
-      // silent
-    } finally {
-      setLoading(false);
-    }
-  }, [selectedTender]);
-
-  useEffect(() => { fetchBilling(); }, [fetchBilling]);
+  const { data: items = [], isLoading: loading } = useClientBillingHistory(selectedTender);
 
   const handleProjectSelect = (tenderId) => {
     setSelectedTender(tenderId);

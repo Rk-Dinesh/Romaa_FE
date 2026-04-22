@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { api } from "../../../../services/api";
+import { api, extractApiError } from "../../../../services/api";
 import { toast } from "react-toastify";
 
 const QK = "year-end-close";
@@ -56,7 +56,7 @@ export const usePerformYearEndClose = ({ onSuccess } = {}) => {
       qc.invalidateQueries({ queryKey: [QK] });
       if (onSuccess) onSuccess(data);
     },
-    onError: (err) => toast.error(err.response?.data?.message || "Year-end close failed"),
+    onError: (err) => toast.error(extractApiError(err, "Year-end close failed")),
   });
 };
 
@@ -69,6 +69,6 @@ export const useReopenYearEnd = ({ onSuccess } = {}) => {
       qc.invalidateQueries({ queryKey: [QK] });
       if (onSuccess) onSuccess();
     },
-    onError: (err) => toast.error(err.response?.data?.message || "Reopen failed"),
+    onError: (err) => toast.error(extractApiError(err, "Reopen failed")),
   });
 };

@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient, keepPreviousData } from "@tanstack/react-query";
-import { api } from "../../../../services/api";
+import { api, extractApiError } from "../../../../services/api";
 import { toast } from "react-toastify";
 
 /* ── List Accounts ───────────────────────────────────────────────────────── */
@@ -75,7 +75,7 @@ export const useCreateAccount = ({ onSuccess, onClose } = {}) => {
       if (onClose)   onClose();
     },
     onError: (err) => {
-      toast.error(err.response?.data?.message || "Failed to create account");
+      toast.error(extractApiError(err, "Failed to create account"));
     },
   });
 };
@@ -98,7 +98,7 @@ export const useUpdateAccount = ({ onSuccess, onClose } = {}) => {
       if (onClose)   onClose();
     },
     onError: (err) => {
-      toast.error(err.response?.data?.message || "Failed to update account");
+      toast.error(extractApiError(err, "Failed to update account"));
     },
   });
 };
@@ -120,10 +120,59 @@ export const useDeleteAccount = ({ onSuccess } = {}) => {
       if (onSuccess) onSuccess();
     },
     onError: (err) => {
-      toast.error(err.response?.data?.message || "Failed to delete account");
+      toast.error(extractApiError(err, "Failed to delete account"));
     },
   });
 };
+
+/* ── Posting Accounts (for voucher line-item pickers) ────────────────────── */
+export const usePostingAccounts = (params = {}) =>
+  useQuery({
+    queryKey: ["accounttree-posting", params],
+    queryFn: async ({ queryKey }) => {
+      const [, p] = queryKey;
+      const { data } = await api.get("/accounttree/posting-accounts", { params: p });
+      return data?.data || [];
+    },
+    staleTime: 60 * 1000,
+  });
+
+/* ── Account by Code ─────────────────────────────────────────────────────── */
+export const useAccountByCode = (code) =>
+  useQuery({
+    queryKey: ["accounttree-by-code", code],
+    queryFn: async () => {
+      const { data } = await api.get(`/accounttree/by-code/${code}`);
+      return data?.data;
+    },
+    enabled: !!code,
+    staleTime: 60 * 1000,
+  });
+
+/* ── Payable ledger accounts for a supplier ──────────────────────────────── */
+export const useAccountsBySupplier = (supplierId, supplier_type) =>
+  useQuery({
+    queryKey: ["accounttree-by-supplier", supplierId, supplier_type],
+    queryFn: async () => {
+      const { data } = await api.get(`/accounttree/by-supplier/${supplierId}`, {
+        params: supplier_type ? { supplier_type } : {},
+      });
+      return data?.data || [];
+    },
+    enabled: !!supplierId,
+    staleTime: 60 * 1000,
+  });
+
+/* ── Single account by ObjectId ──────────────────────────────────────────── */
+export const useAccount = (id) =>
+  useQuery({
+    queryKey: ["accounttree-one", id],
+    queryFn: async () => {
+      const { data } = await api.get(`/accounttree/${id}`);
+      return data?.data;
+    },
+    enabled: !!id,
+  });
 
 /* ── Seed Default COA ────────────────────────────────────────────────────── */
 const seedCOAApi = async () => {
@@ -143,7 +192,7 @@ export const useSeedCOA = ({ onSuccess } = {}) => {
       if (onSuccess) onSuccess();
     },
     onError: (err) => {
-      toast.error(err.response?.data?.message || "Seed failed");
+      toast.error(extractApiError(err, "Seed failed"));
     },
   });
 };

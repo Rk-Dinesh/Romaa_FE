@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient, keepPreviousData } from "@tanstack/react-query";
-import { api } from "../../../../services/api";
+import { api, extractApiError } from "../../../../services/api";
 import { toast } from "react-toastify";
 
 /* ── Tender IDs ─────────────────────────────────────────────────────────── */
@@ -89,7 +89,7 @@ export const useCreateCN = ({ onSuccess, onClose } = {}) => {
       if (onClose)   onClose();
     },
     onError: (err) => {
-      toast.error(err.response?.data?.message || "Failed to create credit note");
+      toast.error(extractApiError(err, "Failed to create credit note"));
     },
   });
 };
@@ -112,7 +112,7 @@ export const useCreateDN = ({ onSuccess, onClose } = {}) => {
       if (onClose)   onClose();
     },
     onError: (err) => {
-      toast.error(err.response?.data?.message || "Failed to create debit note");
+      toast.error(extractApiError(err, "Failed to create debit note"));
     },
   });
 };
@@ -127,7 +127,7 @@ export const useApproveCN = () => {
       queryClient.invalidateQueries({ queryKey: ["credit-notes"] });
     },
     onError: (err) =>
-      toast.error(err.response?.data?.message || "Failed to approve credit note"),
+      toast.error(extractApiError(err, "Failed to approve credit note")),
   });
 };
 
@@ -144,7 +144,7 @@ export const useApproveDN = () => {
       queryClient.invalidateQueries({ queryKey: ["debit-notes"] });
     },
     onError: (err) =>
-      toast.error(err.response?.data?.message || "Failed to approve debit note"),
+      toast.error(extractApiError(err, "Failed to approve debit note")),
   });
 };
 
@@ -237,7 +237,7 @@ export const useUpdateCN = ({ onSuccess, onClose } = {}) => {
       if (onClose)   onClose();
     },
     onError: (err) =>
-      toast.error(err.response?.data?.message || "Failed to update credit note"),
+      toast.error(extractApiError(err, "Failed to update credit note")),
   });
 };
 
@@ -254,7 +254,7 @@ export const useUpdateDN = ({ onSuccess, onClose } = {}) => {
       if (onClose)   onClose();
     },
     onError: (err) =>
-      toast.error(err.response?.data?.message || "Failed to update debit note"),
+      toast.error(extractApiError(err, "Failed to update debit note")),
   });
 };
 
@@ -269,7 +269,7 @@ export const useDeleteCN = ({ onSuccess } = {}) => {
       if (onSuccess) onSuccess();
     },
     onError: (err) =>
-      toast.error(err.response?.data?.message || "Failed to delete credit note"),
+      toast.error(extractApiError(err, "Failed to delete credit note")),
   });
 };
 
@@ -284,7 +284,7 @@ export const useDeleteDN = ({ onSuccess } = {}) => {
       if (onSuccess) onSuccess();
     },
     onError: (err) =>
-      toast.error(err.response?.data?.message || "Failed to delete debit note"),
+      toast.error(extractApiError(err, "Failed to delete debit note")),
   });
 };
 

@@ -10,6 +10,7 @@ import {
 import { toast } from "react-toastify";
 import { useTenderIds, usePermittedVendors, useCreateBill, useGRNForBilling, useNextBillId } from "./hooks/usePurchaseBill";
 import SearchableSelect from "../../../components/SearchableSelect";
+import { useCurrencyList } from "../../finance/shared/hooks/useCurrency";
 
 /* ── Schema ─────────────────────────────────────────────────────────────── */
 const schema = yup.object().shape({
@@ -90,6 +91,10 @@ const CreateBill = ({ onclose, onSuccess }) => {
   const [selectedVendorGstin,    setSelectedVendorGstin]    = useState("");
   const [selectedPlaceOfSupply,  setSelectedPlaceOfSupply]  = useState(""); // "InState" | "Others"
 
+  /* Multi-currency (spec §18) — defaults to INR. Exchange rate = INR per 1 foreign unit. */
+  const [selectedCurrency,       setSelectedCurrency]       = useState("INR");
+  const [exchangeRate,           setExchangeRate]           = useState(1);
+
   // additional charges: [{ id, type, amt, gst_pct }]
   const [additionalCharges, setAdditionalCharges] = useState([]);
 
@@ -105,6 +110,8 @@ const CreateBill = ({ onclose, onSuccess }) => {
 
   /* ── Hooks ──────────────────────────────────────────────────────────── */
   const { data: nextBillId }                                    = useNextBillId();
+  const { data: currenciesRaw = [] }                            = useCurrencyList();
+  const activeCurrencies = Array.isArray(currenciesRaw) ? currenciesRaw.filter((c) => c.is_active !== false) : [];
   const { data: tendersRaw = [],  isLoading: _loadingTenders  } = useTenderIds();
   const { data: vendorsRaw = [],  isLoading: _loadingVendors  } = usePermittedVendors(selectedTenderId);
   const { data: grnData = [],     isLoading: loadingGrn      } = useGRNForBilling(selectedTenderId, selectedVendorId);
@@ -352,6 +359,10 @@ const CreateBill = ({ onclose, onSuccess }) => {
       place_of_supply: selectedPlaceOfSupply,
       tax_mode:        isInState ? "instate" : "otherstate",
 
+      // Multi-currency — ledger always posts in INR (base); foreign kept for display
+      currency:        selectedCurrency || "INR",
+      exchange_rate:   Number(exchangeRate) || 1,
+
       // GRN rows — only API fields (drop display-only grn_ref_no)
       grn_rows: grnRows.map(r => ({
         grn_no:   r.grn_no,
@@ -533,6 +544,35 @@ const CreateBill = ({ onclose, onSuccess }) => {
                       ? "InState — CGST + SGST"
                       : "Inter-State — IGST"}
                 </div>
+              </Field>
+              <Field label="Currency">
+                <select
+                  value={selectedCurrency}
+                  onChange={(e) => {
+                    const code = e.target.value;
+                    setSelectedCurrency(code);
+                    if (code === "INR") setExchangeRate(1);
+                  }}
+                  className={inputCls}
+                >
+                  {activeCurrencies.length === 0 && <option value="INR">INR</option>}
+                  {activeCurrencies.map((c) => (
+                    <option key={c.code} value={c.code}>
+                      {c.code} {c.symbol ? `(${c.symbol})` : ""}
+                    </option>
+                  ))}
+                </select>
+              </Field>
+              <Field label={`Exchange Rate ${selectedCurrency === "INR" ? "" : `(INR per 1 ${selectedCurrency})`}`}>
+                <input
+                  type="number"
+                  step="0.0001"
+                  min="0"
+                  value={exchangeRate}
+                  onChange={(e) => setExchangeRate(e.target.value)}
+                  disabled={selectedCurrency === "INR"}
+                  className={selectedCurrency === "INR" ? readonlyCls : inputCls}
+                />
               </Field>
               <div className="flex flex-col justify-end gap-1.5">
                 <p className="text-[11px] text-slate-400 dark:text-slate-500">

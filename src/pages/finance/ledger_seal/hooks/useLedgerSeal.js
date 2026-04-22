@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient, keepPreviousData } from "@tanstack/react-query";
-import { api } from "../../../../services/api";
+import { api, extractApiError } from "../../../../services/api";
 import { toast } from "react-toastify";
 
 const QK = "ledger-seal";
@@ -26,27 +26,52 @@ export const useLedgerSealList = (params = {}) =>
     staleTime: 30_000,
   });
 
-export const useLedgerSealVerify = (params = {}) =>
+/* Full-chain verification — spec GET /ledger-seal/verify (no params). */
+export const useLedgerSealVerify = () =>
   useQuery({
-    queryKey: [QK, "verify", params],
-    queryFn: async ({ queryKey }) => {
-      const [, , p] = queryKey;
-      const { data } = await api.get("/ledger-seal/verify", { params: p });
+    queryKey: [QK, "verify"],
+    queryFn: async () => {
+      const { data } = await api.get("/ledger-seal/verify");
       return data?.data;
     },
-    enabled: !!(params.from_date && params.to_date),
     staleTime: 30_000,
+  });
+
+/* Sequence-range verify — spec GET /ledger-seal/verify-seq?from=N&to=N */
+export const useLedgerSealVerifySeq = (params = {}) =>
+  useQuery({
+    queryKey: [QK, "verify-seq", params],
+    queryFn: async ({ queryKey }) => {
+      const [, , p] = queryKey;
+      const { data } = await api.get("/ledger-seal/verify-seq", { params: p });
+      return data?.data;
+    },
+    enabled: params?.from !== undefined && params?.from !== null,
+    staleTime: 30_000,
+  });
+
+export const useLedgerSealBySequence = (sequence) =>
+  useQuery({
+    queryKey: [QK, "one", sequence],
+    queryFn: async () => {
+      const { data } = await api.get(`/ledger-seal/${sequence}`);
+      return data?.data;
+    },
+    enabled: sequence !== undefined && sequence !== null,
   });
 
 export const useSealApproved = ({ onSuccess } = {}) => {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: () => api.post("/ledger-seal/seal-approved").then((r) => r.data?.data),
+    mutationFn: (payload = {}) =>
+      api.post("/ledger-seal/seal-approved", payload).then((r) => r.data?.data),
     onSuccess: (data) => {
-      toast.success(`Sealed ${data?.added ?? 0} JE(s). Last chain hash updated.`);
+      toast.success(
+        `Sealed ${data?.sealed_count ?? data?.added ?? 0} JE(s). Chain hash updated.`
+      );
       qc.invalidateQueries({ queryKey: [QK] });
       if (onSuccess) onSuccess(data);
     },
-    onError: (err) => toast.error(err.response?.data?.message || "Seal failed"),
+    onError: (err) => toast.error(extractApiError(err, "Seal failed")),
   });
 };

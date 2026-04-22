@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Shield, RefreshCw, XCircle, CheckCircle, Ban } from "lucide-react";
+import AttachmentsBadge from "../shared/components/AttachmentsBadge";
 import {
   useRetentionPayableOutstanding, useRetentionReceivableOutstanding,
   useRetentionSummary, useRetentionReleaseList,
@@ -204,6 +205,12 @@ const Retention = () => {
                         </td>
                         <td className="px-4 py-2">
                           <div className="flex items-center gap-1.5 justify-end">
+                            <AttachmentsBadge
+                              sourceType="RetentionRelease"
+                              sourceRef={r._id}
+                              sourceNo={r.rr_no}
+                              readOnly={r.status === "approved" || r.status === "cancelled"}
+                            />
                             {r.status === "draft" && (
                               <>
                                 <button onClick={() => approve(r._id)} title="Approve" className="p-1.5 rounded-lg bg-emerald-50 hover:bg-emerald-100 text-emerald-600 border border-emerald-200 dark:bg-emerald-900/20 dark:text-emerald-400 dark:border-emerald-700">

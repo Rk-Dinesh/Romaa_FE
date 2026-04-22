@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Banknote, RefreshCw, XCircle, CheckCircle } from "lucide-react";
 import {
   useAdvanceOutstandingPaid, useAdvanceOutstandingReceived, useAdvanceSummary,
-  useAllocateAdvance, useUnallocateAdvance,
+  useAllocateAdvance,
 } from "./hooks/useAdvanceAllocation";
 
 const fmt = (v) => v ? new Date(v).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" }) : "—";

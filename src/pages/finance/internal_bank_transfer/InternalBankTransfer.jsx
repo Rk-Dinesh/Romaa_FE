@@ -8,6 +8,7 @@ import {
 import { TbPlus } from "react-icons/tb";
 import { useBTList, useApproveBT, useDeleteBT } from "./hooks/useBankTransfer";
 import CreateBankTransfer from "./CreateBankTransfer";
+import AttachmentsBadge from "../shared/components/AttachmentsBadge";
 import Loader from "../../../components/Loader";
 import ConfirmModal from "../../../components/ConfirmModal";
 import DeleteModal from "../../../components/DeleteModal";
@@ -305,6 +306,13 @@ const InternalBankTransfer = () => {
 
                       <td className="px-4 py-3">
                         <div className="flex items-center gap-1.5">
+                          <AttachmentsBadge
+                            sourceType="BankTransfer"
+                            sourceRef={t._id}
+                            sourceNo={t.transfer_no}
+                            tenderId={t.tender_id}
+                            readOnly={t.status === "approved"}
+                          />
                           {t.status === "pending" && (
                             <button
                               onClick={(e) => {

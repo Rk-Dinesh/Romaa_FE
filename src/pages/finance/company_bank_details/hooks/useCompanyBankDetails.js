@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { api } from "../../../../services/api";
+import { api, extractApiError } from "../../../../services/api";
 import { toast } from "react-toastify";
 
 const QK = "company-bank-accounts";
@@ -15,6 +15,29 @@ export const useCompanyBankDetails = () =>
     queryKey: [QK],
     queryFn: fetchBankAccounts,
     staleTime: 30 * 1000,
+  });
+
+/* ── By account code (GL mapping lookup) ───────────────────────────────── */
+export const useCompanyBankByCode = (code) =>
+  useQuery({
+    queryKey: [QK, "by-code", code],
+    queryFn: async () => {
+      const { data } = await api.get(`/companybankaccount/by-code/${code}`);
+      return data?.data;
+    },
+    enabled: !!code,
+    staleTime: 60_000,
+  });
+
+/* ── Single bank account by ObjectId ───────────────────────────────────── */
+export const useCompanyBank = (id) =>
+  useQuery({
+    queryKey: [QK, "one", id],
+    queryFn: async () => {
+      const { data } = await api.get(`/companybankaccount/${id}`);
+      return data?.data;
+    },
+    enabled: !!id,
   });
 
 /* ── Create ─────────────────────────────────────────────────────────────── */
@@ -33,7 +56,7 @@ export const useCreateBankDetail = ({ onClose } = {}) => {
       if (onClose) onClose();
     },
     onError: (err) =>
-      toast.error(err.response?.data?.message || "Failed to create bank account"),
+      toast.error(extractApiError(err, "Failed to create bank account")),
   });
 };
 
@@ -53,7 +76,7 @@ export const useUpdateBankDetail = ({ onClose } = {}) => {
       if (onClose) onClose();
     },
     onError: (err) =>
-      toast.error(err.response?.data?.message || "Failed to update bank account"),
+      toast.error(extractApiError(err, "Failed to update bank account")),
   });
 };
 
@@ -73,6 +96,6 @@ export const useDeleteBankDetail = ({ onClose } = {}) => {
       if (onClose) onClose();
     },
     onError: (err) =>
-      toast.error(err.response?.data?.message || "Failed to delete bank account"),
+      toast.error(extractApiError(err, "Failed to delete bank account")),
   });
 };
